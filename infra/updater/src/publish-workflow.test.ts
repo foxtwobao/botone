@@ -81,9 +81,13 @@ describe("server image publish workflow", () => {
     expect(attest).toBeGreaterThan(manifest);
   });
 
-  it("builds on Depot only when the repository names a project, and never for pull requests", () => {
+  it("builds on Depot only with explicit publication opt-in and a project, never for pull requests", () => {
     const depot = workflow.jobs["build-depot"];
-    expect(depot.if).toBe("github.event_name != 'pull_request' && vars.DEPOT_PROJECT_ID != ''");
+    expect(depot.if).toBe(
+      "github.event_name != 'pull_request' && vars.GHCR_PUBLISH_ENABLED == 'true' && vars.DEPOT_PROJECT_ID != ''",
+    );
+    for (const job of [workflow.jobs.build, workflow.jobs.publish])
+      expect(job.if).toContain("vars.GHCR_PUBLISH_ENABLED == 'true'");
     expect(workflow.jobs.build.if).toContain("github.event_name != 'pull_request'");
     expect(workflow.jobs.build.if).toContain("vars.DEPOT_PROJECT_ID == ''");
     expect(depot.permissions?.["id-token"]).toBe("write");
@@ -128,12 +132,14 @@ describe("server image publish workflow", () => {
     expect(publish).toBeGreaterThan(depotScan);
   });
 
-  it("publishes main from ci.yml so the production deploy waits for its image", () => {
+  it("opts into main publication from ci.yml so production waits for its image", () => {
     expect(workflow.on.push?.branches).toBeUndefined();
     expect(workflow.on).toHaveProperty("workflow_call");
     const publish = ci.jobs["publish-server-image"];
     expect(publish?.uses).toBe("./.github/workflows/publish-server-image.yml");
-    expect(publish?.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/main'");
+    expect(publish?.if).toBe(
+      "github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.GHCR_PUBLISH_ENABLED == 'true'",
+    );
     expect(ci.jobs["deploy-production"]?.needs).toEqual([
       "checks",
       "test-integration",

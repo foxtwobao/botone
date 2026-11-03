@@ -14,10 +14,12 @@ concurrency:
 
 jobs:
   visual-web:
+    if: github.event_name == 'workflow_dispatch' || vars.NIGHTLY_VERIFICATION_ENABLED == 'true'
     name: Daily web screenshots
     uses: ./.github/workflows/playwright.yml
     with:
-      publish_report: true
+      publish_report: ${{ vars.SCREENSHOT_PUBLISH_ENABLED == 'true' }}
+      upload_artifacts: true
       nightly: true
     secrets:
       S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}

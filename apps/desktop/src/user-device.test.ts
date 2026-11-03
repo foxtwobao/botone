@@ -223,6 +223,8 @@ describe("remote computer access", () => {
     expect(await readDeviceConsent(userData, origin)).toBeNull();
 
     await access.select(other);
+    // Finish this origin's background token write before switching away and removing the fixture.
+    await access.pair();
     await access.select(origin);
     expect(await clients.at(-1)!.authorize()).toBe(false);
     expect(access.state(origin)?.allowed).toBe(false);
