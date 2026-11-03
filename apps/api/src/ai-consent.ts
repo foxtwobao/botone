@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import {
   aiRecipient,
   cloudAgentsEnabled,
+  findConnectedModelCredential,
   parseModelSecret,
   resolveMemberMainModel,
   selectConfiguredModel,
@@ -57,7 +58,14 @@ export async function aiConsentStatus(
           )
         : [],
       modelsEnabled
-        ? resolveMemberMainModel({ prisma: deps.prisma, secretStore: deps.secrets }, actor)
+        ? resolveMemberMainModel(
+            {
+              prisma: deps.prisma,
+              secretStore: deps.secrets,
+              modelAccountOnly: deps.env.modelAccountOnly,
+            },
+            actor,
+          )
         : null,
       modelsEnabled
         ? deps.prisma.bot.findMany({
@@ -115,6 +123,15 @@ export async function aiConsentStatus(
       recipients.set(recipient.key, { ...recipient, allowed: allowed.has(recipient.key) });
   };
   if (modelsEnabled) {
+    const connection = (provider: string, modelId: string, credentialId?: string | null) =>
+      deps.env.modelAccountOnly
+        ? findConnectedModelCredential(deps.prisma, deps.secrets, actor, provider, modelId, {
+            credentialId,
+            modelAccountOnly: true,
+          })
+        : credentialId
+          ? findModelCredentialById(deps.prisma, actor, credentialId)
+          : findModelCredential(deps.prisma, actor, provider, modelId);
     const deployment = deps.env.deploymentModelConfigured
       ? { provider: deps.env.defaultProvider, model: deps.env.defaultModel }
       : null;
@@ -122,12 +139,7 @@ export async function aiConsentStatus(
       (target ? [...bots, ...routines] : [null, ...bots, ...routines]).map(async (override) => {
         const overrideCredential =
           override?.modelProvider && override.modelId
-            ? await findModelCredential(
-                deps.prisma,
-                actor,
-                override.modelProvider,
-                override.modelId,
-              )
+            ? await connection(override.modelProvider, override.modelId)
             : null;
         return selectConfiguredModel({
           override,
@@ -139,7 +151,9 @@ export async function aiConsentStatus(
       }),
     );
     // Connected models remain reachable by helpers during a targeted bot run.
-    for (const preference of preferences)
+    for (const preference of preferences.filter(
+      (row) => !deps.env.modelAccountOnly || row.credential.id.startsWith("external-"),
+    ))
       selected.push({
         provider: preference.credential.provider,
         id: preference.modelId ?? "",
@@ -153,9 +167,7 @@ export async function aiConsentStatus(
     // Every purpose's models, fallbacks included, can receive a run's content.
     const roleModels = await Promise.all(
       roleChoices.map(async (choice) => {
-        const credential = choice.credentialId
-          ? await findModelCredentialById(deps.prisma, actor, choice.credentialId)
-          : await findModelCredential(deps.prisma, actor, choice.provider, choice.modelId);
+        const credential = await connection(choice.provider, choice.modelId, choice.credentialId);
         return credential
           ? { provider: choice.provider, id: choice.modelId, credential, thinkingLevel: null }
           : null;
@@ -166,19 +178,18 @@ export async function aiConsentStatus(
       selected.push({
         provider: deps.env.teamChatJudgeProvider,
         id: deps.env.teamChatJudgeModel,
-        credential: await findModelCredential(
-          deps.prisma,
-          actor,
-          deps.env.teamChatJudgeProvider,
-          deps.env.teamChatJudgeModel,
-        ),
+        credential: await connection(deps.env.teamChatJudgeProvider, deps.env.teamChatJudgeModel),
         thinkingLevel: null,
       });
     }
     const models = [
       ...new Map(
         selected
-          .filter((model) => model.provider)
+          .filter(
+            (model) =>
+              model.provider &&
+              (!deps.env.modelAccountOnly || model.credential?.id.startsWith("external-")),
+          )
           .map((model) => [
             JSON.stringify([model.provider, model.id, model.credential?.secretId]),
             model,

@@ -101,6 +101,8 @@ function setup(
     $queryRaw: vi.fn().mockResolvedValue([{ locked: 1 }]),
   };
   const prisma = {
+    userActionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
+    actionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
     deploymentSettings: { findUnique: vi.fn(async () => null), findFirst: vi.fn(async () => null) },
     // Saved choices that keep a model listed after new users stop being offered it.
     bot: { findMany: vi.fn(async () => []) },
@@ -829,4 +831,26 @@ it("requires an account model even when deployment credentials exist", async () 
   deps.env.deploymentModelConfigured = true;
   const setupState = await modelSetup(deps, owner);
   expect(setupState).toMatchObject({ needsModel: true, model: null, main: null });
+});
+
+it("reports an approval checker only after an account model is selected", async () => {
+  const { call } = setup({
+    accountOnly: true,
+    managed: true,
+    compatible: { enabledModelIds: ["account-model"], defaultModel: "old-model" },
+  });
+  const before = await call("autoReview/get", { scope: "account" });
+  expect(before.response.status).toBe(200);
+  expect((await before.response.json()).json.checkerAvailable).toBe(false);
+  expect(
+    (
+      await call("models/setRole", {
+        role: "approval",
+        scope: "account",
+        primary: { provider: "openai-compatible", modelId: "account-model" },
+      })
+    ).response.status,
+  ).toBe(200);
+  const after = await call("autoReview/get", { scope: "account" });
+  expect((await after.response.json()).json.checkerAvailable).toBe(true);
 });

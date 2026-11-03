@@ -1,6 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import {
   effectiveModelRole,
+  findConnectedModelCredential,
   hasHostedModelCredits,
   isAutoReviewCheckerConfigured,
   PushSessionEndedError,
@@ -405,6 +406,21 @@ async function loadAutoReviewSettings(deps: RouterDeps, actor: Actor, scope?: Se
     ...(deploymentChecker || !role.primary ? [] : [role.primary]),
     ...role.backups,
   ];
+  if (deps.env.modelAccountOnly) {
+    const connections = await Promise.all(
+      memberChoices.map((choice) =>
+        findConnectedModelCredential(
+          deps.prisma,
+          deps.secrets,
+          actor,
+          choice.provider,
+          choice.modelId,
+          { credentialId: choice.credentialId, modelAccountOnly: true },
+        ),
+      ),
+    );
+    return { ...settings, checkerAvailable: connections.some(Boolean) };
+  }
   const environmentAvailable = isAutoReviewCheckerConfigured({ env: process.env });
   if (memberChoices.length === 0) {
     // The deployment's checker runs on its own configuration or on the member's key for it.
