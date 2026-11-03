@@ -79,7 +79,8 @@ for (const reauthorizing of [false, true]) {
     page,
     context,
   }) => {
-    let connected = false;
+    let connected = reauthorizing;
+    let renewed = false;
     let callback = "";
     await page.route("**/api/model-account/config", (route) =>
       route.fulfill({
@@ -97,7 +98,7 @@ for (const reauthorizing of [false, true]) {
           enabled: true,
           connected,
           linked: true,
-          ...(!connected && reauthorizing ? { recovery: "authorization_pending" } : {}),
+          ...(!renewed && reauthorizing ? { recovery: "authorization_required" } : {}),
         },
       }),
     );
@@ -112,6 +113,7 @@ for (const reauthorizing of [false, true]) {
     });
     await context.route("https://gateway.example.test/authorize", (route) => {
       connected = true;
+      renewed = true;
       return route.fulfill({
         contentType: "text/html",
         body: `<script>location.replace(${JSON.stringify(callback)})</script>`,
@@ -133,6 +135,9 @@ for (const reauthorizing of [false, true]) {
     await expect(settings.getByRole("button", { name: "Disconnect", exact: true })).toBeVisible();
     await expect(
       settings.getByRole("button", { name: "Use model account", exact: true }),
+    ).toBeHidden();
+    await expect(
+      settings.getByRole("button", { name: "Authorize again", exact: true }),
     ).toBeHidden();
     expect(page.url()).toBe(originalURL);
     await settings.getByRole("button", { name: /Close .*settings/ }).click();

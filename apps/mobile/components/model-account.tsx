@@ -138,7 +138,7 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
       ? t("Disconnection pending confirmation.")
       : error === "result_unknown" || status?.recovery === "authorization_unknown"
         ? t("Could not confirm authorization. Try again.")
-        : error === "authorization_required"
+        : error === "authorization_required" || status?.recovery === "authorization_required"
           ? t("Authorize the model account to continue.")
           : status?.recovery === "authorization_pending"
             ? t("Authorization incomplete.")
@@ -151,10 +151,13 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
     <SettingsGroup label={t("Model account")} footer={message}>
       {!identityUnavailable &&
       status?.recovery !== "revocation_unknown" &&
-      (!status?.connected || error === "authorization_required" || status?.recovery) ? (
+      (!status?.connected ||
+        error === "authorization_required" ||
+        status?.recovery === "authorization_required" ||
+        status?.recovery) ? (
         <SettingsRow
           title={
-            error === "authorization_required"
+            error === "authorization_required" || status?.recovery === "authorization_required"
               ? t("Authorize again")
               : status?.recovery === "authorization_unknown" || error === "result_unknown"
                 ? t("Retry")

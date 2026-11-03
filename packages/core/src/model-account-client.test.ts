@@ -87,7 +87,7 @@ it("offers authorization only after the provider confirms it is required", async
       : Response.json({ error: "authorization_required" }, { status: 403 }),
   );
   expect((await createModelAccountClient(transport).status()).recovery).toBe(
-    "authorization_pending",
+    "authorization_required",
   );
   expect(transport).toHaveBeenCalledTimes(2);
 });

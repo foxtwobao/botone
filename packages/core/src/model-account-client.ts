@@ -58,7 +58,7 @@ export function createModelAccountClient(
       } catch (error) {
         if (signal?.aborted) throw signal.reason;
         if (error instanceof ModelAccountClientError && error.code === "authorization_required")
-          return { ...status, recovery: "authorization_pending" as const };
+          return { ...status, recovery: "authorization_required" as const };
         return status;
       }
     },

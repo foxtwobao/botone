@@ -375,6 +375,9 @@ postgres("external model account isolated PostgreSQL", () => {
   });
 
   it("restores only authorization-paused runs with their original ids", async () => {
+    authorized = true;
+    await request("/connect", { method: "POST", body: "{}" });
+    authorized = false;
     const threadId = "model-account-thread";
     const botId = "model-account-bot";
     const task = await prisma.task.create({
@@ -409,6 +412,10 @@ postgres("external model account isolated PostgreSQL", () => {
     expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
       "waiting_input",
     );
+    expect(await (await request("/status")).json()).toMatchObject({
+      connected: true,
+      recovery: "authorization_required",
+    });
     const other = await prisma.run.create({
       data: {
         userId,

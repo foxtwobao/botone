@@ -124,7 +124,7 @@ export function ModelAccount() {
       ? t`Disconnection pending confirmation.`
       : identityUnavailable
         ? t`Sign in with SSO to use the model account.`
-        : error === "authorization_required"
+        : error === "authorization_required" || status?.recovery === "authorization_required"
           ? t`Authorize the model account to continue.`
           : error === "result_unknown" || status?.recovery === "authorization_unknown"
             ? t`Could not confirm authorization. Try again.`
@@ -149,7 +149,10 @@ export function ModelAccount() {
       <div className="flex flex-wrap gap-2">
         {!identityUnavailable &&
         status?.recovery !== "revocation_unknown" &&
-        (!status?.connected || error === "authorization_required" || status?.recovery) ? (
+        (!status?.connected ||
+          error === "authorization_required" ||
+          status?.recovery === "authorization_required" ||
+          status?.recovery) ? (
           <Button
             size="sm"
             disabled={busy}
@@ -157,7 +160,7 @@ export function ModelAccount() {
               void act(status?.recovery === "authorization_unknown" ? "refresh" : "connect")
             }
           >
-            {error === "authorization_required" ? (
+            {error === "authorization_required" || status?.recovery === "authorization_required" ? (
               <Trans>Authorize again</Trans>
             ) : status?.recovery === "authorization_unknown" || error === "result_unknown" ? (
               <Trans>Retry</Trans>

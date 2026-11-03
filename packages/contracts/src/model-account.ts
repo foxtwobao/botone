@@ -18,7 +18,12 @@ export const modelAccountStatusSchema = z.object({
   connected: z.boolean(),
   linked: z.boolean().optional(),
   recovery: z
-    .enum(["authorization_pending", "authorization_unknown", "revocation_unknown"])
+    .enum([
+      "authorization_required",
+      "authorization_pending",
+      "authorization_unknown",
+      "revocation_unknown",
+    ])
     .optional(),
 });
 export const modelAccountBalanceSchema = z.object({

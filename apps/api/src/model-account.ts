@@ -1,6 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { JobPublisher, SecretStore } from "@rakazo/adapter-kit";
-import { ExternalModelAccountError } from "@rakazo/adapter-kit";
+import {
+  ExternalModelAccountError,
+  modelAccountAuthorizationCheckpoint,
+} from "@rakazo/adapter-kit";
 import type { configuredModelAccount } from "@rakazo/adapters";
 import { parseModelSecret, resumeModelAccountRuns, serializeModelSecret } from "@rakazo/adapters";
 import type { Auth } from "@rakazo/auth";
@@ -217,10 +220,23 @@ export function modelAccountRoutes(deps: {
       orderBy: { createdAt: "desc" },
     });
     let recovery:
+      | "authorization_required"
       | "authorization_pending"
       | "authorization_unknown"
       | "revocation_unknown"
       | undefined;
+    if (
+      current &&
+      (await prisma.run.findFirst({
+        where: {
+          userId: signed.user.id,
+          status: "waiting_input",
+          checkpoint: modelAccountAuthorizationCheckpoint(current),
+        },
+        select: { id: true },
+      }))
+    )
+      recovery = "authorization_required";
     if (pending) {
       const transaction = JSON.parse(
         await secrets.load(pending.ciphertext, pending.id),

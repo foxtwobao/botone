@@ -934,6 +934,10 @@ msgstr "Authenticatie mislukt."
 msgid "Authorization code"
 msgstr "Autorisatiecode"
 
+#: src/components/ModelAccount.tsx
+msgid "Authorization incomplete."
+msgstr ""
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
 msgstr "Autorisatieparameters (optioneel)"
@@ -949,6 +953,14 @@ msgstr "De autorisatie is verlopen. Probeer het opnieuw."
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "Autoriseren"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize again"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize the model account to continue."
+msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1004,6 +1016,10 @@ msgstr "Terug"
 #: src/pages/Auth.tsx
 msgid "Back to sign in"
 msgstr "Terug naar aanmelden"
+
+#: src/components/ModelAccount.tsx
+msgid "Balance unavailable"
+msgstr ""
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1159,6 +1175,7 @@ msgstr "Kan afbeeldingen niet lezen"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/markdown-link-prompt.tsx
+#: src/components/ModelAccount.tsx
 #: src/components/ModelCredits.tsx
 #: src/components/PasskeySettings.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -1506,6 +1523,10 @@ msgstr "Compact"
 msgid "Complete"
 msgstr "Voltooid"
 
+#: src/components/ModelAccount.tsx
+msgid "Complete authorization in the opened window."
+msgstr ""
+
 #: src/components/SubagentCard.tsx
 msgid "Completed"
 msgstr "Voltooid"
@@ -1822,6 +1843,10 @@ msgstr "OAuth voltooien mislukt"
 #: src/components/DesktopUpdates.tsx
 msgid "Could not complete the update. Try again."
 msgstr "De update kon niet worden voltooid. Probeer het opnieuw."
+
+#: src/components/ModelAccount.tsx
+msgid "Could not confirm authorization. Try again."
+msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2601,6 +2626,7 @@ msgstr "Uitgeschakeld"
 msgid "Discard recording"
 msgstr "Opname weggooien"
 
+#: src/components/ModelAccount.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/MessagingSettingsPanel.tsx
@@ -2631,6 +2657,10 @@ msgstr "{disconnectName} losgekoppeld."
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Disconnecting…"
 msgstr "Bezig met loskoppelen…"
+
+#: src/components/ModelAccount.tsx
+msgid "Disconnection pending confirmation."
+msgstr ""
 
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
@@ -3197,6 +3227,10 @@ msgstr "Houd ingedrukt om te praten"
 #: src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk, release to send"
 msgstr "Houd ingedrukt om te praten, laat los om te versturen"
+
+#: src/components/ModelAccount.tsx
+msgid "Home"
+msgstr ""
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3833,6 +3867,14 @@ msgstr "Model"
 #: src/lib/model-connection-preflight.ts
 msgid "Model \"{modelId}\" was not listed."
 msgstr "Model \"{modelId}\" stond niet in de lijst."
+
+#: src/components/ModelAccount.tsx
+msgid "Model account"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Model account unavailable"
+msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4672,6 +4714,10 @@ msgstr ""
 msgid "Recent"
 msgstr "Recent"
 
+#: src/components/ModelAccount.tsx
+msgid "Recharge"
+msgstr ""
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
 msgstr ""
@@ -4759,6 +4805,10 @@ msgstr "Omleidings-URI"
 #: src/components/ModelCredits.tsx
 msgid "Refresh"
 msgstr "Vernieuwen"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh balance"
+msgstr ""
 
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
@@ -5009,6 +5059,7 @@ msgstr "Je werkruimte herstellen"
 #: src/components/AccountAccess.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/integrations/skills-dialog.tsx
+#: src/components/ModelAccount.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/AdminAccessPage.tsx
 #: src/pages/Auth.tsx
@@ -5018,6 +5069,10 @@ msgstr "Je werkruimte herstellen"
 #: src/pages/SpaceSettingOverrides.tsx
 msgid "Retry"
 msgstr "Opnieuw proberen"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry disconnect"
+msgstr ""
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5481,6 +5536,10 @@ msgstr "Meld je aan met je bestaande account om SSO te koppelen"
 #: src/components/PasskeySignIn.tsx
 msgid "Sign in with passkey"
 msgstr "Inloggen met passkey"
+
+#: src/components/ModelAccount.tsx
+msgid "Sign in with SSO to use the model account."
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6329,6 +6388,10 @@ msgstr "Standaardinstellingen gebruiken voor {label}"
 
 #: src/components/integrations/plugin-marketplace.tsx
 msgid "Use in this bot"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Use model account"
 msgstr ""
 
 #: src/components/ModelCredits.tsx
