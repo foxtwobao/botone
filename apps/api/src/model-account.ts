@@ -212,11 +212,16 @@ export function modelAccountRoutes(deps: {
   });
   app.get("/config", async (c) => {
     if (!connection) return c.json({ enabled: false });
+    const navigation = await readHomeNavigation(
+      connection.navigationOrigin,
+      deps.navigationFetch,
+    ).catch(() => undefined);
     return c.json({
       enabled: true,
-      navigation: await readHomeNavigation(connection.navigationOrigin, deps.navigationFetch).catch(
-        () => undefined,
-      ),
+      navigation,
+      // Installed clients still validate the original response envelope. These are derived
+      // public defaults, not deployment inputs; no default model is selected by authorization.
+      ...(navigation ? { ...navigation.defaults, modelId: "" } : {}),
     });
   });
   app.get("/status", async (c) => {
