@@ -115,3 +115,26 @@ it("revalidates an unchanged bot model when ordinary connections are disabled", 
   );
   expect(result.ok).toBe(false);
 });
+
+it("does not restore ordinary keys when account service configuration is absent", async () => {
+  const { prisma, secrets } = fixture("fake-api-key");
+  const deps = {
+    prisma,
+    secretStore: secrets,
+    modelAccountOnly: true,
+    billingEnabled: false,
+  } as unknown as ExecutorDeps;
+  await expect(
+    resolveModelKey(
+      deps,
+      scope.userId,
+      scope.spaceId,
+      credential,
+      "openai-compatible",
+      "account-model",
+    ),
+  ).rejects.toThrow();
+  await expect(
+    resolveModelKey(deps, scope.userId, scope.spaceId, null, "openrouter", "old-model"),
+  ).rejects.toThrow();
+});

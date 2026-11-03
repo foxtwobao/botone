@@ -552,8 +552,9 @@ test("account-only settings retain model choices without ordinary connection con
   await page.route("**/rpc/me", (route) =>
     route.fulfill({ json: { json: { ...me, modelAccountOnly: true } } }),
   );
+  let configured = false;
   await page.route("**/api/model-account/config", (route) =>
-    route.fulfill({ json: { enabled: true } }),
+    route.fulfill({ json: { enabled: configured } }),
   );
   await page.route("**/api/model-account/status", (route) =>
     route.fulfill({ json: { enabled: true, connected: true, linked: true } }),
@@ -603,6 +604,10 @@ test("account-only settings retain model choices without ordinary connection con
     }),
   );
   const settings = await openUserSettings(page, "models");
+  await expect(settings.getByRole("alert")).toHaveText("Model account unavailable");
+  await expect(settings.getByRole("button", { name: "Add provider", exact: true })).toBeHidden();
+  configured = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(settings.getByText("Connected to TokenONE", { exact: true })).toBeVisible();
   await expect(settings.getByText("Providers", { exact: true })).toBeHidden();
   await expect(settings.getByRole("button", { name: "Add provider", exact: true })).toBeHidden();

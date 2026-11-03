@@ -41,9 +41,11 @@ function client() {
 export function ModelAccount({
   onChanged,
   resumeTask = false,
+  required = false,
 }: {
   onChanged?: () => void | Promise<void>;
   resumeTask?: boolean;
+  required?: boolean;
 }) {
   const { t } = useI18n();
   const [config, setConfig] = useState<ModelAccountConfig>();
@@ -105,7 +107,12 @@ export function ModelAccount({
       };
     }, [refresh]),
   );
-  if (!config?.enabled) return null;
+  if (!config?.enabled)
+    return required && (config || error) ? (
+      <SettingsGroup label={t("Model account")}>
+        <SettingsRow title={t("Model account unavailable")} />
+      </SettingsGroup>
+    ) : null;
   const navigation = resolveAccountNavigation(config);
   const act = async (
     kind: "connect" | "revoke" | "refresh" | "models" | "protocol",

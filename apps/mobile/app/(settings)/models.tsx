@@ -274,7 +274,7 @@ export default function Models() {
             {shownError}
           </Text>
         ) : null}
-        <ModelAccount onChanged={() => void load()} />
+        <ModelAccount required={me?.modelAccountOnly} onChanged={() => void load()} />
         {me ? (
           <>
             <ModelRoleSettings

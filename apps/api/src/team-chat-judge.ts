@@ -120,6 +120,7 @@ interface ModelTeamChatEngagementJudgeDeps {
   runtime: AgentRuntime;
   secrets: SecretStore;
   externalModelKey?: ExternalModelKeyResolver;
+  modelAccountOnly?: boolean;
   deploymentProvider: string;
   deploymentModel: string;
   deploymentModelKey?: string;
@@ -234,13 +235,14 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
         prisma: this.deps.prisma,
         secretStore: this.deps.secrets,
         externalModelKey: this.deps.externalModelKey,
+        modelAccountOnly: this.deps.modelAccountOnly,
       },
       scope,
     );
     const requestedProvider = this.deps.providerOverride ?? bot.modelProvider;
     const requestedModel = this.deps.modelOverride ?? bot.modelId;
     const overrideCredential = requestedProvider
-      ? this.deps.externalModelKey
+      ? this.deps.modelAccountOnly || this.deps.externalModelKey
         ? await findConnectedModelCredential(
             this.deps.prisma,
             this.deps.secrets,
@@ -275,8 +277,8 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
     const hosted =
       settings?.modelCreditsEnabled &&
       (await hasHostedModelCredits(this.deps.prisma, scope, provider));
-    if (this.deps.externalModelKey && !credential) return null;
-    if (!credential || (hosted && !this.deps.externalModelKey)) {
+    if ((this.deps.modelAccountOnly || this.deps.externalModelKey) && !credential) return null;
+    if (!credential || (hosted && !this.deps.modelAccountOnly && !this.deps.externalModelKey)) {
       const apiKey =
         provider === this.deps.deploymentProvider ? this.deps.deploymentModelKey : undefined;
       const callObserver = settings?.modelCreditsEnabled
@@ -310,7 +312,7 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
     const plaintext = await this.deps.secrets.load(secret.ciphertext, secret.id);
     const stored = parseModelSecret(plaintext);
     if (
-      this.deps.externalModelKey &&
+      (this.deps.modelAccountOnly || this.deps.externalModelKey) &&
       (stored.kind !== "openai_compatible" || !stored.externalAccount)
     )
       return null;

@@ -28,9 +28,11 @@ import { cancelSsoFlow, runSsoFlow } from "../lib/sso-flow";
 const client = createModelAccountClient();
 export function ModelAccount({
   resumeTask = false,
+  required = false,
   onChanged,
 }: {
   resumeTask?: boolean;
+  required?: boolean;
   onChanged?: () => void | Promise<void>;
 }) {
   const { t } = useLingui();
@@ -95,7 +97,12 @@ export function ModelAccount({
       document.removeEventListener("visibilitychange", update);
     };
   }, [userId, refresh]);
-  if (!config?.enabled) return null;
+  if (!config?.enabled)
+    return required && (config || error) ? (
+      <p role="alert" className="text-sm text-destructive">
+        <Trans>Model account unavailable</Trans>
+      </p>
+    ) : null;
   const navigation = resolveAccountNavigation(config, document.cookie, window.location.hostname);
   const updateNavigationLink =
     (kind: "homeUrl" | "rechargeUrl") => (event: MouseEvent<HTMLAnchorElement>) => {

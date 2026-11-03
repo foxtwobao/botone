@@ -282,7 +282,7 @@ export function ModelSettingsOverlay({
 
   const content = (
     <>
-      {scope === "account" ? <ModelAccount /> : null}
+      {scope === "account" ? <ModelAccount required={me?.modelAccountOnly} /> : null}
       {error && !connectionAt ? (
         <p className="mb-4 text-sm text-destructive" role="alert">
           {error}

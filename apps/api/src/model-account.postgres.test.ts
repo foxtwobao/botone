@@ -18,6 +18,7 @@ import { asSystem, createDb, createThreadEvents } from "@rakazo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveModelKey } from "../../../packages/adapters/src/run-model.js";
 import { modelAccountRoutes } from "./model-account.js";
+import { removeOrdinaryModelConnections } from "./model-account-cleanup.js";
 import type { ThreadTarget } from "./thread-target.js";
 import { threadSnapshot } from "./thread-target.js";
 
@@ -206,6 +207,157 @@ postgres("external model account isolated PostgreSQL", () => {
     await prisma.user.delete({ where: { id: userId } });
     await db.prisma.$disconnect();
     await db.pool.end();
+  });
+
+  it("removes ordinary model data without deleting account access, voice keys or identity", async () => {
+    const flow = await begin();
+    expect((await request(flow.callback, { headers: { cookie: flow.cookie } })).status).toBe(302);
+    const managedId = `external-${accountId}`;
+    await prisma.secret.createMany({
+      data: [
+        { id: "old-model-secret", userId, kind: "model", ciphertext: "unused-fixture" },
+        { id: "shared-voice-secret", userId, kind: "model", ciphertext: "unused-shared-fixture" },
+      ],
+    });
+    await prisma.userModelCredential.createMany({
+      data: [
+        {
+          id: "old-model",
+          userId,
+          provider: "openrouter",
+          label: "Old",
+          secretId: "old-model-secret",
+        },
+        {
+          id: "shared-model",
+          userId,
+          provider: "openai-compatible",
+          label: "Shared",
+          secretId: "shared-voice-secret",
+        },
+      ],
+    });
+    await prisma.userVoiceCredential.create({
+      data: {
+        id: "preserved-voice",
+        userId,
+        provider: "openai",
+        secretId: "shared-voice-secret",
+      },
+    });
+    await prisma.userModelPreference.create({
+      data: { userId, credentialId: "old-model", modelId: "old-model" },
+    });
+    await prisma.spaceSettingOverride.create({ data: { spaceId, userId, setting: "models" } });
+    await prisma.spaceModelRoleChoice.create({
+      data: {
+        spaceId,
+        userId,
+        role: "main",
+        position: 0,
+        provider: "openrouter",
+        modelId: "old-model",
+        credentialId: "old-model",
+      },
+    });
+    await prisma.userModelRoleChoice.createMany({
+      data: [
+        {
+          userId,
+          role: "main",
+          position: 0,
+          provider: "openai-compatible",
+          modelId: "example-model",
+          credentialId: managedId,
+        },
+        {
+          userId,
+          role: "main",
+          position: 1,
+          provider: "openrouter",
+          modelId: "old-model",
+          credentialId: "old-model",
+        },
+        {
+          userId,
+          role: "approval",
+          position: 0,
+          provider: "openrouter",
+          modelId: "deployment-model",
+        },
+      ],
+    });
+    await prisma.bot.update({
+      where: { id: "model-account-bot" },
+      data: { modelProvider: "openai-compatible", modelId: "example-model" },
+    });
+    await prisma.bot.create({
+      data: {
+        id: "ordinary-model-bot",
+        userId,
+        spaceId,
+        name: "Old",
+        color: "test",
+        modelProvider: "openrouter",
+        modelId: "old-model",
+      },
+    });
+    await prisma.routine.create({
+      data: {
+        id: "ordinary-model-routine",
+        userId,
+        spaceId,
+        botId: "model-account-bot",
+        name: "Fixture",
+        prompt: "Fixture",
+        crons: [],
+        modelProvider: "openai-compatible",
+        modelId: "unlisted-model",
+      },
+    });
+    await prisma.modelOAuthSession.create({
+      data: {
+        id: "old-model-oauth",
+        userId,
+        spaceId,
+        provider: "openai-codex",
+        scope: "fixture",
+        ciphertext: "unused-fixture",
+      },
+    });
+    const removed = await Promise.all([
+      removeOrdinaryModelConnections(prisma, secrets),
+      removeOrdinaryModelConnections(prisma, secrets),
+    ]);
+    expect(removed.map((row) => row.removed).sort()).toEqual([0, 2]);
+    expect(
+      (await prisma.userModelCredential.findMany({ where: { userId } })).map((row) => row.id),
+    ).toEqual([managedId]);
+    expect(await prisma.secret.findUnique({ where: { id: "old-model-secret" } })).toBeNull();
+    expect(await prisma.secret.findUnique({ where: { id: "shared-voice-secret" } })).not.toBeNull();
+    expect(await prisma.userModelPreference.count({ where: { credentialId: "old-model" } })).toBe(
+      0,
+    );
+    expect(await prisma.userModelRoleChoice.findMany({ where: { userId } })).toMatchObject([
+      { credentialId: managedId, modelId: "example-model" },
+    ]);
+    expect(
+      await prisma.modelOAuthSession.findUnique({ where: { id: "old-model-oauth" } }),
+    ).toBeNull();
+    expect(await prisma.bot.findUnique({ where: { id: "model-account-bot" } })).toMatchObject({
+      modelProvider: "openai-compatible",
+      modelId: "example-model",
+    });
+    expect(await prisma.bot.findUnique({ where: { id: "ordinary-model-bot" } })).toMatchObject({
+      modelProvider: null,
+      modelId: null,
+    });
+    expect(
+      await prisma.routine.findUnique({ where: { id: "ordinary-model-routine" } }),
+    ).toMatchObject({ modelProvider: null, modelId: null });
+    expect(await prisma.account.findUnique({ where: { id: accountId } })).toMatchObject({
+      idToken,
+    });
   });
 
   it("authorizes, saves only an account reference, and resolves runtime keys without local billing", async () => {

@@ -25,6 +25,7 @@ export async function autoReviewCheckerProvider(
   const { injectedReview, memberChecker, backups, registerSecrets } = options;
   if (injectedReview) return injectedReview;
   const kind =
+    deps.modelAccountOnly ||
     deps.externalModelKey ||
     memberChecker ||
     (checker.provider !== "jev" && checker.provider !== "scripted")
@@ -39,7 +40,10 @@ export async function autoReviewCheckerProvider(
     { userId, spaceId },
     checker.provider,
     checker.model,
-    { credentialId: checker.credentialId, modelAccountOnly: Boolean(deps.externalModelKey) },
+    {
+      credentialId: checker.credentialId,
+      modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey),
+    },
   );
   if (
     (memberChecker ||

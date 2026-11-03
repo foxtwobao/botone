@@ -157,6 +157,7 @@ async function main() {
       ? new ScriptedAgentRuntime()
       : new PiAgentRuntime({ sessionRoot: resolvePiSessionRoot(dataDir) });
   const modelAccount = configuredModelAccount(process.env.MODEL_ACCOUNT_CONNECTION);
+  const modelAccountOnly = !runtime.describe().capabilities.scripted;
   if (modelAccount && !process.env.OIDC_ISSUER) throw new Error("Model account requires OIDC");
   // Same resolver the API uses, so both processes agree on provider, model and key.
   const { key: deploymentModelKey, configured: deploymentModelConfigured } =
@@ -261,7 +262,7 @@ async function main() {
     ticketBoardEnabled,
   });
   // One provider instance so emulator launches and polls share the same Map.
-  const cloudAgent = createCloudAgentConnection();
+  const cloudAgent = modelAccountOnly ? null : createCloudAgentConnection();
   const paymentWallet = await createPaymentWalletProvider();
   // Shared with the reconciler so a stuck wait uses the same push path as a finish notice.
   const pushTokens = new PrismaPushTokenStore(prisma, resolveEncryptionKey(process.env));
@@ -300,7 +301,8 @@ async function main() {
       process.env.CURSOR_API_KEY ?? "",
       process.env.TYPESAFE_API_KEY ?? "",
     ].filter(Boolean),
-    billingEnabled: modelAccount ? false : undefined,
+    modelAccountOnly,
+    billingEnabled: modelAccountOnly ? false : undefined,
     externalModelKey: modelAccount
       ? createExternalModelKeyResolver(
           modelAccount.provider,
