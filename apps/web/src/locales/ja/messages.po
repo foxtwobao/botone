@@ -822,6 +822,10 @@ msgstr "APIキーのヘッダー"
 msgid "API keys"
 msgstr "APIキー"
 
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API プロトコル"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "外観"
@@ -3869,6 +3873,7 @@ msgid "Model \"{modelId}\" was not listed."
 msgstr "モデル「{modelId}」は一覧にありませんでした。"
 
 #: src/components/ModelAccount.tsx
+#: src/pages/Onboarding.tsx
 msgid "Model account"
 msgstr "モデルアカウント"
 
@@ -4813,6 +4818,10 @@ msgstr "残高を更新"
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr "クレジットを更新"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "モデルを更新"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"

@@ -1,4 +1,6 @@
 export const DE_MESSAGES: Record<string, string> = {
+  "API protocol": "API-Protokoll",
+  "Refresh models": "Modelle aktualisieren",
   "Authorization incomplete.": "Autorisierung unvollständig.",
   "Authorize again": "Erneut autorisieren",
   "Authorize the model account to continue.": "Autorisiere das Modellkonto, um fortzufahren.",

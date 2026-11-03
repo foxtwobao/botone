@@ -3,6 +3,8 @@ import { captureScreenshot, completeOnboarding, openUserSettings, signup } from 
 
 test("model account settings show balance and platform actions", async ({ page }, testInfo) => {
   let connected = false;
+  let apiProtocol = "chat-completions";
+  let modelRefreshes = 0;
   let amount = "12.34";
   let revocationUnknown = false;
   let revokeAttempts = 0;
@@ -10,8 +12,15 @@ test("model account settings show balance and platform actions", async ({ page }
     route.fulfill({
       json: {
         enabled: true,
-        homeUrl: "https://home.example.test/",
-        rechargeUrl: "https://wallet.example.test/",
+        navigation: {
+          cookieName: "one_nav",
+          defaults: {
+            homeUrl: "https://home.example.test/",
+            rechargeUrl: "https://wallet.example.test/",
+          },
+          channels: [],
+          productHosts: [],
+        },
         modelId: "example-model",
       },
     }),
@@ -21,6 +30,7 @@ test("model account settings show balance and platform actions", async ({ page }
       json: {
         enabled: true,
         connected,
+        apiProtocol,
         linked: true,
         ...(revocationUnknown ? { recovery: "revocation_unknown" } : {}),
       },
@@ -32,6 +42,14 @@ test("model account settings show balance and platform actions", async ({ page }
   await page.route("**/api/model-account/connect", (route) => {
     connected = true;
     return route.fulfill({ json: { connected } });
+  });
+  await page.route("**/api/model-account/settings", (route) => {
+    apiProtocol = route.request().postDataJSON().apiProtocol;
+    return route.fulfill({ json: { apiProtocol } });
+  });
+  await page.route("**/api/model-account/models", (route) => {
+    modelRefreshes++;
+    return route.fulfill({ json: { connected: true } });
   });
   await page.route("**/api/model-account/revoke", (route) => {
     connected = false;
@@ -63,6 +81,14 @@ test("model account settings show balance and platform actions", async ({ page }
   amount = "32.34";
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(settings.getByText("32.34 USD", { exact: true })).toBeVisible();
+  await settings.getByRole("combobox", { name: "API protocol", exact: true }).click();
+  await page.getByRole("option", { name: "Responses", exact: true }).click();
+  await expect(settings.getByRole("combobox", { name: "API protocol", exact: true })).toContainText(
+    "Responses",
+  );
+  await settings.getByRole("button", { name: "Refresh models", exact: true }).click();
+  await expect(settings.getByRole("button", { name: "Refresh models", exact: true })).toBeEnabled();
+  expect(modelRefreshes).toBe(1);
   await captureScreenshot(page, testInfo, "model-account-settings");
   await settings.getByRole("button", { name: "Disconnect", exact: true }).click();
   await expect(
@@ -74,11 +100,13 @@ test("model account settings show balance and platform actions", async ({ page }
   ).toBeHidden();
 });
 
-for (const reauthorizing of [false, true]) {
-  test(`${reauthorizing ? "renewed" : "first"} authorization preserves the original conversation and unsent draft`, async ({
+for (const scenario of ["first", "renewed", "onboarding"]) {
+  const reauthorizing = scenario === "renewed";
+  const onboarding = scenario === "onboarding";
+  test(`${scenario} authorization preserves the original conversation and unsent draft`, async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
     let connected = reauthorizing;
     let renewed = false;
     let callback = "";
@@ -86,8 +114,15 @@ for (const reauthorizing of [false, true]) {
       route.fulfill({
         json: {
           enabled: true,
-          homeUrl: "https://home.example.test/",
-          rechargeUrl: "https://wallet.example.test/",
+          navigation: {
+            cookieName: "one_nav",
+            defaults: {
+              homeUrl: "https://home.example.test/",
+              rechargeUrl: "https://wallet.example.test/",
+            },
+            channels: [],
+            productHosts: [],
+          },
           modelId: "fixture-model",
         },
       }),
@@ -122,9 +157,16 @@ for (const reauthorizing of [false, true]) {
     await signup(page, `model-context-${Date.now()}@rakazo.test`, "password12", "Draft Keeper");
     await completeOnboarding(page);
     const composer = page.getByRole("combobox", { name: /Message/ });
-    await composer.fill("Keep this unsent draft");
+    if (!onboarding) await composer.fill("Keep this unsent draft");
     const conversation = page.url();
-    const settings = await openUserSettings(page, "models");
+    const settings = onboarding
+      ? page.getByRole("dialog", { name: "Models", exact: true })
+      : await openUserSettings(page, "models");
+    if (onboarding) {
+      await page.goto("/onboarding/model");
+      await page.getByRole("button", { name: "Model account", exact: true }).click();
+      await expect(settings).toBeVisible();
+    }
     const originalURL = page.url();
     await settings
       .getByRole("button", {
@@ -140,9 +182,12 @@ for (const reauthorizing of [false, true]) {
       settings.getByRole("button", { name: "Authorize again", exact: true }),
     ).toBeHidden();
     expect(page.url()).toBe(originalURL);
+    if (onboarding) await captureScreenshot(page, testInfo, "model-account-onboarding");
     await settings.getByRole("button", { name: /Close .*settings/ }).click();
-    await expect(composer).toHaveValue("Keep this unsent draft");
-    expect(new URL(page.url()).pathname).toBe(new URL(conversation).pathname);
+    if (!onboarding) {
+      await expect(composer).toHaveValue("Keep this unsent draft");
+      expect(new URL(page.url()).pathname).toBe(new URL(conversation).pathname);
+    }
   });
 }
 
@@ -153,8 +198,15 @@ test("missing OIDC identity has no extra binding action and managed connections 
     route.fulfill({
       json: {
         enabled: true,
-        homeUrl: "https://home.example.test/",
-        rechargeUrl: "https://wallet.example.test/",
+        navigation: {
+          cookieName: "one_nav",
+          defaults: {
+            homeUrl: "https://home.example.test/",
+            rechargeUrl: "https://wallet.example.test/",
+          },
+          channels: [],
+          productHosts: [],
+        },
         modelId: "fixture-model",
       },
     }),
@@ -165,20 +217,23 @@ test("missing OIDC identity has no extra binding action and managed connections 
   await page.route("**/api/model-account/balance", (route) =>
     route.fulfill({ status: 403, json: { error: "link_required" } }),
   );
-  await page.route("**/rpc/models/credentials", async (route) => {
-    const response = await route.fetch();
-    const body = await response.json();
-    body.json.push({
-      id: "managed-fixture",
-      provider: "openai-compatible",
-      label: "Managed fixture connection",
-      hasKey: false,
-      isDefault: false,
-      managed: true,
-      baseUrl: "https://models.example.test/v1",
-    });
-    await route.fulfill({ response, json: body });
-  });
+  await page.route("**/rpc/models/credentials", (route) =>
+    route.fulfill({
+      json: {
+        json: [
+          {
+            id: "managed-fixture",
+            provider: "openai-compatible",
+            label: "Managed fixture connection",
+            hasKey: true,
+            isDefault: false,
+            managed: true,
+            baseUrl: "https://models.example.test/v1",
+          },
+        ],
+      },
+    }),
+  );
   await signup(page, `model-link-${Date.now()}@rakazo.test`, "password12", "Fixture User");
   await completeOnboarding(page);
   const settings = await openUserSettings(page, "models");
@@ -200,8 +255,15 @@ test("unknown authorization is checked automatically and retry appears only afte
     route.fulfill({
       json: {
         enabled: true,
-        homeUrl: "https://home.example.test/",
-        rechargeUrl: "https://wallet.example.test/",
+        navigation: {
+          cookieName: "one_nav",
+          defaults: {
+            homeUrl: "https://home.example.test/",
+            rechargeUrl: "https://wallet.example.test/",
+          },
+          channels: [],
+          productHosts: [],
+        },
         modelId: "fixture-model",
       },
     }),

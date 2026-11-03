@@ -321,7 +321,7 @@ export function modelCredentialDto(
   return {
     ...compatibleCredential,
     authKind: "openai_compatible",
-    ...(parsed.externalAccount ? { managed: true } : {}),
+    ...(parsed.externalAccount ? { managed: true, hasKey: true } : {}),
     supportsImages:
       parsed.visionModelIds !== undefined
         ? modelIdSupportsImages(parsed.visionModelIds, row.defaultModel)

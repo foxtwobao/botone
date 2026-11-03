@@ -36,11 +36,7 @@ const config = {
   provider: "reseller",
   origin: "https://accounts.example.test",
   credential: "fake-credential",
-  authorizationOrigins: ["https://gateway.example.test"],
-  homeUrl: "https://home.example.test/",
-  rechargeUrl: "https://wallet.example.test/",
-  modelId: "example-model",
-  model: { kind: "openai_compatible", baseUrl: "https://models.example.test/v1" },
+  baseUrl: "https://models.example.test/v1",
 };
 
 postgres("external model account isolated PostgreSQL", () => {
@@ -51,6 +47,22 @@ postgres("external model account isolated PostgreSQL", () => {
   const jobs: JobPublisher = { enqueue, cancel: vi.fn(), close: async () => undefined };
   const secrets = new EncryptedSecretStore("fixture-encryption-key");
   const connection = configuredModelAccount(JSON.stringify(config))!;
+  const modelFetch = vi.fn<typeof fetch>(async () =>
+    Response.json({ data: [{ id: "example-model" }, { id: "second-model" }] }),
+  );
+  const navigationFetch = vi.fn<typeof fetch>(async () =>
+    Response.json({
+      navigationPolicy: {
+        defaults: {
+          v: 1,
+          channel: "",
+          homeUrl: "https://home.example.test/",
+          rechargeUrl: "https://wallet.example.test/",
+        },
+        productHosts: [],
+      },
+    }),
+  );
   let authorized = false;
   let authorizedState = "";
   const ensure = vi.spyOn(connection.provider, "ensure").mockImplementation(async () => {
@@ -79,8 +91,11 @@ postgres("external model account isolated PostgreSQL", () => {
         ...Object.fromEntries(new Headers(options.headers)),
       },
     });
-  const begin = async () => {
-    const response = await request("/connect", { method: "POST", body: "{}" });
+  const begin = async (callbackURL?: string) => {
+    const response = await request("/connect", {
+      method: "POST",
+      body: JSON.stringify(callbackURL ? { callbackURL } : {}),
+    });
     expect(response.status).toBe(200);
     const body = await response.json();
     const launch = await request(`/launch${new URL(body.url).search}`);
@@ -158,6 +173,8 @@ postgres("external model account isolated PostgreSQL", () => {
     } as unknown as Auth;
     app = modelAccountRoutes({
       jobs,
+      modelFetch,
+      navigationFetch,
       connection,
       prisma,
       auth,
@@ -213,7 +230,7 @@ postgres("external model account isolated PostgreSQL", () => {
       spaceId,
       credential,
       credential.provider,
-      config.modelId,
+      "example-model",
     );
     expect(resolved.apiKey).toBe("fake-model-key");
     expect(resolved.callObserver).toBeUndefined();
@@ -233,7 +250,7 @@ postgres("external model account isolated PostgreSQL", () => {
         spaceId,
         credential,
         credential.provider,
-        config.modelId,
+        "example-model",
       ),
     ).rejects.toThrow();
   });
@@ -324,7 +341,10 @@ postgres("external model account isolated PostgreSQL", () => {
       request("/connect", { method: "POST", body: "{}" }),
       request("/connect", { method: "POST", body: "{}" }),
     ]);
-    expect(replies.map((reply) => reply.status)).toEqual([200, 200]);
+    const statuses = replies.map((reply) => reply.status);
+    expect(statuses).toContain(200);
+    expect(statuses.every((status) => status === 200 || status === 409)).toBe(true);
+    expect((await request("/connect", { method: "POST", body: "{}" })).status).toBe(200);
     expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(1);
   });
 
@@ -588,6 +608,144 @@ postgres("external model account isolated PostgreSQL", () => {
     expect((await request("/recover", { method: "POST" })).status).toBe(503);
     expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(0);
     expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("discovers models without selecting a main model and preserves user choices on reauthorization", async () => {
+    authorized = true;
+    expect((await request("/connect", { method: "POST", body: "{}" })).status).toBe(200);
+    expect(await prisma.userModelRoleChoice.count({ where: { userId } })).toBe(0);
+    const credentialId = `external-${accountId}`;
+    await prisma.userModelPreference.create({
+      data: { userId, credentialId, modelId: "second-model" },
+    });
+    await prisma.userModelRoleChoice.create({
+      data: {
+        userId,
+        credentialId,
+        modelId: "second-model",
+        provider: "openai-compatible",
+        role: "main",
+        position: 0,
+      },
+    });
+    expect(
+      (
+        await request("/settings", {
+          method: "POST",
+          body: JSON.stringify({ apiProtocol: "responses" }),
+        })
+      ).status,
+    ).toBe(200);
+    await request("/connect", { method: "POST", body: "{}" });
+    expect(await (await request("/status")).json()).toMatchObject({
+      connected: true,
+      apiProtocol: "responses",
+    });
+    expect(
+      await prisma.userModelPreference.findUnique({
+        where: { userId_credentialId: { userId, credentialId } },
+      }),
+    ).toMatchObject({ modelId: "second-model" });
+    expect(await prisma.userModelRoleChoice.findFirst({ where: { userId } })).toMatchObject({
+      modelId: "second-model",
+    });
+    const credential = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: credentialId },
+    });
+    const row = await prisma.secret.findUniqueOrThrow({ where: { id: credential.secretId } });
+    expect(parseModelSecret(await secrets.load(row.ciphertext, row.id))).toMatchObject({
+      apiProtocol: "responses",
+      enabledModelIds: ["example-model", "second-model"],
+    });
+    expect(
+      (
+        await request("/settings", {
+          method: "POST",
+          body: JSON.stringify({ apiProtocol: "responses", baseUrl: "https://other.example.test" }),
+        })
+      ).status,
+    ).toBe(400);
+    await request("/revoke", { method: "POST" });
+    expect(
+      (
+        await request("/settings", {
+          method: "POST",
+          body: JSON.stringify({ apiProtocol: "responses" }),
+        })
+      ).status,
+    ).toBe(403);
+  });
+
+  it("keeps authorization and existing models when discovery fails, and refresh never starts authorization", async () => {
+    authorized = true;
+    await request("/connect", { method: "POST", body: "{}" });
+    const before = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: `external-${accountId}` },
+    });
+    modelFetch.mockRejectedValueOnce(new Error("offline"));
+    expect((await request("/models", { method: "POST" })).status).toBe(503);
+    expect(await prisma.userModelCredential.findUnique({ where: { id: before.id } })).toMatchObject(
+      { secretId: before.secretId },
+    );
+    expect((await request("/models", { method: "POST" })).status).toBe(200);
+    authorized = false;
+    expect((await request("/models", { method: "POST" })).status).toBe(403);
+    expect(connection.provider.authorize).not.toHaveBeenCalled();
+    modelFetch.mockRejectedValueOnce(new Error("offline"));
+    authorized = true;
+    expect((await request("/connect", { method: "POST", body: "{}" })).status).toBe(200);
+    expect(await (await request("/status")).json()).toMatchObject({ connected: true });
+  });
+
+  it("keeps the account enabled when the optional portal policy is unavailable", async () => {
+    navigationFetch.mockRejectedValueOnce(new Error("offline"));
+    expect(await (await request("/config")).json()).toEqual({ enabled: true });
+  });
+
+  it("does not overwrite a newer protocol choice with an in-flight catalog refresh", async () => {
+    authorized = true;
+    await request("/connect", { method: "POST", body: "{}" });
+    const initialSecrets = await prisma.secret.count({ where: { userId, kind: "model" } });
+    let ready = () => {};
+    let release = (_response: Response) => {};
+    const started = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    modelFetch.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = resolve;
+          ready();
+        }),
+    );
+    const refreshing = request("/models", { method: "POST" });
+    await started;
+    try {
+      expect(
+        (
+          await request("/settings", {
+            method: "POST",
+            body: JSON.stringify({ apiProtocol: "responses" }),
+          })
+        ).status,
+      ).toBe(200);
+    } finally {
+      release(Response.json({ data: [{ id: "example-model" }] }));
+    }
+    expect((await refreshing).status).toBe(409);
+    expect(await (await request("/status")).json()).toMatchObject({ apiProtocol: "responses" });
+    expect((await request("/models", { method: "POST" })).status).toBe(200);
+    expect(await (await request("/status")).json()).toMatchObject({ apiProtocol: "responses" });
+    expect(await prisma.secret.count({ where: { userId, kind: "model" } })).toBe(initialSecrets);
+  });
+
+  it("returns onboarding authorization through the existing popup callback", async () => {
+    const callback = new URL("/sso/callback", origin);
+    callback.searchParams.set("nonce", "01234567-0123-0123-0123-0123456789ab");
+    callback.searchParams.set("returnTo", `${origin}/onboarding/model`);
+    const flow = await begin(callback.href);
+    const response = await request(flow.callback, { headers: { cookie: flow.cookie } });
+    expect(response.headers.get("location")).toBe(callback.href);
   });
 
   it("returns exact balances and no private platform configuration", async () => {

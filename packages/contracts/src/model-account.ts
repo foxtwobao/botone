@@ -4,19 +4,26 @@ const link = z.url().refine((value) => {
   const url = new URL(value);
   return url.protocol === "https:" && !url.username && !url.password;
 });
+export const accountNavigationSchema = z.object({
+  cookieName: z.string(),
+  defaults: z.object({ homeUrl: link, rechargeUrl: link }),
+  channels: z
+    .array(z.object({ channel: z.string(), homeUrl: link, rechargeUrl: link }))
+    .default([]),
+  productHosts: z.array(z.string()).default([]),
+});
 export const modelAccountConfigSchema = z.discriminatedUnion("enabled", [
   z.object({ enabled: z.literal(false) }),
   z.object({
     enabled: z.literal(true),
-    homeUrl: link,
-    rechargeUrl: link,
-    modelId: z.string(),
+    navigation: accountNavigationSchema.optional(),
   }),
 ]);
 export const modelAccountStatusSchema = z.object({
   enabled: z.boolean(),
   connected: z.boolean(),
   linked: z.boolean().optional(),
+  apiProtocol: z.enum(["chat-completions", "responses"]).optional(),
   recovery: z
     .enum([
       "authorization_required",
@@ -44,3 +51,7 @@ export const modelAccountErrorCodeSchema = z.enum([
   "unavailable",
 ]);
 export type ModelAccountErrorCode = z.infer<typeof modelAccountErrorCodeSchema>;
+
+export const modelAccountSettingsSchema = z
+  .object({ apiProtocol: z.enum(["chat-completions", "responses"]) })
+  .strict();

@@ -22,18 +22,20 @@ const schema = z.object({
   provider: z.literal("reseller"),
   origin,
   credential: z.string().min(1),
-  authorizationOrigins: z.array(origin).min(1),
-  homeUrl: link,
-  rechargeUrl: link,
-  modelId: z.string().trim().min(1),
-  model: z.record(z.string(), z.unknown()),
+  authorizationOrigins: z.array(origin).min(1).optional(),
+  navigationOrigin: origin.default("https://home.agentone.work"),
+  baseUrl: link.optional(),
+  // Accept the old connection envelope during upgrades; new deployments only need baseUrl.
+  model: z.record(z.string(), z.unknown()).optional(),
 });
 
 export function configuredModelAccount(value: string | undefined) {
   if (!value?.trim()) return undefined;
   try {
     const config = schema.parse(JSON.parse(value));
-    const model = parseModelSecret(JSON.stringify(config.model));
+    const model = parseModelSecret(
+      JSON.stringify(config.model ?? { kind: "openai_compatible", baseUrl: config.baseUrl }),
+    );
     if (
       model.kind !== "openai_compatible" ||
       model.apiKey ||
@@ -44,14 +46,12 @@ export function configuredModelAccount(value: string | undefined) {
     const url = new URL(model.baseUrl);
     if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash)
       throw new Error();
-    model.enabledModelIds = [...new Set([config.modelId, ...(model.enabledModelIds ?? [])])];
+
     return {
       provider: new ResellerModelAccountProvider(config),
       credentialVersion: createHash("sha256").update(config.credential).digest("hex"),
       model,
-      modelId: config.modelId,
-      homeUrl: config.homeUrl,
-      rechargeUrl: config.rechargeUrl,
+      navigationOrigin: config.navigationOrigin,
     };
   } catch {
     throw new Error("Invalid MODEL_ACCOUNT_CONNECTION configuration");

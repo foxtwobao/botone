@@ -5,19 +5,22 @@ import {
   modelAccountAuthorizationCheckpoint,
 } from "@rakazo/adapter-kit";
 import type { configuredModelAccount } from "@rakazo/adapters";
-import { parseModelSecret, resumeModelAccountRuns, serializeModelSecret } from "@rakazo/adapters";
+import {
+  discoverModelAccountModels,
+  parseModelSecret,
+  readHomeNavigation,
+  resumeModelAccountRuns,
+  serializeModelSecret,
+} from "@rakazo/adapters";
 import type { Auth } from "@rakazo/auth";
 import type { Actor } from "@rakazo/contracts";
-import { OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
+import { modelAccountSettingsSchema, OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
 import {
   deleteUnreferencedCredentialSecret,
-  modelRoleTarget,
   Prisma,
   requireMembership,
   runAsSystem,
-  saveModelPreference,
-  writeModelRole,
 } from "@rakazo/db";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -50,6 +53,8 @@ export function modelAccountRoutes(deps: {
   auth: Auth;
   secrets: SecretStore;
   jobs?: JobPublisher;
+  modelFetch?: typeof fetch;
+  navigationFetch?: typeof fetch;
   webOrigin: string;
   authUrl: string;
 }) {
@@ -79,14 +84,41 @@ export function modelAccountRoutes(deps: {
   const save = async (
     owner: Actor,
     expected: { accountId: string; binding: string },
+    apiKey: string,
     transaction?: { id: string; ciphertext: string },
+    requireCatalog = false,
   ) => {
     if (!connection) throw new Error("Disabled");
     const current = await identity(owner.userId);
     if (current.accountId !== expected.accountId || current.binding !== expected.binding)
       throw new Error("Account binding changed");
     const externalAccount = { accountId: current.accountId, binding: current.binding };
-    const plaintext = serializeModelSecret({ ...connection.model, externalAccount });
+    const priorCredential = await prisma.userModelCredential.findFirst({
+      where: { id: `external-${current.accountId}`, userId: owner.userId },
+    });
+    if (requireCatalog && !priorCredential)
+      throw new HTTPException(403, { message: "authorization_required" });
+    const previousRow =
+      priorCredential &&
+      (await prisma.secret.findUnique({ where: { id: priorCredential.secretId } }));
+    const previousConfig = previousRow
+      ? parseModelSecret(await secrets.load(previousRow.ciphertext, previousRow.id))
+      : undefined;
+    const configured =
+      previousConfig?.kind === "openai_compatible" ? previousConfig : connection.model;
+    let models = configured.enabledModelIds;
+    try {
+      models = await discoverModelAccountModels(connection.model.baseUrl, apiKey, deps.modelFetch);
+    } catch (error) {
+      if (requireCatalog) throw error;
+      /* Authorization remains valid when model discovery is temporarily unavailable. */
+    }
+    const plaintext = serializeModelSecret({
+      ...connection.model,
+      apiProtocol: configured.apiProtocol ?? "chat-completions",
+      enabledModelIds: models,
+      externalAccount,
+    });
     const stored = await secrets.put(plaintext, {
       ...owner,
       operationId: "model-account",
@@ -113,6 +145,8 @@ export function modelAccountRoutes(deps: {
       if (!account) throw new Error("Account binding changed");
       const previous = await tx.userModelCredential.findUnique({ where: { id } });
       if (previous && previous.userId !== owner.userId) throw new Error("Invalid owner");
+      if ((previous?.secretId ?? null) !== (priorCredential?.secretId ?? null))
+        throw new HTTPException(409, { message: "unavailable" });
       await tx.secret.create({
         data: {
           id: stored.id,
@@ -132,14 +166,6 @@ export function modelAccountRoutes(deps: {
           secretId: stored.id,
         },
         update: { secretId: stored.id },
-      });
-      await saveModelPreference(tx, owner, id, connection.modelId, null);
-      await writeModelRole(tx, await modelRoleTarget(tx, owner, "account"), "main", {
-        primary: {
-          provider: OPENAI_COMPATIBLE_PROVIDER_ID,
-          modelId: connection.modelId,
-          credentialId: id,
-        },
       });
       await tx.modelOAuthSession.deleteMany({
         where: { userId: owner.userId, provider: "external-model-revoke", scope: current.binding },
@@ -184,13 +210,13 @@ export function modelAccountRoutes(deps: {
     for (const cookie of response.headers.getSetCookie()) result.append("set-cookie", cookie);
     return new Response(null, { status: 302, headers: result });
   });
-  app.get("/config", (c) => {
+  app.get("/config", async (c) => {
     if (!connection) return c.json({ enabled: false });
     return c.json({
       enabled: true,
-      homeUrl: connection.homeUrl,
-      rechargeUrl: connection.rechargeUrl,
-      modelId: connection.modelId,
+      navigation: await readHomeNavigation(connection.navigationOrigin, deps.navigationFetch).catch(
+        () => undefined,
+      ),
     });
   });
   app.get("/status", async (c) => {
@@ -204,12 +230,15 @@ export function modelAccountRoutes(deps: {
         })
       : null;
     let connected = false;
+    let apiProtocol: "chat-completions" | "responses" | undefined;
     if (credential && current) {
       const secret = await prisma.secret.findFirst({
         where: { id: credential.secretId, userId: signed.user.id },
       });
       if (secret) {
         const parsed = parseModelSecret(await secrets.load(secret.ciphertext, secret.id));
+        if (parsed.kind === "openai_compatible")
+          apiProtocol = parsed.apiProtocol === "responses" ? "responses" : "chat-completions";
         connected =
           parsed.kind === "openai_compatible" &&
           parsed.externalAccount?.binding === current.binding;
@@ -259,6 +288,7 @@ export function modelAccountRoutes(deps: {
       enabled: true,
       connected,
       linked: Boolean(current),
+      ...(connected ? { apiProtocol } : {}),
       ...(recovery ? { recovery } : {}),
     });
   });
@@ -271,6 +301,66 @@ export function modelAccountRoutes(deps: {
     if (Number(c.req.header("content-length") ?? 0) > 4096)
       return c.json({ error: "invalid_request" }, 400);
     return next();
+  });
+  app.post("/settings", async (c) => {
+    if (!connection) return c.json({ error: "disabled" }, 404);
+    const signed = await session(c.req.raw);
+    if (!signed) return c.json({ error: "login_required" }, 401);
+    const current = await identity(signed.user.id);
+    const owner = await actor(signed.user.id);
+    const parsedInput = modelAccountSettingsSchema.safeParse(await c.req.json());
+    if (!parsedInput.success) return c.json({ error: "invalid_request" }, 400);
+    const input = parsedInput.data;
+    const credential = await prisma.userModelCredential.findFirst({
+      where: { id: `external-${current.accountId}`, userId: signed.user.id },
+    });
+    if (!credential) return c.json({ error: "authorization_required" }, 403);
+    const row = await prisma.secret.findUniqueOrThrow({ where: { id: credential.secretId } });
+    const secret = parseModelSecret(await secrets.load(row.ciphertext, row.id));
+    if (secret.kind !== "openai_compatible" || secret.externalAccount?.binding !== current.binding)
+      return c.json({ error: "authorization_required" }, 403);
+    const stored = await secrets.put(
+      serializeModelSecret({ ...secret, apiProtocol: input.apiProtocol }),
+      {
+        userId: signed.user.id,
+        spaceId: owner.spaceId,
+        operationId: "model-account",
+        traceId: "model-account",
+        signal: c.req.raw.signal,
+      },
+    );
+    await prisma.$transaction(async (tx) => {
+      await tx.secret.create({
+        data: {
+          id: stored.id,
+          userId: signed.user.id,
+          spaceId: null,
+          kind: "model",
+          ciphertext: stored.ciphertext,
+        },
+      });
+      const updated = await tx.userModelCredential.updateMany({
+        where: { id: credential.id, userId: signed.user.id, secretId: row.id },
+        data: { secretId: stored.id },
+      });
+      if (updated.count !== 1) throw new HTTPException(409, { message: "unavailable" });
+      await deleteUnreferencedCredentialSecret(tx, {
+        credentialKind: "model",
+        credentialId: credential.id,
+        secretId: row.id,
+      });
+    });
+    return c.json({ apiProtocol: input.apiProtocol });
+  });
+  app.post("/models", async (c) => {
+    if (!connection) return c.json({ error: "disabled" }, 404);
+    const signed = await session(c.req.raw);
+    if (!signed) return c.json({ error: "login_required" }, 401);
+    const owner = await actor(signed.user.id);
+    const current = await identity(signed.user.id);
+    const { apiKey } = await connection.provider.ensure(current, c.req.raw.signal);
+    await save(owner, current, apiKey, undefined, true);
+    return c.json({ connected: true });
   });
   // Reconcile only an existing uncertain exchange. Never start authorization or replay a code.
   app.post("/recover", async (c) => {
@@ -292,8 +382,8 @@ export function modelAccountRoutes(deps: {
     )
       return c.json({ error: "authorization_required" }, 403);
     const owner = await actor(signed.user.id, pending.spaceId);
-    await connection.provider.ensure(current, c.req.raw.signal);
-    await save(owner, current, { id: pending.id, ciphertext: pending.ciphertext });
+    const { apiKey } = await connection.provider.ensure(current, c.req.raw.signal);
+    await save(owner, current, apiKey, { id: pending.id, ciphertext: pending.ciphertext });
     return c.json({ connected: true });
   });
   app.post("/connect", async (c) => {
@@ -303,8 +393,8 @@ export function modelAccountRoutes(deps: {
     const owner = await actor(signed.user.id, c.req.header("x-rakazo-space-id"));
     const current = await identity(owner.userId);
     try {
-      await connection.provider.ensure(current, c.req.raw.signal);
-      await save(owner, current);
+      const { apiKey } = await connection.provider.ensure(current, c.req.raw.signal);
+      await save(owner, current, apiKey);
       await prisma.modelOAuthSession.deleteMany({
         where: { userId: owner.userId, provider: "external-model", scope: signed.session.id },
       });
@@ -331,6 +421,8 @@ export function modelAccountRoutes(deps: {
         !(
           target.pathname === "/app" ||
           target.pathname.startsWith("/app/") ||
+          target.pathname === "/onboarding" ||
+          target.pathname === "/onboarding/model" ||
           target.pathname === "/sso/callback"
         )
       )
@@ -499,10 +591,10 @@ export function modelAccountRoutes(deps: {
           c.req.raw.signal,
         );
       } catch {
-        await connection.provider.ensure(current, c.req.raw.signal);
+        // A lost exchange response is confirmed by ensure, never by replaying the code.
       }
-      await connection.provider.ensure(current, c.req.raw.signal);
-      await save(owner, current, { id, ciphertext: exchanging.ciphertext });
+      const { apiKey } = await connection.provider.ensure(current, c.req.raw.signal);
+      await save(owner, current, apiKey, { id, ciphertext: exchanging.ciphertext });
     } catch (error) {
       outcome =
         error instanceof ExternalModelAccountError && error.reason === "authorization_required"
@@ -597,7 +689,10 @@ function validReturnPath(value: string | null, origin: string): boolean {
       target.origin === new URL(origin).origin &&
       !target.username &&
       !target.password &&
-      (target.pathname === "/app" || target.pathname.startsWith("/app/"))
+      (target.pathname === "/app" ||
+        target.pathname.startsWith("/app/") ||
+        target.pathname === "/onboarding" ||
+        target.pathname === "/onboarding/model")
     );
   } catch {
     return false;

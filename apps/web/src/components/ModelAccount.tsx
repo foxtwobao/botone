@@ -5,9 +5,22 @@ import type {
   ModelAccountStatus,
 } from "@rakazo/contracts";
 import { modelAccountErrorCodeSchema } from "@rakazo/contracts";
-import { createModelAccountClient, ModelAccountClientError } from "@rakazo/core";
-import { Button, SectionHeading } from "@rakazo/ui-web";
+import {
+  createModelAccountClient,
+  ModelAccountClientError,
+  resolveAccountNavigation,
+} from "@rakazo/core";
+import {
+  Button,
+  SectionHeading,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@rakazo/ui-web";
 import { useQueryClient } from "@tanstack/react-query";
+import type { MouseEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authClient } from "../lib/auth";
 import { cancelSsoFlow, runSsoFlow } from "../lib/sso-flow";
@@ -78,13 +91,25 @@ export function ModelAccount() {
     };
   }, [userId, refresh]);
   if (!config?.enabled) return null;
-  const act = async (kind: "connect" | "revoke" | "refresh") => {
+  const navigation = resolveAccountNavigation(config, document.cookie, window.location.hostname);
+  const updateNavigationLink =
+    (kind: "homeUrl" | "rechargeUrl") => (event: MouseEvent<HTMLAnchorElement>) => {
+      const latest = resolveAccountNavigation(config, document.cookie, window.location.hostname);
+      if (!latest) event.preventDefault();
+      else event.currentTarget.href = latest[kind];
+    };
+  const act = async (
+    kind: "connect" | "revoke" | "refresh" | "models" | "protocol",
+    protocol?: "chat-completions" | "responses",
+  ) => {
     const abort = new AbortController();
     actionAbort.current = abort;
     setBusy(true);
     setError(undefined);
     try {
-      if (kind === "revoke") await client.revoke(abort.signal);
+      if (kind === "protocol" && protocol) await client.settings(protocol, abort.signal);
+      else if (kind === "models") await client.refreshModels(abort.signal);
+      else if (kind === "revoke") await client.revoke(abort.signal);
       else if (kind === "refresh") {
         await refresh(abort.signal);
         return;
@@ -146,6 +171,28 @@ export function ModelAccount() {
           {message}
         </p>
       ) : null}
+      {status?.connected ? (
+        <Select
+          value={status.apiProtocol ?? "chat-completions"}
+          items={[
+            { value: "chat-completions", label: "Chat Completions" },
+            { value: "responses", label: "Responses" },
+          ]}
+          onValueChange={(value) => {
+            if (value !== "chat-completions" && value !== "responses") return;
+            void act("protocol", value);
+          }}
+          disabled={busy}
+        >
+          <SelectTrigger aria-label={t`API protocol`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="chat-completions">Chat Completions</SelectItem>
+            <SelectItem value="responses">Responses</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {!identityUnavailable &&
         status?.recovery !== "revocation_unknown" &&
@@ -171,6 +218,11 @@ export function ModelAccount() {
             )}
           </Button>
         ) : null}
+        {status?.connected ? (
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act("models")}>
+            <Trans>Refresh models</Trans>
+          </Button>
+        ) : null}
         {authorizing ? (
           <Button size="sm" variant="outline" onClick={cancelSsoFlow}>
             <Trans>Cancel</Trans>
@@ -188,20 +240,40 @@ export function ModelAccount() {
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act("refresh")}>
           <Trans>Refresh balance</Trans>
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          render={<a href={config.homeUrl} target="_blank" rel="noreferrer" />}
-        >
-          <Trans>Home</Trans>
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          render={<a href={config.rechargeUrl} target="_blank" rel="noreferrer" />}
-        >
-          <Trans>Recharge</Trans>
-        </Button>
+        {navigation ? (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              render={
+                <a
+                  href={navigation.homeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={updateNavigationLink("homeUrl")}
+                  onAuxClick={updateNavigationLink("homeUrl")}
+                />
+              }
+            >
+              <Trans>Home</Trans>
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              render={
+                <a
+                  href={navigation.rechargeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={updateNavigationLink("rechargeUrl")}
+                  onAuxClick={updateNavigationLink("rechargeUrl")}
+                />
+              }
+            >
+              <Trans>Recharge</Trans>
+            </Button>
+          </>
+        ) : null}
       </div>
     </section>
   );

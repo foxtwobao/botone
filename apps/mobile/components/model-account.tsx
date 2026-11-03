@@ -4,14 +4,19 @@ import type {
   ModelAccountStatus,
 } from "@rakazo/contracts";
 import { modelAccountErrorCodeSchema } from "@rakazo/contracts";
-import { createModelAccountClient, ModelAccountClientError } from "@rakazo/core";
+import {
+  createModelAccountClient,
+  ModelAccountClientError,
+  resolveAccountNavigation,
+} from "@rakazo/core";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, AppState, Linking } from "react-native";
+import { Alert, AppState, Linking, View } from "react-native";
 import { authHeaders, currentApiBase } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { fetchServer } from "../lib/server-headers";
 import { currentSessionGeneration } from "../lib/session";
+import { MenuPickerMenu } from "./menu-picker";
 import { SettingsGroup, SettingsRow } from "./settings-group";
 
 function client() {
@@ -94,14 +99,20 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
     }, [refresh]),
   );
   if (!config?.enabled) return null;
-  const act = async (kind: "connect" | "revoke" | "refresh") => {
+  const navigation = resolveAccountNavigation(config);
+  const act = async (
+    kind: "connect" | "revoke" | "refresh" | "models" | "protocol",
+    protocol?: "chat-completions" | "responses",
+  ) => {
     const abort = new AbortController();
     actionAbort.current = abort;
     setBusy(true);
     setError(undefined);
     const api = client();
     try {
-      if (kind === "revoke") await api.revoke(abort.signal);
+      if (kind === "protocol" && protocol) await api.settings(protocol, abort.signal);
+      else if (kind === "models") await api.refreshModels(abort.signal);
+      else if (kind === "revoke") await api.revoke(abort.signal);
       else if (kind === "refresh") {
         await refresh(api, abort.signal);
         return;
@@ -171,6 +182,13 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
           }
         />
       ) : null}
+      {status?.connected ? (
+        <SettingsRow
+          title={t("Refresh models")}
+          disabled={busy}
+          onPress={() => void act("models")}
+        />
+      ) : null}
       {status?.connected || status?.recovery === "revocation_unknown" ? (
         <SettingsRow
           title={status.recovery === "revocation_unknown" ? t("Retry disconnect") : t("Disconnect")}
@@ -179,24 +197,54 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
           onPress={() => void act("revoke")}
         />
       ) : null}
+      {status?.connected ? (
+        <MenuPickerMenu
+          label={t("API protocol")}
+          choices={[
+            { key: "chat-completions", label: "Chat Completions" },
+            { key: "responses", label: "Responses" },
+          ]}
+          value={status.apiProtocol ?? "chat-completions"}
+          disabled={busy}
+          onChange={(value) => {
+            if (value === "responses" || value === "chat-completions") void act("protocol", value);
+          }}
+        >
+          <View>
+            <SettingsRow
+              title={t("API protocol")}
+              value={status.apiProtocol === "responses" ? "Responses" : "Chat Completions"}
+              disabled={busy}
+            />
+          </View>
+        </MenuPickerMenu>
+      ) : null}
       <SettingsRow
         title={t("Refresh balance")}
         value={balance}
         disabled={busy}
         onPress={() => void act("refresh")}
       />
-      <SettingsRow
-        title={t("Home")}
-        onPress={() =>
-          void Linking.openURL(config.homeUrl).catch(() => Alert.alert(t("Could not continue")))
-        }
-      />
-      <SettingsRow
-        title={t("Recharge")}
-        onPress={() =>
-          void Linking.openURL(config.rechargeUrl).catch(() => Alert.alert(t("Could not continue")))
-        }
-      />
+      {navigation ? (
+        <>
+          <SettingsRow
+            title={t("Home")}
+            onPress={() =>
+              void Linking.openURL(navigation.homeUrl).catch(() =>
+                Alert.alert(t("Could not continue")),
+              )
+            }
+          />
+          <SettingsRow
+            title={t("Recharge")}
+            onPress={() =>
+              void Linking.openURL(navigation.rechargeUrl).catch(() =>
+                Alert.alert(t("Could not continue")),
+              )
+            }
+          />
+        </>
+      ) : null}
     </SettingsGroup>
   );
 }

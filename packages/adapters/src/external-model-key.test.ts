@@ -64,9 +64,17 @@ it("configures optional accounts using compatible settings and sanitizes configu
     model: { kind: "openai_compatible", baseUrl: base, apiProtocol: "chat-completions" },
   };
   expect(configuredModelAccount(undefined)).toBeUndefined();
-  expect(configuredModelAccount(JSON.stringify(config))?.model.enabledModelIds).toEqual([
-    "example-model",
-  ]);
+  expect(
+    configuredModelAccount(
+      JSON.stringify({
+        provider: "reseller",
+        origin: config.origin,
+        credential: config.credential,
+        baseUrl: base,
+      }),
+    )?.model,
+  ).toMatchObject({ kind: "openai_compatible", baseUrl: base });
+  expect(configuredModelAccount(JSON.stringify(config))?.model.enabledModelIds).toBeUndefined();
   for (const model of [
     { ...config.model, apiKey: "private-key" },
     { ...config.model, baseUrl: "http://models.example.test" },

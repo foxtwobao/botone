@@ -30,21 +30,24 @@ export interface ResellerModelAccountConfig {
   origin: string;
   credential: string;
   /** Exact trusted origins to which the browser may be sent for model authorization. */
-  authorizationOrigins: string[];
+  authorizationOrigins?: string[];
 }
 
 export class ResellerModelAccountProvider implements ExternalModelAccountProvider {
   private readonly origin: string;
-  private readonly authorizationOrigins: Set<string>;
+  private readonly authorizationOrigins: Set<string> | undefined;
 
   constructor(
     private readonly config: ResellerModelAccountConfig,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {
     this.origin = httpsOrigin(config.origin);
-    this.authorizationOrigins = new Set(config.authorizationOrigins.map(httpsOrigin));
+    this.authorizationOrigins = config.authorizationOrigins
+      ? new Set(config.authorizationOrigins.map(httpsOrigin))
+      : undefined;
     if (!/^[!-~]+$/.test(config.credential)) throw new Error("Invalid model account credential");
-    if (!this.authorizationOrigins.size) throw new Error("Missing authorization origins");
+    if (this.authorizationOrigins && !this.authorizationOrigins.size)
+      throw new Error("Missing authorization origins");
   }
 
   async ensure(identity: ExternalAccountIdentity, signal?: AbortSignal) {
@@ -99,7 +102,8 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       url.protocol !== "https:" ||
       url.username ||
       url.password ||
-      !this.authorizationOrigins.has(url.origin)
+      (this.authorizationOrigins && !this.authorizationOrigins.has(url.origin)) ||
+      url.hash
     )
       throw new ExternalModelAccountError("unavailable");
     return { url: url.href, expiresIn: result.data.expires_in };
