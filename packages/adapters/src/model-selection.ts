@@ -457,6 +457,7 @@ async function loadModelSecret(
 }
 
 export type ConnectedModelResolution = {
+  modelAccountOnly?: boolean;
   /** The connection a role row is pinned to; nothing else may serve it. */
   credentialId?: string | null;
   hostedProvider?: string;
@@ -474,6 +475,25 @@ export async function findConnectedModelCredential(
   modelId?: string | null,
   resolution: ConnectedModelResolution = {},
 ): Promise<ModelCredential> {
+  if (resolution.modelAccountOnly) {
+    if (provider !== OPENAI_COMPATIBLE_PROVIDER_ID) return null;
+    if (resolution.credentialId && !resolution.credentialId.startsWith("external-")) return null;
+    const candidates = await prisma.userModelCredential.findMany({
+      where: {
+        userId: actor.userId,
+        provider,
+        id: resolution.credentialId ?? { startsWith: "external-" },
+      },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+    });
+    for (const candidate of candidates) {
+      const secret = await loadModelSecret(prisma, secretStore, actor.userId, candidate.secretId);
+      if (secret?.kind !== "openai_compatible" || !secret.externalAccount) continue;
+      if (modelId && !secret.enabledModelIds?.includes(modelId)) continue;
+      return { ...candidate, defaultModel: null, thinkingLevel: null };
+    }
+    return null;
+  }
   if (resolution.credentialId)
     return findModelCredentialById(prisma, actor, resolution.credentialId, provider);
   let selected = await findModelCredential(prisma, actor, provider, modelId);
@@ -517,6 +537,7 @@ export async function findConnectedModelCredential(
 }
 
 export type BotModelChangeDeps = {
+  modelAccountOnly?: boolean;
   hostedProvider?: string;
   prisma: PrismaClient;
   secretStore: Pick<SecretStore, "load">;
@@ -553,13 +574,16 @@ export async function validateBotModelChange(
   const scope = { userId: input.userId, spaceId: input.spaceId };
   const { provider, model } = input;
   const changing = provider !== input.current?.provider || model !== input.current?.model;
-  if (changing && provider && model) {
+  if ((changing || deps.modelAccountOnly) && provider && model) {
     const hosted =
+      !deps.modelAccountOnly &&
       deps.hostedProvider === provider &&
       (await hasHostedModelCredits(deps.prisma, scope, provider));
     const credential = hosted
       ? null
-      : await findConnectedModelCredential(deps.prisma, deps.secretStore, scope, provider, model);
+      : await findConnectedModelCredential(deps.prisma, deps.secretStore, scope, provider, model, {
+          modelAccountOnly: deps.modelAccountOnly,
+        });
     if (!credential) {
       if (hosted && isCatalogModelChoice(provider, model)) {
         const allowed = listPiCatalog().find(
@@ -593,6 +617,7 @@ export async function validateBotModelChange(
         scope,
         provider,
         model,
+        { modelAccountOnly: deps.modelAccountOnly },
       );
       if (error) return { ok: false, error };
     } else if (!inCatalog && credential.defaultModel !== model) {
@@ -625,6 +650,7 @@ export async function validateBotModelChange(
         scope,
         effectiveProvider,
         effectiveModelId,
+        { modelAccountOnly: deps.modelAccountOnly },
       );
       if (allowed && !allowed.includes(thinkingLevel)) {
         return { ok: false, error: `Thinking level must be one of: ${allowed.join(", ")}` };
@@ -727,6 +753,7 @@ export async function validateConnectedModelChoice(
   resolution: ConnectedModelResolution = {},
 ) {
   if (
+    !resolution.modelAccountOnly &&
     resolution.hostedProvider === provider &&
     (await hasHostedModelCredits(prisma, actor, provider))
   ) {
@@ -758,15 +785,17 @@ export async function validateConnectedModelChoice(
       ? undefined
       : "Unknown model for that provider";
   }
-  const savedChoice = await prisma.userModelPreference.findFirst({
-    where: {
-      userId: actor.userId,
-      modelId,
-      credential: { userId: actor.userId, provider },
-      ...(resolution.credentialId ? { credentialId: resolution.credentialId } : {}),
-    },
-    select: { credentialId: true },
-  });
+  const savedChoice =
+    !resolution.modelAccountOnly &&
+    (await prisma.userModelPreference.findFirst({
+      where: {
+        userId: actor.userId,
+        modelId,
+        credential: { userId: actor.userId, provider },
+        ...(resolution.credentialId ? { credentialId: resolution.credentialId } : {}),
+      },
+      select: { credentialId: true },
+    }));
   if (savedChoice) return undefined;
   const secret = await loadModelSecret(prisma, secretStore, actor.userId, credential.secretId);
   if (secret?.kind === "openai_compatible" && secret.enabledModelIds === undefined)

@@ -1,4 +1,5 @@
 import { ExternalModelAccountError } from "@rakazo/adapter-kit";
+import { getLogger } from "@rakazo/logging";
 import { describe, expect, it, vi } from "vitest";
 import { ResellerModelAccountProvider } from "./reseller-model-account.js";
 
@@ -14,6 +15,95 @@ function fixture(body: unknown, status = 200) {
 }
 
 describe("external model account protocol", () => {
+  it("logs transport and HTTP failures without upstream bodies, identities or credentials", async () => {
+    const warning = vi.spyOn(getLogger(), "warn").mockImplementation(() => undefined);
+    try {
+      await expect(
+        fixture({ error: "private upstream detail", retryable: false }, 401).provider.ensure(
+          identity,
+        ),
+      ).rejects.toMatchObject({ reason: "rejected" });
+      expect(warning).toHaveBeenLastCalledWith("Model account service rejected a request", {
+        operation: "keys/ensure",
+        httpStatus: 401,
+      });
+      const transport = vi.fn<typeof fetch>(async () => {
+        throw new Error("private transport detail");
+      });
+      await expect(
+        new ResellerModelAccountProvider(config, transport).balance(identity),
+      ).rejects.toMatchObject({ reason: "unavailable" });
+      expect(warning).toHaveBeenLastCalledWith("Model account service request failed", {
+        operation: "balance/query",
+        failure: "transport",
+        httpStatus: undefined,
+      });
+      transport.mockResolvedValueOnce(new Response("private invalid JSON", { status: 502 }));
+      await expect(
+        new ResellerModelAccountProvider(config, transport).ensure(identity),
+      ).rejects.toMatchObject({ reason: "unavailable" });
+      expect(warning).toHaveBeenLastCalledWith("Model account service request failed", {
+        operation: "keys/ensure",
+        failure: "response",
+        httpStatus: 502,
+      });
+      await expect(
+        fixture({ private: "invalid success response" }).provider.ensure(identity),
+      ).rejects.toMatchObject({ reason: "unavailable" });
+      expect(warning).toHaveBeenLastCalledWith("Model account service request failed", {
+        operation: "keys/ensure",
+        failure: "response",
+        httpStatus: 200,
+      });
+      const logged = JSON.stringify(warning.mock.calls);
+      for (const secret of ["private", config.credential, identity.subject, identity.issuer])
+        expect(logged).not.toContain(secret);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it("uses a private HTTP API while keeping browser authorization on HTTPS", async () => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({ status: "ready", api_key: { key: "fake-user-key" } }),
+    );
+    const privateConfig = { ...config, origin: "http://accounts.internal:55100" };
+    const provider = new ResellerModelAccountProvider(privateConfig, transport);
+    await expect(provider.ensure(identity)).resolves.toEqual({ apiKey: "fake-user-key" });
+    expect(transport.mock.calls[0]).toMatchObject([
+      "http://accounts.internal:55100/api/apps/keys/ensure",
+      { redirect: "error", headers: { authorization: "Bearer fake-application-credential" } },
+    ]);
+    const input = {
+      identity,
+      redirectUri: "https://app.example.test/callback",
+      state: "s".repeat(43),
+      codeChallenge: "c".repeat(43),
+    };
+    transport.mockResolvedValueOnce(
+      Response.json({ authorization_url: "https://gateway.example.test/start", expires_in: 300 }),
+    );
+    await expect(provider.authorize(input)).resolves.toMatchObject({
+      url: "https://gateway.example.test/start",
+    });
+    transport.mockResolvedValueOnce(
+      Response.json({ authorization_url: "http://gateway.example.test/start", expires_in: 300 }),
+    );
+    await expect(provider.authorize(input)).rejects.toMatchObject({ reason: "unavailable" });
+    transport.mockClear();
+    await expect(
+      provider.authorize({ ...input, redirectUri: "http://app.example.test/callback" }),
+    ).rejects.toThrow("Invalid authorization callback");
+    expect(transport).not.toHaveBeenCalled();
+    expect(
+      () =>
+        new ResellerModelAccountProvider({
+          ...privateConfig,
+          authorizationOrigins: ["http://gateway.example.test"],
+        }),
+    ).toThrow();
+  });
+
   it("only obtains the user key and sends the exact identity contract", async () => {
     const { fetch, provider } = fixture({
       status: "ready",

@@ -3390,6 +3390,27 @@ describe("discarded mobile thread refresh cursor", () => {
 });
 
 describe("mobile thread event reduction", () => {
+  it("tracks model authorization waits and clears the hint for other input waits", () => {
+    const run = { id: "run-1", userId: "owner", status: "running" };
+    const initial = { ...snapshot(), run, activeRuns: [run] };
+    const waiting = applyMobileThreadEvent(initial, {
+      type: "run.waiting_input",
+      seq: 5,
+      runId: run.id,
+      payload: { userId: "owner", modelAuthorizationRequired: true },
+    });
+    expect(waiting?.run?.modelAuthorizationRequired).toBe(true);
+    expect(waiting?.activeRuns?.[0]?.modelAuthorizationRequired).toBe(true);
+    const otherInput = applyMobileThreadEvent(waiting, {
+      type: "run.waiting_input",
+      seq: 6,
+      runId: run.id,
+      payload: { userId: "owner" },
+    });
+    expect(otherInput?.run?.modelAuthorizationRequired).toBeUndefined();
+    expect(otherInput?.activeRuns?.[0]?.modelAuthorizationRequired).toBeUndefined();
+  });
+
   it("appends an emoji reply with its exact target", () => {
     const initial = snapshot([mobileMessage("message-1", [{ kind: "text", text: "Done" }])]);
 

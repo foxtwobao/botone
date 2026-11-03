@@ -229,6 +229,41 @@ it("times out a never-resolving begin and cleans up the blank popup", async () =
   expect(vi.getTimerCount()).toBe(0);
 });
 
+it("cancels only the owning authorization when its caller aborts", async () => {
+  const { popup, channels, open } = desktopWindow();
+  const controller = new AbortController();
+  const begin = vi.fn(() => new Promise<never>(() => undefined));
+  const flow = runSsoFlow(begin, ["/app"], {
+    popup: true,
+    navigate: false,
+    signal: controller.signal,
+  });
+  controller.abort();
+  await expect(flow).resolves.toEqual({ data: null, error: null });
+  expect(popup.close).toHaveBeenCalledOnce();
+  expect(channels[0]?.close).toHaveBeenCalledOnce();
+  await runSsoFlow(begin, ["/app"], { popup: true, signal: controller.signal });
+  expect(open).toHaveBeenCalledOnce();
+  expect(begin).toHaveBeenCalledOnce();
+});
+
+it("does not cancel a newer popup when an earlier caller unmounts", async () => {
+  vi.useFakeTimers();
+  const { begin, popup, channels, land } = desktopWindow();
+  const earlier = new AbortController();
+  const first = runSsoFlow(begin, ["/app"], { popup: true, signal: earlier.signal });
+  await vi.advanceTimersByTimeAsync(0);
+  const second = runSsoFlow(begin, ["/app"], { popup: true, navigate: false });
+  await first;
+  await vi.advanceTimersByTimeAsync(0);
+  earlier.abort();
+  expect(popup.close).toHaveBeenCalledOnce();
+  expect(channels[1]?.close).not.toHaveBeenCalled();
+  land();
+  await expect(second).resolves.toBe(result);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
 it("includes authorization time in the callback deadline", async () => {
   vi.useFakeTimers();
   const { popup } = desktopWindow();

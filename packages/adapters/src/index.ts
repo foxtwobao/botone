@@ -116,6 +116,7 @@ export * from "./messaging-platforms.js";
 export * from "./messaging-team-chat-emulator.js";
 export * from "./model-account-config.js";
 export * from "./model-account-models.js";
+export * from "./model-account-policy.js";
 export * from "./model-account-recovery.js";
 export * from "./model-connect.js";
 export * from "./model-connect-check.js";

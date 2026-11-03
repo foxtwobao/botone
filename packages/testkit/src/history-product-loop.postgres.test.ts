@@ -168,6 +168,7 @@ describe.skipIf(!enabled)("product history diagnostic loop", () => {
             dataDir,
             sandboxProvider: "fake",
             agentRuntime: "pi",
+            modelAccountOnly: false,
             runtime: new PiAgentRuntime({
               onContextDecision(decision) {
                 selectedInputEstimates.push(decision.estimatedInputTokens);

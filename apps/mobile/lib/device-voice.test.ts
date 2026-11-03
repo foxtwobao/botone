@@ -17,7 +17,8 @@ const status = vi.hoisted(() => ({
   gate: undefined as Promise<void> | undefined,
 }));
 vi.mock("./api", () => ({
-  rpc: vi.fn(async () => {
+  rpc: vi.fn(async (path: string) => {
+    if (path === "me") return { modelAccountOnly: false };
     await status.gate;
     if (status.fail) throw new Error("offline");
     return { ready: status.ready };
@@ -104,4 +105,12 @@ describe("device voice preference", () => {
 
     await expect(loadDeviceVoiceEnabled()).rejects.toThrow("device locked");
   });
+});
+
+it("ignores a saved device voice preference when only the model account is allowed", async () => {
+  const { rpc } = await import("./api");
+  const { loadDeviceVoiceEnabled, DEVICE_VOICE_KEY } = await import("./device-voice");
+  store.set(DEVICE_VOICE_KEY, "1");
+  vi.mocked(rpc).mockResolvedValueOnce({ modelAccountOnly: true } as never);
+  expect(await loadDeviceVoiceEnabled()).toBe(false);
 });

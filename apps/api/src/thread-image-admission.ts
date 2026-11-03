@@ -41,6 +41,7 @@ export async function assertThreadImageInput(
     secrets: Pick<SecretStore, "load">;
     deployment: { provider: string; model: string } | null;
     hostedProvider?: string;
+    modelAccountOnly?: boolean;
     codexCatalog?: CodexLiveCatalog;
   },
 ) {
@@ -62,6 +63,7 @@ export async function assertThreadImageInput(
             actor,
             override.modelProvider,
             override.modelId,
+            { modelAccountOnly: configuration.modelAccountOnly },
           )
         : await findModelCredential(prisma, actor, override.modelProvider, override.modelId)
       : null;
@@ -69,13 +71,22 @@ export async function assertThreadImageInput(
     override,
     overrideCredential,
     main: configuration
-      ? await resolveMemberMainModel({ prisma, secretStore: configuration.secrets }, actor)
+      ? await resolveMemberMainModel(
+          {
+            prisma,
+            secretStore: configuration.secrets,
+            modelAccountOnly: configuration.modelAccountOnly,
+          },
+          actor,
+        )
       : await mainModelWithoutSecrets(prisma, actor),
     defaults: {
-      settings: await prisma.deploymentSettings.findUnique({ where: { id: "default" } }),
-      deployment: configuration?.deployment ?? null,
+      settings: configuration?.modelAccountOnly
+        ? null
+        : await prisma.deploymentSettings.findUnique({ where: { id: "default" } }),
+      deployment: configuration?.modelAccountOnly ? null : (configuration?.deployment ?? null),
     },
-    hostedProvider: configuration?.hostedProvider,
+    hostedProvider: configuration?.modelAccountOnly ? undefined : configuration?.hostedProvider,
   });
   const provider = running ? run.modelProvider : selected.provider;
   const id = running ? run.modelId : selected.id;

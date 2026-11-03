@@ -3,6 +3,7 @@ import { SecretStoreUnavailableError } from "@rakazo/adapter-kit";
 import {
   listPiCatalog,
   ModelSignInError,
+  modelAccountCredentialWhere,
   modelCredentialDto,
   oauthCredentialEmail,
   prepareStoredModelAuth,
@@ -72,11 +73,21 @@ export function modelsRoutes(ctx: RouterContext) {
       credentials: authed.models.credentials.handler(async ({ context }) => {
         const [rows, main] = await Promise.all([
           deps.prisma.userModelCredential.findMany({
-            where: { userId: context.actor.userId },
+            where: {
+              userId: context.actor.userId,
+              ...(deps.env.modelAccountOnly ? modelAccountCredentialWhere : {}),
+            },
             include: { userPreferences: { where: { userId: context.actor.userId } } },
             orderBy: newestModelCredentialOrder,
           }),
-          resolveMemberMainModel({ prisma: deps.prisma, secretStore: deps.secrets }, context.actor),
+          resolveMemberMainModel(
+            {
+              prisma: deps.prisma,
+              secretStore: deps.secrets,
+              modelAccountOnly: deps.env.modelAccountOnly,
+            },
+            context.actor,
+          ),
         ]);
         const secrets = rows.length
           ? await deps.prisma.secret.findMany({
@@ -100,7 +111,7 @@ export function modelsRoutes(ctx: RouterContext) {
             const preference = userPreferences[0];
             const own = {
               ...row,
-              defaultModel: preference?.modelId ?? null,
+              defaultModel: deps.env.modelAccountOnly ? null : (preference?.modelId ?? null),
               thinkingLevel: preference?.thinkingLevel ?? null,
             };
             const runsMain = main?.credential && main.credential.id === row.id;
@@ -163,7 +174,21 @@ export function modelsRoutes(ctx: RouterContext) {
       setRole: authed.models.setRole.handler(async ({ context, input }) => {
         if (input.expectedUserId && input.expectedUserId !== context.actor.userId)
           throw new ORPCError("FORBIDDEN");
-        const { role, primary, backups, scope } = input;
+        const { role, scope } = input;
+        let { primary, backups } = input;
+        if (deps.env.modelAccountOnly) {
+          const catalog = await modelRoleCatalog(context.actor, role);
+          const pin = (choice: NonNullable<typeof primary>) => ({
+            ...choice,
+            credentialId:
+              choice.credentialId ??
+              catalog.find(
+                (entry) => entry.provider === choice.provider && entry.id === choice.modelId,
+              )?.credentialIds?.[0],
+          });
+          primary = primary ? pin(primary) : primary;
+          backups = backups?.map(pin);
+        }
         await validateRoleChoices(context.actor, role, [
           ...(primary ? [primary] : []),
           ...(backups ?? []),
@@ -179,17 +204,31 @@ export function modelsRoutes(ctx: RouterContext) {
         );
       }),
       backups: authed.models.backups.handler(async ({ context }) =>
-        (await appliedModelRole(deps.prisma, context.actor, "main")).backups.map(
-          ({ provider, modelId }) => ({ provider, modelId }),
-        ),
+        (
+          await withDeploymentDefault(
+            "main",
+            await appliedModelRole(deps.prisma, context.actor, "main"),
+          )
+        ).backups.map(({ provider, modelId }) => ({ provider, modelId })),
       ),
       setBackups: authed.models.setBackups.handler(async ({ context, input }) => {
-        await validateRoleChoices(context.actor, "main", input);
+        const catalog = deps.env.modelAccountOnly
+          ? await modelRoleCatalog(context.actor, "main")
+          : [];
+        const backups = deps.env.modelAccountOnly
+          ? input.map((choice) => ({
+              ...choice,
+              credentialId: catalog.find(
+                (entry) => entry.provider === choice.provider && entry.id === choice.modelId,
+              )?.credentialIds?.[0],
+            }))
+          : input;
+        await validateRoleChoices(context.actor, "main", backups);
         await updateModelRole(
           deps.prisma,
           { userId: context.actor.userId, spaceId: context.actor.spaceId },
           "main",
-          { backups: input },
+          { backups },
         );
         return { ok: true as const };
       }),
@@ -393,6 +432,21 @@ export function modelsRoutes(ctx: RouterContext) {
       setDefault: authed.models.setDefault.handler(async ({ context, input }) => {
         const modelId = usableModelId(input.modelId);
         if (!modelId) throw new ORPCError("BAD_REQUEST", { message: "Choose a model" });
+        if (deps.env.modelAccountOnly) {
+          const choice = { provider: input.provider, modelId, thinkingLevel: input.thinkingLevel };
+          await validateRoleChoices(context.actor, "main", [choice]);
+          // Pin even legacy callers to the allowed connection so old personal keys cannot win later.
+          const catalog = await modelRoleCatalog(context.actor, "main");
+          const credentialId = catalog.find(
+            (entry) => entry.provider === input.provider && entry.id === modelId,
+          )?.credentialIds?.[0];
+          if (!credentialId)
+            throw new ORPCError("BAD_REQUEST", { message: "Connect that model provider first" });
+          await updateModelRole(deps.prisma, context.actor, "main", {
+            primary: { ...choice, credentialId },
+          });
+          return { ok: true as const };
+        }
         // An omitted level keeps the one this model already has in the main list: on the
         // chosen connection first, then on another, as writeModelRole does.
         const savedChoices = async (

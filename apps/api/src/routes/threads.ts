@@ -130,6 +130,7 @@ export function threadsRoutes(ctx: RouterContext) {
         imageAdmission: confirmingImages
           ? {
               secrets: deps.secrets,
+              modelAccountOnly: deps.env.modelAccountOnly,
               deployment,
               hostedProvider: setup.creditsAvailable ? deployment?.provider : undefined,
               codexCatalog,

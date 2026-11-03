@@ -20,9 +20,10 @@ import { modelPickerRequest } from "./model-picker-selection";
 import { queryClient } from "./query";
 
 const savedEndpoint = "https://models.example.test/v1";
-const { push, back, params, rpcCalls, saved } = vi.hoisted(() => ({
+const { push, back, replace, params, rpcCalls, saved } = vi.hoisted(() => ({
   push: vi.fn(),
   back: vi.fn(),
+  replace: vi.fn(),
   params: {} as { requestId?: string; spaceId?: string },
   rpcCalls: [] as [
     string,
@@ -48,6 +49,7 @@ const { push, back, params, rpcCalls, saved } = vi.hoisted(() => ({
     // A failed save either keeps the bot's own model or finds it already cleared elsewhere.
     failBotUpdates: {} as Record<string, "kept" | "changed elsewhere">,
     needsModel: false,
+    modelAccountOnly: false,
   },
 }));
 
@@ -78,6 +80,7 @@ vi.mock("./api", () => ({
         defaultProvider: "openai-compatible",
         defaultModel: "model-fixture",
         needsModel: saved.needsModel,
+        modelAccountOnly: saved.modelAccountOnly,
       };
     if (procedure === "models/probeOpenAiCompatible")
       return { models: Array.from({ length: 11 }, (_, index) => `found-${index}`) };
@@ -130,7 +133,7 @@ vi.mock("./api", () => ({
   },
 }));
 vi.mock("expo-router", () => ({
-  useRouter: () => ({ push, back }),
+  useRouter: () => ({ push, back, replace }),
   useNavigation: () => ({ setOptions: vi.fn() }),
   useLocalSearchParams: () => params,
   useFocusEffect: (effect: () => (() => void) | undefined) => useEffect(effect, [effect]),
@@ -293,6 +296,8 @@ beforeEach(async () => {
   rpcCalls.length = 0;
   delete params.spaceId;
   back.mockClear();
+  replace.mockClear();
+  saved.modelAccountOnly = false;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -790,4 +795,17 @@ it("searches discovered models without losing the selected default", async () =>
   expect(container.textContent).toContain("found-0");
   expect(field("found-0")?.checked).toBe(true);
   expect(field("found-1")?.checked).toBe(true);
+});
+
+it("hides ordinary connection choices in account-only mode", async () => {
+  saved.modelAccountOnly = true;
+  expect(await notConnectedChoices()).toEqual([]);
+  expect(container.textContent).not.toContain("Add provider");
+});
+
+it("redirects old connection links to account model settings", async () => {
+  saved.modelAccountOnly = true;
+  await remount(() => renderConnection());
+  expect(replace).toHaveBeenCalledWith("/models");
+  expect(field("OpenAI-compatible server URL")).toBeNull();
 });

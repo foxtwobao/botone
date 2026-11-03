@@ -4,6 +4,7 @@ import {
   dismissableAskMessageIds,
   groupVoiceChats,
   memberName,
+  modelAccountAuthorizationMessageIds,
   timeSeparatorIds,
   unreadDividerMessageId,
   voiceChatHoldsMessage,
@@ -35,6 +36,7 @@ export function useLatestRowActions(current: MessageRowActions): MessageRowActio
   });
   return useMemo<MessageRowActions>(
     () => ({
+      refresh: () => rowActionsRef.current.refresh?.(),
       helperToggle: (measure, toggle, opening) =>
         rowActionsRef.current.helperToggle(measure, toggle, opening),
       reply: (message) => rowActionsRef.current.reply(message),
@@ -69,6 +71,7 @@ export function useThreadRows({
   inGroup,
   readOnly,
   onCall,
+  voiceEnabled = true,
   displayName,
   mentionBots,
   currentBot,
@@ -88,6 +91,7 @@ export function useThreadRows({
   inGroup: boolean;
   readOnly: boolean;
   onCall: boolean;
+  voiceEnabled?: boolean;
   displayName?: string;
   mentionBots: MobileBot[];
   currentBot?: MobileBot;
@@ -102,6 +106,10 @@ export function useThreadRows({
   const { t, locale } = useI18n();
   const { showBotSenderName, reactionView, exchanges, visibleMessages } = transcript;
   const answerableAskIds = useMemo(() => answerableAskMessageIds(snap), [snap]);
+  const modelAuthorizationIds = useMemo(
+    () => modelAccountAuthorizationMessageIds(snap, userId),
+    [snap, userId],
+  );
   const dismissableAskIds = useMemo(() => dismissableAskMessageIds(snap, userId), [snap, userId]);
   const separatorIds = useMemo(() => timeSeparatorIds(visibleMessages), [visibleMessages]);
   const unreadDividerId = useMemo(
@@ -155,7 +163,9 @@ export function useThreadRows({
           members={snap?.members}
           readOnly={readOnly}
           onCall={onCall}
+          voiceEnabled={voiceEnabled}
           canAnswer={!readOnly && answerableAskIds.has(message.id)}
+          canAuthorizeModelAccount={!readOnly && modelAuthorizationIds.has(message.id)}
           canDismiss={dismissableAskIds.has(message.id)}
           highlighted={highlightedMessageId === message.id}
           separator={separatorIds.has(message.id)}
@@ -186,6 +196,7 @@ export function useThreadRows({
     },
     [
       messagesById,
+      modelAuthorizationIds,
       showBotSenderName,
       snap?.members,
       snap?.activeRuns,
@@ -203,6 +214,7 @@ export function useThreadRows({
       rowActions,
       readOnly,
       onCall,
+      voiceEnabled,
       answerableAskIds,
       dismissableAskIds,
       highlightedMessageId,

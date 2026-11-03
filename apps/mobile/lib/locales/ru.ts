@@ -10,6 +10,8 @@ export const RU_MESSAGES: Record<string, string> = {
     "Не удалось подтвердить авторизацию. Повторите попытку.",
   "Disconnection pending confirmation.": "Отключение ожидает подтверждения.",
   Home: "Главная",
+  "Authorize and continue": "Авторизовать и продолжить",
+  "Connected to TokenONE": "Подключено к TokenONE",
   "Model account": "Аккаунт моделей",
   "Model account unavailable": "Аккаунт моделей недоступен",
   Recharge: "Пополнить",

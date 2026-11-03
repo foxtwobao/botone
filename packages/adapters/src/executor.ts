@@ -245,10 +245,12 @@ async function verbatimMcpServersForRun(
 export function createRunExecutor(executorDeps: ExecutorDeps) {
   const contextStrategy = executorDeps.contextStrategy ?? DEFAULT_CONTEXT_STRATEGY;
   const web = executorDeps.web ?? createWebProvider();
-  const mediaGeneration = executorDeps.mediaGeneration ?? createMediaGenerationProvider();
+  const mediaGeneration = executorDeps.modelAccountOnly
+    ? undefined
+    : (executorDeps.mediaGeneration ?? createMediaGenerationProvider());
   const browser =
     executorDeps.browser ?? createBrowserProvider(undefined, { sandbox: executorDeps.sandbox });
-  const cloudAgent = executorDeps.cloudAgent;
+  const cloudAgent = executorDeps.modelAccountOnly ? null : executorDeps.cloudAgent;
   const resolveConnectedModel = resolveConnectedRunModel.bind(undefined, executorDeps);
 
   // Run-scoped connector state (installed MCP sessions) outlives one attempt
@@ -558,7 +560,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           deps.prisma.deploymentSettings.findUnique({
             where: { id: "default" },
           }),
-          deps.memoryProviders.resolve(run.spaceId),
+          deps.modelAccountOnly ? null : deps.memoryProviders.resolve(run.spaceId),
           deps.prisma.taughtSkill.findMany({
             where: { botId: run.botId, spaceId: run.spaceId, status: "saved" },
           }),
@@ -607,6 +609,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 run,
                 modelChoice.modelProvider,
                 modelChoice.modelId,
+                { modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey) },
               )
             : null;
         runAbortController = new AbortController();
@@ -1194,7 +1197,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         const builtins = [
           ...selectBuiltinToolsForRun({
             ticketBoardEnabled: deps.ticketBoardEnabled,
-            phoneCallsEnabled: deps.phoneCallsEnabled,
+            phoneCallsEnabled: !deps.modelAccountOnly && deps.phoneCallsEnabled,
             historyRetrievalEnabled: contextStrategy !== "current",
             graphicalToolsAllowed,
             pageBrowserAllowed,

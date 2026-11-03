@@ -29,12 +29,15 @@ export function useSettingsNavItems(available: {
   computer: boolean;
   billing: boolean;
   updates: boolean;
+  voice?: boolean;
 }): SettingsNavItem[] {
   const { t } = useLingui();
   return [
     { id: "general", label: t`General`, icon: Settings },
     { id: "models", label: t`Models`, icon: Cpu },
-    { id: "voice", label: t`Voice`, icon: Volume2 },
+    ...(available.voice !== false
+      ? [{ id: "voice" as const, label: t`Voice`, icon: Volume2 }]
+      : []),
     { id: "confirmations", label: t`Approvals`, icon: ShieldCheck },
     { id: "vault", label: t`Vault`, icon: KeyRound },
     ...(available.messaging

@@ -11,6 +11,8 @@ export const DE_MESSAGES: Record<string, string> = {
     "Autorisierung konnte nicht bestätigt werden. Erneut versuchen.",
   "Disconnection pending confirmation.": "Trennung wartet auf Bestätigung.",
   Home: "Startseite",
+  "Authorize and continue": "Autorisieren und fortfahren",
+  "Connected to TokenONE": "Mit TokenONE verbunden",
   "Model account": "Modellkonto",
   "Model account unavailable": "Modellkonto nicht verfügbar",
   Recharge: "Aufladen",

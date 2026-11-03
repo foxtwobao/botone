@@ -204,6 +204,11 @@ export default function ModelConnection() {
         rpc("models/list"),
         rpc("models/credentials"),
       ]);
+      if (nextMe.modelAccountOnly) {
+        setMe(nextMe);
+        router.replace("/models");
+        return;
+      }
       const nextProvider = request.provider;
       const nextCredential = nextCredentials.find((entry) => entry.id === credentialIdRef.current);
       const nextModel = connectionFormModelId({

@@ -9,6 +9,8 @@ export const ZH_TW_MESSAGES: Record<string, string> = {
   "Could not confirm authorization. Try again.": "無法確認授權結果，請重試。",
   "Disconnection pending confirmation.": "正在等待確認中斷連線的結果。",
   Home: "平台首頁",
+  "Authorize and continue": "授權並繼續",
+  "Connected to TokenONE": "已連線至 TokenONE",
   "Model account": "模型帳戶",
   "Model account unavailable": "模型帳戶暫時無法使用",
   Recharge: "儲值",

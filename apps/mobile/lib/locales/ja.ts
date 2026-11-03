@@ -10,6 +10,8 @@ export const JA_MESSAGES: Record<string, string> = {
     "認可結果を確認できませんでした。再試行してください。",
   "Disconnection pending confirmation.": "切断の確認を待っています。",
   Home: "ホーム",
+  "Authorize and continue": "認証して続行",
+  "Connected to TokenONE": "TokenONE に接続済み",
   "Model account": "モデルアカウント",
   "Model account unavailable": "モデルアカウントを利用できません",
   Recharge: "チャージ",

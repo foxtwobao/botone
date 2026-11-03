@@ -53,8 +53,16 @@ export type ExternalModelKeyResolver = (
   signal?: AbortSignal,
 ) => Promise<string>;
 
+const authorizationCheckpointPrefix = "model_account_authorization_v1:";
+
 export function modelAccountAuthorizationCheckpoint(
   reference: ExternalModelAccountReference,
 ): string {
-  return `model_account_authorization_v1:${JSON.stringify([reference.accountId, reference.binding])}`;
+  return `${authorizationCheckpointPrefix}${JSON.stringify([reference.accountId, reference.binding])}`;
+}
+
+export function isModelAccountAuthorizationCheckpoint(
+  checkpoint: string | null | undefined,
+): boolean {
+  return checkpoint?.startsWith(authorizationCheckpointPrefix) ?? false;
 }

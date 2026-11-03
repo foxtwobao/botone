@@ -963,6 +963,10 @@ msgid "Authorize again"
 msgstr ""
 
 #: src/components/ModelAccount.tsx
+msgid "Authorize and continue"
+msgstr "권한 부여 후 계속"
+
+#: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr ""
 
@@ -1680,6 +1684,10 @@ msgstr "연결됨"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "{0}에 연결했습니다."
+
+#: src/components/ModelAccount.tsx
+msgid "Connected to TokenONE"
+msgstr "TokenONE에 연결됨"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -2630,7 +2638,6 @@ msgstr "비활성화됨"
 msgid "Discard recording"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/MessagingSettingsPanel.tsx

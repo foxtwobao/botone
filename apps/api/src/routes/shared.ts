@@ -37,7 +37,7 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
   ]);
   return {
     ticketBoardEnabled: deps.env.ticketBoardEnabled === true,
-    phoneCallsEnabled: deps.env.phoneCallsEnabled === true,
+    phoneCallsEnabled: !deps.env.modelAccountOnly && deps.env.phoneCallsEnabled === true,
     navLinks: deps.env.navLinks ?? [],
     maxUploadSizeBytes: attachmentMaxBytes(deps.env),
     maxAttachmentsPerMessage: attachmentMaxCount(deps.env),
@@ -48,11 +48,17 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
     isDeploymentOwner: false,
     isAdmin: admin,
     needsModel: setup.needsModel,
-    defaultProvider: canonicalPiProviderId(setup.model?.provider ?? deps.env.defaultProvider),
-    defaultModel: setup.model?.modelId ?? deps.env.defaultModel,
+    ...(deps.env.modelAccountOnly ? { modelAccountOnly: true } : {}),
+    defaultProvider: deps.env.modelAccountOnly
+      ? (setup.model?.provider ?? null)
+      : canonicalPiProviderId(setup.model?.provider ?? deps.env.defaultProvider),
+    defaultModel: deps.env.modelAccountOnly
+      ? (setup.model?.modelId ?? null)
+      : (setup.model?.modelId ?? deps.env.defaultModel),
     // Set only while the active default is the deployment's own, running on host credentials.
     ...hostCredentials(
-      !setup.main &&
+      !deps.env.modelAccountOnly &&
+        !setup.main &&
         !setup.settings?.defaultModelProvider &&
         Boolean(deps.env.deploymentModelHostCredentials),
       deps.env.defaultProvider,
@@ -92,13 +98,21 @@ function computerHostFor(
 /** The main model chat runs: the member's while it can run, else the deployment's. */
 export async function modelSetup(deps: RouterDeps, actor: Actor) {
   const [member, settings] = await Promise.all([
-    resolveMemberMainModel({ prisma: deps.prisma, secretStore: deps.secrets }, actor),
+    resolveMemberMainModel(
+      {
+        prisma: deps.prisma,
+        secretStore: deps.secrets,
+        modelAccountOnly: deps.env.modelAccountOnly,
+      },
+      actor,
+    ),
     deps.prisma.deploymentSettings.findUnique({ where: { id: "default" } }),
   ]);
   const main =
     member &&
     (member.credential ||
-      (deps.billing?.modelCreditsEnabled &&
+      (!deps.env.modelAccountOnly &&
+        deps.billing?.modelCreditsEnabled &&
         (await hasHostedModelCredits(deps.prisma, actor, member.provider))))
       ? member
       : null;
@@ -106,16 +120,19 @@ export async function modelSetup(deps: RouterDeps, actor: Actor) {
   // A balance keeps paying for the deployment model after switching to an own key.
   const creditsAvailable = funding?.funding === "credits" || (funding?.balanceUsd ?? 0) > 0;
   const hasDeployment =
+    !deps.env.modelAccountOnly &&
     Boolean(deps.env.deploymentModelConfigured) &&
     (!funding?.creditPurchasesEnabled || creditsAvailable);
   return {
     main,
     model:
       main ??
-      deploymentModelRole("main", {
-        settings,
-        deployment: { provider: deps.env.defaultProvider, model: deps.env.defaultModel },
-      }).primary,
+      (deps.env.modelAccountOnly
+        ? null
+        : deploymentModelRole("main", {
+            settings,
+            deployment: { provider: deps.env.defaultProvider, model: deps.env.defaultModel },
+          }).primary),
     settings,
     funding,
     creditsAvailable,
@@ -139,6 +156,7 @@ export async function botsRunOwnModels(deps: RouterDeps, actor: Actor, botIds: s
             actor,
             bot.modelProvider,
             bot.modelId,
+            { modelAccountOnly: deps.env.modelAccountOnly },
           )
         : null;
       return selectConfiguredModel({ override: bot, overrideCredential, main: null, defaults: {} })

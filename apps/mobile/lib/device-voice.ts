@@ -19,6 +19,7 @@ function write(on: boolean): Promise<void> {
  * replies don't wait on the server to decide.
  */
 export async function loadDeviceVoiceEnabled(): Promise<boolean> {
+  if ((await rpc("me")).modelAccountOnly) return false;
   const seen = choices;
   const stored = await SecureStore.getItemAsync(DEVICE_VOICE_KEY);
   if (stored) return stored === "1";

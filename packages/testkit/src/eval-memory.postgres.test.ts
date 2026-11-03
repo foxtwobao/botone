@@ -164,6 +164,7 @@ describe.skipIf(!databaseAvailable)("memory eval through the product", () => {
                 dataDir,
                 sandboxProvider: "fake",
                 agentRuntime: "pi",
+                modelAccountOnly: false,
                 wakeupDriver: "memory",
                 signupsEnabled: "true",
                 composio,

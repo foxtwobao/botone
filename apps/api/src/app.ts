@@ -179,6 +179,7 @@ import {
 import { createMessagingReceipts } from "./messaging-receipts.js";
 import { mountMessagingWebhookRoutes } from "./messaging-webhook.js";
 import { modelAccountRoutes } from "./model-account.js";
+import { removeOrdinaryModelConnections } from "./model-account-cleanup.js";
 import { monitoringRoutes } from "./monitoring.js";
 import { pluginSubmissionRoutes } from "./plugin-submissions.js";
 import { sendReferralEmails, startReferralEmails } from "./referral-email.js";
@@ -258,6 +259,8 @@ type CreateAppOverrides = Partial<AppEnv> & {
   pluginRepoFetcher?: PluginRepoFetcher;
   pluginMarketplaceRead?: PluginTextReader;
   modelConnectionFetch?: typeof fetch;
+  /** Internal override for offline provider conformance fixtures; never read from the environment. */
+  modelAccountOnly?: boolean;
   logger?: Logger;
   runtime?: AgentRuntime;
   contextStrategy?: AgentContextStrategy;
@@ -279,6 +282,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     billing: billingOverride,
     remoteConnectors,
     modelConnectionFetch,
+    modelAccountOnly: modelAccountOnlyOverride,
     pluginRepoFetcher,
     pluginMarketplaceRead,
     logger: loggerOverride,
@@ -412,7 +416,10 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     remoteConnectors,
     env.mcpAllowPrivateEndpoint,
   );
-  const memoryProviders = new SpaceMemoryProviderResolver(prisma, secrets);
+  const modelAccountOnly = modelAccountOnlyOverride ?? env.agentRuntime !== "scripted";
+  const memoryProviders = modelAccountOnly
+    ? { resolve: async () => null }
+    : new SpaceMemoryProviderResolver(prisma, secrets);
   const oauthLogins = new PiOAuthLogins(undefined, { prisma, secrets });
   const home = createAgentHomeStore(env.dataDir, prisma);
   void home.removeStaleStaging().catch((error) => getLogger().error("home staging cleanup", error));
@@ -471,6 +478,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     (!env.oidc || env.stripeSecretKey || env.stripeWebhookSecret || billingOverride)
   )
     throw new Error("Model account requires OIDC and local billing disabled");
+  if (modelAccountOnly) await removeOrdinaryModelConnections(prisma, secrets);
   const stripeBilling = stripeBillingConfigFromEnv(env);
   const billingProvider: BillingProvider | undefined =
     billingOverride ?? (stripeBilling ? new StripeBillingProvider(stripeBilling) : undefined);
@@ -611,11 +619,13 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       if (!shutdown.signal.aborted) getLogger().error("mcp server arguments move failed", error);
     });
   // One provider instance so emulator launches and polls share the same Map.
-  const cloudAgent = createCloudAgentConnection({
-    CLOUD_AGENT_PROVIDER: env.cloudAgentProvider,
-    CURSOR_API_KEY: env.cursorApiKey,
-    CLOUD_AGENT_SPACE_ID: env.cloudAgentSpaceId,
-  });
+  const cloudAgent = modelAccountOnly
+    ? null
+    : createCloudAgentConnection({
+        CLOUD_AGENT_PROVIDER: env.cloudAgentProvider,
+        CURSOR_API_KEY: env.cursorApiKey,
+        CLOUD_AGENT_SPACE_ID: env.cloudAgentSpaceId,
+      });
   const paymentWallet = await createPaymentWalletProvider({
     PAYMENT_WALLET_PROVIDER: env.paymentWalletProvider,
     PAYMENT_WALLET_CLIENT_ID: env.paymentWalletClientId,
@@ -631,6 +641,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     ? new UserDevices({ prisma, forwardSecret: userDeviceSecret, hub: userDeviceHub })
     : undefined;
   const executor = createRunExecutor({
+    modelAccountOnly,
     billingEnabled: modelCreditsEnabled,
     maxUploadSizeBytes: env.maxUploadSizeBytes,
     contextStrategy,
@@ -679,7 +690,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     events,
     onTicketChange: ticketChanges,
     ticketBoardEnabled,
-    phoneCallsEnabled: env.phoneCallsEnabled,
+    phoneCallsEnabled: !modelAccountOnly && env.phoneCallsEnabled,
     phoneCallRingSeconds: env.phoneCallRingSeconds,
     phoneCallCooldownMinutes: env.phoneCallCooldownMinutes,
     messaging: messaging ? createMessagingContextLoader(prisma) : undefined,
@@ -813,7 +824,8 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       openSignup: env.messagingOpenSignup,
     },
     env: {
-      phoneCallsEnabled: env.phoneCallsEnabled,
+      modelAccountOnly,
+      phoneCallsEnabled: !modelAccountOnly && env.phoneCallsEnabled,
       phoneCallRingSeconds: env.phoneCallRingSeconds,
       ticketBoardEnabled,
       navLinks: env.navLinks,
@@ -1018,7 +1030,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   });
   mountAccountExportRoute(app, { prisma, auth, artifacts, home });
   mountAuditExportRoute(app, { prisma, sessionActor });
-  mountVoiceHttpRoutes(app, { prisma, secrets, env }, async (c) => {
+  mountVoiceHttpRoutes(app, { prisma, secrets, env: { ...env, modelAccountOnly } }, async (c) => {
     const actor = await sessionActor(c.req.raw);
     if (actor) enrichLogContext({ "user.id": actor.userId, "space.id": actor.spaceId });
     return actor;
@@ -1081,7 +1093,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           {
             prisma,
             secrets,
-            env: { mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint },
+            env: { mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint, modelAccountOnly },
           },
           { spaceId, userId },
           { audio, mimeType, signal },
@@ -1188,6 +1200,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
               prisma,
               runtime,
               secrets,
+              modelAccountOnly,
               externalModelKey: modelAccount
                 ? createExternalModelKeyResolver(
                     modelAccount.provider,
@@ -1206,6 +1219,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
               prisma,
               runtime,
               secrets,
+              modelAccountOnly,
               externalModelKey: modelAccount
                 ? createExternalModelKeyResolver(
                     modelAccount.provider,

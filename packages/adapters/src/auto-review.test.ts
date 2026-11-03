@@ -580,3 +580,33 @@ describe("runAutoReviewJudge timeout", () => {
     expect(seen?.aborted).toBe(true);
   });
 });
+
+it("passes the selected account protocol to the approval runtime", async () => {
+  const run = vi.fn(() =>
+    (async function* () {
+      yield { type: "done", text: '{"decision":"pass","reason":"fixture"}' } as never;
+    })(),
+  );
+  await runAutoReviewJudge({
+    runtime: { run, describe: () => ({ capabilities: { scripted: false } }) } as never,
+    checker: { provider: "openai-compatible", model: "account-model" },
+    apiProtocol: "responses",
+    baseUrl: "https://models.example.test/v1",
+    apiKey: "fake-account-key",
+    runId: "run-fixture",
+    spaceId: "space-fixture",
+    userId: "user-fixture",
+    botId: "bot-fixture",
+    threadId: "thread-fixture",
+    prompt: "fixture",
+  });
+  expect(run).toHaveBeenCalledWith(
+    expect.objectContaining({
+      model: expect.objectContaining({
+        apiProtocol: "responses",
+        baseUrl: "https://models.example.test/v1",
+      }),
+    }),
+    expect.anything(),
+  );
+});

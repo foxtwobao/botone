@@ -27,6 +27,10 @@ Legacy `model` connection envelopes remain accepted during upgrades. The public 
 also retains derived legacy link fields and an empty default-model field for already-installed
 clients; these are response compatibility fields, not required deployment settings.
 
+The server account `origin` accepts HTTP or HTTPS without an additional setting. Use HTTP only
+on a trusted private network: application credentials and user keys travel without TLS on that
+link. Browser authorization, callbacks, model `baseUrl` and navigation still require HTTPS.
+
 Authorization discovers `/models` with a transient user key and exposes those models in the
 existing model picker. It never replaces the selected main model. Pick the desired model in
 Settings; Refresh models retries discovery. Catalog failures do not invalidate an otherwise
@@ -65,7 +69,9 @@ OIDC login flows. Native clients do not share portal navigation cookies. Navigat
 ## Use the account
 
 On the initial Connect a model screen, open **Model account**; existing users can open account
-model settings. Choose **Use model account**, authorize, and select a main model in that same
+model settings. Mobile opens the existing model settings after sign-in when no usable model is
+configured, following the optional signup survey when needed. Choose **Use model account**,
+authorize, and select a main model in that same
 settings panel. If authorization is required,
 the browser opens a one-time launch URL, obtains a browser-bound cookie, and continues to the
 authorization provider. The callback checks the original app session and pinned identity.
@@ -77,7 +83,9 @@ Cancelling leaves the original work intact.
 A successful connection leaves all existing model selections intact. Choose a main model using
 the existing model settings after authorizing. An explicit Space override remains in effect.
 Managed connections are excluded from ordinary key editors. Disconnect through the Model account
-controls to revoke the external authorization. Other personal model connections continue to use their own keys.
+API to revoke the external authorization when necessary. Connected settings show the account
+status without a routine Disconnect action; older pending disconnections still offer Retry
+disconnect. Other personal model connections continue to use their own keys.
 
 The server stores a reference to the existing Account and its binding, not copied identity
 claims or a persistent model key. Every run resolves a fresh user key. Background runs can
@@ -88,6 +96,11 @@ sent model requests may still finish and be charged.
 Model authorization pauses affected tasks before a model call. Successful authorization resumes
 only runs paused for that same account binding, using their original run IDs and the existing
 executor. Completed runs and unrelated approval waits are never replayed.
+The paused task shows **Authorize and continue** only to its user. Clicking it opens the existing
+authorization flow in place; it does not require opening settings or replace the current draft.
+Tasks never open authorization windows automatically. Snapshot and live-event hints derive from
+the current server checkpoint, so old prompts, other users' tasks and ordinary input waits do
+not expose the action. Old clients retain the existing text guidance and settings entry.
 
 Balances are displayed with their original decimal amount and unit. They are informational;
 the model service makes the final decision on whether a request has sufficient funds. Failed
@@ -121,6 +134,12 @@ Use isolated offline fixtures for verification. Live identity login, native OS b
 and actual model charges need separate deployment acceptance; do not treat mocked browser
 responses as proof that a live platform has been configured.
 
+If connection or balance requests return `unavailable`, inspect API logs for
+`Model account service rejected a request` or `Model account service request failed`. These
+record the operation and HTTP status, or distinguish transport, timeout and response failures.
+They omit endpoint addresses, credentials, identity claims and upstream response bodies.
+`Model account operation failed` identifies a local failure outside that service request.
+
 ## Docker Hub amd64 publication
 
 `publish-dockerhub.yml` builds the existing application Dockerfile on pushes to `main` or a manual
@@ -136,3 +155,18 @@ configure API, Web and worker services to use the same image. This workflow publ
 application only; the existing upstream workflow handles optional updater and computer images.
 
 CI defaults to GitHub-hosted Ubuntu runners. Set `CI_RUNNER` to use a compatible custom runner.
+
+## 模型账户专用模式
+
+整个产品仅允许 TokenONE 模型账户，无需新增开关。未配置 `MODEL_ACCOUNT_CONNECTION` 或未完成授权时不能调用模型；不会恢复普通提供方、API Key、第三方模型 OAuth 或部署默认模型。外部云端编码代理也不启用。Web、桌面和移动端保留账户内主模型、备用模型、审批模型和 Bot 模型选择。
+
+API 启动时自动清理普通模型连接、其不再被模型或语音连接引用的密钥、连接偏好和普通模型 OAuth 事务；非账户主模型／备用模型选择会删除，非账户 Bot／定时任务模型覆盖会清空，随后跟随账户默认。已有平台连接、平台模型选择、OIDC 登录身份与历史会话保留。此操作不可逆，仅回退程序不能恢复普通连接。
+
+升级前先停止旧 API 和 worker，再更新并启动，避免旧进程继续读取或写入旧模型配置。启动后授权模型账户，并从账户列表选择主模型；需要自动审批时也选择账户内审批模型。
+
+
+### 所有 AI 服务的接入范围
+
+所有正式运行的 AI 调用仅使用平台模型账户。尚未通过平台账户接入的语音识别/合成、图片/视频生成、远程记忆服务及云端编码代理均关闭，旧的服务环境变量不会重新开启它们。Web、桌面和移动端均隐藏相应入口，移动端也不会回退到系统语音识别/合成。图片附件仍可由账户内支持图片的对话模型读取；本地记忆文档仍可查看和编辑。
+
+升级启动时除旧模型连接外，还删除旧语音连接、远程记忆配置及相应无引用密钥，清除 Bot 的朗读/声音设置。不会删除聊天记录、本地记忆、OIDC 身份和平台模型账户。请在升级前停止旧 API 和 worker；清理不可逆，代码回滚不能恢复已删除的凭据。

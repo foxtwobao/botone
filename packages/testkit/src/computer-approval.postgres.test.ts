@@ -84,6 +84,7 @@ describe.skipIf(!databaseAvailable)("offline Pi computer approval", () => {
           dataDir,
           sandboxProvider: "fake",
           agentRuntime: "pi",
+          modelAccountOnly: false,
           wakeupDriver: "memory",
           signupsEnabled: "true",
           composio: new ComposioConnector({ client: new FakeComposioClient() }),

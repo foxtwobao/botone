@@ -504,6 +504,19 @@ it.each(["in", "up"])(
   },
 );
 
+it.each([false, true])(
+  "guides SSO accounts without a model through setup (survey: %s)",
+  async (needsSignupSurvey) => {
+    vi.mocked(continueWithSso).mockResolvedValue(true);
+    vi.mocked(rpc).mockResolvedValue({ needsSignupSurvey, needsModel: true } as never);
+    await render();
+    await act(async () => ssoButtons()[0]!.click());
+    expect(router.replace).toHaveBeenCalledWith(
+      needsSignupSurvey ? { pathname: "/signup-survey", params: { next: "models" } } : "/models",
+    );
+  },
+);
+
 it("returns to the pending share after SSO", async () => {
   route.waiting = true;
   vi.mocked(continueWithSso).mockResolvedValue(true);

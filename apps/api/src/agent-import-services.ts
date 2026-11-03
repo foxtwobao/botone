@@ -1,5 +1,11 @@
 import type { CodexLiveCatalog } from "@rakazo/adapters";
-import { mcpStdioRefusal, providerCatalogCache, validateBotModelChange } from "@rakazo/adapters";
+import {
+  findConnectedModelCredential,
+  mcpStdioRefusal,
+  modelAccountCredentialWhere,
+  providerCatalogCache,
+  validateBotModelChange,
+} from "@rakazo/adapters";
 import type { Actor } from "@rakazo/contracts";
 import { canonicalPiProviderId, ModelConnectInputSchema } from "@rakazo/contracts";
 import type { createRepos } from "@rakazo/db";
@@ -50,7 +56,18 @@ export function createAgentImportServices({
         }),
       ),
     hasModelConnection: async (actor, provider) =>
-      Boolean(await findModelCredential(deps.prisma, actor, provider)),
+      Boolean(
+        deps.env.modelAccountOnly
+          ? await findConnectedModelCredential(
+              deps.prisma,
+              deps.secrets,
+              actor,
+              provider,
+              undefined,
+              { modelAccountOnly: true },
+            )
+          : await findModelCredential(deps.prisma, actor, provider),
+      ),
     mcpCredentialValues: async (actor, server) => {
       const secret = await deps.prisma.secret.findFirst({
         where: { id: server.secretId, spaceId: actor.spaceId, userId: actor.userId },
@@ -70,7 +87,10 @@ export function createAgentImportServices({
     },
     connectedProviders: async (actor, providers) => {
       const rows = await deps.prisma.userModelCredential.findMany({
-        where: { userId: actor.userId },
+        where: {
+          userId: actor.userId,
+          ...(deps.env.modelAccountOnly ? modelAccountCredentialWhere : {}),
+        },
         select: { provider: true },
       });
       const have = new Set(rows.map((row) => canonicalPiProviderId(row.provider)));

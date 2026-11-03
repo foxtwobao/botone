@@ -1,4 +1,5 @@
 import type { ProductAnalytics, RealtimeFanout } from "@rakazo/adapter-kit";
+import { isModelAccountAuthorizationCheckpoint } from "@rakazo/adapter-kit";
 import type {
   BotSecretDestination,
   LoginFieldInput,
@@ -1373,7 +1374,12 @@ export async function pauseRunForInput(
       botId: input.botId,
       type: "run.waiting_input",
       runId: input.runId,
-      payload: run?.userId ? { userId: run.userId } : {},
+      payload: {
+        ...(run?.userId ? { userId: run.userId } : {}),
+        ...(isModelAccountAuthorizationCheckpoint(input.checkpoint)
+          ? { modelAuthorizationRequired: true }
+          : {}),
+      },
     });
     await tx.event.deleteMany({
       where: { runId: input.runId, ...transientRunEventsWhere() },

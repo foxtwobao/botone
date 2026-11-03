@@ -20,7 +20,8 @@ const link = z.url().refine((value) => {
 });
 const schema = z.object({
   provider: z.literal("reseller"),
-  origin,
+  // The adapter validates this server-only HTTP(S) origin.
+  origin: z.url(),
   credential: z.string().min(1),
   authorizationOrigins: z.array(origin).min(1).optional(),
   navigationOrigin: origin.default("https://home.agentone.work"),

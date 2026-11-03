@@ -1,4 +1,4 @@
-import type { AgentRunRequest, SecretStore } from "@rakazo/adapter-kit";
+import type { AgentRunRequest, ExternalModelKeyResolver, SecretStore } from "@rakazo/adapter-kit";
 import type {
   ModelRole,
   ModelRoleChoice,
@@ -72,7 +72,12 @@ export type MemberMainModel = ModelRoleChoice & {
 
 /** The member's main model and the connection that serves it, resolved as validation does. */
 export async function resolveMemberMainModel(
-  deps: { prisma: PrismaClient; secretStore: Pick<SecretStore, "load"> },
+  deps: {
+    prisma: PrismaClient;
+    secretStore: Pick<SecretStore, "load">;
+    modelAccountOnly?: boolean;
+    externalModelKey?: ExternalModelKeyResolver;
+  },
   scope: { userId: string; spaceId: string },
 ): Promise<MemberMainModel | null> {
   const { primary } = await appliedModelRole(deps.prisma, scope, "main");
@@ -83,7 +88,10 @@ export async function resolveMemberMainModel(
     scope,
     primary.provider,
     primary.modelId,
-    { credentialId: primary.credentialId },
+    {
+      credentialId: primary.credentialId,
+      modelAccountOnly: deps.modelAccountOnly || Boolean(deps.externalModelKey),
+    },
   );
   return { ...primary, credential };
 }

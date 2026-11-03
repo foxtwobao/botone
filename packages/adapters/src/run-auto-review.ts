@@ -25,7 +25,10 @@ export async function autoReviewCheckerProvider(
   const { injectedReview, memberChecker, backups, registerSecrets } = options;
   if (injectedReview) return injectedReview;
   const kind =
-    memberChecker || (checker.provider !== "jev" && checker.provider !== "scripted")
+    deps.modelAccountOnly ||
+    deps.externalModelKey ||
+    memberChecker ||
+    (checker.provider !== "jev" && checker.provider !== "scripted")
       ? "llm"
       : resolveAutoReviewProviderKind();
   if (kind === "jev" || kind === "scripted") {
@@ -37,7 +40,10 @@ export async function autoReviewCheckerProvider(
     { userId, spaceId },
     checker.provider,
     checker.model,
-    { credentialId: checker.credentialId },
+    {
+      credentialId: checker.credentialId,
+      modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey),
+    },
   );
   if (
     (memberChecker ||
@@ -89,6 +95,7 @@ export async function autoReviewCheckerProvider(
           accountId: judgeKey.accountId,
           gatewayId: judgeKey.gatewayId,
           baseUrl: judgeKey.baseUrl,
+          apiProtocol: judgeKey.apiProtocol,
           headers: judgeKey.headers,
           allowPrivateEndpoint: judgeKey.allowPrivateEndpoint,
           cacheCapabilities: judgeKey.cacheCapabilities,

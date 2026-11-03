@@ -30,6 +30,33 @@ import {
 } from "./thread-events.js";
 
 describe("thread event reduction", () => {
+  it("tracks model authorization waits without carrying them into an unrelated input wait", () => {
+    const run = { ...threadRun("run-1"), userId: "owner" };
+    const initial = { ...snapshot([]), run, activeRuns: [run] };
+    const waiting = reduceThreadSnapshot(
+      initial,
+      event({
+        type: "run.waiting_input",
+        seq: 5,
+        runId: run.id,
+        payload: { userId: "owner", modelAuthorizationRequired: true },
+      }),
+    );
+    expect(waiting?.run?.modelAuthorizationRequired).toBe(true);
+    expect(waiting?.activeRuns?.[0]?.modelAuthorizationRequired).toBe(true);
+    const otherInput = reduceThreadSnapshot(
+      waiting,
+      event({
+        type: "run.waiting_input",
+        seq: 6,
+        runId: run.id,
+        payload: { userId: "owner" },
+      }),
+    );
+    expect(otherInput?.run?.modelAuthorizationRequired).toBeUndefined();
+    expect(otherInput?.activeRuns?.[0]?.modelAuthorizationRequired).toBeUndefined();
+  });
+
   it("shows a committed direct send as queued before its snapshot refresh returns", () => {
     const initial = snapshot([message("user-1", [{ kind: "text", text: "Continue" }], 4)]);
 

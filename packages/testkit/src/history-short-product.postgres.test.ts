@@ -67,6 +67,7 @@ describe.skipIf(!enabled)("short original product history", () => {
                 dataDir,
                 sandboxProvider: "fake",
                 agentRuntime: "pi",
+                modelAccountOnly: false,
                 contextStrategy: strategy,
                 wakeupDriver: "memory",
                 signupsEnabled: "true",
