@@ -27,11 +27,9 @@ Legacy `model` connection envelopes remain accepted during upgrades. The public 
 also retains derived legacy link fields and an empty default-model field for already-installed
 clients; these are response compatibility fields, not required deployment settings.
 
-For a trusted private-network API without TLS, set `"allowInsecureHttp": true` in this same
-JSON and use an `http://` server `origin`. This explicitly permits sending the application
-credential and user keys over that network without TLS; use it only on a trusted network.
-The default remains HTTPS. The exception applies only to server requests to the account API:
-browser authorization, callbacks, model `baseUrl` and navigation still require HTTPS.
+The server account `origin` accepts HTTP or HTTPS without an additional setting. Use HTTP only
+on a trusted private network: application credentials and user keys travel without TLS on that
+link. Browser authorization, callbacks, model `baseUrl` and navigation still require HTTPS.
 
 Authorization discovers `/models` with a transient user key and exposes those models in the
 existing model picker. It never replaces the selected main model. Pick the desired model in

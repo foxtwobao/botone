@@ -29,8 +29,6 @@ const balanceSchema = z.object({
 export interface ResellerModelAccountConfig {
   origin: string;
   credential: string;
-  /** Permit cleartext transport to a trusted private-network API, never browser destinations. */
-  allowInsecureHttp?: boolean;
   /** Exact trusted origins to which the browser may be sent for model authorization. */
   authorizationOrigins?: string[];
 }
@@ -43,7 +41,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
     private readonly config: ResellerModelAccountConfig,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {
-    this.origin = checkedOrigin(config.origin, config.allowInsecureHttp);
+    this.origin = checkedOrigin(config.origin, true);
     this.authorizationOrigins = config.authorizationOrigins
       ? new Set(config.authorizationOrigins.map((value) => checkedOrigin(value)))
       : undefined;
@@ -199,10 +197,10 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
   }
 }
 
-function checkedOrigin(value: string, allowInsecureHttp = false) {
+function checkedOrigin(value: string, allowHttp = false) {
   const url = new URL(value);
   if (
-    (url.protocol !== "https:" && !(allowInsecureHttp && url.protocol === "http:")) ||
+    (url.protocol !== "https:" && !(allowHttp && url.protocol === "http:")) ||
     url.username ||
     url.password ||
     url.search ||

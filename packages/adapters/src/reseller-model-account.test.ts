@@ -14,16 +14,12 @@ function fixture(body: unknown, status = 200) {
 }
 
 describe("external model account protocol", () => {
-  it("uses an opted-in private HTTP API while keeping browser authorization on HTTPS", async () => {
+  it("uses a private HTTP API while keeping browser authorization on HTTPS", async () => {
     const transport = vi.fn<typeof fetch>(async () =>
       Response.json({ status: "ready", api_key: { key: "fake-user-key" } }),
     );
     const privateConfig = { ...config, origin: "http://accounts.internal:55100" };
-    expect(() => new ResellerModelAccountProvider(privateConfig, transport)).toThrow();
-    const provider = new ResellerModelAccountProvider(
-      { ...privateConfig, allowInsecureHttp: true },
-      transport,
-    );
+    const provider = new ResellerModelAccountProvider(privateConfig, transport);
     await expect(provider.ensure(identity)).resolves.toEqual({ apiKey: "fake-user-key" });
     expect(transport.mock.calls[0]).toMatchObject([
       "http://accounts.internal:55100/api/apps/keys/ensure",
@@ -54,7 +50,6 @@ describe("external model account protocol", () => {
       () =>
         new ResellerModelAccountProvider({
           ...privateConfig,
-          allowInsecureHttp: true,
           authorizationOrigins: ["http://gateway.example.test"],
         }),
     ).toThrow();

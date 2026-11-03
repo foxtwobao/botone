@@ -8,7 +8,7 @@
 
 当前实现包括接口适配、现有 Account 身份读取、复用 ModelOAuthSession 的授权事务、API 与 worker 运行时取 Key、Web/Electron 与移动端入口、余额和充值导航。没有新增数据库结构。部署字段、实际支持范围和恢复方式见 [部署说明](self-host-model-account.md)。
 
-内网部署：Reseller 服务端 `origin` 默认要求 HTTPS；可信内网的 HTTP 地址需在同一配置中显式设置 `allowInsecureHttp: true`。该选项仅用于服务端账户 API，授权页面、回调、模型地址及门户导航仍要求 HTTPS。HTTP 链路会明文传输应用凭据及用户 Key，必须由可信网络提供保护。
+内网部署：Reseller 服务端 `origin` 直接支持 HTTP 或 HTTPS，无需增加配置开关；授权页面、回调、模型地址及门户导航仍要求 HTTPS。HTTP 链路会明文传输应用凭据及用户 Key，应仅用于可信内网。
 
 ## 1. 最终决策
 
