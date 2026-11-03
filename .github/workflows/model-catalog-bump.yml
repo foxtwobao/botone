@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   update:
+    if: github.event_name == 'workflow_dispatch' || vars.AUTOMATED_MAINTENANCE_ENABLED == 'true'
     name: Update pi packages and verify
     runs-on: ubuntu-latest
     timeout-minutes: 20

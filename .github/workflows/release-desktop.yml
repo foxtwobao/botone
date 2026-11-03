@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   validate:
+    if: vars.DESKTOP_PUBLISH_ENABLED == 'true'
     name: Validate stable release
     runs-on: ubuntu-24.04
     outputs:

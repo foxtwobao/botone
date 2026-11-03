@@ -103,7 +103,7 @@ jobs:
     name: Build ${{ matrix.name }} ${{ matrix.arch }}
     # A Depot outage must not block deploys, so any failed Depot build rebuilds every image here.
     if: >-
-      !cancelled() && github.event_name != 'pull_request' &&
+      !cancelled() && github.event_name != 'pull_request' && vars.GHCR_PUBLISH_ENABLED == 'true' &&
       (vars.DEPOT_PROJECT_ID == '' || contains(needs.build-depot.outputs.*, 'failed'))
     needs: [build-depot]
     # Each architecture builds natively on its own runner and pushes by digest only.
@@ -190,7 +190,7 @@ jobs:
 
   build-depot:
     name: Build ${{ matrix.name }} on Depot
-    if: github.event_name != 'pull_request' && vars.DEPOT_PROJECT_ID != ''
+    if: github.event_name != 'pull_request' && vars.GHCR_PUBLISH_ENABLED == 'true' && vars.DEPOT_PROJECT_ID != ''
     # Each Depot image is checked, tagged, and attested in this job without a second runner.
     # Per-image locks bound builds and protect moving tags while other CI runs independently.
     runs-on: ubuntu-latest
@@ -293,7 +293,7 @@ jobs:
     name: Publish ${{ matrix.name }} image
     # Native GitHub builds still need to combine their two architecture artifacts.
     if: >-
-      !cancelled() && github.event_name != 'pull_request' && needs.build.result == 'success'
+      !cancelled() && github.event_name != 'pull_request' && vars.GHCR_PUBLISH_ENABLED == 'true' && needs.build.result == 'success'
     needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 15

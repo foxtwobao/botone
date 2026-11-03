@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   update:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.AUTOMATED_MAINTENANCE_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 55
     permissions:

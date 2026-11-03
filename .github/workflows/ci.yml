@@ -313,7 +313,7 @@ jobs:
   # image this run built instead of building on the production host.
   publish-server-image:
     name: Publish server images
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.GHCR_PUBLISH_ENABLED == 'true'
     concurrency:
       group: ci-images-main
     uses: ./.github/workflows/publish-server-image.yml
@@ -325,7 +325,7 @@ jobs:
 
   publish-mobile-update:
     name: Publish compatible mobile update
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.MOBILE_PUBLISH_ENABLED == 'true'
     needs: [checks, test-integration]
     runs-on: ubuntu-latest
     timeout-minutes: 20

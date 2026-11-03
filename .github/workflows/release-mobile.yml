@@ -20,7 +20,7 @@ concurrency:
 jobs:
   ios:
     name: Build iOS and submit it for App Store review
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.MOBILE_PUBLISH_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
@@ -96,6 +96,7 @@ jobs:
         run: node .github/scripts/app-store-review.mjs
 
   android:
+    if: github.ref == 'refs/heads/main' && vars.MOBILE_PUBLISH_ENABLED == 'true'
     name: Android APK
     uses: ./.github/workflows/release-android-apk.yml
     permissions:
