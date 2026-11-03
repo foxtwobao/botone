@@ -42,6 +42,10 @@ jobs:
           cache-from: type=gha,scope=dockerhub-app-amd64
           cache-to: type=gha,mode=max,scope=dockerhub-app-amd64
           provenance: false
+      - name: Release build cache before exporting image
+        # The cache is already uploaded and the image loaded into Docker. Keeping both the
+        # builder cache and an exported rootfs can exhaust the hosted runner's disk.
+        run: docker buildx prune --all --force
       - name: Check image before publishing
         env:
           SOURCE_SHA: ${{ github.sha }}
