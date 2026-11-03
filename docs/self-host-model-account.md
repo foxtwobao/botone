@@ -69,7 +69,9 @@ OIDC login flows. Native clients do not share portal navigation cookies. Navigat
 ## Use the account
 
 On the initial Connect a model screen, open **Model account**; existing users can open account
-model settings. Choose **Use model account**, authorize, and select a main model in that same
+model settings. Mobile opens the existing model settings after sign-in when no usable model is
+configured, following the optional signup survey when needed. Choose **Use model account**,
+authorize, and select a main model in that same
 settings panel. If authorization is required,
 the browser opens a one-time launch URL, obtains a browser-bound cookie, and continues to the
 authorization provider. The callback checks the original app session and pinned identity.
@@ -81,7 +83,9 @@ Cancelling leaves the original work intact.
 A successful connection leaves all existing model selections intact. Choose a main model using
 the existing model settings after authorizing. An explicit Space override remains in effect.
 Managed connections are excluded from ordinary key editors. Disconnect through the Model account
-controls to revoke the external authorization. Other personal model connections continue to use their own keys.
+API to revoke the external authorization when necessary. Connected settings show the account
+status without a routine Disconnect action; older pending disconnections still offer Retry
+disconnect. Other personal model connections continue to use their own keys.
 
 The server stores a reference to the existing Account and its binding, not copied identity
 claims or a persistent model key. Every run resolves a fresh user key. Background runs can
@@ -92,6 +96,11 @@ sent model requests may still finish and be charged.
 Model authorization pauses affected tasks before a model call. Successful authorization resumes
 only runs paused for that same account binding, using their original run IDs and the existing
 executor. Completed runs and unrelated approval waits are never replayed.
+The paused task shows **Authorize and continue** only to its user. Clicking it opens the existing
+authorization flow in place; it does not require opening settings or replace the current draft.
+Tasks never open authorization windows automatically. Snapshot and live-event hints derive from
+the current server checkpoint, so old prompts, other users' tasks and ordinary input waits do
+not expose the action. Old clients retain the existing text guidance and settings entry.
 
 Balances are displayed with their original decimal amount and unit. They are informational;
 the model service makes the final decision on whether a request has sufficient funds. Failed
@@ -124,6 +133,12 @@ substituted for an external account key. Resolve or cancel affected jobs before 
 Use isolated offline fixtures for verification. Live identity login, native OS browser handoff,
 and actual model charges need separate deployment acceptance; do not treat mocked browser
 responses as proof that a live platform has been configured.
+
+If connection or balance requests return `unavailable`, inspect API logs for
+`Model account service rejected a request` or `Model account service request failed`. These
+record the operation and HTTP status, or distinguish transport, timeout and response failures.
+They omit endpoint addresses, credentials, identity claims and upstream response bodies.
+`Model account operation failed` identifies a local failure outside that service request.
 
 ## Docker Hub amd64 publication
 

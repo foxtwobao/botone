@@ -10,6 +10,8 @@ export const NL_MESSAGES: Record<string, string> = {
     "Autorisatie kon niet worden bevestigd. Probeer opnieuw.",
   "Disconnection pending confirmation.": "Verbinding verbreken wacht op bevestiging.",
   Home: "Startpagina",
+  "Authorize and continue": "Autoriseren en doorgaan",
+  "Connected to TokenONE": "Verbonden met TokenONE",
   "Model account": "Modelaccount",
   "Model account unavailable": "Modelaccount niet beschikbaar",
   Recharge: "Opwaarderen",

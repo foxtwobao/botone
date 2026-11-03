@@ -10,6 +10,8 @@ export const ES_MESSAGES: Record<string, string> = {
     "No se pudo confirmar la autorización. Inténtalo de nuevo.",
   "Disconnection pending confirmation.": "Desconexión pendiente de confirmación.",
   Home: "Inicio",
+  "Authorize and continue": "Autorizar y continuar",
+  "Connected to TokenONE": "Conectado a TokenONE",
   "Model account": "Cuenta de modelos",
   "Model account unavailable": "Cuenta de modelos no disponible",
   Recharge: "Recargar",

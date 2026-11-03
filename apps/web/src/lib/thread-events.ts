@@ -320,6 +320,8 @@ export function reduceThreadSnapshot(
   }
   if (event.type === "run.waiting_input" || event.type === "computer.takeover.requested") {
     const status = event.type === "run.waiting_input" ? "waiting_input" : "waiting_takeover";
+    const modelAuthorizationRequired =
+      event.type === "run.waiting_input" && event.payload?.modelAuthorizationRequired === true;
     const runId = event.runId;
     const userId =
       event.type === "run.waiting_input" &&
@@ -337,14 +339,18 @@ export function reduceThreadSnapshot(
     const runChanged = Boolean(
       knownInRun &&
         prev.run &&
-        (prev.run.status !== status || (userId && prev.run.userId !== userId)),
+        (prev.run.status !== status ||
+          Boolean(prev.run.modelAuthorizationRequired) !== modelAuthorizationRequired ||
+          (userId && prev.run.userId !== userId)),
     );
     const activeRunChanged = Boolean(
       knownInActive &&
         prev.activeRuns?.some(
           (candidate) =>
             candidate.id === runId &&
-            (candidate.status !== status || (userId && candidate.userId !== userId)),
+            (candidate.status !== status ||
+              Boolean(candidate.modelAuthorizationRequired) !== modelAuthorizationRequired ||
+              (userId && candidate.userId !== userId)),
         ),
     );
     const members = updateMemberStatus(prev.members, event.botId, status);
@@ -366,6 +372,7 @@ export function reduceThreadSnapshot(
     }
     if (needsInsert && runId) {
       const waitingRun: Run = {
+        ...(modelAuthorizationRequired ? { modelAuthorizationRequired: true } : {}),
         id: runId,
         botId: event.botId,
         threadId: event.threadId,
@@ -401,11 +408,23 @@ export function reduceThreadSnapshot(
       members,
       messages,
       run:
-        runChanged && prev.run ? { ...prev.run, status, ...(userId ? { userId } : {}) } : prev.run,
+        runChanged && prev.run
+          ? {
+              ...prev.run,
+              status,
+              modelAuthorizationRequired: modelAuthorizationRequired || undefined,
+              ...(userId ? { userId } : {}),
+            }
+          : prev.run,
       activeRuns: activeRunChanged
         ? prev.activeRuns?.map((candidate) =>
             candidate.id === runId
-              ? { ...candidate, status, ...(userId ? { userId } : {}) }
+              ? {
+                  ...candidate,
+                  status,
+                  modelAuthorizationRequired: modelAuthorizationRequired || undefined,
+                  ...(userId ? { userId } : {}),
+                }
               : candidate,
           )
         : prev.activeRuns,

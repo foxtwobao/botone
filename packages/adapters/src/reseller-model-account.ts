@@ -1,6 +1,7 @@
 import type { ExternalAccountIdentity, ExternalModelAccountProvider } from "@rakazo/adapter-kit";
 import { ExternalModelAccountError } from "@rakazo/adapter-kit";
 import { readBoundedJsonResponse } from "@rakazo/core";
+import { getLogger } from "@rakazo/logging";
 import { z } from "zod";
 
 const identitySchema = z.object({ issuer: z.url(), subject: z.string().min(1) });
@@ -53,7 +54,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
   async ensure(identity: ExternalAccountIdentity, signal?: AbortSignal) {
     const body = await this.request("keys/ensure", { identity: checkedIdentity(identity) }, signal);
     const result = keySchema.safeParse(body);
-    if (!result.success) throw new ExternalModelAccountError("unavailable");
+    if (!result.success) throw invalidResponse("keys/ensure");
     return { apiKey: result.data.api_key.key };
   }
 
@@ -91,12 +92,12 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       signal,
     );
     const result = authorizationSchema.safeParse(body);
-    if (!result.success) throw new ExternalModelAccountError("unavailable");
+    if (!result.success) throw invalidResponse("authorizations");
     let url: URL;
     try {
       url = new URL(result.data.authorization_url);
     } catch {
-      throw new ExternalModelAccountError("unavailable");
+      throw invalidResponse("authorizations");
     }
     if (
       url.protocol !== "https:" ||
@@ -105,7 +106,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       (this.authorizationOrigins && !this.authorizationOrigins.has(url.origin)) ||
       url.hash
     )
-      throw new ExternalModelAccountError("unavailable");
+      throw invalidResponse("authorizations");
     return { url: url.href, expiresIn: result.data.expires_in };
   }
 
@@ -121,7 +122,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       signal,
     );
     if (!z.object({ status: z.literal("authorized") }).safeParse(body).success)
-      throw new ExternalModelAccountError("unavailable");
+      throw invalidResponse("authorizations/complete");
   }
 
   async revoke(identity: ExternalAccountIdentity, signal?: AbortSignal) {
@@ -131,7 +132,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       signal,
     );
     if (!z.object({ status: z.literal("revoked") }).safeParse(body).success)
-      throw new ExternalModelAccountError("unavailable");
+      throw invalidResponse("authorizations/revoke");
   }
 
   async balance(identity: ExternalAccountIdentity, signal?: AbortSignal) {
@@ -142,7 +143,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       7_000,
     );
     const result = balanceSchema.safeParse(body);
-    if (!result.success) throw new ExternalModelAccountError("unavailable");
+    if (!result.success) throw invalidResponse("balance/query");
     return result.data.data.balance;
   }
 
@@ -153,6 +154,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
     timeoutMs = 35_000,
   ): Promise<unknown> {
     const timeout = AbortSignal.timeout(timeoutMs);
+    let httpStatus: number | undefined;
     try {
       const response = await this.fetchImpl(`${this.origin}/api/apps/${path}`, {
         method: "POST",
@@ -165,6 +167,7 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
         cache: "no-store",
         signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
       });
+      httpStatus = response.status;
       const data = await readBoundedJsonResponse<unknown>(
         response,
         64 * 1024,
@@ -179,6 +182,10 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
           error.data.error === "APP_USER_AUTHORIZATION_REQUIRED"
         )
           throw new ExternalModelAccountError("authorization_required");
+        getLogger().warn("Model account service rejected a request", {
+          operation: path,
+          httpStatus,
+        });
         const retryable =
           response.status === 503 &&
           error.success &&
@@ -192,9 +199,24 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
       return data;
     } catch (error) {
       if (error instanceof ExternalModelAccountError) throw error;
+      if (!signal?.aborted)
+        getLogger().warn("Model account service request failed", {
+          operation: path,
+          httpStatus,
+          failure: timeout.aborted ? "timeout" : httpStatus ? "response" : "transport",
+        });
       throw new ExternalModelAccountError("unavailable");
     }
   }
+}
+
+function invalidResponse(operation: string) {
+  getLogger().warn("Model account service request failed", {
+    operation,
+    httpStatus: 200,
+    failure: "response",
+  });
+  return new ExternalModelAccountError("unavailable");
 }
 
 function checkedOrigin(value: string, allowHttp = false) {

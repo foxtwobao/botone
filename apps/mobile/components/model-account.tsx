@@ -17,6 +17,7 @@ import { useI18n } from "../lib/i18n";
 import { fetchServer } from "../lib/server-headers";
 import { currentSessionGeneration } from "../lib/session";
 import { MenuPickerMenu } from "./menu-picker";
+import { NativeActionButton } from "./native-action-button";
 import { SettingsGroup, SettingsRow } from "./settings-group";
 
 function client() {
@@ -37,7 +38,13 @@ function client() {
   }, `${base}/api/model-account`);
 }
 
-export function ModelAccount({ onChanged }: { onChanged: () => void }) {
+export function ModelAccount({
+  onChanged,
+  resumeTask = false,
+}: {
+  onChanged?: () => void | Promise<void>;
+  resumeTask?: boolean;
+}) {
   const { t } = useI18n();
   const [config, setConfig] = useState<ModelAccountConfig>();
   const [status, setStatus] = useState<ModelAccountStatus>();
@@ -113,13 +120,12 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
       if (kind === "protocol" && protocol) await api.settings(protocol, abort.signal);
       else if (kind === "models") await api.refreshModels(abort.signal);
       else if (kind === "revoke") await api.revoke(abort.signal);
-      else if (kind === "refresh") {
-        await refresh(api, abort.signal);
-        return;
-      } else {
+      else if (kind !== "refresh") {
         const result = await api.connect(undefined, abort.signal);
+        abort.signal.throwIfAborted();
         if (result.url) {
           const { openAuthSessionAsync } = await import("expo-web-browser");
+          abort.signal.throwIfAborted();
           const authorization = await openAuthSessionAsync(
             result.url,
             "rakazo://model-authorization",
@@ -134,32 +140,64 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
       }
       abort.signal.throwIfAborted();
       await refresh(api, abort.signal);
-      onChanged();
+      await onChanged?.();
     } catch (cause) {
       if (abort.signal.aborted) return;
       setError(cause instanceof ModelAccountClientError ? cause.code : "unavailable");
       await refresh(api, abort.signal).catch(() => undefined);
     } finally {
       if (!abort.signal.aborted) setBusy(false);
+      if (actionAbort.current === abort) actionAbort.current = null;
     }
   };
   const identityUnavailable = status?.linked === false || error === "link_required";
   const message =
     status?.recovery === "revocation_unknown"
       ? t("Disconnection pending confirmation.")
-      : error === "result_unknown" || status?.recovery === "authorization_unknown"
-        ? t("Could not confirm authorization. Try again.")
-        : error === "authorization_required" || status?.recovery === "authorization_required"
-          ? t("Authorize the model account to continue.")
-          : status?.recovery === "authorization_pending"
-            ? t("Authorization incomplete.")
-            : identityUnavailable
-              ? t("Sign in with SSO to use the model account.")
-              : error
-                ? t("Model account unavailable")
-                : undefined;
+      : error &&
+          error !== "authorization_required" &&
+          error !== "result_unknown" &&
+          !identityUnavailable
+        ? t("Model account unavailable")
+        : error === "result_unknown" || status?.recovery === "authorization_unknown"
+          ? t("Could not confirm authorization. Try again.")
+          : error === "authorization_required" || status?.recovery === "authorization_required"
+            ? t("Authorize the model account to continue.")
+            : status?.recovery === "authorization_pending"
+              ? t("Authorization incomplete.")
+              : identityUnavailable
+                ? t("Sign in with SSO to use the model account.")
+                : error
+                  ? t("Model account unavailable")
+                  : undefined;
+  if (resumeTask) {
+    return (
+      <SettingsGroup footer={error || identityUnavailable ? message : undefined}>
+        <NativeActionButton
+          label={
+            status?.recovery === "revocation_unknown"
+              ? t("Retry disconnect")
+              : status?.recovery === "authorization_unknown"
+                ? t("Retry")
+                : t("Authorize and continue")
+          }
+          disabled={busy || identityUnavailable}
+          onPress={() =>
+            void act(
+              status?.recovery === "revocation_unknown"
+                ? "revoke"
+                : status?.recovery === "authorization_unknown"
+                  ? "refresh"
+                  : "connect",
+            )
+          }
+        />
+      </SettingsGroup>
+    );
+  }
   return (
     <SettingsGroup label={t("Model account")} footer={message}>
+      {status?.connected && !message ? <SettingsRow title={t("Connected to TokenONE")} /> : null}
       {!identityUnavailable &&
       status?.recovery !== "revocation_unknown" &&
       (!status?.connected ||
@@ -189,9 +227,9 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
           onPress={() => void act("models")}
         />
       ) : null}
-      {status?.connected || status?.recovery === "revocation_unknown" ? (
+      {status?.recovery === "revocation_unknown" ? (
         <SettingsRow
-          title={status.recovery === "revocation_unknown" ? t("Retry disconnect") : t("Disconnect")}
+          title={t("Retry disconnect")}
           destructive
           disabled={busy}
           onPress={() => void act("revoke")}

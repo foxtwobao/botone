@@ -22,6 +22,7 @@ import {
   requireMembership,
   runAsSystem,
 } from "@rakazo/db";
+import { getLogger } from "@rakazo/logging";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
@@ -71,6 +72,7 @@ export function modelAccountRoutes(deps: {
     if (error instanceof HTTPException) return c.json({ error: error.message }, error.status);
     if (error instanceof ExternalModelAccountError)
       return c.json({ error: error.reason }, error.reason === "authorization_required" ? 403 : 503);
+    getLogger().warn("Model account operation failed", { operation: c.req.routePath });
     return c.json({ error: "unavailable" }, 503);
   });
   const identity = async (userId: string) => {

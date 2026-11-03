@@ -963,6 +963,10 @@ msgid "Authorize again"
 msgstr "Volver a autorizar"
 
 #: src/components/ModelAccount.tsx
+msgid "Authorize and continue"
+msgstr "Autorizar y continuar"
+
+#: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr "Autoriza la cuenta de modelos para continuar."
 
@@ -1680,6 +1684,10 @@ msgstr "Conectado"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "Se conectó {0}."
+
+#: src/components/ModelAccount.tsx
+msgid "Connected to TokenONE"
+msgstr "Conectado a TokenONE"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -2630,7 +2638,6 @@ msgstr "Desactivado"
 msgid "Discard recording"
 msgstr "Descartar grabación"
 
-#: src/components/ModelAccount.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/MessagingSettingsPanel.tsx

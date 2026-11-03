@@ -18,6 +18,8 @@ import { asSystem, createDb, createThreadEvents } from "@rakazo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveModelKey } from "../../../packages/adapters/src/run-model.js";
 import { modelAccountRoutes } from "./model-account.js";
+import type { ThreadTarget } from "./thread-target.js";
+import { threadSnapshot } from "./thread-target.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const postgres = process.env.VERIFY_DATABASE && databaseUrl ? describe.sequential : describe.skip;
@@ -432,6 +434,17 @@ postgres("external model account isolated PostgreSQL", () => {
     expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
       "waiting_input",
     );
+    expect(
+      (await prisma.event.findFirstOrThrow({ where: { runId: run.id, type: "run.waiting_input" } }))
+        .payload,
+    ).toMatchObject({
+      userId,
+      modelAuthorizationRequired: true,
+    });
+    const target = { kind: "bot", botId, threadId, bot: { computer: null } } as ThreadTarget;
+    const pausedSnapshot = await threadSnapshot({ prisma }, target);
+    expect(pausedSnapshot.run).toMatchObject({ id: run.id, modelAuthorizationRequired: true });
+    expect(JSON.stringify(pausedSnapshot)).not.toContain(binding);
     expect(await (await request("/status")).json()).toMatchObject({
       connected: true,
       recovery: "authorization_required",
@@ -463,6 +476,9 @@ postgres("external model account isolated PostgreSQL", () => {
     authorized = true;
     expect((await request("/connect", { method: "POST", body: "{}" })).status).toBe(200);
     expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe("queued");
+    expect(
+      (await threadSnapshot({ prisma }, target)).run?.modelAuthorizationRequired,
+    ).toBeUndefined();
     expect((await prisma.run.findUniqueOrThrow({ where: { id: other.id } })).status).toBe(
       "waiting_input",
     );

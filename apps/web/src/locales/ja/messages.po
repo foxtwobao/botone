@@ -963,6 +963,10 @@ msgid "Authorize again"
 msgstr "再認可"
 
 #: src/components/ModelAccount.tsx
+msgid "Authorize and continue"
+msgstr "認証して続行"
+
+#: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr "続行するにはモデルアカウントを認可してください。"
 
@@ -1680,6 +1684,10 @@ msgstr "接続済み"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "{0}を接続しました。"
+
+#: src/components/ModelAccount.tsx
+msgid "Connected to TokenONE"
+msgstr "TokenONE に接続済み"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -2630,7 +2638,6 @@ msgstr "無効"
 msgid "Discard recording"
 msgstr "録音を破棄"
 
-#: src/components/ModelAccount.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/MessagingSettingsPanel.tsx

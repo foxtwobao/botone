@@ -37,7 +37,7 @@ import {
   usesCustomApiBase,
 } from "../lib/api";
 import type { AuthMode } from "../lib/auth-routing";
-import { initialAuthMode } from "../lib/auth-routing";
+import { initialAuthMode, signedInRoute } from "../lib/auth-routing";
 import { useI18n } from "../lib/i18n";
 import { hasIncomingShare } from "../lib/incoming-share";
 import { useMobileTokens } from "../lib/native";
@@ -218,7 +218,7 @@ export default function SignIn() {
   async function openApp() {
     if (hasIncomingShare()) return router.replace("/share");
     const me = await rpc("me").catch(() => null);
-    router.replace(me?.needsSignupSurvey ? "/signup-survey" : "/");
+    router.replace(signedInRoute(me));
   }
 
   async function externalSignIn(run: () => Promise<boolean>) {

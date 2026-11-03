@@ -26,6 +26,7 @@ import type { ImageArtifactPreviewTarget } from "../image-artifact-viewer";
 import type { MarkdownArtifactPreviewTarget } from "../markdown-artifact-preview";
 import { presentMessageMenu } from "../message-action-menu";
 import { MessageContextMenu } from "../message-context-menu";
+import { ModelAccount } from "../model-account";
 import { ReplyLine } from "../reply-line";
 import { TimeSeparator } from "../time-separator";
 import { UnreadDivider } from "../unread-divider";
@@ -33,6 +34,7 @@ import type { MessageActionProps } from "./message-bubble";
 import { MessageBubble } from "./message-bubble";
 
 export type MessageRowActions = {
+  refresh?: () => void | Promise<void>;
   helperToggle: (
     measure: (done: (y: number, cardBottom: number) => void) => void,
     toggle: () => void,
@@ -74,6 +76,7 @@ type MessageRowProps = {
   readOnly: boolean;
   onCall: boolean;
   canAnswer: boolean;
+  canAuthorizeModelAccount?: boolean;
   canDismiss: boolean;
   highlighted: boolean;
   separator: boolean;
@@ -111,6 +114,7 @@ export const MessageRow = memo(function MessageRow({
   readOnly,
   onCall,
   canAnswer,
+  canAuthorizeModelAccount,
   canDismiss,
   highlighted,
   separator,
@@ -455,6 +459,9 @@ export const MessageRow = memo(function MessageRow({
               />
             </ThreadReadOnlyContext.Provider>
           </MessageContextMenu>
+          {canAuthorizeModelAccount ? (
+            <ModelAccount resumeTask onChanged={actions.refresh} />
+          ) : null}
           {displayedReactions.size > 0 ? (
             <View
               style={{

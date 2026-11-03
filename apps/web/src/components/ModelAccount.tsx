@@ -26,7 +26,13 @@ import { authClient } from "../lib/auth";
 import { cancelSsoFlow, runSsoFlow } from "../lib/sso-flow";
 
 const client = createModelAccountClient();
-export function ModelAccount() {
+export function ModelAccount({
+  resumeTask = false,
+  onChanged,
+}: {
+  resumeTask?: boolean;
+  onChanged?: () => void | Promise<void>;
+}) {
   const { t } = useLingui();
   const userId = authClient.useSession().data?.user.id;
   const queries = useQueryClient();
@@ -85,7 +91,6 @@ export function ModelAccount() {
     return () => {
       abort.abort();
       actionAbort.current?.abort();
-      cancelSsoFlow();
       window.removeEventListener("focus", update);
       document.removeEventListener("visibilitychange", update);
     };
@@ -110,10 +115,7 @@ export function ModelAccount() {
       if (kind === "protocol" && protocol) await client.settings(protocol, abort.signal);
       else if (kind === "models") await client.refreshModels(abort.signal);
       else if (kind === "revoke") await client.revoke(abort.signal);
-      else if (kind === "refresh") {
-        await refresh(abort.signal);
-        return;
-      } else {
+      else if (kind !== "refresh") {
         setAuthorizing(true);
         const returnTo = window.location.href;
         const result = await runSsoFlow(
@@ -122,7 +124,7 @@ export function ModelAccount() {
             return { data: { url: connected.url }, error: null };
           },
           [returnTo],
-          { popup: true, navigate: false },
+          { popup: true, navigate: false, signal: abort.signal },
         );
         if (result.error) {
           const code = modelAccountErrorCodeSchema.safeParse(result.error.code);
@@ -132,6 +134,7 @@ export function ModelAccount() {
       abort.signal.throwIfAborted();
       await refresh(abort.signal);
       await queries.invalidateQueries();
+      await onChanged?.();
     } catch (cause) {
       if (abort.signal.aborted) return;
       setError(cause instanceof ModelAccountClientError ? cause.code : "unavailable");
@@ -141,6 +144,7 @@ export function ModelAccount() {
         setBusy(false);
         setAuthorizing(false);
       }
+      if (actionAbort.current === abort) actionAbort.current = null;
     }
   };
   const identityUnavailable = status?.linked === false || error === "link_required";
@@ -149,22 +153,71 @@ export function ModelAccount() {
       ? t`Disconnection pending confirmation.`
       : identityUnavailable
         ? t`Sign in with SSO to use the model account.`
-        : error === "authorization_required" || status?.recovery === "authorization_required"
-          ? t`Authorize the model account to continue.`
-          : error === "result_unknown" || status?.recovery === "authorization_unknown"
-            ? t`Could not confirm authorization. Try again.`
-            : status?.recovery === "authorization_pending"
-              ? authorizing
-                ? t`Complete authorization in the opened window.`
-                : t`Authorization incomplete.`
-              : error
-                ? t`Model account unavailable`
-                : null;
+        : error && error !== "authorization_required" && error !== "result_unknown"
+          ? t`Model account unavailable`
+          : error === "authorization_required" || status?.recovery === "authorization_required"
+            ? t`Authorize the model account to continue.`
+            : error === "result_unknown" || status?.recovery === "authorization_unknown"
+              ? t`Could not confirm authorization. Try again.`
+              : status?.recovery === "authorization_pending"
+                ? authorizing
+                  ? t`Complete authorization in the opened window.`
+                  : t`Authorization incomplete.`
+                : error
+                  ? t`Model account unavailable`
+                  : null;
+  if (resumeTask) {
+    return (
+      <div className="mt-2 space-y-2" data-model-account>
+        <Button
+          size="sm"
+          disabled={busy || identityUnavailable}
+          onClick={() =>
+            void act(
+              status?.recovery === "revocation_unknown"
+                ? "revoke"
+                : status?.recovery === "authorization_unknown"
+                  ? "refresh"
+                  : "connect",
+            )
+          }
+        >
+          {status?.recovery === "revocation_unknown" ? (
+            <Trans>Retry disconnect</Trans>
+          ) : status?.recovery === "authorization_unknown" ? (
+            <Trans>Retry</Trans>
+          ) : (
+            <Trans>Authorize and continue</Trans>
+          )}
+        </Button>
+        {authorizing ? (
+          <Button size="sm" variant="ghost" onClick={cancelSsoFlow}>
+            <Trans>Cancel</Trans>
+          </Button>
+        ) : null}
+        {message &&
+        (error ||
+          identityUnavailable ||
+          authorizing ||
+          status?.recovery === "revocation_unknown" ||
+          status?.recovery === "authorization_unknown") ? (
+          <p role={error ? "alert" : "status"} className="text-sm text-muted-foreground">
+            {message}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <section className="mb-6 space-y-3" data-model-account>
       <SectionHeading>
         <Trans>Model account</Trans>
       </SectionHeading>
+      {status?.connected && !message ? (
+        <p role="status" className="text-sm">
+          <Trans>Connected to TokenONE</Trans>
+        </p>
+      ) : null}
       {balance ? <p className="text-sm text-muted-foreground">{balance}</p> : null}
       {message ? (
         <p role={error ? "alert" : "status"} className="text-sm text-muted-foreground">
@@ -228,13 +281,9 @@ export function ModelAccount() {
             <Trans>Cancel</Trans>
           </Button>
         ) : null}
-        {status?.connected || status?.recovery === "revocation_unknown" ? (
+        {status?.recovery === "revocation_unknown" ? (
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void act("revoke")}>
-            {status.recovery === "revocation_unknown" ? (
-              <Trans>Retry disconnect</Trans>
-            ) : (
-              <Trans>Disconnect</Trans>
-            )}
+            <Trans>Retry disconnect</Trans>
           </Button>
         ) : null}
         <Button size="sm" variant="ghost" disabled={busy} onClick={() => void act("refresh")}>
@@ -245,6 +294,8 @@ export function ModelAccount() {
             <Button
               size="sm"
               variant="ghost"
+              nativeButton={false}
+              role="link"
               render={
                 <a
                   href={navigation.homeUrl}
@@ -260,6 +311,8 @@ export function ModelAccount() {
             <Button
               size="sm"
               variant="ghost"
+              nativeButton={false}
+              role="link"
               render={
                 <a
                   href={navigation.rechargeUrl}

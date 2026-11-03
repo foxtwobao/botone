@@ -1347,6 +1347,7 @@ export type MessagingAgentConnection = z.infer<typeof MessagingAgentConnectionSc
 
 export const RunSchema = z.object({
   id: Id,
+  modelAuthorizationRequired: z.boolean().optional(),
   userId: Id.optional(),
   botId: Id,
   threadId: Id,

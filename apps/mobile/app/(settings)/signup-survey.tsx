@@ -1,5 +1,6 @@
 import type { SignupSurvey as SignupSurveyAnswers } from "@rakazo/contracts";
 import { signupSurveyAsksTeamSize } from "@rakazo/contracts";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useRef, useState } from "react";
 import {
@@ -26,6 +27,8 @@ type Use = NonNullable<SignupSurveyAnswers["use"]>;
 
 /** Optional questions shown once after signing up on a billing deployment. */
 export default function SignupSurvey() {
+  const { next } = useLocalSearchParams<{ next?: string }>();
+  const router = useRouter();
   const sideInsets = useSideInsets();
   const { t } = useI18n();
   const styles = useThemedStyles(createStyles);
@@ -49,7 +52,8 @@ export default function SignupSurvey() {
       "onboarding/signupSurvey",
       signupSurveyAnswers({ reason, use, teamSize, source }),
     ).catch(() => undefined);
-    closeSettingsSheet();
+    if (next === "models") router.replace("/models");
+    else closeSettingsSheet();
   }
 
   return (

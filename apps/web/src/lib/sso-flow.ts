@@ -43,8 +43,9 @@ export function completeSsoCallback(): boolean {
 export async function runSsoFlow(
   begin: (disableRedirect: boolean, callbackURL: (url: string) => string) => Promise<SsoResult>,
   callbackURLs: readonly string[],
-  options: { popup?: boolean; navigate?: boolean } = {},
+  options: { popup?: boolean; navigate?: boolean; signal?: AbortSignal } = {},
 ): Promise<SsoResult> {
+  if (options.signal?.aborted) return { data: null, error: null };
   if (!desktopBridge() && !options.popup) return begin(false, (url) => url);
   const nonce = crypto.randomUUID();
   const callbacks = callbackURLs.map((url) => new URL(url, window.location.href));
@@ -71,6 +72,7 @@ export async function runSsoFlow(
     popup?.close();
     rejectCancellation(new Error("SSO attempt replaced"));
   };
+  options.signal?.addEventListener("abort", cancel, { once: true });
   cancelActiveAttempt?.();
   cancelActiveAttempt = cancel;
   try {
@@ -137,6 +139,7 @@ export async function runSsoFlow(
     if (cancelled) return { data: null, error: null };
     throw error;
   } finally {
+    options.signal?.removeEventListener("abort", cancel);
     if (cancelActiveAttempt === cancel) cancelActiveAttempt = undefined;
     clearTimeout(timer);
     channel.onmessage = null;

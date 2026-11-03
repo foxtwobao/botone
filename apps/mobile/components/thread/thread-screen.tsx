@@ -423,6 +423,9 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
 
   // Event actions read the latest committed screen state without invalidating settled rows.
   const rowActions = useLatestRowActions({
+    refresh: async () => {
+      await refresh();
+    },
     helperToggle: scroll.helperToggle,
     reply: (message) => {
       setReplyTarget(message);
