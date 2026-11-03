@@ -1,4 +1,6 @@
 export const JA_MESSAGES: Record<string, string> = {
+  "API protocol": "API プロトコル",
+  "Refresh models": "モデルを更新",
   "Authorization incomplete.": "認可が完了していません。",
   "Authorize again": "再認可",
   "Authorize the model account to continue.": "続行するにはモデルアカウントを認可してください。",

@@ -1,4 +1,6 @@
 export const NL_MESSAGES: Record<string, string> = {
+  "API protocol": "API-protocol",
+  "Refresh models": "Modellen vernieuwen",
   "Authorization incomplete.": "Autorisatie niet voltooid.",
   "Authorize again": "Opnieuw autoriseren",
   "Authorize the model account to continue.": "Autoriseer het modelaccount om door te gaan.",

@@ -822,6 +822,10 @@ msgstr "API key header"
 msgid "API keys"
 msgstr "API keys"
 
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API protocol"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Appearance"
@@ -3869,6 +3873,7 @@ msgid "Model \"{modelId}\" was not listed."
 msgstr "Model \"{modelId}\" was not listed."
 
 #: src/components/ModelAccount.tsx
+#: src/pages/Onboarding.tsx
 msgid "Model account"
 msgstr "Model account"
 
@@ -4813,6 +4818,10 @@ msgstr "Refresh balance"
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr "Refresh credits"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Refresh models"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"

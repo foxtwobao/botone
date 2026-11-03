@@ -66,6 +66,12 @@ export function createModelAccountClient(
       modelAccountBalanceSchema.parse(await request("balance", "GET", signal)),
     connect: async (callbackURL?: string, signal?: AbortSignal) =>
       modelAccountConnectSchema.parse(await request("connect", "POST", signal, { callbackURL })),
+    refreshModels: async (signal?: AbortSignal) => {
+      await request("models", "POST", signal);
+    },
+    settings: async (apiProtocol: "chat-completions" | "responses", signal?: AbortSignal) => {
+      await request("settings", "POST", signal, { apiProtocol });
+    },
     revoke: async (signal?: AbortSignal) =>
       modelAccountStatusSchema
         .pick({ connected: true })

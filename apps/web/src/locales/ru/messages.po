@@ -822,6 +822,10 @@ msgstr "Заголовок ключа API"
 msgid "API keys"
 msgstr "Ключи API"
 
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "Протокол API"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Внешний вид"
@@ -3869,6 +3873,7 @@ msgid "Model \"{modelId}\" was not listed."
 msgstr "Модель \"{modelId}\" отсутствует в списке."
 
 #: src/components/ModelAccount.tsx
+#: src/pages/Onboarding.tsx
 msgid "Model account"
 msgstr "Аккаунт моделей"
 
@@ -4813,6 +4818,10 @@ msgstr "Обновить баланс"
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Обновить модели"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"

@@ -168,3 +168,32 @@ describe("external model account protocol", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
+
+it("uses validated HTTPS authorization URLs without requiring a deployment allowlist", async () => {
+  const transport = vi.fn<typeof fetch>(async () =>
+    Response.json({
+      authorization_url: "https://channel.example.test/authorize?state=opaque",
+      expires_in: 300,
+    }),
+  );
+  const provider = new ResellerModelAccountProvider(
+    { origin: config.origin, credential: config.credential },
+    transport,
+  );
+  const input = {
+    identity,
+    redirectUri: "https://app.example.test/callback",
+    state: "s".repeat(43),
+    codeChallenge: "c".repeat(43),
+  };
+  expect((await provider.authorize(input)).url).toContain("https://channel.example.test/");
+  for (const url of [
+    "http://channel.example.test/",
+    "javascript:alert(1)",
+    "https://user:password@channel.example.test/",
+    "https://channel.example.test/#token",
+  ]) {
+    transport.mockResolvedValueOnce(Response.json({ authorization_url: url, expires_in: 300 }));
+    await expect(provider.authorize(input)).rejects.toThrow();
+  }
+});

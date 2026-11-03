@@ -823,6 +823,10 @@ msgstr "API 金鑰標頭"
 msgid "API keys"
 msgstr "API 金鑰"
 
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API 協定"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "外觀"
@@ -3870,6 +3874,7 @@ msgid "Model \"{modelId}\" was not listed."
 msgstr "模型「{modelId}」未列出。"
 
 #: src/components/ModelAccount.tsx
+#: src/pages/Onboarding.tsx
 msgid "Model account"
 msgstr "模型帳戶"
 
@@ -4814,6 +4819,10 @@ msgstr "重新整理餘額"
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr "重新整理額度"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "重新整理模型"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"

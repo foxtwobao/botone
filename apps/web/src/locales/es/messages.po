@@ -822,6 +822,10 @@ msgstr "Encabezado de clave de API"
 msgid "API keys"
 msgstr "Claves de API"
 
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "Protocolo de API"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Apariencia"
@@ -3869,6 +3873,7 @@ msgid "Model \"{modelId}\" was not listed."
 msgstr "El modelo \"{modelId}\" no aparece en la lista."
 
 #: src/components/ModelAccount.tsx
+#: src/pages/Onboarding.tsx
 msgid "Model account"
 msgstr "Cuenta de modelos"
 
@@ -4813,6 +4818,10 @@ msgstr "Actualizar saldo"
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr "Actualizar créditos"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Actualizar modelos"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"

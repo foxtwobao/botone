@@ -15,23 +15,31 @@ Set `MODEL_ACCOUNT_CONNECTION` on both API and worker to a JSON object:
   "provider": "reseller",
   "origin": "https://accounts.example.com",
   "credential": "replace-with-app-credential",
-  "authorizationOrigins": ["https://gateway.example.com"],
-  "homeUrl": "https://home.example.com/",
-  "rechargeUrl": "https://wallet.example.com/",
-  "modelId": "example-model",
-  "model": {
-    "kind": "openai_compatible",
-    "baseUrl": "https://models.example.com/v1",
-    "apiProtocol": "chat-completions",
-    "enabledModelIds": ["example-model"]
-  }
+  "baseUrl": "https://models.example.com/v1"
 }
 ```
 
-These are synthetic examples. Keep the application credential in deployment secret storage.
-Do not put a user's model key in this configuration. `model` uses the existing compatible
-connection format, including enabled model IDs, image capability lists and model limits.
-The endpoint is operator-controlled; users cannot change it on this connection.
+These are synthetic examples. The application credential belongs in deployment secret storage;
+never supply a user model key. No model ID, protocol, enabled-model list or browser-authorization
+origin list is required. Authorization URLs returned by the trusted service must be HTTPS with
+no userinfo or fragment. An existing explicit authorization-origin allowlist is still honored.
+Legacy `model` connection envelopes remain accepted during upgrades.
+
+Authorization discovers `/models` with a transient user key and exposes those models in the
+existing model picker. It never replaces the selected main model. Pick the desired model in
+Settings; Refresh models retries discovery. Catalog failures do not invalidate an otherwise
+successful authorization. The API protocol defaults to Chat Completions; select Responses in
+Model account settings when the target models support it. Protocol changes do not send model
+requests or automatically retry another protocol.
+
+Home and Recharge come from the public HomeONE navigation policy at `/auth.json`, the same
+policy used by its browser navigation module. The default origin is the platform's standard
+HomeONE entry, matching CreativeOne. A self-hosted portal may set optional `navigationOrigin`
+in the same JSON; there are no required `homeUrl` or `rechargeUrl` settings. Web/Electron only
+accept channel cookies matching exact destinations in the published policy; dedicated hosts
+without a matching channel hide navigation. Mobile uses platform defaults and opens links in
+the system browser. If the policy cannot be loaded, navigation links are hidden while model
+authorization and balance remain available. No remote JavaScript is executed by API or mobile.
 
 The worker needs the same `BETTER_AUTH_SECRET` as the API, plus `OIDC_ISSUER`, to read the
 existing encrypted account binding. It does not need the OIDC client secret. Compose passes
@@ -50,12 +58,13 @@ uses the same issuer and subject semantics. No management credentials are needed
 
 For the portal product, register `/api/model-account/oidc` as the direct OIDC start path. The
 ordinary launch path can remain `/app`. Web, desktop and mobile all retain their existing
-OIDC login flows. Native clients do not share portal navigation cookies. This version supplies explicit public Home and Recharge links;
-channel-specific navigation-cookie selection and arbitrary channel domains are not enabled.
+OIDC login flows. Native clients do not share portal navigation cookies. Navigation uses the public platform policy; native clients fall back to platform defaults.
 
 ## Use the account
 
-Open account model settings and choose **Use model account**. If authorization is required,
+On the initial Connect a model screen, open **Model account**; existing users can open account
+model settings. Choose **Use model account**, authorize, and select a main model in that same
+settings panel. If authorization is required,
 the browser opens a one-time launch URL, obtains a browser-bound cookie, and continues to the
 authorization provider. The callback checks the original app session and pinned identity.
 The same handoff supports mobile bearer sessions without putting their session tokens in URLs.
@@ -63,8 +72,8 @@ Web and Electron use a popup and keep the original page, composer text and attac
 Mobile returns to its previous screen, with model settings as the cold-start fallback.
 Cancelling leaves the original work intact.
 
-A successful connection selects the configured model as the account's main model. An explicit
-Space override remains in effect until changed through the existing model role controls.
+A successful connection leaves all existing model selections intact. Choose a main model using
+the existing model settings after authorizing. An explicit Space override remains in effect.
 Managed connections are excluded from ordinary key editors. Disconnect through the Model account
 controls to revoke the external authorization. Other personal model connections continue to use their own keys.
 

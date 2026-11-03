@@ -1,4 +1,6 @@
 export const RU_MESSAGES: Record<string, string> = {
+  "API protocol": "Протокол API",
+  "Refresh models": "Обновить модели",
   "Authorization incomplete.": "Авторизация не завершена.",
   "Authorize again": "Авторизовать повторно",
   "Authorize the model account to continue.": "Авторизуйте аккаунт моделей, чтобы продолжить.",

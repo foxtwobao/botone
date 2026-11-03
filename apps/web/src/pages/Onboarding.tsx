@@ -22,6 +22,7 @@ import {
 import {
   COMPATIBLE_THINKING_LEVELS,
   clampCatalogThinkingLevel,
+  createModelAccountClient,
   createModelProbe,
   initialModelProbeState,
   pickCatalogModelId,
@@ -40,7 +41,7 @@ import {
   SelectValue,
 } from "@rakazo/ui-web";
 import { Check, Copy } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AccountMenu } from "../components/AccountMenu";
 import { FoundModelPicker } from "../components/FoundModelPicker";
@@ -141,6 +142,10 @@ async function ensureFirstBot(): Promise<{ id: string }> {
   return firstBotEnsure;
 }
 
+const AccountModelSettings = lazy(() =>
+  import("./ModelSettingsOverlay").then((module) => ({ default: module.ModelSettingsOverlay })),
+);
+
 export function OnboardingPage() {
   const { t } = useLingui();
   const navigate = useNavigate();
@@ -151,6 +156,19 @@ export function OnboardingPage() {
   const [creatingBot, setCreatingBot] = useState(false);
   const [surveyDone, setSurveyDone] = useState(false);
   const step = creatingBot ? "bot" : surveyDone ? "loading" : (linkedStep ?? "loading");
+  const [platformModels, setPlatformModels] = useState(false);
+  const [platformSettingsOpen, setPlatformSettingsOpen] = useState(false);
+  useEffect(() => {
+    if (step !== "model") return;
+    const abort = new AbortController();
+    void createModelAccountClient()
+      .config(abort.signal)
+      .then((config) => {
+        if (!abort.signal.aborted) setPlatformModels(config.enabled);
+      })
+      .catch(() => undefined);
+    return () => abort.abort();
+  }, [step]);
   const [billingEnabled, setBillingEnabled] = useState(false);
   // The step after the survey; null until me loads.
   const [afterSurvey, setAfterSurvey] = useState<"model" | "bot" | null>(null);
@@ -561,6 +579,31 @@ export function OnboardingPage() {
             <h1 className="text-[32px] font-medium text-foreground">
               <Trans>Connect a model</Trans>
             </h1>
+            {platformModels ? (
+              <Button
+                className="mt-4"
+                variant="outline"
+                onClick={() => setPlatformSettingsOpen(true)}
+              >
+                <Trans>Model account</Trans>
+              </Button>
+            ) : null}
+            {platformSettingsOpen ? (
+              <Suspense fallback={null}>
+                <AccountModelSettings
+                  scope="account"
+                  onClose={() => {
+                    setPlatformSettingsOpen(false);
+                    void rpc
+                      .me()
+                      .then((me) => {
+                        if (!me.needsModel) goTo("bot");
+                      })
+                      .catch(() => undefined);
+                  }}
+                />
+              </Suspense>
+            ) : null}
             <div className="mt-8 block text-sm font-medium text-foreground">
               <span>
                 <Trans>Provider</Trans>

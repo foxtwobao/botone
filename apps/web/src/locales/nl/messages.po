@@ -822,6 +822,10 @@ msgstr "API-sleutelheader"
 msgid "API keys"
 msgstr "API-sleutels"
 
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API-protocol"
+
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Weergave"
@@ -3869,6 +3873,7 @@ msgid "Model \"{modelId}\" was not listed."
 msgstr "Model \"{modelId}\" stond niet in de lijst."
 
 #: src/components/ModelAccount.tsx
+#: src/pages/Onboarding.tsx
 msgid "Model account"
 msgstr "Modelaccount"
 
@@ -4813,6 +4818,10 @@ msgstr "Saldo vernieuwen"
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Modellen vernieuwen"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"

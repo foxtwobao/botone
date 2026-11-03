@@ -1,4 +1,6 @@
 export const ZH_TW_MESSAGES: Record<string, string> = {
+  "API protocol": "API 協定",
+  "Refresh models": "重新整理模型",
   "Authorization incomplete.": "授權尚未完成。",
   "Authorize again": "重新授權",
   "Authorize the model account to continue.": "請授權模型帳戶以繼續。",
