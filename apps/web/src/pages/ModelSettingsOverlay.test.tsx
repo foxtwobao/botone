@@ -1611,3 +1611,47 @@ it("shows what a disconnect left, not a read sent before it", async () => {
     await view.unmount();
   }
 });
+
+it("hides ordinary provider connections in account-only mode while retaining model selection", async () => {
+  vi.mocked(rpc.me).mockResolvedValue({
+    ...account("openai-compatible", "account-model"),
+    modelAccountOnly: true,
+  });
+  models.list.mockResolvedValue([
+    {
+      provider: "openai-compatible",
+      providerName: "Model account",
+      id: "account-model",
+      label: "Account model",
+      credentialIds: ["external-fixture"],
+    },
+    {
+      provider: "openai-compatible",
+      id: "account-backup",
+      label: "Account backup",
+      credentialIds: ["external-fixture"],
+    },
+  ]);
+  models.credentials.mockResolvedValue([
+    {
+      id: "external-fixture",
+      label: "Model account",
+      provider: "openai-compatible",
+      managed: true,
+      enabledModelIds: ["account-model", "account-backup"],
+    },
+  ]);
+  const view = await renderSettings();
+  try {
+    expect(view.container.textContent).not.toContain("Add provider");
+    expect(view.container.textContent).not.toContain("Providers");
+    expect(view.container.querySelector('input[placeholder*="key"]')).toBeNull();
+    await openPicker("Add fallback");
+    expect(pickerOptions()).toContain("Account backup");
+    expect(pickerOptions().some((name) => name?.includes("Connect"))).toBe(false);
+    await choose("Account backup");
+    expect(models.setRole).toHaveBeenCalled();
+  } finally {
+    await view.unmount();
+  }
+});

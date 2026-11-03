@@ -96,10 +96,11 @@ export function ModelSettingsOverlay({
     panelRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [connectionAt]);
 
-  const providers: ConnectableProvider[] = groups
+  const providers: ConnectableProvider[] = (me?.modelAccountOnly ? [] : groups)
     .filter((group) => !credentialByProvider.has(group.id))
     .map((group) => ({ id: group.id, name: group.name }));
   if (
+    !me?.modelAccountOnly &&
     groups.some((group) => group.id === OPENAI_COMPATIBLE_PROVIDER_ID) &&
     !isOllamaCloudBaseUrl(credentialByProvider.get(OPENAI_COMPATIBLE_PROVIDER_ID)?.baseUrl)
   )
@@ -147,6 +148,7 @@ export function ModelSettingsOverlay({
     credentialId: string | null,
     at: string,
   ) {
+    if (me?.modelAccountOnly) return;
     model.chooseProvider(next.id, next.baseUrl, credentialId);
     intentRef.current = {
       makeDefault: intent?.makeDefault ?? false,
@@ -306,7 +308,7 @@ export function ModelSettingsOverlay({
             onManage={(id, credentialId) =>
               openConnection({ id, name: id }, null, credentialId, "main")
             }
-            panel={connectionAt === "main" ? panelFor(true) : null}
+            panel={!me.modelAccountOnly && connectionAt === "main" ? panelFor(true) : null}
             thinking
             onChanged={() => void refresh()}
           />
@@ -329,9 +331,9 @@ export function ModelSettingsOverlay({
             onManage={(id, credentialId) =>
               openConnection({ id, name: id }, null, credentialId, "approval")
             }
-            panel={connectionAt === "approval" ? panelFor(true) : null}
+            panel={!me.modelAccountOnly && connectionAt === "approval" ? panelFor(true) : null}
           />
-          {scope === "space" ? null : (
+          {scope === "space" || me.modelAccountOnly ? null : (
             <ProvidersSection
               credentials={credentials}
               providers={allProviders}

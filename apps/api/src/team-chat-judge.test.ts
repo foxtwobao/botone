@@ -374,3 +374,41 @@ describe("team chat engagement judge", () => {
     },
   );
 });
+
+it("does not use ordinary or deployment keys for background judgments in account-only mode", async () => {
+  const run = vi.fn();
+  const externalModelKey = vi.fn();
+  const prisma = {
+    deploymentSettings: { findUnique: vi.fn(async () => null) },
+    userModelCredential: { findMany: vi.fn(async () => []) },
+  };
+  withModelRoles(prisma, [
+    mainRole({ userId: "user-fixture", spaceId: "space-fixture" }, "openrouter", "old-model"),
+  ]);
+  const judge = new ModelTeamChatEngagementJudge({
+    prisma: prisma as never,
+    runtime: { run } as never,
+    secrets: { load: vi.fn() } as never,
+    externalModelKey,
+    deploymentProvider: "openrouter",
+    deploymentModel: "old-model",
+    deploymentModelKey: "fake-deployment-key",
+  });
+  expect(
+    await judge.decide({
+      bot: {
+        id: "bot-fixture",
+        userId: "user-fixture",
+        spaceId: "space-fixture",
+        name: "Fixture",
+        modelProvider: "openrouter",
+        modelId: "old-model",
+      },
+      channelId: "channel-fixture",
+      rules: "",
+      messages: [],
+    }),
+  ).toEqual({ act: false });
+  expect(run).not.toHaveBeenCalled();
+  expect(externalModelKey).not.toHaveBeenCalled();
+});

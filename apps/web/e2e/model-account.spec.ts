@@ -391,6 +391,10 @@ for (const scenario of ["first", "renewed", "onboarding"]) {
       ? page.getByRole("dialog", { name: "Models", exact: true })
       : await openUserSettings(page, "models");
     if (onboarding) {
+      const me = await rpc<Me>(page, "me", {});
+      await page.route("**/rpc/me", (route) =>
+        route.fulfill({ json: { json: { ...me, modelAccountOnly: true } } }),
+      );
       await page.goto("/onboarding/model");
       await page.getByRole("button", { name: "Model account", exact: true }).click();
       await expect(settings).toBeVisible();
@@ -537,4 +541,75 @@ test("unknown authorization is checked automatically and retry appears only afte
     settings.getByRole("button", { name: "Use model account", exact: true }),
   ).toBeHidden();
   expect(authorizations).toBe(0);
+});
+
+test("account-only settings retain model choices without ordinary connection controls", async ({
+  page,
+}, testInfo) => {
+  await signup(page, `account-only-${Date.now()}@rakazo.test`, "password12", "Fixture User");
+  await completeOnboarding(page);
+  const me = await rpc<Me>(page, "me", {});
+  await page.route("**/rpc/me", (route) =>
+    route.fulfill({ json: { json: { ...me, modelAccountOnly: true } } }),
+  );
+  await page.route("**/api/model-account/config", (route) =>
+    route.fulfill({ json: { enabled: true } }),
+  );
+  await page.route("**/api/model-account/status", (route) =>
+    route.fulfill({ json: { enabled: true, connected: true, linked: true } }),
+  );
+  await page.route("**/api/model-account/balance", (route) =>
+    route.fulfill({ json: { amount: "12.34", unit: "USD" } }),
+  );
+  const choice = {
+    provider: "openai-compatible",
+    modelId: "fixture-model",
+    credentialId: "external-fixture",
+  };
+  const entries = [
+    {
+      provider: choice.provider,
+      id: choice.modelId,
+      label: "Fixture model",
+      providerName: "Model account",
+      credentialIds: [choice.credentialId],
+    },
+    {
+      provider: choice.provider,
+      id: "fixture-backup",
+      label: "Fixture backup",
+      credentialIds: [choice.credentialId],
+    },
+  ];
+  await page.route("**/rpc/models/list", (route) => route.fulfill({ json: { json: entries } }));
+  await page.route("**/rpc/models/forRole", (route) => route.fulfill({ json: { json: entries } }));
+  await page.route("**/rpc/models/role", (route) =>
+    route.fulfill({ json: { json: { primary: choice, backups: [], deploymentPrimary: null } } }),
+  );
+  await page.route("**/rpc/models/credentials", (route) =>
+    route.fulfill({
+      json: {
+        json: [
+          {
+            id: choice.credentialId,
+            label: "Model account",
+            provider: choice.provider,
+            managed: true,
+            modelId: choice.modelId,
+            enabledModelIds: [choice.modelId, "fixture-backup"],
+          },
+        ],
+      },
+    }),
+  );
+  const settings = await openUserSettings(page, "models");
+  await expect(settings.getByText("Connected to TokenONE", { exact: true })).toBeVisible();
+  await expect(settings.getByText("Providers", { exact: true })).toBeHidden();
+  await expect(settings.getByRole("button", { name: "Add provider", exact: true })).toBeHidden();
+  await expect(settings.getByText("Main model", { exact: true })).toBeVisible();
+  await expect(settings.getByText("Approval model", { exact: true })).toBeVisible();
+  await captureScreenshot(page, testInfo, "model-account-only-settings");
+  await settings.getByRole("button", { name: "Add fallback", exact: true }).first().click();
+  await expect(page.getByRole("option", { name: /Fixture backup/ })).toBeVisible();
+  await expect(page.getByRole("option").filter({ hasText: "Connect" })).toHaveCount(0);
 });

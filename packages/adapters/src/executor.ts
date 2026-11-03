@@ -607,6 +607,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 run,
                 modelChoice.modelProvider,
                 modelChoice.modelId,
+                { modelAccountOnly: Boolean(deps.externalModelKey) },
               )
             : null;
         runAbortController = new AbortController();

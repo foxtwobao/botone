@@ -6,6 +6,7 @@ import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
+import { modelSetup } from "./routes/shared.js";
 
 const owner: Actor = {
   userId: "user-one",
@@ -17,6 +18,8 @@ const owner: Actor = {
 function setup(
   options: {
     actor?: Actor;
+    accountOnly?: boolean;
+    managed?: boolean;
     credits?: boolean;
     existing?: Array<Record<string, unknown>>;
     /** An openai-compatible connection with this stored list and own model. */
@@ -26,10 +29,11 @@ function setup(
   } = {},
 ) {
   const credential = {
-    id: "credential-one",
+    id: options.managed ? "external-fixture" : "credential-one",
     userId: owner.userId,
     provider: options.compatible ? "openai-compatible" : "openrouter",
     label: "fixture",
+    userPreferences: [],
     secretId: "secret-one",
     createdAt: new Date(0),
     updatedAt: new Date(0),
@@ -108,12 +112,21 @@ function setup(
     spaceModelRoleChoice,
     spaceSettingOverride,
     userModelCredential: {
-      findMany: vi.fn(async ({ where }: { where: { userId: string; provider?: string } }) =>
-        !options.credits &&
-        where.userId === owner.userId &&
-        (!where.provider || where.provider === credential.provider)
-          ? [credential]
-          : [],
+      findMany: vi.fn(
+        async ({
+          where,
+        }: {
+          where: { userId: string; provider?: string; id?: string | { startsWith: string } };
+        }) =>
+          !options.credits &&
+          where.userId === owner.userId &&
+          (!where.id ||
+            (typeof where.id === "string"
+              ? where.id === credential.id
+              : credential.id.startsWith(where.id.startsWith))) &&
+          (!where.provider || where.provider === credential.provider)
+            ? [credential]
+            : [],
       ),
       findFirst: vi.fn(async ({ where }: { where: { id?: string; userId: string } }) =>
         !options.credits && where.userId === owner.userId && where.id === credential.id
@@ -161,12 +174,18 @@ function setup(
                 kind: "openai_compatible",
                 baseUrl: "http://127.0.0.1:11434/v1",
                 enabledModelIds: options.compatible.enabledModelIds,
+                ...(options.managed
+                  ? {
+                      externalAccount: { accountId: "account-fixture", binding: "binding-fixture" },
+                    }
+                  : {}),
               })
             : "fake-api-key-for-offline-tests",
       ),
     },
     env: {
       agentRuntime: "pi",
+      modelAccountOnly: options.accountOnly,
       defaultProvider: "openrouter",
       defaultModel: "unused-test-model",
       webOrigin: "http://127.0.0.1:5173",
@@ -201,7 +220,7 @@ function setup(
         modelId,
         position: Number(position) - 1,
       }));
-  return { rows, roles, prisma, userModelRoleChoice, spaceModelRoleChoice, call };
+  return { rows, roles, prisma, userModelRoleChoice, spaceModelRoleChoice, call, deps };
 }
 
 const availableModel = listPiCatalog().find(
@@ -740,4 +759,74 @@ it("lets a deployment-managed model lead the main model like any other purpose",
   } finally {
     vi.unstubAllEnvs();
   }
+});
+
+describe("model account only policy", () => {
+  const compatible = {
+    enabledModelIds: ["account-model", "account-backup"],
+    defaultModel: "old-model",
+  };
+  it.each(["list", "forRole"])("excludes ordinary connections from %s", async (procedure) => {
+    const { call } = setup({ accountOnly: true, compatible });
+    const { response } = await call(
+      `models/${procedure}`,
+      procedure === "forRole" ? { role: "main" } : null,
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ json: [] });
+  });
+  it("lists only account models and pins selected primary and legacy backups", async () => {
+    const { call, roles } = setup({ accountOnly: true, managed: true, compatible });
+    const list = await call("models/list", null);
+    expect((await list.response.json()).json.map((entry: { id: string }) => entry.id)).toEqual(
+      compatible.enabledModelIds,
+    );
+    for (const [procedure, input] of [
+      ["setDefault", { provider: "openai-compatible", modelId: "account-model" }],
+      ["setBackups", [{ provider: "openai-compatible", modelId: "account-backup" }]],
+    ] as const) {
+      expect((await call(`models/${procedure}`, input)).response.status).toBe(200);
+    }
+    expect(roles()).toHaveLength(2);
+    expect(roles().every((row) => row.credentialId === "external-fixture")).toBe(true);
+    const read = await call("models/role", { role: "main" });
+    expect((await read.response.json()).json).toMatchObject({
+      primary: { modelId: "account-model" },
+      backups: [{ modelId: "account-backup" }],
+      deploymentPrimary: null,
+    });
+  });
+  it.each([
+    { provider: "openrouter", modelId: availableModel.id },
+    { provider: "openai-compatible", modelId: "old-model" },
+    { provider: "openai-compatible", modelId: "account-model", credentialId: "credential-one" },
+  ])("rejects a selection outside the account: %j", async (primary) => {
+    const { call, roles } = setup({ accountOnly: true, managed: true, compatible });
+    expect((await call("models/setRole", { role: "main", primary })).response.status).toBe(400);
+    expect(roles()).toEqual([]);
+  });
+  it.each([
+    [
+      "connect",
+      {
+        provider: "openai-compatible",
+        baseUrl: "https://models.example.test/v1",
+        apiKey: "fake-test-key",
+      },
+    ],
+    ["probeOpenAiCompatible", { baseUrl: "https://models.example.test/v1" }],
+    ["beginOAuth", { provider: "openai-codex" }],
+    ["rename", { credentialId: "credential-one", label: "renamed" }],
+    ["disconnect", { credentialId: "credential-one" }],
+  ])("rejects ordinary %s requests before performing work", async (procedure, input) => {
+    const { call } = setup({ accountOnly: true });
+    expect((await call(`models/${procedure}`, input)).response.status).toBe(403);
+  });
+});
+
+it("requires an account model even when deployment credentials exist", async () => {
+  const { deps } = setup({ accountOnly: true });
+  deps.env.deploymentModelConfigured = true;
+  const setupState = await modelSetup(deps, owner);
+  expect(setupState).toMatchObject({ needsModel: true, model: null, main: null });
 });

@@ -182,6 +182,7 @@ export default function Models() {
 
   // Deployment-funded providers stay listed so people can still add their own key.
   const providers = useMemo(() => {
+    if (me?.modelAccountOnly) return [];
     const connected = new Set(credentials.map((entry) => canonicalPiProviderId(entry.provider)));
     const ollama = credentials.some(
       (entry) =>
@@ -190,7 +191,7 @@ export default function Models() {
     return allProviders.filter((provider) =>
       provider.baseUrl ? !ollama : !connected.has(canonicalPiProviderId(provider.id)),
     );
-  }, [allProviders, credentials]);
+  }, [allProviders, credentials, me?.modelAccountOnly]);
 
   const providerKey = (provider: ConnectableProvider) =>
     `connect:${provider.id}:${provider.baseUrl ?? ""}`;
@@ -293,7 +294,7 @@ export default function Models() {
               defaultLabel={t("Choose a model")}
             />
             {/* Connections are the account's in every Space, so a Space's override lists only its models. */}
-            {target.scope === "account" ? (
+            {target.scope === "account" && !me.modelAccountOnly ? (
               <ModelProviders
                 catalog={catalog}
                 credentials={credentials}

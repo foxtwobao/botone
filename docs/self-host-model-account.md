@@ -155,3 +155,9 @@ configure API, Web and worker services to use the same image. This workflow publ
 application only; the existing upstream workflow handles optional updater and computer images.
 
 CI defaults to GitHub-hosted Ubuntu runners. Set `CI_RUNNER` to use a compatible custom runner.
+
+## 模型账户专用模式
+
+配置模型账户接入后自动启用，无需新增变量。Web、桌面和移动端仅展示账户模型选择，关闭普通提供方、Key 和第三方模型 OAuth 连接入口。服务端同时限制连接写入与实际调用，主模型、备用模型、审批模型、Bot 和后台任务均不能退回普通 Key 或部署 Key。
+
+已有普通连接保留在数据库中，但启用接入期间不参与选择或调用。升级后若原主模型来自普通连接，请先授权模型账户，再从账户模型列表选择主模型；旧 Bot 的独立模型也应改选账户模型或使用工作区默认。关闭平台接入的部署仍可使用原有普通连接功能。

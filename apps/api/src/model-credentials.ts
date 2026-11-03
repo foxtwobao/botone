@@ -50,7 +50,7 @@ export function prepareAllowedThinkingLevels(
     actor,
     provider,
     modelId,
-    resolution,
+    { ...resolution, modelAccountOnly: deps.env.modelAccountOnly },
   );
 }
 
@@ -118,6 +118,8 @@ export async function prepareModelCredential(
   codexCatalog: CodexLiveCatalog,
 ) {
   throwIfAborted(input.signal);
+  if (deps.env.modelAccountOnly)
+    throw new ORPCError("FORBIDDEN", { message: "Model account required" });
   const parsedSecret = parseModelSecret(input.plaintext);
   const requestedModelId = usableModelId(input.modelId);
   const resolvedCodexModelId =
@@ -310,6 +312,8 @@ export function createModelConnector(deps: RouterDeps, codexCatalog: CodexLiveCa
     input: ModelConnectInput,
     signal: AbortSignal | undefined,
   ) => {
+    if (deps.env.modelAccountOnly)
+      throw new ORPCError("FORBIDDEN", { message: "Model account required" });
     const credential = await modelConnectionTarget(deps, actor, input.provider, input.credentialId);
     let plaintext: string;
     try {

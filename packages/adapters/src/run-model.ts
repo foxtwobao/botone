@@ -76,6 +76,7 @@ export async function fleetPrepareDeps(
   return {
     prisma: deps.prisma,
     modelChange: {
+      modelAccountOnly: Boolean(deps.externalModelKey),
       hostedProvider,
       secretStore: deps.secretStore,
       codexCatalog: deps.codexCatalog,
@@ -228,12 +229,15 @@ async function resolveModelKeyMaterial(
   ownCredential?: true;
   redact: string[];
 }> {
+  if (deps.externalModelKey && !credential)
+    throw new UnavailableModelForAuthError(MISSING_MODEL_RUN_ERROR);
   if (credential) {
     return withModelCredentialLock(credential.secretId, async () => {
       const row = await deps.prisma.secret.findFirst({
         where: { id: credential.secretId, userId, spaceId: null },
       });
       if (!row) {
+        if (deps.externalModelKey) throw new UnavailableModelForAuthError(MISSING_MODEL_RUN_ERROR);
         if (await modelCreditBillingEnabled(deps))
           throw new Error("Connect that model provider again.");
         if (requireStoredSecret) throw new Error("Backup model credential is no longer available");
@@ -244,6 +248,9 @@ async function resolveModelKeyMaterial(
         return { apiKey: deploymentKeyFor(deps, provider), redact: [] };
       }
       const plaintext = await deps.secretStore.load(row.ciphertext, row.id);
+      const stored = parseModelSecret(plaintext);
+      if (deps.externalModelKey && (stored.kind !== "openai_compatible" || !stored.externalAccount))
+        throw new UnavailableModelForAuthError(MISSING_MODEL_RUN_ERROR);
       registerSecrets?.(secretValuesToRedact(parseModelSecret(plaintext)));
       const persist = persistStoredModelSecret(
         deps.prisma,
@@ -451,7 +458,7 @@ export async function resolveConnectedModelKey(
     scope,
     provider,
     modelId,
-    { hostedProvider, credentialId },
+    { hostedProvider, credentialId, modelAccountOnly: Boolean(deps.externalModelKey) },
   );
   if (validationError) throw new Error(validationError);
   const credential = await findConnectedModelCredential(
@@ -460,7 +467,7 @@ export async function resolveConnectedModelKey(
     scope,
     provider,
     modelId,
-    { credentialId },
+    { credentialId, modelAccountOnly: Boolean(deps.externalModelKey) },
   );
   if (!credential && provider !== hostedProvider) throw new Error(PINNED_PROVIDER_NOT_CONNECTED);
   const resolved = await resolveModelKey(
@@ -540,6 +547,7 @@ export async function resolveRunModel(
           scope,
           override!.modelProvider!,
           override!.modelId,
+          { modelAccountOnly: Boolean(deps.externalModelKey) },
         )
       : Promise.resolve(null),
     resolveMemberMainModel(deps, scope),
