@@ -1468,6 +1468,7 @@ export const ModelApiProtocolSchema = z.enum([
 export type ModelApiProtocol = z.infer<typeof ModelApiProtocolSchema>;
 
 export const ModelCredentialSchema = z.object({
+  managed: z.boolean().optional(),
   /** Computed space preference order; credentials themselves remain newest first. */
   preferenceRank: z.number().int().nonnegative().optional(),
   ...ModelContextLimitsSchema.shape,

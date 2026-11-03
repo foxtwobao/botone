@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import type { AgentRunModel, AgentRuntime, SecretStore } from "@rakazo/adapter-kit";
+import type {
+  AgentRunModel,
+  AgentRuntime,
+  ExternalModelKeyResolver,
+  SecretStore,
+} from "@rakazo/adapter-kit";
 import {
   deploymentModelRole,
   formatCurrentTimeInstruction,
@@ -113,6 +118,7 @@ interface ModelTeamChatEngagementJudgeDeps {
   prisma: PrismaClient;
   runtime: AgentRuntime;
   secrets: SecretStore;
+  externalModelKey?: ExternalModelKeyResolver;
   deploymentProvider: string;
   deploymentModel: string;
   deploymentModelKey?: string;
@@ -294,8 +300,22 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
       credential,
       parseModelSecret(plaintext).maxTokens,
     );
-    const auth = await resolveModelAuth(plaintext, provider, { persist, retire });
+    const auth = await resolveModelAuth(plaintext, provider, {
+      persist,
+      retire,
+      externalKey: this.deps.externalModelKey
+        ? (reference, baseUrl) => this.deps.externalModelKey!(bot.userId, reference, baseUrl)
+        : undefined,
+    });
     const parsed = auth.secret;
+    if (
+      parsed.kind === "openai_compatible" &&
+      parsed.externalAccount &&
+      !(await this.deps.prisma.userModelCredential.findFirst({
+        where: { id: credential.id, userId: bot.userId, secretId: credential.secretId },
+      }))
+    )
+      return null;
     const limit = parsed.maxTokens !== undefined ? { maxTokens: parsed.maxTokens } : {};
     const context =
       parsed.kind === "oauth"
@@ -331,7 +351,8 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
         model: {
           provider,
           id: modelId,
-          apiKey: parsed.apiKey,
+          apiKey: auth.apiKey,
+          apiProtocol: parsed.apiProtocol,
           baseUrl: parsed.baseUrl,
           headers: parsed.headers,
           allowPrivateEndpoint: this.deps.allowPrivateEndpoint === true,

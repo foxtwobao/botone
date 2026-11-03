@@ -43,8 +43,9 @@ export function completeSsoCallback(): boolean {
 export async function runSsoFlow(
   begin: (disableRedirect: boolean, callbackURL: (url: string) => string) => Promise<SsoResult>,
   callbackURLs: readonly string[],
+  options: { popup?: boolean; navigate?: boolean } = {},
 ): Promise<SsoResult> {
-  if (!desktopBridge()) return begin(false, (url) => url);
+  if (!desktopBridge() && !options.popup) return begin(false, (url) => url);
   const nonce = crypto.randomUUID();
   const callbacks = callbackURLs.map((url) => new URL(url, window.location.href));
   const callbackURL = (url: string) => {
@@ -80,6 +81,7 @@ export async function runSsoFlow(
     });
     const result = await Promise.race([begin(true, callbackURL), cancellation, timeout]);
     if (result.error) return result;
+    if (!result.data?.url && options.navigate === false) return result;
     let target: URL;
     try {
       target = new URL(result.data?.url ?? "");
@@ -91,6 +93,7 @@ export async function runSsoFlow(
     popup.location.href = target.href;
     // COOP can sever the handle while authentication continues. Retrying
     // cancels this wait; a closed handle is never a success signal.
+    let callbackError: string | undefined;
     await Promise.race([
       new Promise<void>((resolve) => {
         channel.onmessage = (event: MessageEvent) => {
@@ -118,14 +121,18 @@ export async function runSsoFlow(
             )
           )
             return;
-          window.location.assign(returned.href);
+          if (message.type === "sso-error")
+            callbackError = returned.searchParams.get("error") ?? "unavailable";
+          if (options.navigate !== false) window.location.assign(returned.href);
           resolve();
         };
       }),
       cancellation,
       timeout,
     ]);
-    return result;
+    return callbackError && options.navigate === false
+      ? { data: null, error: { code: callbackError } }
+      : result;
   } catch (error) {
     if (cancelled) return { data: null, error: null };
     throw error;
@@ -136,4 +143,8 @@ export async function runSsoFlow(
     channel.close();
     if (!cancelled) popup?.close();
   }
+}
+
+export function cancelSsoFlow(): void {
+  cancelActiveAttempt?.();
 }

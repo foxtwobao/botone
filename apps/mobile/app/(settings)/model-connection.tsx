@@ -54,6 +54,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderRowsEditor } from "../../components/header-rows-editor";
 import { ListSearchInput } from "../../components/list-search-input";
 import { MenuPickerMenu } from "../../components/menu-picker";
+import { ModelAccount } from "../../components/model-account";
 import { NativeActionButton } from "../../components/native-action-button";
 import { NativeSwitch } from "../../components/native-switch";
 import { Checkmark } from "../../components/row-accessories";
@@ -1183,7 +1184,9 @@ export default function ModelConnection() {
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        {selected ? (
+        {credential?.managed ? (
+          <ModelAccount onChanged={() => void load()} />
+        ) : selected ? (
           isOpenAiCompatible ? (
             <>
               {compatConfig}

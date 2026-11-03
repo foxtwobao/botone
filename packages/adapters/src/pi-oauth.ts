@@ -7,6 +7,7 @@ import type {
 } from "@earendil-works/pi-ai";
 import { builtinModels } from "@earendil-works/pi-ai/providers/all";
 import type {
+  ExternalModelAccountReference,
   ModelCredentialFailedState,
   ModelCredentialRetireReason,
   SecretStore,
@@ -288,6 +289,7 @@ export type StoredModelSecret =
   | { kind: "oauth"; reconnectRequired?: false; credential: OAuthCredential; maxTokens?: number }
   | ({
       kind: "openai_compatible";
+      externalAccount?: ExternalModelAccountReference;
       baseUrl: string;
       apiProtocol?: ModelApiProtocol;
       headers?: Record<string, string>;
@@ -484,6 +486,9 @@ export function parseModelSecret(plaintext: string): StoredModelSecret {
     return {
       kind: "openai_compatible",
       baseUrl: parsed.baseUrl.trim(),
+      ...(parsed.externalAccount !== undefined
+        ? { externalAccount: parseExternalAccountReference(parsed.externalAccount) }
+        : {}),
       ...(apiProtocol !== undefined ? { apiProtocol } : {}),
       ...(headers !== undefined ? { headers } : {}),
       ...(apiKey ? { apiKey } : {}),
@@ -554,6 +559,7 @@ export function serializeModelSecret(secret: StoredModelSecret): string {
       kind: "openai_compatible",
       ...modelLimits(secret as unknown as Record<string, unknown>),
       baseUrl: secret.baseUrl,
+      ...(secret.externalAccount ? { externalAccount: secret.externalAccount } : {}),
       ...(secret.apiProtocol !== undefined
         ? { apiProtocol: ModelApiProtocolSchema.parse(secret.apiProtocol) }
         : {}),
@@ -662,6 +668,7 @@ function providerCatalog() {
 }
 
 type ResolveModelOpts = {
+  externalKey?: (reference: ExternalModelAccountReference, baseUrl: string) => Promise<string>;
   persist?: (next: string) => Promise<void>;
   retire?: (
     reason: ModelCredentialRetireReason,
@@ -681,6 +688,11 @@ export async function resolveModelAuth(
   const parsed = parseModelSecret(plaintext);
   if (parsed.kind === "api_key") return { secret: parsed, apiKey: parsed.key };
   if (parsed.kind === "openai_compatible") {
+    if (parsed.externalAccount) {
+      if (!opts?.externalKey) throw new Error("Model account is unavailable. Try again later.");
+      const apiKey = await opts.externalKey(parsed.externalAccount, parsed.baseUrl);
+      return { secret: parsed, apiKey };
+    }
     return { secret: parsed, apiKey: parsed.apiKey ?? "" };
   }
   if (parsed.reconnectRequired) {
@@ -1533,4 +1545,19 @@ function httpsAuthorizationUrl(input: string): string {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw signal.reason ?? new Error("Sign-in cancelled.");
+}
+
+function parseExternalAccountReference(value: unknown): ExternalModelAccountReference {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("accountId" in value) ||
+    !("binding" in value) ||
+    typeof value.accountId !== "string" ||
+    !value.accountId ||
+    typeof value.binding !== "string" ||
+    !value.binding
+  )
+    throw new Error(CORRUPT_MODEL_SECRET_MESSAGE);
+  return { accountId: value.accountId, binding: value.binding };
 }

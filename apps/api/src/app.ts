@@ -37,6 +37,7 @@ import {
   ChatSdkMessagingSurface,
   CodexCatalogCache,
   ComposioConnector,
+  configuredModelAccount,
   contentKeyProviderFromEnv,
   createAgentHomeStore,
   createArtifactStore,
@@ -44,6 +45,7 @@ import {
   createBackgroundJobHandlers,
   createCloudAgentConnection,
   createConnectorStack,
+  createExternalModelKeyResolver,
   createIdleComputerSweeper,
   createJobReconciler,
   createMessagingContextLoader,
@@ -176,6 +178,7 @@ import {
 } from "./messaging-inbound.js";
 import { createMessagingReceipts } from "./messaging-receipts.js";
 import { mountMessagingWebhookRoutes } from "./messaging-webhook.js";
+import { modelAccountRoutes } from "./model-account.js";
 import { monitoringRoutes } from "./monitoring.js";
 import { pluginSubmissionRoutes } from "./plugin-submissions.js";
 import { sendReferralEmails, startReferralEmails } from "./referral-email.js";
@@ -462,6 +465,12 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   const email: TransactionalEmailProvider | undefined = configuredEmail ?? localEmailEmulator;
   const onEmailError = (error: unknown) =>
     getLogger().error("transactional email delivery failed", error);
+  const modelAccount = configuredModelAccount(env.modelAccountConnection);
+  if (
+    modelAccount &&
+    (!env.oidc || env.stripeSecretKey || env.stripeWebhookSecret || billingOverride)
+  )
+    throw new Error("Model account requires OIDC and local billing disabled");
   const stripeBilling = stripeBillingConfigFromEnv(env);
   const billingProvider: BillingProvider | undefined =
     billingOverride ?? (stripeBilling ? new StripeBillingProvider(stripeBilling) : undefined);
@@ -652,6 +661,13 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       env.cursorApiKey ?? "",
       process.env.TYPESAFE_API_KEY ?? "",
     ].filter(Boolean),
+    externalModelKey: modelAccount
+      ? createExternalModelKeyResolver(
+          modelAccount.provider,
+          modelAccount.model.baseUrl,
+          (userId) => auth.externalAccountIdentity(userId),
+        )
+      : undefined,
     secretStore: secrets,
     secretHttp: remoteConnectors,
     mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint,
@@ -867,6 +883,18 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       crispWebsiteId: billing ? (env.crispWebsiteId ?? null) : null,
     } satisfies AuthCapabilities);
   });
+  app.route(
+    "/api/model-account",
+    modelAccountRoutes({
+      jobs,
+      connection: modelAccount,
+      prisma,
+      auth,
+      secrets,
+      webOrigin: env.webOrigin,
+      authUrl: env.authUrl,
+    }),
+  );
   mountAppAssociation(app, env);
   if (localEmailEmulator && env.nodeEnv === "development") {
     app.get(
@@ -1160,6 +1188,13 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
               prisma,
               runtime,
               secrets,
+              externalModelKey: modelAccount
+                ? createExternalModelKeyResolver(
+                    modelAccount.provider,
+                    modelAccount.model.baseUrl,
+                    (userId) => auth.externalAccountIdentity(userId),
+                  )
+                : undefined,
               deploymentProvider: env.defaultProvider,
               deploymentModel: env.defaultModel,
               deploymentModelKey: env.deploymentModelKey,
@@ -1171,6 +1206,13 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
               prisma,
               runtime,
               secrets,
+              externalModelKey: modelAccount
+                ? createExternalModelKeyResolver(
+                    modelAccount.provider,
+                    modelAccount.model.baseUrl,
+                    (userId) => auth.externalAccountIdentity(userId),
+                  )
+                : undefined,
               deploymentProvider: env.defaultProvider,
               deploymentModel: env.defaultModel,
               deploymentModelKey: env.deploymentModelKey,

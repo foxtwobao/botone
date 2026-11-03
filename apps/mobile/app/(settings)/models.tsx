@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LoadFailure } from "../../components/load-failure";
+import { ModelAccount } from "../../components/model-account";
 import { ModelProviders } from "../../components/model-providers";
 import type { ConnectableProvider, ModelConnectIntent } from "../../components/model-role-settings";
 import { ModelRoleSettings } from "../../components/model-role-settings";
@@ -272,6 +273,7 @@ export default function Models() {
             {shownError}
           </Text>
         ) : null}
+        <ModelAccount onChanged={() => void load()} />
         {me ? (
           <>
             <ModelRoleSettings

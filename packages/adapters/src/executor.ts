@@ -1,6 +1,7 @@
 import type { AgentRunRequest, ComputerRef, SemanticMemoryProvider } from "@rakazo/adapter-kit";
 import {
   DEFAULT_CONTEXT_STRATEGY,
+  ExternalModelAccountError,
   isModelCredentialRejected,
   runContinueJob,
   SandboxUnavailableError,
@@ -104,6 +105,7 @@ import {
 } from "./history-speakers.js";
 import { createMediaGenerationProvider } from "./media-generation-factory.js";
 import { loadAgentMemoryContext } from "./memory-context.js";
+import { pauseModelAccountRun } from "./model-account-recovery.js";
 import { HostedModelCreditsRequiredError } from "./model-credit-observer.js";
 import {
   effectiveModelRole,
@@ -950,6 +952,20 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
               ),
             };
           } catch (error) {
+            if (
+              error instanceof ExternalModelAccountError &&
+              error.reason === "authorization_required" &&
+              error.reference
+            ) {
+              await pauseModelAccountRun(
+                deps,
+                run,
+                { attemptId: attempt.id, workerId, fence },
+                error.reference,
+                selected.credential,
+              );
+              return;
+            }
             // An incompatible saved model or a dead (already retired) credential is a
             // configuration error: record it on the run rather than retrying setup.
             const terminal = isTerminalModelSetupError(error);

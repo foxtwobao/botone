@@ -244,3 +244,26 @@ it("includes authorization time in the callback deadline", async () => {
   expect(popup.close).toHaveBeenCalledOnce();
   expect(vi.getTimerCount()).toBe(0);
 });
+
+it("keeps the original web page and draft context while a popup completes", async () => {
+  const fixture = desktopWindow();
+  delete window.rakazoDesktop;
+  const flow = runSsoFlow(fixture.begin, ["/app"], { popup: true, navigate: false });
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(fixture.open).toHaveBeenCalled();
+  expect(fixture.land()).toBe(true);
+  await expect(flow).resolves.toBe(result);
+  expect(fixture.location.assign).not.toHaveBeenCalled();
+  expect(fixture.popup.close).toHaveBeenCalled();
+});
+
+it("reports a popup's recovery error without navigating away from the original page", async () => {
+  const fixture = desktopWindow();
+  const flow = runSsoFlow(fixture.begin, ["/app"], { popup: true, navigate: false });
+  await Promise.resolve();
+  await Promise.resolve();
+  fixture.land(`${fixture.callback()}&error=result_unknown`);
+  await expect(flow).resolves.toEqual({ data: null, error: { code: "result_unknown" } });
+  expect(fixture.location.assign).not.toHaveBeenCalled();
+});

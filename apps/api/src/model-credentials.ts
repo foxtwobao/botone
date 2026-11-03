@@ -334,6 +334,11 @@ export function createModelConnector(deps: RouterDeps, codexCatalog: CodexLiveCa
           }
         }
       }
+      if (previousPlaintext) {
+        const previous = parseModelSecret(previousPlaintext);
+        if (previous.kind === "openai_compatible" && previous.externalAccount)
+          throw new Error("Manage this connection through Model account.");
+      }
       plaintext = buildModelConnectPlaintext(input, previousPlaintext, {
         omitVisionModelIds,
         allowPrivateEndpoint: mayUsePrivateEndpoint(deps),
