@@ -14,6 +14,52 @@ function fixture(body: unknown, status = 200) {
 }
 
 describe("external model account protocol", () => {
+  it("uses an opted-in private HTTP API while keeping browser authorization on HTTPS", async () => {
+    const transport = vi.fn<typeof fetch>(async () =>
+      Response.json({ status: "ready", api_key: { key: "fake-user-key" } }),
+    );
+    const privateConfig = { ...config, origin: "http://accounts.internal:55100" };
+    expect(() => new ResellerModelAccountProvider(privateConfig, transport)).toThrow();
+    const provider = new ResellerModelAccountProvider(
+      { ...privateConfig, allowInsecureHttp: true },
+      transport,
+    );
+    await expect(provider.ensure(identity)).resolves.toEqual({ apiKey: "fake-user-key" });
+    expect(transport.mock.calls[0]).toMatchObject([
+      "http://accounts.internal:55100/api/apps/keys/ensure",
+      { redirect: "error", headers: { authorization: "Bearer fake-application-credential" } },
+    ]);
+    const input = {
+      identity,
+      redirectUri: "https://app.example.test/callback",
+      state: "s".repeat(43),
+      codeChallenge: "c".repeat(43),
+    };
+    transport.mockResolvedValueOnce(
+      Response.json({ authorization_url: "https://gateway.example.test/start", expires_in: 300 }),
+    );
+    await expect(provider.authorize(input)).resolves.toMatchObject({
+      url: "https://gateway.example.test/start",
+    });
+    transport.mockResolvedValueOnce(
+      Response.json({ authorization_url: "http://gateway.example.test/start", expires_in: 300 }),
+    );
+    await expect(provider.authorize(input)).rejects.toMatchObject({ reason: "unavailable" });
+    transport.mockClear();
+    await expect(
+      provider.authorize({ ...input, redirectUri: "http://app.example.test/callback" }),
+    ).rejects.toThrow("Invalid authorization callback");
+    expect(transport).not.toHaveBeenCalled();
+    expect(
+      () =>
+        new ResellerModelAccountProvider({
+          ...privateConfig,
+          allowInsecureHttp: true,
+          authorizationOrigins: ["http://gateway.example.test"],
+        }),
+    ).toThrow();
+  });
+
   it("only obtains the user key and sends the exact identity contract", async () => {
     const { fetch, provider } = fixture({
       status: "ready",

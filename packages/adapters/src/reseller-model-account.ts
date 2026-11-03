@@ -29,6 +29,8 @@ const balanceSchema = z.object({
 export interface ResellerModelAccountConfig {
   origin: string;
   credential: string;
+  /** Permit cleartext transport to a trusted private-network API, never browser destinations. */
+  allowInsecureHttp?: boolean;
   /** Exact trusted origins to which the browser may be sent for model authorization. */
   authorizationOrigins?: string[];
 }
@@ -41,9 +43,9 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
     private readonly config: ResellerModelAccountConfig,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {
-    this.origin = httpsOrigin(config.origin);
+    this.origin = checkedOrigin(config.origin, config.allowInsecureHttp);
     this.authorizationOrigins = config.authorizationOrigins
-      ? new Set(config.authorizationOrigins.map(httpsOrigin))
+      ? new Set(config.authorizationOrigins.map((value) => checkedOrigin(value)))
       : undefined;
     if (!/^[!-~]+$/.test(config.credential)) throw new Error("Invalid model account credential");
     if (this.authorizationOrigins && !this.authorizationOrigins.size)
@@ -197,10 +199,10 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
   }
 }
 
-function httpsOrigin(value: string) {
+function checkedOrigin(value: string, allowInsecureHttp = false) {
   const url = new URL(value);
   if (
-    url.protocol !== "https:" ||
+    (url.protocol !== "https:" && !(allowInsecureHttp && url.protocol === "http:")) ||
     url.username ||
     url.password ||
     url.search ||

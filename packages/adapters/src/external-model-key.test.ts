@@ -52,6 +52,36 @@ it("does not affect ordinary saved credentials", async () => {
   expect((await resolveModelAuth("ordinary-key", "openai")).apiKey).toBe("ordinary-key");
 });
 
+it("requires an explicit HTTP opt-in and keeps it scoped to the server account origin", () => {
+  const config = {
+    provider: "reseller",
+    origin: "http://accounts.internal:55100",
+    credential: "fake-credential",
+    baseUrl: base,
+  };
+  for (const allowInsecureHttp of [undefined, false, "true"]) {
+    expect(() => configuredModelAccount(JSON.stringify({ ...config, allowInsecureHttp }))).toThrow(
+      "Invalid MODEL_ACCOUNT_CONNECTION configuration",
+    );
+  }
+  const optedIn = { ...config, allowInsecureHttp: true };
+  expect(configuredModelAccount(JSON.stringify(optedIn))?.provider).toBeDefined();
+  for (const override of [
+    { origin: "ftp://accounts.internal" },
+    { origin: "http://user:password@accounts.internal" },
+    { origin: "http://accounts.internal/path" },
+    { origin: "http://accounts.internal/?query=1" },
+    { origin: "http://accounts.internal/#fragment" },
+    { authorizationOrigins: ["http://gateway.example.test"] },
+    { navigationOrigin: "http://home.example.test" },
+    { baseUrl: "http://models.example.test/v1" },
+  ]) {
+    expect(() => configuredModelAccount(JSON.stringify({ ...optedIn, ...override }))).toThrow(
+      "Invalid MODEL_ACCOUNT_CONNECTION configuration",
+    );
+  }
+});
+
 it("configures optional accounts using compatible settings and sanitizes configuration errors", () => {
   const config = {
     provider: "reseller",
