@@ -854,3 +854,19 @@ it("reports an approval checker only after an account model is selected", async 
   const after = await call("autoReview/get", { scope: "account" });
   expect((await after.response.json()).json.checkerAvailable).toBe(true);
 });
+
+it("disables unsupported AI services before reading credentials or calling providers", async () => {
+  const { call } = setup({ accountOnly: true });
+  for (const [path, input] of [
+    ["voice/connect", { provider: "openai", apiKey: "fake-key" }],
+    ["voice/prepare", {}],
+    ["voice/voices", {}],
+    ["memory/connectProvider", { provider: "fixture", settings: {}, credentials: {} }],
+    ["memory/setDefaultScope", { defaultMemoryScope: "shared" }],
+  ] as const)
+    expect((await call(path, input)).response.status).toBe(403);
+  for (const path of ["voice/catalog", "voice/credentials"])
+    expect(await (await call(path, {})).response.json()).toEqual({ json: [] });
+  expect((await (await call("voice/status", {})).response.json()).json.ready).toBe(false);
+  expect(await (await call("memory/providerConfig", {})).response.json()).toEqual({ json: null });
+});

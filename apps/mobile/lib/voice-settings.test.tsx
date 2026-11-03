@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
 const t = (text: string) => text;
 vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
 vi.mock("expo-router", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
   useFocusEffect: (callback: () => void) => useEffect(callback, [callback]),
   useLocalSearchParams: () => state.params,
 }));
@@ -146,6 +147,7 @@ beforeEach(() => {
   state.save.mockReset().mockResolvedValue(undefined);
   state.held = null;
   state.rpc.mockReset().mockImplementation(async (proc: string, args?: { provider: string }) => {
+    if (proc === "me") return { modelAccountOnly: false };
     if (state.held) await state.held;
     if (proc === "voice/catalog") return catalog;
     if (proc === "voice/credentials") return credentials;
@@ -440,4 +442,11 @@ it("keeps a saved speech model when an opening read started before the save land
   });
   await act(async () => releaseCatalog());
   await vi.waitFor(() => expect(input().value).toBe("saved-model"));
+});
+
+it("does not render providers or device voice in account-only mode", async () => {
+  state.rpc.mockResolvedValue({ modelAccountOnly: true });
+  await render();
+  expect(container.querySelectorAll("button")).toHaveLength(0);
+  expect(state.load).not.toHaveBeenCalled();
 });

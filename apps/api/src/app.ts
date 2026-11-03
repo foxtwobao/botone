@@ -259,6 +259,8 @@ type CreateAppOverrides = Partial<AppEnv> & {
   pluginRepoFetcher?: PluginRepoFetcher;
   pluginMarketplaceRead?: PluginTextReader;
   modelConnectionFetch?: typeof fetch;
+  /** Internal override for offline provider conformance fixtures; never read from the environment. */
+  modelAccountOnly?: boolean;
   logger?: Logger;
   runtime?: AgentRuntime;
   contextStrategy?: AgentContextStrategy;
@@ -280,6 +282,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     billing: billingOverride,
     remoteConnectors,
     modelConnectionFetch,
+    modelAccountOnly: modelAccountOnlyOverride,
     pluginRepoFetcher,
     pluginMarketplaceRead,
     logger: loggerOverride,
@@ -413,7 +416,10 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     remoteConnectors,
     env.mcpAllowPrivateEndpoint,
   );
-  const memoryProviders = new SpaceMemoryProviderResolver(prisma, secrets);
+  const modelAccountOnly = modelAccountOnlyOverride ?? env.agentRuntime !== "scripted";
+  const memoryProviders = modelAccountOnly
+    ? { resolve: async () => null }
+    : new SpaceMemoryProviderResolver(prisma, secrets);
   const oauthLogins = new PiOAuthLogins(undefined, { prisma, secrets });
   const home = createAgentHomeStore(env.dataDir, prisma);
   void home.removeStaleStaging().catch((error) => getLogger().error("home staging cleanup", error));
@@ -467,7 +473,6 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   const onEmailError = (error: unknown) =>
     getLogger().error("transactional email delivery failed", error);
   const modelAccount = configuredModelAccount(env.modelAccountConnection);
-  const modelAccountOnly = env.agentRuntime !== "scripted";
   if (
     modelAccount &&
     (!env.oidc || env.stripeSecretKey || env.stripeWebhookSecret || billingOverride)
@@ -685,7 +690,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     events,
     onTicketChange: ticketChanges,
     ticketBoardEnabled,
-    phoneCallsEnabled: env.phoneCallsEnabled,
+    phoneCallsEnabled: !modelAccountOnly && env.phoneCallsEnabled,
     phoneCallRingSeconds: env.phoneCallRingSeconds,
     phoneCallCooldownMinutes: env.phoneCallCooldownMinutes,
     messaging: messaging ? createMessagingContextLoader(prisma) : undefined,
@@ -820,7 +825,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     },
     env: {
       modelAccountOnly,
-      phoneCallsEnabled: env.phoneCallsEnabled,
+      phoneCallsEnabled: !modelAccountOnly && env.phoneCallsEnabled,
       phoneCallRingSeconds: env.phoneCallRingSeconds,
       ticketBoardEnabled,
       navLinks: env.navLinks,
@@ -1025,7 +1030,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   });
   mountAccountExportRoute(app, { prisma, auth, artifacts, home });
   mountAuditExportRoute(app, { prisma, sessionActor });
-  mountVoiceHttpRoutes(app, { prisma, secrets, env }, async (c) => {
+  mountVoiceHttpRoutes(app, { prisma, secrets, env: { ...env, modelAccountOnly } }, async (c) => {
     const actor = await sessionActor(c.req.raw);
     if (actor) enrichLogContext({ "user.id": actor.userId, "space.id": actor.spaceId });
     return actor;
@@ -1088,7 +1093,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           {
             prisma,
             secrets,
-            env: { mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint },
+            env: { mcpAllowPrivateEndpoint: env.mcpAllowPrivateEndpoint, modelAccountOnly },
           },
           { spaceId, userId },
           { audio, mimeType, signal },

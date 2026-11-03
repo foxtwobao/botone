@@ -4269,3 +4269,16 @@ describe("cross-chat history grant", () => {
     },
   );
 });
+
+it("does not initialize configured media providers in account-only mode", () => {
+  vi.stubEnv("MEDIA_GENERATION_PROVIDER", "unsupported-fixture");
+  try {
+    const deps = { prisma: {}, modelAccountOnly: true } as Parameters<typeof createExecutor>[0];
+    expect(() => createExecutor(deps)).not.toThrow();
+    expect(() => createExecutor({ ...deps, modelAccountOnly: false })).toThrow(
+      "Unknown media generation provider",
+    );
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});

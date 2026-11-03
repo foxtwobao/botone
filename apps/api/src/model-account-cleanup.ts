@@ -24,6 +24,29 @@ export async function removeOrdinaryModelConnections(
             credentialId: row.id,
             secretId: row.secretId,
           });
+        const voices = await tx.userVoiceCredential.findMany({
+          select: { id: true, secretId: true },
+        });
+        await tx.userVoiceCredential.deleteMany({});
+        for (const row of voices)
+          await deleteUnreferencedCredentialSecret(tx, {
+            credentialKind: "voice",
+            credentialId: row.id,
+            secretId: row.secretId,
+          });
+        const memories = await tx.spaceMemoryConfig.findMany({ select: { secretId: true } });
+        await tx.spaceMemoryConfig.deleteMany({});
+        for (const row of memories)
+          await deleteUnreferencedCredentialSecret(tx, {
+            credentialKind: "model",
+            credentialId: "",
+            secretId: row.secretId,
+          });
+        await tx.spaceSettingOverride.deleteMany({ where: { setting: "voice" } });
+        await tx.bot.updateMany({
+          where: { OR: [{ autoSpeak: true }, { voiceId: { not: null } }] },
+          data: { autoSpeak: false, voiceId: null },
+        });
         const unsupportedRole = {
           OR: [
             { provider: { not: OPENAI_COMPATIBLE_PROVIDER_ID } },

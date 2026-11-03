@@ -71,6 +71,7 @@ export function useThreadRows({
   inGroup,
   readOnly,
   onCall,
+  voiceEnabled = true,
   displayName,
   mentionBots,
   currentBot,
@@ -90,6 +91,7 @@ export function useThreadRows({
   inGroup: boolean;
   readOnly: boolean;
   onCall: boolean;
+  voiceEnabled?: boolean;
   displayName?: string;
   mentionBots: MobileBot[];
   currentBot?: MobileBot;
@@ -161,6 +163,7 @@ export function useThreadRows({
           members={snap?.members}
           readOnly={readOnly}
           onCall={onCall}
+          voiceEnabled={voiceEnabled}
           canAnswer={!readOnly && answerableAskIds.has(message.id)}
           canAuthorizeModelAccount={!readOnly && modelAuthorizationIds.has(message.id)}
           canDismiss={dismissableAskIds.has(message.id)}
@@ -211,6 +214,7 @@ export function useThreadRows({
       rowActions,
       readOnly,
       onCall,
+      voiceEnabled,
       answerableAskIds,
       dismissableAskIds,
       highlightedMessageId,

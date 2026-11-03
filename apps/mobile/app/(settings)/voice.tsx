@@ -6,8 +6,8 @@ import {
 } from "@rakazo/contracts";
 import { fetchFresh, writeSaved } from "@rakazo/core/query";
 import { isCancelledError } from "@tanstack/react-query";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -35,7 +35,7 @@ import { useI18n } from "../../lib/i18n";
 import { native, useThemedStyles } from "../../lib/native";
 import { queryClient, rpcQuery } from "../../lib/query";
 import type { SettingsTarget } from "../../lib/settings-target";
-import { settingsRpc, settingsTarget } from "../../lib/settings-target";
+import { ACCOUNT_SETTINGS, settingsRpc, settingsTarget } from "../../lib/settings-target";
 import { useSideInsets } from "../../lib/side-insets";
 import { errorText } from "../../lib/user-error";
 import { speakText } from "../../lib/voice";
@@ -83,6 +83,27 @@ function cachedVoiceSettings(target: SettingsTarget) {
  * this device's voice and sounds stay with the device, so only the account's screen shows them.
  */
 export default function VoiceSettings() {
+  const [allowed, setAllowed] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    let current = true;
+    void settingsRpc(ACCOUNT_SETTINGS)("me")
+      .then((me) => {
+        if (!current) return;
+        if (me.modelAccountOnly) router.replace("/models");
+        else setAllowed(true);
+      })
+      .catch(() => {
+        if (current) router.replace("/models");
+      });
+    return () => {
+      current = false;
+    };
+  }, [router]);
+  return allowed ? <VoiceSettingsBody /> : null;
+}
+
+function VoiceSettingsBody() {
   const params = useLocalSearchParams<{ spaceId?: string }>();
   const target = useMemo(() => settingsTarget(params.spaceId), [params.spaceId]);
   const rpc = useMemo(() => settingsRpc(target), [target]);

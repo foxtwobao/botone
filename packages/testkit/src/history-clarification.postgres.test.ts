@@ -68,6 +68,7 @@ describe.skipIf(!enabled)("product history clarification eval boundary", () => {
               dataDir,
               sandboxProvider: "fake",
               agentRuntime: "pi",
+              modelAccountOnly: false,
               runtime: new PiAgentRuntime(),
               contextStrategy: "snapshots",
               wakeupDriver: "memory",

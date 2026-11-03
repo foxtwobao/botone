@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { rpc } from "./api";
 import type { SpeechRecognizer } from "./dictation";
 import { ENDPOINT_SILENCE_MS, listen, setSpeechRecognizer, stop } from "./dictation";
 import { reportMobileError } from "./monitoring";
 
+vi.mock("./api", () => ({ rpc: vi.fn(async () => ({ modelAccountOnly: false })) }));
 vi.mock("./monitoring", () => ({ reportMobileError: vi.fn() }));
 vi.mock("react-native", () => ({ Platform: { OS: "ios" } }));
 
@@ -310,4 +312,12 @@ describe("mobile dictation", () => {
       { source: "dictation" },
     );
   });
+});
+
+it("never opens the recognizer when only the model account is allowed", async () => {
+  const fake = fakeRecognizer();
+  setSpeechRecognizer(fake.recognizer);
+  vi.mocked(rpc).mockResolvedValueOnce({ modelAccountOnly: true } as never);
+  await listen({ onFinal: vi.fn() });
+  expect(fake.start).not.toHaveBeenCalled();
 });

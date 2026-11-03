@@ -1162,6 +1162,7 @@ export type MobileMe = Pick<
   | "hostCredentialProvider"
   | "hostCredentialSource"
   | "needsModel"
+  | "modelAccountOnly"
   | "isDeploymentOwner"
   | "needsSignupSurvey"
   | "billingEnabled"

@@ -548,10 +548,14 @@ test("account-only settings retain model choices without ordinary connection con
 }, testInfo) => {
   await signup(page, `account-only-${Date.now()}@rakazo.test`, "password12", "Fixture User");
   await completeOnboarding(page);
-  const me = await rpc<Me>(page, "me", {});
-  await page.route("**/rpc/me", (route) =>
-    route.fulfill({ json: { json: { ...me, modelAccountOnly: true } } }),
-  );
+  await page.route(/\/rpc\/(me|bootstrap)$/, async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const account = route.request().url().endsWith("/me") ? body.json : body.json.me;
+    account.modelAccountOnly = true;
+    account.phoneCallsEnabled = false;
+    await route.fulfill({ response, json: body });
+  });
   let configured = false;
   await page.route("**/api/model-account/config", (route) =>
     route.fulfill({ json: { enabled: configured } }),
@@ -603,6 +607,7 @@ test("account-only settings retain model choices without ordinary connection con
       },
     }),
   );
+  await page.reload();
   const settings = await openUserSettings(page, "models");
   await expect(settings.getByRole("alert")).toHaveText("Model account unavailable");
   await expect(settings.getByRole("button", { name: "Add provider", exact: true })).toBeHidden();
@@ -613,8 +618,32 @@ test("account-only settings retain model choices without ordinary connection con
   await expect(settings.getByRole("button", { name: "Add provider", exact: true })).toBeHidden();
   await expect(settings.getByText("Main model", { exact: true })).toBeVisible();
   await expect(settings.getByText("Approval model", { exact: true })).toBeVisible();
+  await expect(settings.getByTestId("settings-nav-voice")).toHaveCount(0);
   await captureScreenshot(page, testInfo, "model-account-only-settings");
   await settings.getByRole("button", { name: "Add fallback", exact: true }).first().click();
   await expect(page.getByRole("option", { name: /Fixture backup/ })).toBeVisible();
   await expect(page.getByRole("option").filter({ hasText: "Connect" })).toHaveCount(0);
+});
+
+test("account-only memory keeps local documents without remote providers", async ({
+  page,
+}, testInfo) => {
+  await signup(page, `account-memory-${Date.now()}@rakazo.test`, "password12", "Fixture User");
+  await completeOnboarding(page);
+  await page.route(/\/rpc\/(me|bootstrap)$/, async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const account = route.request().url().endsWith("/me") ? body.json : body.json.me;
+    account.modelAccountOnly = true;
+    account.phoneCallsEnabled = false;
+    await route.fulfill({ response, json: body });
+  });
+  await page.reload();
+  const settings = await openUserSettings(page, "memory");
+  await expect(settings.getByTestId("settings-nav-voice")).toHaveCount(0);
+  await expect(
+    settings.getByRole("button", { name: "Connect memory provider", exact: true }),
+  ).toHaveCount(0);
+  await expect(settings.getByTestId("memory-settings")).toBeVisible();
+  await captureScreenshot(page, testInfo, "model-account-local-memory");
 });

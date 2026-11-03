@@ -75,6 +75,7 @@ type MessageRowProps = {
   members?: MobileSnapshot["members"];
   readOnly: boolean;
   onCall: boolean;
+  voiceEnabled?: boolean;
   canAnswer: boolean;
   canAuthorizeModelAccount?: boolean;
   canDismiss: boolean;
@@ -113,6 +114,7 @@ export const MessageRow = memo(function MessageRow({
   members,
   readOnly,
   onCall,
+  voiceEnabled = true,
   canAnswer,
   canAuthorizeModelAccount,
   canDismiss,
@@ -178,7 +180,8 @@ export const MessageRow = memo(function MessageRow({
       quotableMessageSegments(message.role, message.blocks).length > 0;
     const includeReact = !readOnly && canReactToThreadMessage(message);
     // The call already reads replies aloud; a second voice would talk over it.
-    const includeSpeak = message.role === "bot" && !onCall && Boolean(blockText(message));
+    const includeSpeak =
+      voiceEnabled && message.role === "bot" && !onCall && Boolean(blockText(message));
     const includeSelect = messageText.trim().length > 0;
     // Any sent message can be marked unread; the next open starts New at the first reply from it.
     const includeUnread = !readOnly && !markedUnread && canMarkMessageUnread(message);
@@ -361,6 +364,7 @@ export const MessageRow = memo(function MessageRow({
     markedUnread,
     readOnly,
     onCall,
+    voiceEnabled,
     colorScheme,
     t,
     locale,

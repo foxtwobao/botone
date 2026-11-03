@@ -315,6 +315,14 @@ describe("requestUserCall security", () => {
     expect(deps.jobs.enqueue).not.toHaveBeenCalled();
   });
 
+  it("does no work when only account models are permitted", async () => {
+    const { deps } = fixture();
+    expect(await requestUserCall({ ...deps, modelAccountOnly: true }, run, input)).toHaveProperty(
+      "error",
+    );
+    expect(deps.prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it("does no work while disabled", async () => {
     const { deps } = fixture();
     expect(await requestUserCall({ ...deps, phoneCallsEnabled: false }, run, input)).toHaveProperty(

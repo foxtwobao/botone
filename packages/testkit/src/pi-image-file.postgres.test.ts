@@ -48,6 +48,7 @@ describe.skipIf(!databaseAvailable)("offline Pi product journey", () => {
         dataDir,
         sandboxProvider: "fake",
         agentRuntime: "pi",
+        modelAccountOnly: false,
         wakeupDriver: "memory",
         signupsEnabled: "true",
         composio: new ComposioConnector({ client: new FakeComposioClient() }),

@@ -40,6 +40,7 @@ export function SpaceSettingOverrides({
   const rpc = useSpaceRpc();
   const queries = useSpaceQueries();
   const queryClient = useQueryClient();
+  const me = useQuery(queries.me.queryOptions()).data;
   const overrides = useQuery(queries.spaceSettings.overrides.queryOptions());
   const [pending, setPending] = useState<SpaceSetting | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -125,6 +126,7 @@ export function SpaceSettingOverrides({
     <div className="space-y-3">
       <SettingsGroup data-testid="space-setting-overrides">
         {settings.map(({ id, label, panel, resetConfirmation, busy }) => {
+          if (id === "voice" && me?.modelAccountOnly) return null;
           const custom = customized.includes(id);
           return (
             <div key={id} data-testid={`space-setting-${id}`}>

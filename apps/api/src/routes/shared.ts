@@ -37,7 +37,7 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
   ]);
   return {
     ticketBoardEnabled: deps.env.ticketBoardEnabled === true,
-    phoneCallsEnabled: deps.env.phoneCallsEnabled === true,
+    phoneCallsEnabled: !deps.env.modelAccountOnly && deps.env.phoneCallsEnabled === true,
     navLinks: deps.env.navLinks ?? [],
     maxUploadSizeBytes: attachmentMaxBytes(deps.env),
     maxAttachmentsPerMessage: attachmentMaxCount(deps.env),

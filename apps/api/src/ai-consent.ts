@@ -97,7 +97,7 @@ export async function aiConsentStatus(
             select: { modelProvider: true, modelId: true, thinkingLevel: true },
           })
         : [],
-      uses.includes("voice")
+      !deps.env.modelAccountOnly && uses.includes("voice")
         ? query.uses
           ? findDefaultVoiceCredential(deps.prisma, actor, query.settingsScope).then(
               (credential) => (credential ? [{ credential }] : []),
@@ -106,7 +106,7 @@ export async function aiConsentStatus(
               listVoicePreferences(deps.prisma, target),
             )
         : [],
-      uses.includes("memory")
+      !deps.env.modelAccountOnly && uses.includes("memory")
         ? deps.prisma.spaceMemoryConfig.findUnique({ where: { spaceId: actor.spaceId } })
         : null,
       modelsEnabled

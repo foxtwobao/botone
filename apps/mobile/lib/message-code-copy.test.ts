@@ -53,7 +53,12 @@ import { MessageRow } from "../components/thread/message-row";
 
 type RowProps = ComponentProps<typeof MessageRow>;
 
-function messageMenu(role: "bot" | "user", blocks: string[], markedUnread = false) {
+function messageMenu(
+  role: "bot" | "user",
+  blocks: string[],
+  markedUnread = false,
+  voiceEnabled = true,
+) {
   const text = blocks.map((code) => `\`\`\`\n${code}\n\`\`\``).join("\n\n");
   mocks.markdownCodeBlocks.mockReturnValue(blocks);
   mocks.actionProps = undefined;
@@ -70,6 +75,7 @@ function messageMenu(role: "bot" | "user", blocks: string[], markedUnread = fals
     bots: [],
     readOnly: false,
     onCall: false,
+    voiceEnabled,
     canAnswer: false,
     canDismiss: false,
     highlighted: false,
@@ -137,4 +143,10 @@ it("hides the completed unread action while preserving code copy", () => {
   const completed = messageMenu("bot", ["example"], true);
   expect(completed.accessibilityActions.some((action) => action.name === "unread")).toBe(false);
   expect(completed.accessibilityActions).toContainEqual({ name: "copyCode", label: "Copy code" });
+});
+
+it("hides speech actions when voice is unavailable", () => {
+  const menu = messageMenu("bot", ["fixture"], false, false);
+  expect(menu.accessibilityActions.some((action) => action.name === "speak")).toBe(false);
+  expect(menu.accessibilityActions.some((action) => action.name === "copy")).toBe(true);
 });

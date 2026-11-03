@@ -374,6 +374,12 @@ export function createRouterContext(deps: RouterDeps) {
         ].includes(path[1] ?? "")
       )
         throw new ORPCError("FORBIDDEN", { message: "Model account required" });
+      if (
+        deps.env.modelAccountOnly &&
+        ((path[0] === "voice" && !["catalog", "status", "credentials"].includes(path[1] ?? "")) ||
+          (path[0] === "memory" && ["connectProvider", "setDefaultScope"].includes(path[1] ?? "")))
+      )
+        throw new ORPCError("FORBIDDEN", { message: "Service unavailable" });
       const result = await next();
       const event = procedureSecurityEvent(path, input, context.actor);
       if (event) await recordSecurityEvent(event);
@@ -381,7 +387,7 @@ export function createRouterContext(deps: RouterDeps) {
     });
 
   const callsEnabled = authed.use(async ({ next }) => {
-    if (!deps.env?.phoneCallsEnabled) throw new ORPCError("NOT_FOUND");
+    if (deps.env.modelAccountOnly || !deps.env?.phoneCallsEnabled) throw new ORPCError("NOT_FOUND");
     return next();
   });
 

@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
 vi.mock("expo-router", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
   useFocusEffect: (callback: () => void) => {
     useEffect(() => {
       if (mocks.focused) callback();

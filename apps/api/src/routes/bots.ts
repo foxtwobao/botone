@@ -354,6 +354,8 @@ export function botsRoutes(ctx: RouterContext) {
           current: { provider: existing.modelProvider, model: existing.modelId },
         });
         if (!modelChange.ok) throw new ORPCError("BAD_REQUEST", { message: modelChange.error });
+        if (deps.env.modelAccountOnly && (input.autoSpeak === true || input.voiceId))
+          throw new ORPCError("FORBIDDEN", { message: "Service unavailable" });
         const thinkingLevel = input.thinkingLevel;
         if (!existing.thread) throw new IsolationError();
         await commitBotUpdate({

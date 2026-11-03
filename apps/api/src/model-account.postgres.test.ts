@@ -209,7 +209,7 @@ postgres("external model account isolated PostgreSQL", () => {
     await db.pool.end();
   });
 
-  it("removes ordinary model data without deleting account access, voice keys or identity", async () => {
+  it("removes unsupported AI connections without deleting account access, local memory or identity", async () => {
     const flow = await begin();
     expect((await request(flow.callback, { headers: { cookie: flow.cookie } })).status).toBe(302);
     const managedId = `external-${accountId}`;
@@ -239,10 +239,32 @@ postgres("external model account isolated PostgreSQL", () => {
     });
     await prisma.userVoiceCredential.create({
       data: {
-        id: "preserved-voice",
+        id: "old-voice",
         userId,
         provider: "openai",
         secretId: "shared-voice-secret",
+      },
+    });
+    await prisma.secret.create({
+      data: {
+        id: "old-memory-secret",
+        userId,
+        spaceId,
+        kind: "memory",
+        ciphertext: "unused-fixture",
+      },
+    });
+    await prisma.spaceMemoryConfig.create({
+      data: { spaceId, userId, provider: "fixture", settings: {}, secretId: "old-memory-secret" },
+    });
+    await prisma.memoryDocument.create({
+      data: {
+        id: "local-memory",
+        userId,
+        spaceId,
+        scope: "user",
+        path: "MEMORY.md",
+        content: "Keep this memory",
       },
     });
     await prisma.userModelPreference.create({
@@ -334,7 +356,13 @@ postgres("external model account isolated PostgreSQL", () => {
       (await prisma.userModelCredential.findMany({ where: { userId } })).map((row) => row.id),
     ).toEqual([managedId]);
     expect(await prisma.secret.findUnique({ where: { id: "old-model-secret" } })).toBeNull();
-    expect(await prisma.secret.findUnique({ where: { id: "shared-voice-secret" } })).not.toBeNull();
+    expect(await prisma.secret.findUnique({ where: { id: "shared-voice-secret" } })).toBeNull();
+    expect(await prisma.userVoiceCredential.count()).toBe(0);
+    expect(await prisma.spaceMemoryConfig.count()).toBe(0);
+    expect(await prisma.secret.findUnique({ where: { id: "old-memory-secret" } })).toBeNull();
+    expect(
+      await prisma.memoryDocument.findUnique({ where: { id: "local-memory" } }),
+    ).not.toBeNull();
     expect(await prisma.userModelPreference.count({ where: { credentialId: "old-model" } })).toBe(
       0,
     );

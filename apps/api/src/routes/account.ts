@@ -279,13 +279,17 @@ export function accountRoutes(ctx: RouterContext) {
     },
     voice: {
       catalog: authed.voice.catalog.handler(async () =>
-        listVoiceCatalog({ allowPrivateEndpoint: deps.env?.mcpAllowPrivateEndpoint }),
+        deps.env.modelAccountOnly
+          ? []
+          : listVoiceCatalog({ allowPrivateEndpoint: deps.env?.mcpAllowPrivateEndpoint }),
       ),
       status: authed.voice.status.handler(async ({ context, input }) => {
+        if (deps.env.modelAccountOnly) return toVoiceStatus(null);
         const cred = await findDefaultVoiceCredential(deps.prisma, context.actor, input?.scope);
         return toVoiceStatus(cred);
       }),
       credentials: authed.voice.credentials.handler(async ({ context, input }) => {
+        if (deps.env.modelAccountOnly) return [];
         const target = await voicePreferenceTarget(deps.prisma, context.actor, input?.scope);
         const [rows, preferences] = await Promise.all([
           deps.prisma.userVoiceCredential.findMany({

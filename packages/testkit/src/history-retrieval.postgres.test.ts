@@ -218,6 +218,7 @@ describe.skipIf(!enabled)("history retrieval through executor", () => {
         dataDir,
         sandboxProvider: "fake",
         agentRuntime: "pi",
+        modelAccountOnly: false,
         wakeupDriver: "memory",
         signupsEnabled: "true",
         composio: new ComposioConnector({ client: new FakeComposioClient() }),
