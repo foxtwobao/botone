@@ -936,7 +936,7 @@ msgstr "認証コード"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
-msgstr ""
+msgstr "認可が完了していません。"
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
@@ -956,11 +956,11 @@ msgstr "承認"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorize again"
-msgstr ""
+msgstr "再認可"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
-msgstr ""
+msgstr "続行するにはモデルアカウントを認可してください。"
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1019,7 +1019,7 @@ msgstr "ログインに戻る"
 
 #: src/components/ModelAccount.tsx
 msgid "Balance unavailable"
-msgstr ""
+msgstr "残高を取得できません"
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1525,7 +1525,7 @@ msgstr "完了"
 
 #: src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
-msgstr ""
+msgstr "開いたウィンドウで認可を完了してください。"
 
 #: src/components/SubagentCard.tsx
 msgid "Completed"
@@ -1846,7 +1846,7 @@ msgstr "アップデートを完了できませんでした。もう一度お試
 
 #: src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
-msgstr ""
+msgstr "認可結果を確認できませんでした。再試行してください。"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2660,7 +2660,7 @@ msgstr "切断中…"
 
 #: src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
-msgstr ""
+msgstr "切断の確認を待っています。"
 
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
@@ -3230,7 +3230,7 @@ msgstr "長押しで話し、離すと送信"
 
 #: src/components/ModelAccount.tsx
 msgid "Home"
-msgstr ""
+msgstr "ホーム"
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3870,11 +3870,11 @@ msgstr "モデル「{modelId}」は一覧にありませんでした。"
 
 #: src/components/ModelAccount.tsx
 msgid "Model account"
-msgstr ""
+msgstr "モデルアカウント"
 
 #: src/components/ModelAccount.tsx
 msgid "Model account unavailable"
-msgstr ""
+msgstr "モデルアカウントを利用できません"
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4716,7 +4716,7 @@ msgstr "最近"
 
 #: src/components/ModelAccount.tsx
 msgid "Recharge"
-msgstr ""
+msgstr "チャージ"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
@@ -4808,7 +4808,7 @@ msgstr "更新"
 
 #: src/components/ModelAccount.tsx
 msgid "Refresh balance"
-msgstr ""
+msgstr "残高を更新"
 
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
@@ -5072,7 +5072,7 @@ msgstr "再試行"
 
 #: src/components/ModelAccount.tsx
 msgid "Retry disconnect"
-msgstr ""
+msgstr "切断を再試行"
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5539,7 +5539,7 @@ msgstr "パスキーでログイン"
 
 #: src/components/ModelAccount.tsx
 msgid "Sign in with SSO to use the model account."
-msgstr ""
+msgstr "モデルアカウントを使用するには SSO でサインインしてください。"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6392,7 +6392,7 @@ msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Use model account"
-msgstr ""
+msgstr "モデルアカウントを使用"
 
 #: src/components/ModelCredits.tsx
 msgid "Use my subscription or API key"

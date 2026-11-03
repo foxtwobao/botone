@@ -1,4 +1,22 @@
 export const DE_MESSAGES: Record<string, string> = {
+  "Authorization incomplete.": "Autorisierung unvollständig.",
+  "Authorize again": "Erneut autorisieren",
+  "Authorize the model account to continue.": "Autorisiere das Modellkonto, um fortzufahren.",
+  "Balance unavailable": "Guthaben nicht verfügbar",
+  "Complete authorization in the opened window.":
+    "Schließe die Autorisierung im geöffneten Fenster ab.",
+  "Could not confirm authorization. Try again.":
+    "Autorisierung konnte nicht bestätigt werden. Erneut versuchen.",
+  "Disconnection pending confirmation.": "Trennung wartet auf Bestätigung.",
+  Home: "Startseite",
+  "Model account": "Modellkonto",
+  "Model account unavailable": "Modellkonto nicht verfügbar",
+  Recharge: "Aufladen",
+  "Refresh balance": "Guthaben aktualisieren",
+  "Retry disconnect": "Trennung erneut versuchen",
+  "Sign in with SSO to use the model account.":
+    "Melde dich mit SSO an, um das Modellkonto zu verwenden.",
+  "Use model account": "Modellkonto verwenden",
   "Daily check-ins on unfinished work": "Tägliche Rückfragen zu offenen Aufgaben",
   "How other bots see it": "So sehen andere Bots ihn",
   "Share to": "Teilen mit",

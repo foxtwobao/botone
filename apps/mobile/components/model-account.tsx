@@ -188,15 +188,13 @@ export function ModelAccount({ onChanged }: { onChanged: () => void }) {
       <SettingsRow
         title={t("Home")}
         onPress={() =>
-          void Linking.openURL(config.homeUrl).catch(() => Alert.alert(t("Could not open link")))
+          void Linking.openURL(config.homeUrl).catch(() => Alert.alert(t("Could not continue")))
         }
       />
       <SettingsRow
         title={t("Recharge")}
         onPress={() =>
-          void Linking.openURL(config.rechargeUrl).catch(() =>
-            Alert.alert(t("Could not open link")),
-          )
+          void Linking.openURL(config.rechargeUrl).catch(() => Alert.alert(t("Could not continue")))
         }
       />
     </SettingsGroup>

@@ -936,7 +936,7 @@ msgstr "Autorisatiecode"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
-msgstr ""
+msgstr "Autorisatie niet voltooid."
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
@@ -956,11 +956,11 @@ msgstr "Autoriseren"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorize again"
-msgstr ""
+msgstr "Opnieuw autoriseren"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
-msgstr ""
+msgstr "Autoriseer het modelaccount om door te gaan."
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1019,7 +1019,7 @@ msgstr "Terug naar aanmelden"
 
 #: src/components/ModelAccount.tsx
 msgid "Balance unavailable"
-msgstr ""
+msgstr "Saldo niet beschikbaar"
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1525,7 +1525,7 @@ msgstr "Voltooid"
 
 #: src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
-msgstr ""
+msgstr "Voltooi de autorisatie in het geopende venster."
 
 #: src/components/SubagentCard.tsx
 msgid "Completed"
@@ -1846,7 +1846,7 @@ msgstr "De update kon niet worden voltooid. Probeer het opnieuw."
 
 #: src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
-msgstr ""
+msgstr "Autorisatie kon niet worden bevestigd. Probeer opnieuw."
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2660,7 +2660,7 @@ msgstr "Bezig met loskoppelen…"
 
 #: src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
-msgstr ""
+msgstr "Verbinding verbreken wacht op bevestiging."
 
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
@@ -3230,7 +3230,7 @@ msgstr "Houd ingedrukt om te praten, laat los om te versturen"
 
 #: src/components/ModelAccount.tsx
 msgid "Home"
-msgstr ""
+msgstr "Startpagina"
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3870,11 +3870,11 @@ msgstr "Model \"{modelId}\" stond niet in de lijst."
 
 #: src/components/ModelAccount.tsx
 msgid "Model account"
-msgstr ""
+msgstr "Modelaccount"
 
 #: src/components/ModelAccount.tsx
 msgid "Model account unavailable"
-msgstr ""
+msgstr "Modelaccount niet beschikbaar"
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4716,7 +4716,7 @@ msgstr "Recent"
 
 #: src/components/ModelAccount.tsx
 msgid "Recharge"
-msgstr ""
+msgstr "Opwaarderen"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
@@ -4808,7 +4808,7 @@ msgstr "Vernieuwen"
 
 #: src/components/ModelAccount.tsx
 msgid "Refresh balance"
-msgstr ""
+msgstr "Saldo vernieuwen"
 
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
@@ -5072,7 +5072,7 @@ msgstr "Opnieuw proberen"
 
 #: src/components/ModelAccount.tsx
 msgid "Retry disconnect"
-msgstr ""
+msgstr "Verbinding opnieuw verbreken"
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5539,7 +5539,7 @@ msgstr "Inloggen met passkey"
 
 #: src/components/ModelAccount.tsx
 msgid "Sign in with SSO to use the model account."
-msgstr ""
+msgstr "Meld je aan met SSO om het modelaccount te gebruiken."
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6392,7 +6392,7 @@ msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Use model account"
-msgstr ""
+msgstr "Modelaccount gebruiken"
 
 #: src/components/ModelCredits.tsx
 msgid "Use my subscription or API key"

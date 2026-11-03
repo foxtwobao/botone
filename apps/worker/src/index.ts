@@ -157,11 +157,7 @@ async function main() {
       ? new ScriptedAgentRuntime()
       : new PiAgentRuntime({ sessionRoot: resolvePiSessionRoot(dataDir) });
   const modelAccount = configuredModelAccount(process.env.MODEL_ACCOUNT_CONNECTION);
-  if (
-    modelAccount &&
-    (!process.env.OIDC_ISSUER || process.env.STRIPE_SECRET_KEY || process.env.STRIPE_WEBHOOK_SECRET)
-  )
-    throw new Error("Model account requires OIDC and local billing disabled");
+  if (modelAccount && !process.env.OIDC_ISSUER) throw new Error("Model account requires OIDC");
   // Same resolver the API uses, so both processes agree on provider, model and key.
   const { key: deploymentModelKey, configured: deploymentModelConfigured } =
     resolveDeploymentModel();

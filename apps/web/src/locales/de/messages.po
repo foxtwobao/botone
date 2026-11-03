@@ -936,7 +936,7 @@ msgstr "Autorisierungscode"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
-msgstr ""
+msgstr "Autorisierung unvollständig."
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
@@ -956,11 +956,11 @@ msgstr "Autorisieren"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorize again"
-msgstr ""
+msgstr "Erneut autorisieren"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
-msgstr ""
+msgstr "Autorisiere das Modellkonto, um fortzufahren."
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1019,7 +1019,7 @@ msgstr "Zurück zur Anmeldung"
 
 #: src/components/ModelAccount.tsx
 msgid "Balance unavailable"
-msgstr ""
+msgstr "Guthaben nicht verfügbar"
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1525,7 +1525,7 @@ msgstr "Abschließen"
 
 #: src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
-msgstr ""
+msgstr "Schließe die Autorisierung im geöffneten Fenster ab."
 
 #: src/components/SubagentCard.tsx
 msgid "Completed"
@@ -1846,7 +1846,7 @@ msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
-msgstr ""
+msgstr "Autorisierung konnte nicht bestätigt werden. Erneut versuchen."
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2660,7 +2660,7 @@ msgstr "Verbindung wird getrennt…"
 
 #: src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
-msgstr ""
+msgstr "Trennung wartet auf Bestätigung."
 
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
@@ -3230,7 +3230,7 @@ msgstr "Zum Sprechen halten, zum Senden loslassen"
 
 #: src/components/ModelAccount.tsx
 msgid "Home"
-msgstr ""
+msgstr "Startseite"
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3870,11 +3870,11 @@ msgstr "Modell \"{modelId}\" wurde nicht aufgelistet."
 
 #: src/components/ModelAccount.tsx
 msgid "Model account"
-msgstr ""
+msgstr "Modellkonto"
 
 #: src/components/ModelAccount.tsx
 msgid "Model account unavailable"
-msgstr ""
+msgstr "Modellkonto nicht verfügbar"
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4716,7 +4716,7 @@ msgstr "Kürzlich"
 
 #: src/components/ModelAccount.tsx
 msgid "Recharge"
-msgstr ""
+msgstr "Aufladen"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
@@ -4808,7 +4808,7 @@ msgstr "Aktualisieren"
 
 #: src/components/ModelAccount.tsx
 msgid "Refresh balance"
-msgstr ""
+msgstr "Guthaben aktualisieren"
 
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
@@ -5072,7 +5072,7 @@ msgstr "Erneut versuchen"
 
 #: src/components/ModelAccount.tsx
 msgid "Retry disconnect"
-msgstr ""
+msgstr "Trennung erneut versuchen"
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5539,7 +5539,7 @@ msgstr "Mit Passkey anmelden"
 
 #: src/components/ModelAccount.tsx
 msgid "Sign in with SSO to use the model account."
-msgstr ""
+msgstr "Melde dich mit SSO an, um das Modellkonto zu verwenden."
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6392,7 +6392,7 @@ msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Use model account"
-msgstr ""
+msgstr "Modellkonto verwenden"
 
 #: src/components/ModelCredits.tsx
 msgid "Use my subscription or API key"
