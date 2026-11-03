@@ -748,6 +748,18 @@ postgres("external model account isolated PostgreSQL", () => {
     expect(response.headers.get("location")).toBe(callback.href);
   });
 
+  it("keeps the public config envelope readable by already-installed clients", async () => {
+    const config = await (await request("/config")).json();
+    expect(config).toMatchObject({
+      enabled: true,
+      homeUrl: "https://home.example.test/",
+      rechargeUrl: "https://wallet.example.test/",
+      modelId: "",
+      navigation: { defaults: { homeUrl: "https://home.example.test/" } },
+    });
+    expect(await prisma.userModelRoleChoice.count({ where: { userId } })).toBe(0);
+  });
+
   it("returns exact balances and no private platform configuration", async () => {
     expect(await (await request("/balance")).json()).toEqual({ amount: "-12.34", unit: "CNY" });
     const publicConfig = await (await request("/config")).text();

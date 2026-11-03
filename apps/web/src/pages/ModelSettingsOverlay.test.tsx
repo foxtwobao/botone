@@ -30,6 +30,11 @@ const models = vi.hoisted(() => ({
   submitOAuthCode: vi.fn(),
 }));
 
+// These settings tests own the account fixture; no real session refresh or browser listeners.
+vi.mock("../lib/auth", () => ({
+  authClient: { useSession: () => ({ data: { user: { id: "user-1" } } }) },
+}));
+
 vi.mock("../lib/rpc", () => {
   const rpc = {
     models,

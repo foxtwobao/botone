@@ -23,7 +23,9 @@ These are synthetic examples. The application credential belongs in deployment s
 never supply a user model key. No model ID, protocol, enabled-model list or browser-authorization
 origin list is required. Authorization URLs returned by the trusted service must be HTTPS with
 no userinfo or fragment. An existing explicit authorization-origin allowlist is still honored.
-Legacy `model` connection envelopes remain accepted during upgrades.
+Legacy `model` connection envelopes remain accepted during upgrades. The public config response
+also retains derived legacy link fields and an empty default-model field for already-installed
+clients; these are response compatibility fields, not required deployment settings.
 
 Authorization discovers `/models` with a transient user key and exposes those models in the
 existing model picker. It never replaces the selected main model. Pick the desired model in
