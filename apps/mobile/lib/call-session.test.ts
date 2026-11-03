@@ -1,5 +1,6 @@
 import { AiConsentBlocked, callIdFromClientNonce, INTERIM_BARGE_IN_MS } from "@rakazo/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { rpc } from "./api";
 import type { CallClip, CallDeps, CallEnded, DictationHandlers } from "./call-session";
 import {
   ExpectedTurnFailure,
@@ -81,6 +82,13 @@ vi.mock("./api", () => ({
   rpc: vi.fn(),
   subscribeThread: vi.fn(),
 }));
+
+// Native recognition fixtures explicitly permit speech; production reads the account policy.
+beforeEach(() => {
+  vi.mocked(rpc).mockImplementation(async (proc) =>
+    proc === "me" ? ({ modelAccountOnly: false } as never) : (undefined as never),
+  );
+});
 
 type Deferred<T> = {
   promise: Promise<T>;
