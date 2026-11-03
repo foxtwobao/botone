@@ -6,6 +6,7 @@ import type {
   AutoReviewProvider,
   BrowserProvider,
   ConnectorProvider,
+  ExternalModelKeyResolver,
   JobPublisher,
   ManagedConnectorProvider,
   MediaGenerationProvider,
@@ -42,6 +43,7 @@ export interface ExecutorDeps {
   };
   secrets: string[];
   secretStore: SecretStore;
+  externalModelKey?: ExternalModelKeyResolver;
   billingEnabled?: boolean;
   deploymentModelKey?: string;
   /** The deployment default model can run; see resolveDeploymentModel. */

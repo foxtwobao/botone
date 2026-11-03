@@ -935,6 +935,10 @@ msgstr "身分驗證失敗。"
 msgid "Authorization code"
 msgstr "授權碼"
 
+#: src/components/ModelAccount.tsx
+msgid "Authorization incomplete."
+msgstr "授權尚未完成。"
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
 msgstr "授權參數（選填）"
@@ -950,6 +954,14 @@ msgstr "授權超時，請重試。"
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "授權"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize again"
+msgstr "重新授權"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize the model account to continue."
+msgstr "請授權模型帳戶以繼續。"
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1005,6 +1017,10 @@ msgstr "返回"
 #: src/pages/Auth.tsx
 msgid "Back to sign in"
 msgstr "返回登入"
+
+#: src/components/ModelAccount.tsx
+msgid "Balance unavailable"
+msgstr "暫時無法取得餘額"
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1160,6 +1176,7 @@ msgstr "無法讀取影像"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/markdown-link-prompt.tsx
+#: src/components/ModelAccount.tsx
 #: src/components/ModelCredits.tsx
 #: src/components/PasskeySettings.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -1507,6 +1524,10 @@ msgstr "緊湊"
 msgid "Complete"
 msgstr "完成"
 
+#: src/components/ModelAccount.tsx
+msgid "Complete authorization in the opened window."
+msgstr "請在開啟的視窗中完成授權。"
+
 #: src/components/SubagentCard.tsx
 msgid "Completed"
 msgstr "已完成"
@@ -1823,6 +1844,10 @@ msgstr "無法完成 OAuth"
 #: src/components/DesktopUpdates.tsx
 msgid "Could not complete the update. Try again."
 msgstr "無法完成更新，請再試一次。"
+
+#: src/components/ModelAccount.tsx
+msgid "Could not confirm authorization. Try again."
+msgstr "無法確認授權結果，請重試。"
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2602,6 +2627,7 @@ msgstr "已停用"
 msgid "Discard recording"
 msgstr "捨棄錄製內容"
 
+#: src/components/ModelAccount.tsx
 #: src/pages/McpServersOverlay.tsx
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/MessagingSettingsPanel.tsx
@@ -2632,6 +2658,10 @@ msgstr "已中斷連結 {disconnectName}。"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Disconnecting…"
 msgstr "正在中斷…"
+
+#: src/components/ModelAccount.tsx
+msgid "Disconnection pending confirmation."
+msgstr "正在等待確認中斷連線的結果。"
 
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
@@ -3198,6 +3228,10 @@ msgstr "按住說話"
 #: src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk, release to send"
 msgstr "按住說話，放開傳送"
+
+#: src/components/ModelAccount.tsx
+msgid "Home"
+msgstr "平台首頁"
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3834,6 +3868,14 @@ msgstr "模型"
 #: src/lib/model-connection-preflight.ts
 msgid "Model \"{modelId}\" was not listed."
 msgstr "模型「{modelId}」未列出。"
+
+#: src/components/ModelAccount.tsx
+msgid "Model account"
+msgstr "模型帳戶"
+
+#: src/components/ModelAccount.tsx
+msgid "Model account unavailable"
+msgstr "模型帳戶暫時無法使用"
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4673,6 +4715,10 @@ msgstr ""
 msgid "Recent"
 msgstr "最近"
 
+#: src/components/ModelAccount.tsx
+msgid "Recharge"
+msgstr "儲值"
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
 msgstr ""
@@ -4760,6 +4806,10 @@ msgstr "重新導向 URI"
 #: src/components/ModelCredits.tsx
 msgid "Refresh"
 msgstr "重新整理"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh balance"
+msgstr "重新整理餘額"
 
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
@@ -5010,6 +5060,7 @@ msgstr "正在還原工作空間"
 #: src/components/AccountAccess.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/integrations/skills-dialog.tsx
+#: src/components/ModelAccount.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/AdminAccessPage.tsx
 #: src/pages/Auth.tsx
@@ -5019,6 +5070,10 @@ msgstr "正在還原工作空間"
 #: src/pages/SpaceSettingOverrides.tsx
 msgid "Retry"
 msgstr "重試"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry disconnect"
+msgstr "重試中斷連線"
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5482,6 +5537,10 @@ msgstr "請登入現有帳號以關聯 SSO"
 #: src/components/PasskeySignIn.tsx
 msgid "Sign in with passkey"
 msgstr "使用通行金鑰登入"
+
+#: src/components/ModelAccount.tsx
+msgid "Sign in with SSO to use the model account."
+msgstr "請使用 SSO 登入後使用模型帳戶。"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6331,6 +6390,10 @@ msgstr "{label}使用預設值"
 #: src/components/integrations/plugin-marketplace.tsx
 msgid "Use in this bot"
 msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Use model account"
+msgstr "使用模型帳戶"
 
 #: src/components/ModelCredits.tsx
 msgid "Use my subscription or API key"

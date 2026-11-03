@@ -1,4 +1,21 @@
 export const JA_MESSAGES: Record<string, string> = {
+  "Authorization incomplete.": "認可が完了していません。",
+  "Authorize again": "再認可",
+  "Authorize the model account to continue.": "続行するにはモデルアカウントを認可してください。",
+  "Balance unavailable": "残高を取得できません",
+  "Complete authorization in the opened window.": "開いたウィンドウで認可を完了してください。",
+  "Could not confirm authorization. Try again.":
+    "認可結果を確認できませんでした。再試行してください。",
+  "Disconnection pending confirmation.": "切断の確認を待っています。",
+  Home: "ホーム",
+  "Model account": "モデルアカウント",
+  "Model account unavailable": "モデルアカウントを利用できません",
+  Recharge: "チャージ",
+  "Refresh balance": "残高を更新",
+  "Retry disconnect": "切断を再試行",
+  "Sign in with SSO to use the model account.":
+    "モデルアカウントを使用するには SSO でサインインしてください。",
+  "Use model account": "モデルアカウントを使用",
   "Daily check-ins on unfinished work": "未完了の作業を毎日確認",
   "How other bots see it": "他のボットからの見え方",
   "Share to": "共有先",

@@ -51,9 +51,13 @@ const { push, back, params, rpcCalls, saved } = vi.hoisted(() => ({
   },
 }));
 
+vi.mock("./server-headers", () => ({
+  fetchServer: async () => Response.json({ enabled: false }),
+}));
 vi.mock("./session", () => ({ currentSessionGeneration: () => 1 }));
 vi.mock("./side-insets", () => ({ useSideInsets: () => ({}) }));
 vi.mock("./api", () => ({
+  authHeaders: async () => ({}),
   currentApiBase: () => "https://app.example.test",
   captureApiRequestContext: async (spaceId = "space-fixture") => ({
     headers: { "x-rakazo-space-id": spaceId },
@@ -221,6 +225,7 @@ vi.mock("../components/native-action-button", () => ({
 vi.mock("react-native", () => {
   const view = ({ children }: { children?: ReactNode }) => createElement("div", {}, children);
   return {
+    AppState: { addEventListener: () => ({ remove: () => {} }) },
     AccessibilityInfo: { announceForAccessibility: vi.fn() },
     ActivityIndicator: () => createElement("span", {}, "Loading"),
     Alert: { alert: vi.fn() },

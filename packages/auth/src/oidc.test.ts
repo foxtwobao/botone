@@ -64,6 +64,13 @@ function setup(options: Partial<AuthEnv> = {}, hasMembership = true) {
       findFirst: vi.fn(async () => (hasMembership ? { id: "existing-space" } : null)),
     },
     member: { findMany: vi.fn(async () => []) },
+    account: {
+      findMany: vi.fn(async ({ where }) =>
+        (state.db.account ?? []).filter(
+          (account) => account.userId === where.userId && account.providerId === where.providerId,
+        ),
+      ),
+    },
     messagingIdentity: { deleteMany: vi.fn(async () => ({})) },
     passkey: { deleteMany: vi.fn(async () => ({})) },
     organization: { deleteMany: vi.fn(async () => ({})) },
@@ -1370,4 +1377,34 @@ it("counts only stored OIDC subjects bound to the current issuer", async () => {
   expect(await isCurrentOidcAccount({ ...account, idToken: "malformed" }, issuer, secret)).toBe(
     false,
   );
+});
+
+it("reads only the requested user's unambiguous current external account", async () => {
+  setup();
+  state.db.account = [
+    {
+      id: "account-1",
+      userId: "user-1",
+      providerId: "oidc",
+      accountId: oidcAccountSubject(issuer, "subject-1"),
+      idToken: await sealIdToken(secret, jwt({ sub: "subject-1" })),
+    },
+  ];
+  expect(await auth.externalAccountIdentity("user-1")).toEqual({
+    accountId: "account-1",
+    binding: oidcAccountSubject(issuer, "subject-1"),
+    issuer,
+    subject: "subject-1",
+  });
+  expect(await auth.externalAccountIdentity("other-user")).toBeNull();
+  state.db.account.push({
+    id: "account-2",
+    userId: "user-1",
+    providerId: "oidc",
+    accountId: oidcAccountSubject(issuer, "subject-2"),
+    idToken: jwt({ sub: "subject-2" }),
+  });
+  expect(await auth.externalAccountIdentity("user-1")).toBeNull();
+  state.db.account = [];
+  expect(await auth.externalAccountIdentity("user-1")).toBeNull();
 });

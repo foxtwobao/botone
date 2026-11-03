@@ -1,4 +1,21 @@
 export const NL_MESSAGES: Record<string, string> = {
+  "Authorization incomplete.": "Autorisatie niet voltooid.",
+  "Authorize again": "Opnieuw autoriseren",
+  "Authorize the model account to continue.": "Autoriseer het modelaccount om door te gaan.",
+  "Balance unavailable": "Saldo niet beschikbaar",
+  "Complete authorization in the opened window.": "Voltooi de autorisatie in het geopende venster.",
+  "Could not confirm authorization. Try again.":
+    "Autorisatie kon niet worden bevestigd. Probeer opnieuw.",
+  "Disconnection pending confirmation.": "Verbinding verbreken wacht op bevestiging.",
+  Home: "Startpagina",
+  "Model account": "Modelaccount",
+  "Model account unavailable": "Modelaccount niet beschikbaar",
+  Recharge: "Opwaarderen",
+  "Refresh balance": "Saldo vernieuwen",
+  "Retry disconnect": "Verbinding opnieuw verbreken",
+  "Sign in with SSO to use the model account.":
+    "Meld je aan met SSO om het modelaccount te gebruiken.",
+  "Use model account": "Modelaccount gebruiken",
   "Daily check-ins on unfinished work": "Dagelijks navragen over onafgemaakt werk",
   "How other bots see it": "Hoe andere bots deze zien",
   "Share to": "Delen met",

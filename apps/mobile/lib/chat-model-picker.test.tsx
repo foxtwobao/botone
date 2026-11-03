@@ -96,10 +96,14 @@ vi.mock("./appearance", () => ({ mobileTokens: () => ({}) }));
 vi.mock("./message-action-sheet", () => ({ presentMessageActionSheet: vi.fn() }));
 vi.mock("./live-notifications", () => ({ afterChatNotifyChange: vi.fn(async () => undefined) }));
 
+vi.mock("./server-headers", () => ({
+  fetchServer: async () => Response.json({ enabled: false }),
+}));
 vi.mock("./session", () => ({ currentSessionGeneration: () => 1 }));
 // Cache updates reach the screen inside act instead of on a later timer.
 notifyManager.setScheduler((callback) => callback());
 vi.mock("./api", () => ({
+  authHeaders: async () => ({}),
   currentApiBase: () => "https://app.example.test",
   loadSessionToken: async () => "token",
   captureApiRequestContext: async () => ({ headers: {} }),
@@ -280,6 +284,7 @@ vi.mock("react-native", () => {
       children,
     );
   return {
+    AppState: { addEventListener: () => ({ remove: () => {} }) },
     AccessibilityInfo: { announceForAccessibility: mocks.announce },
     ActivityIndicator: () => createElement("i", { "data-loading": true }),
     Platform: {

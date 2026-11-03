@@ -205,6 +205,8 @@ export interface PauseRunForInput {
   leaseOwner: string;
   leaseFence: number;
   blocks: MessageBlock[];
+  /** A server-owned prerequisite checkpoint restored before any model call. */
+  checkpoint?: string;
   /**
    * Unredacted choice actions for resume. Persisted only on the run checkpoint
    * (not in message blocks) so clients still see redacted labels.
@@ -1326,6 +1328,7 @@ export async function pauseRunForInput(
         status: "waiting_input",
         leaseOwner: null,
         leaseExpiresAt: null,
+        ...(input.checkpoint !== undefined ? { checkpoint: input.checkpoint } : {}),
         ...(input.offeredActions?.length
           ? { checkpoint: choiceAskCheckpoint(input.offeredActions) }
           : {}),

@@ -20,6 +20,7 @@ x-app-environment: &app-environment
   REALTIME_DATABASE_URL:
   DB_POOL_MAX:
   DATA_DIR: /data
+  MODEL_ACCOUNT_CONNECTION:
   ENCRYPTION_KEY:
   ENCRYPTION_MASTER_KEYS:
   MASTER_KEY_PROVIDER:
@@ -526,6 +527,9 @@ services:
     mem_limit: ${RAKAZO_WORKER_MEMORY_LIMIT:-2g}
     environment:
       <<: *app-environment
+      # Read existing OIDC account bindings only when external model accounts are enabled.
+      BETTER_AUTH_SECRET:
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
       GRAPHILE_WORKER_CONCURRENCY:
     volumes:
       - appdata:/data

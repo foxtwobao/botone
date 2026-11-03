@@ -3,10 +3,13 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { JobPublisher, JobWorkerHost } from "@rakazo/adapter-kit";
 import {
   ComposioConnector,
+  configuredModelAccount,
+  createExternalModelKeyResolver,
   IntegrationProviderSettings,
   unwrapEnvFromKeyManager,
 } from "@rakazo/adapters";
-import { phoneCallSettings } from "@rakazo/core";
+import { readExternalAccountIdentity } from "@rakazo/auth/identity";
+import { phoneCallSettings, resolveAuthSecret } from "@rakazo/core";
 import { loadRootEnv } from "@rakazo/core/node/load-root-env";
 import { stopOnShutdownSignals } from "@rakazo/core/node/shutdown-signals";
 import { startWorkerHealth, watchEventLoopStalls } from "./health.js";
@@ -153,6 +156,8 @@ async function main() {
     process.env.AGENT_RUNTIME === "scripted"
       ? new ScriptedAgentRuntime()
       : new PiAgentRuntime({ sessionRoot: resolvePiSessionRoot(dataDir) });
+  const modelAccount = configuredModelAccount(process.env.MODEL_ACCOUNT_CONNECTION);
+  if (modelAccount && !process.env.OIDC_ISSUER) throw new Error("Model account requires OIDC");
   // Same resolver the API uses, so both processes agree on provider, model and key.
   const { key: deploymentModelKey, configured: deploymentModelConfigured } =
     resolveDeploymentModel();
@@ -295,6 +300,20 @@ async function main() {
       process.env.CURSOR_API_KEY ?? "",
       process.env.TYPESAFE_API_KEY ?? "",
     ].filter(Boolean),
+    billingEnabled: modelAccount ? false : undefined,
+    externalModelKey: modelAccount
+      ? createExternalModelKeyResolver(
+          modelAccount.provider,
+          modelAccount.model.baseUrl,
+          (userId) =>
+            readExternalAccountIdentity(
+              prisma,
+              userId,
+              process.env.OIDC_ISSUER?.trim(),
+              resolveAuthSecret(),
+            ),
+        )
+      : undefined,
     secretStore: secrets,
     mcpAllowPrivateEndpoint: process.env.MCP_ALLOW_PRIVATE_ENDPOINT === "true",
     deploymentModelKey,

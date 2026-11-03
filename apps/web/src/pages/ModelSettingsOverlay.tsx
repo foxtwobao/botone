@@ -28,6 +28,7 @@ import {
 } from "@rakazo/ui-web";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { ModelAccount } from "../components/ModelAccount";
 import type { ModelCredential } from "../lib/model-auth";
 import type { ModelRoleConnectIntent } from "./ModelRoleSettings";
 import { ModelRoleSettings } from "./ModelRoleSettings";
@@ -279,6 +280,7 @@ export function ModelSettingsOverlay({
 
   const content = (
     <>
+      {scope === "account" ? <ModelAccount /> : null}
       {error && !connectionAt ? (
         <p className="mb-4 text-sm text-destructive" role="alert">
           {error}

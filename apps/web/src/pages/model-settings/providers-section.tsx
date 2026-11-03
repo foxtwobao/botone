@@ -53,7 +53,8 @@ export function ProvidersSection({
         <Trans>Providers</Trans>
       </SectionHeading>
       <ul className="divide-y divide-border rounded-xl border border-border">
-        {[...credentials]
+        {credentials
+          .filter((credential) => !credential.managed)
           // Saving a key reorders the account's connections; this list stays put.
           .sort((left, right) => nameOf(left).localeCompare(nameOf(right)))
           .map((credential) => (

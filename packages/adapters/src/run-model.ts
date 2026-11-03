@@ -5,6 +5,7 @@ import type {
   ModelCredentialFailedState,
   ModelCredentialRetireReason,
 } from "@rakazo/adapter-kit";
+import { ExternalModelAccountError } from "@rakazo/adapter-kit";
 import {
   CLOUDFLARE_AI_GATEWAY_CONFIG_MESSAGE,
   CLOUDFLARE_WORKERS_AI_PROVIDER_ID,
@@ -55,6 +56,7 @@ export function runtimeFallbackModel(runtime: AgentRuntime) {
 
 export function isTerminalModelSetupError(error: unknown): boolean {
   return (
+    (error instanceof ExternalModelAccountError && !error.retryable) ||
     error instanceof UnavailableModelForAuthError ||
     error instanceof HostedModelCreditsRequiredError ||
     isRetiredModelCredentialError(error) ||
@@ -257,7 +259,14 @@ async function resolveModelKeyMaterial(
         parseModelSecret(plaintext).maxTokens,
       );
       const resolveAuth = () =>
-        resolveModelAuth(plaintext, credential.provider, { persist, retire });
+        resolveModelAuth(plaintext, credential.provider, {
+          persist,
+          retire,
+          externalKey: deps.externalModelKey
+            ? (reference, baseUrl) =>
+                deps.externalModelKey!(userId, reference, baseUrl, deps.shutdownSignal)
+            : undefined,
+        });
       let resolved: Awaited<ReturnType<typeof resolveAuth>> | undefined;
       let liveCodex: Awaited<ReturnType<typeof codexLiveModel>> | undefined;
       const authError = validateModelAuthAvailability(provider, modelId, plaintext);
@@ -275,6 +284,15 @@ async function resolveModelKeyMaterial(
         if (!liveCodex) throw new UnavailableModelForAuthError(authError);
       }
       resolved ??= await resolveAuth();
+      if (resolved.apiKey) registerSecrets?.([resolved.apiKey]);
+      if (
+        resolved.secret.kind === "openai_compatible" &&
+        resolved.secret.externalAccount &&
+        !(await deps.prisma.userModelCredential.findFirst({
+          where: { id: credential.id, userId, secretId: credential.secretId },
+        }))
+      )
+        throw new Error("Model account connection was removed.");
       if (
         !liveCodex &&
         deps.codexCatalog &&

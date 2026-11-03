@@ -1,4 +1,21 @@
 export const RU_MESSAGES: Record<string, string> = {
+  "Authorization incomplete.": "Авторизация не завершена.",
+  "Authorize again": "Авторизовать повторно",
+  "Authorize the model account to continue.": "Авторизуйте аккаунт моделей, чтобы продолжить.",
+  "Balance unavailable": "Баланс недоступен",
+  "Complete authorization in the opened window.": "Завершите авторизацию в открытом окне.",
+  "Could not confirm authorization. Try again.":
+    "Не удалось подтвердить авторизацию. Повторите попытку.",
+  "Disconnection pending confirmation.": "Отключение ожидает подтверждения.",
+  Home: "Главная",
+  "Model account": "Аккаунт моделей",
+  "Model account unavailable": "Аккаунт моделей недоступен",
+  Recharge: "Пополнить",
+  "Refresh balance": "Обновить баланс",
+  "Retry disconnect": "Повторить отключение",
+  "Sign in with SSO to use the model account.":
+    "Войдите через SSO, чтобы использовать аккаунт моделей.",
+  "Use model account": "Использовать аккаунт моделей",
   "Daily check-ins on unfinished work": "Ежедневные напоминания о незавершённой работе",
   "How other bots see it": "Как его видят другие боты",
   "Share to": "Отправить в",
