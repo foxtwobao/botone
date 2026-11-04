@@ -38,6 +38,7 @@
     "yaml": "2.9.1"
   },
   "build": {
+    "productName": "BotONE",
     "appId": "dev.rakazo.desktop",
     "directories": {
       "output": "out",
@@ -66,14 +67,14 @@
       "main": "dist/main.js"
     },
     "mac": {
-      "icon": "../../packages/ui-tokens/assets/Rakazo.icon",
+      "icon": "../../packages/ui-tokens/assets/BotONE.icon",
       "category": "public.app-category.productivity",
       "x64ArchFiles": "{**/node_modules/@koromix/koffi-darwin-*/darwin_*/koffi.node,**/node_modules/@oxc-parser/binding-darwin-*/parser.darwin-*.node}",
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist",
       "extendInfo": {
-        "NSMicrophoneUsageDescription": "Rakazo uses the microphone for dictation and voice calls with your bots.",
-        "NSSpeechRecognitionUsageDescription": "Rakazo turns what you say into text for dictation and voice calls with your bots."
+        "NSMicrophoneUsageDescription": "BotONE uses the microphone for dictation and voice calls with your bots.",
+        "NSSpeechRecognitionUsageDescription": "BotONE turns what you say into text for dictation and voice calls with your bots."
       },
       "extraResources": [
         {

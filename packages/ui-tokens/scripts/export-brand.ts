@@ -5,13 +5,13 @@ import { darkTokens } from "../src/index.ts";
 
 const root = new URL("../../../", import.meta.url);
 const path = (name: string) => fileURLToPath(new URL(name, root));
-const source = path("packages/ui-tokens/assets/Rakazo.icon/Assets/orange-bot.png");
+const source = path("packages/ui-tokens/assets/BotONE.icon/Assets/botone.png");
 
-// Match the Icon Composer portrait: the character sits 90 points below center.
+// Keep the complete mark centered, matching the shared Icon Composer source.
 const portrait = await sharp(source).resize(1024, 1024).png().toBuffer();
 async function framed(background: string) {
-  return sharp({ create: { width: 1024, height: 1114, channels: 4, background } })
-    .composite([{ input: portrait, top: 90, left: 0 }])
+  return sharp({ create: { width: 1024, height: 1024, channels: 4, background } })
+    .composite([{ input: portrait, top: 0, left: 0 }])
     .extract({ left: 0, top: 0, width: 1024, height: 1024 })
     .png()
     .toBuffer();
@@ -75,7 +75,33 @@ await sharp(await roundedCorners(await framed("transparent")))
   .png()
   .toFile(path("apps/mobile/assets/splash-icon.png"));
 
-// Android notification icons must be white alpha silhouettes, with transparent eyes.
+// Native launchers apply their own mask; keep the Android foreground transparent.
+await png(square, "apps/mobile/assets/icon.png", 1024);
+await sharp(portrait)
+  .resize(820, 820)
+  .extend({ top: 102, bottom: 102, left: 102, right: 102, background: "transparent" })
+  .png()
+  .toFile(path("apps/mobile/assets/adaptive-icon.png"));
+await sharp({
+  create: { width: 1024, height: 1024, channels: 3, background: darkTokens.background },
+})
+  .png()
+  .toFile(path("apps/mobile/assets/icon-background.png"));
+const foregroundAlpha = await sharp(path("apps/mobile/assets/adaptive-icon.png"))
+  .extractChannel("alpha")
+  .toBuffer();
+await sharp({ create: { width: 1024, height: 1024, channels: 3, background: "white" } })
+  .joinChannel(foregroundAlpha)
+  .png()
+  .toFile(path("apps/mobile/assets/monochrome-icon.png"));
+// The development Dock icon includes the same rounded plate with transparent margins.
+await sharp(rounded)
+  .resize(824, 824)
+  .extend({ top: 100, bottom: 100, left: 100, right: 100, background: "transparent" })
+  .png()
+  .toFile(path("apps/desktop/assets/icon-macos.png"));
+
+// Android notifications use a white alpha silhouette.
 const silhouette = await sharp(path("apps/mobile/assets/monochrome-icon.png"))
   .resize(72, 72)
   .extractChannel("alpha")

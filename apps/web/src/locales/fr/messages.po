@@ -719,7 +719,7 @@ msgstr "Autoriser une fois"
 
 #: src/lib/dictation.ts
 msgid "Allow Rakazo to use Speech Recognition and the microphone in System Settings."
-msgstr ""
+msgstr "Allow BotONE to use Speech Recognition and the microphone in System Settings."
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
@@ -767,7 +767,7 @@ msgstr "Une clé API est enregistrée pour ce fournisseur, et non une connexion 
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "An existing Honcho peer to read from. Rakazo never writes to it."
-msgstr "Un pair Honcho existant à consulter. Rakazo n’y écrit jamais."
+msgstr "Un pair Honcho existant à consulter. BotONE n’y écrit jamais."
 
 #: src/lib/agent-import-errors.ts
 msgid "An imported API key could not be checked. Try again."
@@ -1405,7 +1405,7 @@ msgstr "Choisir un dossier"
 #: src/components/ModelCredits.tsx
 #: src/components/SubscriptionGate.tsx
 msgid "Choose how to use Rakazo"
-msgstr ""
+msgstr "Choose how to use BotONE"
 
 #: src/components/vault/VaultItemEditor.tsx
 msgid "City"
@@ -1722,7 +1722,7 @@ msgstr "Connectez d’abord le fournisseur de ce modèle."
 #. js-lingui-explicit-id
 #: src/lib/run-error.ts
 msgid "Connect your own API key in Models or choose Rakazo credits in Billing."
-msgstr "Connectez votre propre clé API dans Modèles ou choisissez les crédits Rakazo dans Facturation."
+msgstr "Connectez votre propre clé API dans Modèles ou choisissez les crédits BotONE dans Facturation."
 
 #: src/components/ComputerDeviceSettings.tsx
 #: src/components/integrations/IntegrationSetup.tsx
@@ -2482,7 +2482,7 @@ msgstr "Créer un espace"
 
 #: src/pages/Auth.tsx
 msgid "Create your Rakazo"
-msgstr "Créez votre Rakazo"
+msgstr "Créez votre BotONE"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -2945,7 +2945,7 @@ msgstr ""
 
 #: src/components/GitHubStarPrompt.tsx
 msgid "Enjoying Rakazo?"
-msgstr ""
+msgstr "Enjoying BotONE?"
 
 #: src/lib/user-error.ts
 msgid "Enter a password"
@@ -3437,7 +3437,7 @@ msgstr "Comment vérifier"
 
 #: src/components/SignupSurvey.tsx
 msgid "How will you use Rakazo?"
-msgstr ""
+msgstr "How will you use BotONE?"
 
 #: src/pages/shell/computer-release-actions.tsx
 msgid "I’m done"
@@ -4463,7 +4463,7 @@ msgstr "Non importé"
 
 #: src/pages/shell/import-status.ts
 msgid "Not in Rakazo's catalog"
-msgstr "Absent du catalogue de Rakazo"
+msgstr "Absent du catalogue de BotONE"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Not in the plugin catalog"
@@ -4477,11 +4477,11 @@ msgstr "Pas maintenant"
 #: src/pages/shell/agent-import.tsx
 #: src/pages/shell/import-status.ts
 msgid "Not supported in Rakazo"
-msgstr "Non pris en charge par Rakazo"
+msgstr "Non pris en charge par BotONE"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Not used by Rakazo"
-msgstr "Non utilisé par Rakazo"
+msgstr "Non utilisé par BotONE"
 
 #: src/components/McpServerHealthLine.tsx
 msgid "Not working"
@@ -4626,7 +4626,7 @@ msgstr "Ouvrir la navigation"
 #: src/components/pages/PublicPageShell.tsx
 #: src/pages/SharedPage.tsx
 msgid "Open Rakazo"
-msgstr "Ouvrir Rakazo"
+msgstr "Ouvrir BotONE"
 
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
@@ -4803,7 +4803,7 @@ msgstr "Collez une clé de remplacement"
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Collez l'adresse compatible OpenAI de votre serveur. Rakazo ajoute /v1 si nécessaire."
+msgstr "Collez l'adresse compatible OpenAI de votre serveur. BotONE ajoute /v1 si nécessaire."
 
 #: src/pages/shell/agent-import.tsx
 msgid "Paste the reply"
@@ -4992,16 +4992,16 @@ msgstr "En file d'attente"
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Rakazo"
-msgstr "Rakazo"
+msgstr "BotONE"
 
 #: src/components/ModelCredits.tsx
 #: src/pages/Onboarding.tsx
 msgid "Rakazo credits"
-msgstr ""
+msgstr "BotONE credits"
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "rakazo-shared and IDs starting with bot- are reserved for Rakazo."
-msgstr ""
+msgstr "rakazo-shared and IDs starting with bot- are reserved for BotONE."
 
 #: src/pages/shell/message-hover-actions.tsx
 msgid "React"
@@ -5422,7 +5422,7 @@ msgstr "Revenir à l’appel avec {0}"
 #: src/pages/McpOAuthCallback.tsx
 #: src/pages/SlackInstallCallback.tsx
 msgid "Return to Rakazo"
-msgstr "Retour à Rakazo"
+msgstr "Retour à BotONE"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
@@ -5895,7 +5895,7 @@ msgstr "Connectez-vous sur <0>{0}</0>, puis collez le code ici."
 
 #: src/pages/Auth.tsx
 msgid "Sign in to Rakazo"
-msgstr "Connectez-vous à Rakazo"
+msgstr "Connectez-vous à BotONE"
 
 #: src/lib/user-error.ts
 msgid "Sign in to your existing account to link SSO"
@@ -6176,7 +6176,7 @@ msgstr "S’abonner pour {price} / mois"
 
 #: src/components/ModelCredits.tsx
 msgid "Subscribe to Rakazo credits"
-msgstr "S’abonner aux crédits Rakazo"
+msgstr "S’abonner aux crédits BotONE"
 
 #: src/components/ModelCredits.tsx
 msgid "Subscribe with your own AI"
@@ -6525,7 +6525,7 @@ msgstr ""
 
 #: src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "Cette connexion par abonnement n'est pas encore disponible dans Rakazo. Utilisez un identifiant de déploiement ou choisissez un autre fournisseur."
+msgstr "Cette connexion par abonnement n'est pas encore disponible dans BotONE. Utilisez un identifiant de déploiement ou choisissez un autre fournisseur."
 
 #: src/pages/Artifacts.tsx
 msgid "This week"
@@ -6826,7 +6826,7 @@ msgstr ""
 
 #: src/components/ModelCredits.tsx
 msgid "Use Rakazo credits"
-msgstr ""
+msgstr "Use BotONE credits"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Use space default"
@@ -6974,7 +6974,7 @@ msgstr "Week-ends"
 
 #: src/components/SignupSurvey.tsx
 msgid "Welcome to Rakazo"
-msgstr ""
+msgstr "Welcome to BotONE"
 
 #: src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
@@ -6986,7 +6986,7 @@ msgstr ""
 
 #: src/components/SignupSurvey.tsx
 msgid "What do you most want Rakazo to help with?"
-msgstr ""
+msgstr "What do you most want BotONE to help with?"
 
 #: src/pages/shell/message-cards.tsx
 msgid "What do you want me on first?"

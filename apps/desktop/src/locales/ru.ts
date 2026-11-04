@@ -1,9 +1,11 @@
 export const RU_MESSAGES: Record<string, string> = {
+  Rakazo: "BotONE",
+  "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "О программе {name}",
   "Check for Updates…": "Проверить обновления…",
   "Computer Access…": "Доступ к компьютеру…",
   "Revoke Local Computer Access": "Отозвать доступ к локальному компьютеру",
-  "Change Rakazo Server…": "Сменить сервер Rakazo…",
+  "Change Rakazo Server…": "Сменить сервер BotONE…",
   "Stop Local Stack": "Остановить локальный стек",
   "Hide {name}": "Скрыть {name}",
   "Hide Others": "Скрыть остальные",
@@ -35,12 +37,12 @@ export const RU_MESSAGES: Record<string, string> = {
   Close: "Закрыть",
   "Close Window": "Закрыть окно",
   "Bring All to Front": "Все окна — на передний план",
-  "Rakazo {version} is ready to install.": "Rakazo {version} готов к установке.",
+  "Rakazo {version} is ready to install.": "BotONE {version} готов к установке.",
   Restart: "Перезапустить",
   Later: "Позже",
   "Could not install the update.": "Не удалось установить обновление.",
   "Could not check for updates.": "Не удалось проверить обновления.",
-  "Rakazo is up to date.": "У вас последняя версия Rakazo.",
+  "Rakazo is up to date.": "У вас последняя версия BotONE.",
   "Version {version}": "Версия {version}",
   "Automatic updates are turned off for this install.":
     "Автоматические обновления отключены для этой установки.",
@@ -49,11 +51,11 @@ export const RU_MESSAGES: Record<string, string> = {
   "No desktop releases are published for this build yet.":
     "Для этой сборки пока не опубликовано ни одной версии для компьютера.",
   "Move Rakazo to Applications to install updates.":
-    "Переместите Rakazo в папку «Программы», чтобы устанавливать обновления.",
+    "Переместите BotONE в папку «Программы», чтобы устанавливать обновления.",
   "Free up disk space to install updates.":
     "Освободите место на диске, чтобы установить обновления.",
   "This update could not be verified. Reinstall Rakazo from a trusted download.":
-    "Не удалось проверить это обновление. Переустановите Rakazo из надёжного источника.",
+    "Не удалось проверить это обновление. Переустановите BotONE из надёжного источника.",
   "The update could not be completed. Try again later.":
     "Не удалось завершить обновление. Повторите попытку позже.",
   "Could not reach the update server.": "Не удалось связаться с сервером обновлений.",
@@ -73,11 +75,11 @@ export const RU_MESSAGES: Record<string, string> = {
   "Could not open browser sign-in. Close other sign-in attempts and retry.":
     "Не удалось открыть вход в браузере. Закройте другие попытки входа и повторите.",
   "Sign-in callback rejected. Return to Rakazo to retry.":
-    "Ответ на вход отклонён. Вернитесь в Rakazo, чтобы повторить попытку.",
-  "You can close this tab and return to Rakazo.": "Можно закрыть эту вкладку и вернуться в Rakazo.",
-  "Set up Rakazo": "Настройка Rakazo",
-  "Quit Rakazo": "Завершить Rakazo",
-  "Welcome to Rakazo": "Добро пожаловать в Rakazo",
+    "Ответ на вход отклонён. Вернитесь в BotONE, чтобы повторить попытку.",
+  "You can close this tab and return to Rakazo.": "Можно закрыть эту вкладку и вернуться в BotONE.",
+  "Set up Rakazo": "Настройка BotONE",
+  "Quit Rakazo": "Завершить BotONE",
+  "Welcome to Rakazo": "Добро пожаловать в BotONE",
   "Choose which server this app should use.":
     "Выберите, какой сервер будет использовать это приложение.",
   Instance: "Экземпляр",
@@ -93,14 +95,14 @@ export const RU_MESSAGES: Record<string, string> = {
   "Check again": "Проверить снова",
   Retry: "Повторить",
   "Getting ready…": "Подготовка…",
-  "Downloading Rakazo…": "Загрузка Rakazo…",
-  "Starting Rakazo…": "Запуск Rakazo…",
+  "Downloading Rakazo…": "Загрузка BotONE…",
+  "Starting Rakazo…": "Запуск BotONE…",
   "Almost ready…": "Почти готово…",
-  "Rakazo is ready.": "Rakazo готов.",
+  "Rakazo is ready.": "BotONE готов.",
   "{size} downloaded": "Загружено {size}",
   "Connecting…": "Подключение…",
   "Checking…": "Проверка…",
-  "Rakazo answered at {url}.": "Rakazo ответил по адресу {url}.",
+  "Rakazo answered at {url}.": "BotONE ответил по адресу {url}.",
   "Enter a server address first.": "Сначала введите адрес сервера.",
   "Could not save that address.": "Не удалось сохранить этот адрес.",
   "Could not save that address. Try again.": "Не удалось сохранить этот адрес. Повторите попытку.",
@@ -112,7 +114,7 @@ export const RU_MESSAGES: Record<string, string> = {
     "Не удалось проверить подключение. Повторите попытку.",
   "Setup bridge unavailable.": "Мост настройки недоступен.",
   "Setup could not start. Quit Rakazo and try again.":
-    "Не удалось начать настройку. Завершите Rakazo и повторите попытку.",
+    "Не удалось начать настройку. Завершите BotONE и повторите попытку.",
   "Enter a server address.": "Введите адрес сервера.",
   "Enter a valid http:// or https:// address.":
     "Введите действительный адрес http:// или https://.",
@@ -120,9 +122,9 @@ export const RU_MESSAGES: Record<string, string> = {
     "Введите действительный адрес сервера. Публичным серверам нужен HTTPS; новый локальный экземпляр должен использовать localhost.",
   "Invalid custom headers": "Недопустимые пользовательские заголовки",
   "That address redirects elsewhere. Enter the final Rakazo server address.":
-    "Этот адрес перенаправляет в другое место. Введите конечный адрес сервера Rakazo.",
+    "Этот адрес перенаправляет в другое место. Введите конечный адрес сервера BotONE.",
   "That address did not respond like a Rakazo server.":
-    "Этот адрес ответил не так, как сервер Rakazo.",
+    "Этот адрес ответил не так, как сервер BotONE.",
   "The server answered with HTTP {status}.": "Сервер ответил с кодом HTTP {status}.",
   "Timed out reaching that address.": "Истекло время ожидания ответа по этому адресу.",
   "Nothing is listening at that address yet.": "По этому адресу пока ничего не отвечает.",
@@ -148,7 +150,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "Connected, but could not save setup for the next launch. Try Continue again.":
     "Подключение установлено, но настройку не удалось сохранить для следующего запуска. Нажмите «Продолжить» ещё раз.",
   "The app-managed Rakazo services are not ready. Retry setup.":
-    "Службы Rakazo, которыми управляет приложение, не готовы. Повторите настройку.",
+    "Службы BotONE, которыми управляет приложение, не готовы. Повторите настройку.",
   "Docker is not installed on this computer.": "Docker не установлен на этом компьютере.",
   "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
     "Docker установлен, но Docker Compose отсутствует. Установите Docker Desktop или docker-compose-plugin.",
@@ -173,9 +175,9 @@ export const RU_MESSAGES: Record<string, string> = {
   "Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin, then retry.":
     "Docker Compose отсутствует. Установите Docker Desktop или docker-compose-plugin и повторите попытку.",
   "Downloading Rakazo images failed. Check the output below, then retry.":
-    "Не удалось загрузить образы Rakazo. Посмотрите вывод ниже и повторите попытку.",
+    "Не удалось загрузить образы BotONE. Посмотрите вывод ниже и повторите попытку.",
   "Rakazo services did not start. Check the output below, then retry.":
-    "Службы Rakazo не запустились. Посмотрите вывод ниже и повторите попытку.",
+    "Службы BotONE не запустились. Посмотрите вывод ниже и повторите попытку.",
   "The stack started but the web app did not answer. Retry, and check the output below.":
     "Стек запущен, но веб-приложение не ответило. Повторите попытку и посмотрите вывод ниже.",
   "Could not prepare the local stack. Retry.":

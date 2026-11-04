@@ -1,6 +1,7 @@
 import { translate } from "@rakazo/core";
 import { useSyncExternalStore } from "react";
 import { DE_MESSAGES, PEER_MESSAGE_FORMS as DE_PEER_FORMS } from "./locales/de";
+import { EN_MESSAGES } from "./locales/en";
 import { ES_MESSAGES, PEER_MESSAGE_FORMS as ES_PEER_FORMS } from "./locales/es";
 import { JA_MESSAGES, PEER_MESSAGE_FORMS as JA_PEER_FORMS } from "./locales/ja";
 import { NL_MESSAGES, PEER_MESSAGE_FORMS as NL_PEER_FORMS } from "./locales/nl";
@@ -11,6 +12,7 @@ import type { UiLocale } from "./ui-locale";
 import { htmlLangForLocale, resolveUiLocale, UI_LOCALE_STORAGE_KEY } from "./ui-locale";
 
 const catalogs: Partial<Record<UiLocale, Record<string, string>>> = {
+  en: EN_MESSAGES,
   "zh-CN": ZH_MESSAGES,
   "zh-TW": ZH_TW_MESSAGES,
   ru: RU_MESSAGES,

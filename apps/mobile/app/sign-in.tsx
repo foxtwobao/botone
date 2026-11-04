@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   ActivityIndicator,
+  Image,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -257,6 +258,11 @@ export default function SignIn() {
               keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
               keyboardShouldPersistTaps="handled"
             >
+              <Image
+                source={require("../assets/favicon.png")}
+                accessible={false}
+                style={{ width: 74, height: 74, alignSelf: "center", marginBottom: 24 }}
+              />
               <Text
                 accessibilityRole="header"
                 style={{

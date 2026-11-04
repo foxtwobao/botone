@@ -857,9 +857,9 @@ function installApplicationMenu() {
     process.platform === "darwin"
       ? [
           {
-            label: app.name,
+            label: "BotONE",
             submenu: [
-              { role: "about", label: t("About {name}", { name: app.name }) },
+              { role: "about", label: t("About {name}", { name: "BotONE" }) },
               openSettings,
               checkForUpdates,
               { type: "separator" },
@@ -868,11 +868,11 @@ function installApplicationMenu() {
               changeServer,
               stopStack,
               { type: "separator" },
-              { role: "hide", label: t("Hide {name}", { name: app.name }) },
+              { role: "hide", label: t("Hide {name}", { name: "BotONE" }) },
               { role: "hideOthers", label: t("Hide Others") },
               { role: "unhide", label: t("Show All") },
               { type: "separator" },
-              { role: "quit", label: t("Quit {name}", { name: app.name }) },
+              { role: "quit", label: t("Quit {name}", { name: "BotONE" }) },
             ],
           },
           { label: t("File"), submenu: [newItem] },
@@ -1309,6 +1309,7 @@ if (!hasSingleInstanceLock) {
 
 app.whenReady().then(async () => {
   if (!hasSingleInstanceLock) return;
+  app.setAboutPanelOptions({ applicationName: "BotONE" });
   installSessionPermissions(session.defaultSession, permissionTarget);
   const userDataDir = app.getPath("userData");
   startDesktopLocale(

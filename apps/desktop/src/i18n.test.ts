@@ -21,8 +21,6 @@ import { readUiLocale, writeUiLocale } from "./setup-store.js";
 const srcDir = import.meta.dirname;
 /** Product and vendor names the setup page shows as they are. */
 const UNTRANSLATED = new Set([
-  "Rakazo",
-  "Rakazo Cloud",
   "Docker Desktop",
   "OrbStack",
   "Docker Engine",
@@ -79,13 +77,13 @@ describe("desktop language", () => {
     expect(startDesktopLocale("es-MX", "en-US")).toBe("es");
     expect(t("Check for Updates…")).toBe("Buscar actualizaciones…");
     expect(t("Rakazo {version} is ready to install.", { version: "1.2.0" })).toBe(
-      "Rakazo 1.2.0 está listo para instalarse.",
+      "BotONE 1.2.0 está listo para instalarse.",
     );
     expect(desktopMessages()).toBe(ES_MESSAGES);
 
     expect(startDesktopLocale("es; rm -rf /", "en-US")).toBe("en");
     expect(t("Check for Updates…")).toBe("Check for Updates…");
-    expect(desktopMessages()).toEqual({});
+    expect(desktopMessages()["Welcome to Rakazo"]).toBe("Welcome to BotONE");
   });
 
   it("saves a language the app window reports and rebuilds the menus when it changes", async () => {

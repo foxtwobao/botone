@@ -176,7 +176,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "Connect a model in Settings before running bots.":
     "Подключите модель в настройках, прежде чем запускать ботов.",
   "Connect your own API key in Models or choose Rakazo credits in Billing.":
-    "Подключите свой API-ключ в разделе «Модели» или выберите кредиты Rakazo в разделе «Оплата».",
+    "Подключите свой API-ключ в разделе «Модели» или выберите кредиты BotONE в разделе «Оплата».",
   "The model provider returned an error.": "Поставщик моделей вернул ошибку.",
   "{provider} is rate limiting requests. Try again shortly.":
     "{provider} ограничивает частоту запросов. Повторите попытку чуть позже.",
@@ -683,7 +683,7 @@ export const RU_MESSAGES: Record<string, string> = {
   Pin: "Закрепить",
   "Please try again.": "Повторите попытку.",
   "Point this app at your self-hosted Rakazo origin, the same HTTPS URL you open in a browser.":
-    "Направьте это приложение на свой собственный источник Rakazo, тот же URL-адрес HTTPS, который вы открываете в браузере.",
+    "Направьте это приложение на свой собственный источник BotONE, тот же URL-адрес HTTPS, который вы открываете в браузере.",
   Private: "Личный",
   Profile: "Профиль",
   Providers: "Провайдеры",
@@ -752,10 +752,10 @@ export const RU_MESSAGES: Record<string, string> = {
   "Show more": "Показать ещё",
   "Show {label}": "Показать {label}",
   "Sign in": "Войти",
-  "Sign in to Rakazo": "Войти в Rakazo",
+  "Sign in to Rakazo": "Войти в BotONE",
   "Sign out": "Выйти",
   "Sign up": "Зарегистрироваться",
-  "Sign up for Rakazo": "Зарегистрироваться в Rakazo",
+  "Sign up for Rakazo": "Зарегистрироваться в BotONE",
   "Sign-in": "Вход",
   "Sign-up": "Регистрация",
   "Sign-in did not return a session": "Вход не вернул сессию",
@@ -789,7 +789,7 @@ export const RU_MESSAGES: Record<string, string> = {
   Team: "Команда",
   "Team Computer": "Командный компьютер",
   "That doesn’t look like a URL": "Это не похоже на URL",
-  "That URL did not look like a Rakazo server": "Этот адрес не похож на сервер Rakazo",
+  "That URL did not look like a Rakazo server": "Этот адрес не похож на сервер BotONE",
   "That URL is missing a host": "Для этого URL-адреса отсутствует хост",
   "The server changed while starting the request": "Сервер изменился при запуске запроса",
   "This permanently deletes your account, bots, conversations, memories, files, and saved connections. This cannot be undone.":
@@ -876,7 +876,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "Open in full window": "Открыть в полном окне",
   "OpenAPI JSON": "OpenAPI JSON",
   "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed.":
-    "Вставьте OpenAI-совместимый адрес со своего сервера. При необходимости Rakazo добавляет /v1.",
+    "Вставьте OpenAI-совместимый адрес со своего сервера. При необходимости BotONE добавляет /v1.",
   Paused: "Приостановлено",
   Prompt: "Промпт",
   "Recording a live demonstration needs desktop or web with the full computer view. You can still ask this bot to run saved skills from chat.":
@@ -893,7 +893,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "This removes every message and stops current work. The bot, computer, memory, and routines are kept.":
     "Это удалит все сообщения и остановит текущую работу. Бот, компьютер, память и задачи сохранятся.",
   "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider.":
-    "Вход по этой подписке пока недоступен в Rakazo. Используйте учётные данные развёртывания или выберите другого провайдера.",
+    "Вход по этой подписке пока недоступен в BotONE. Используйте учётные данные развёртывания или выберите другого провайдера.",
   Tools: "Инструменты",
   Uninstall: "Удалить",
   "Verify and add": "Проверить и добавить",
@@ -995,7 +995,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "AI models": "Модели ИИ",
   Memory: "Память",
   "Privacy policies": "Политики конфиденциальности",
-  Rakazo: "Rakazo",
+  Rakazo: "BotONE",
   "Withdraw all permissions": "Отозвать все разрешения",
   "Withdraw all permissions?": "Отозвать все разрешения?",
   "New mobile actions won't send data to these services. Runs already in progress and routines keep going until you stop them.":
@@ -1141,14 +1141,14 @@ export const RU_MESSAGES: Record<string, string> = {
   Subscribe: "Оформить подписку",
   "Monthly credits expire at renewal. Top-ups do not expire.":
     "Ежемесячные кредиты истекают при продлении. Разовые пополнения не сгорают.",
-  "Use Rakazo credits": "Использовать кредиты Rakazo",
+  "Use Rakazo credits": "Использовать кредиты BotONE",
   "Choose a plan": "Выбрать тариф",
   "Change plan": "Сменить тариф",
   "Current plan": "Текущий тариф",
   Plan: "Тариф",
   None: "Нет",
   "Free trial": "Бесплатный пробный период",
-  "Rakazo credits": "Кредиты Rakazo",
+  "Rakazo credits": "Кредиты BotONE",
   "Free until": "Бесплатно до",
   Ends: "Заканчивается",
   Renews: "Продление",
@@ -1184,7 +1184,7 @@ export const RU_MESSAGES: Record<string, string> = {
   "Your free trial has started": "Бесплатный пробный период начался",
   "Free until {date}": "Бесплатно до {date}",
   "Connect your AI": "Подключить ИИ",
-  "Start using Rakazo": "Начать работу с Rakazo",
+  "Start using Rakazo": "Начать работу с BotONE",
   "1 unread": "1 непрочитанный",
   "{count} unread": "Непрочитанных: {count}",
   "{count} need attention": "Требуют внимания: {count}",
@@ -1192,12 +1192,12 @@ export const RU_MESSAGES: Record<string, string> = {
   "{label}, below": "{label}, ниже",
   Work: "Работа",
   Both: "И то, и другое",
-  "How will you use Rakazo?": "Как вы будете использовать Rakazo?",
+  "How will you use Rakazo?": "Как вы будете использовать BotONE?",
   "What do you most want Rakazo to help with?":
-    "С чем Rakazo должен помогать вам в первую очередь?",
+    "С чем BotONE должен помогать вам в первую очередь?",
   "How big is your team?": "Сколько человек в вашей команде?",
   "How did you hear about us?": "Как вы о нас узнали?",
-  "Welcome to Rakazo": "Добро пожаловать в Rakazo",
+  "Welcome to Rakazo": "Добро пожаловать в BotONE",
   Messaging: "Сообщения",
   Unlink: "Отвязать",
   "Connect a chat app": "Подключить чат-приложение",

@@ -3,11 +3,11 @@ appId: com.rakazo.app
 - runFlow: launch-app.yaml
 - runFlow:
     when:
-      visible: "Sign up for Rakazo"
+      visible: "Sign up for BotONE"
     commands:
       - tapOn: "Sign in"
 - extendedWaitUntil:
-    visible: "Sign in to Rakazo"
+    visible: "Sign in to BotONE"
     timeout: 15000
 - tapOn: "Email"
 - inputText: ${RAKAZO_ACTIVE_EMAIL}
