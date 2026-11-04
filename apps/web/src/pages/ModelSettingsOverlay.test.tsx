@@ -17,11 +17,14 @@ const accountPolicy = vi.hoisted(() => ({ enabled: false }));
 vi.mock("./model-account/queries", () => ({
   modelAccountConfigQuery: {
     queryKey: ["fixture-account-config"],
-    queryFn: async () => ({ enabled: false, modelAccountOnly: accountPolicy.enabled }),
+    queryFn: async () => ({
+      enabled: accountPolicy.enabled,
+      modelAccountOnly: accountPolicy.enabled,
+    }),
   },
   modelAccountStatusQuery: () => ({
     queryKey: ["fixture-account-status"],
-    queryFn: async () => ({ credentialId: "external-fixture" }),
+    queryFn: async () => ({ connected: true, credentialId: "external-fixture" }),
   }),
 }));
 const models = vi.hoisted(() => ({
@@ -947,7 +950,7 @@ it("lists not-connected providers by name alone", async () => {
   const view = await renderSettings();
   try {
     await openPicker("Change Main model");
-    expect(pickerOptions()).toEqual(["DeepSeek", "OpenAI-compatible", "Ollama Cloud"]);
+    expect(pickerOptions()).toEqual(["DeepSeek", "Ollama Cloud", "OpenAI-compatible"]);
     expect(document.querySelectorAll("[cmdk-group-heading]")).toHaveLength(0);
   } finally {
     await view.unmount();

@@ -18,7 +18,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -31,6 +31,7 @@ import { chatRouteHeader } from "../components/chat-route-header";
 import { CodeCopyButton } from "../components/code-copy-button";
 import { ComputerUpdateProgress } from "../components/computer-update-progress";
 import { floatingHeaderOptions, glassHeaderOptions } from "../components/glass-title";
+import { IncomingCall } from "../components/IncomingCall";
 import { MermaidDiagram } from "../components/mermaid-diagram";
 import { MessageMenuHost } from "../components/message-action-menu";
 import { MessageActionSheetHost } from "../components/message-action-sheet-host";
@@ -51,15 +52,18 @@ import { replaceWithSignIn } from "../lib/auth-routing";
 import { AvatarScreenFocus } from "../lib/avatar-life";
 import { installClientUpdates, watchForegroundUpdates } from "../lib/client-update";
 import { bootstrapI18n, useI18n } from "../lib/i18n";
+import { startIncomingCalls } from "../lib/incoming-calls";
 import { loadLinkFavicon } from "../lib/link-favicons";
 import {
   configureForegroundNotifications,
   resumeLiveNotifications,
 } from "../lib/live-notifications";
+import { OpenPageContext } from "../lib/message-mentions";
 import { setMobileMonitoringScreen } from "../lib/monitoring";
 import { native, useMobileTokens, useResolvedAppearance } from "../lib/native";
 import { useNotificationResponses } from "../lib/open-notification";
 import { clearQueries } from "../lib/query";
+import { useReferral } from "../lib/referral";
 import {
   getCachedRemoteImagesEnabled,
   loadRemoteImagesPreference,
@@ -227,6 +231,11 @@ function ChatContentProviders({
   );
   const session = useSyncExternalStore(subscribeSessionGeneration, currentReadySessionGeneration);
   const trustedSites = useTrustedLinkSites();
+  const router = useRouter();
+  const openPage = useCallback(
+    (pageId: string) => router.push({ pathname: "/page", params: { pageId } }),
+    [router],
+  );
   useEffect(() => {
     void loadTrustedLinkSites().catch(() => undefined);
   }, [endpoint, session]);
@@ -246,7 +255,7 @@ function ChatContentProviders({
         <LinkFaviconsContext.Provider value={linkFavicons}>
           <MermaidDiagramContext.Provider value={MermaidDiagram}>
             <CodeCopyButtonContext.Provider value={CodeCopyButton}>
-              {children}
+              <OpenPageContext.Provider value={openPage}>{children}</OpenPageContext.Provider>
             </CodeCopyButtonContext.Provider>
           </MermaidDiagramContext.Provider>
         </LinkFaviconsContext.Provider>
@@ -262,9 +271,18 @@ function LayoutContent() {
   const insets = useSafeAreaInsets();
   // Beside the list a chat swaps in place, the way it does when picked from a sidebar.
   const { split, inboxHidden, foldActive } = useSplitView();
+  const canInvite = Boolean(useReferral());
   const chatAnimation = split ? "none" : undefined;
   const [ready, setReady] = useState(false);
   useNotificationResponses(ready);
+  const callSession = useSyncExternalStore(
+    subscribeSessionGeneration,
+    currentReadySessionGeneration,
+  );
+  useEffect(() => {
+    if (!ready) return;
+    return startIncomingCalls();
+  }, [ready, callSession]);
   const screen = analyticsScreen(usePathname());
   useEffect(() => setMobileMonitoringScreen(screen), [screen]);
   useEffect(() => {
@@ -427,6 +445,15 @@ function LayoutContent() {
                       }}
                     />
                     <Stack.Screen
+                      name="invite"
+                      options={{
+                        headerShown: false,
+                        presentation: "formSheet",
+                        sheetAllowedDetents: "fitToContents",
+                        sheetGrabberVisible: true,
+                      }}
+                    />
+                    <Stack.Screen
                       name="new-group"
                       options={{
                         title: t("New group chat"),
@@ -445,12 +472,32 @@ function LayoutContent() {
                     />
                     <Stack.Screen name="artifacts" options={glassHeaderOptions(t("Artifacts"))} />
                     <Stack.Screen name="artifact" options={{ title: t("Artifact") }} />
+                    <Stack.Screen name="pages" options={glassHeaderOptions(t("Pages"))} />
+                    <Stack.Screen
+                      name="page"
+                      options={{
+                        headerShown: false,
+                        // An iPad shows a page as a sheet over the chat; a phone shows it whole.
+                        presentation:
+                          Platform.OS === "ios" && Platform.isPad ? "pageSheet" : "fullScreenModal",
+                      }}
+                    />
+                    <Stack.Screen
+                      name="page-share"
+                      options={{
+                        headerShown: false,
+                        presentation: "formSheet",
+                        sheetAllowedDetents: [0.6, 1],
+                        sheetGrabberVisible: true,
+                        contentStyle: { backgroundColor: native.groupedPage },
+                      }}
+                    />
                     <Stack.Screen
                       name="group-thread"
                       options={({ route }) => ({
                         title: t("Group"),
                         animation: chatAnimation,
-                        ...chatRouteHeader(route, t, { split, inboxHidden, foldActive }),
+                        ...chatRouteHeader(route, t, { split, inboxHidden, foldActive }, canInvite),
                       })}
                     />
                     <Stack.Screen
@@ -468,7 +515,7 @@ function LayoutContent() {
                       options={({ route }) => ({
                         title: t("Thread"),
                         animation: chatAnimation,
-                        ...chatRouteHeader(route, t, { split, inboxHidden, foldActive }),
+                        ...chatRouteHeader(route, t, { split, inboxHidden, foldActive }, canInvite),
                       })}
                     />
                     <Stack.Screen name="routines" options={glassHeaderOptions(t("Routines"))} />
@@ -493,6 +540,7 @@ function LayoutContent() {
               <MessageMenuHost />
               <MessageActionSheetHost />
               <CallCard />
+              <IncomingCall />
             </ThemeProvider>
           </ChatContentProviders>
         ) : (

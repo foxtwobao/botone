@@ -33,6 +33,7 @@ import {
   TicketSchema,
   UpdateTicketInput,
 } from "./board.js";
+import { BotAvatarSetSchema } from "./bot-avatar.js";
 import {
   BotSecretMetadata,
   BotSecretPutInput,
@@ -68,9 +69,13 @@ import {
   BotSectionName,
   BotSectionSchema,
   ByokIntervalSchema,
+  ByokTierSchema,
   CapabilityInstallSchema,
+  ChatAlertSchema,
   CONNECTION_LABEL_MAX_LENGTH,
   ComputerModeSchema,
+  ComputerProviderSettingsSchema,
+  ComputerProviderUpdateSchema,
   ComputerReleaseReasonSchema,
   ComputerStatusSchema,
   ComputerUpdateSchema,
@@ -86,6 +91,7 @@ import {
   ExternalConversationPolicySchema,
   GroupDetailSchema,
   GroupSchema,
+  IncomingBotCallSchema,
   IntegrationCatalogResultSchema,
   McpServerConfigInput,
   McpServerSchema,
@@ -155,6 +161,13 @@ import {
 } from "./integration-settings.js";
 import { ModelHeadersSchema } from "./model-headers.js";
 import { ModelRoleSchema, ModelRoleUpdateSchema, ModelRoleViewSchema } from "./model-roles.js";
+import {
+  PAGE_LIST_MAX_LIMIT,
+  PageDetailSchema,
+  PageSummarySchema,
+  PageTitleSchema,
+  PageVisibilitySchema,
+} from "./pages.js";
 import { PaymentWalletStatusSchema } from "./payments.js";
 import { MessageReactionSchema } from "./reactions.js";
 import { RoutineWatchSchema } from "./routine-watch.js";
@@ -206,6 +219,8 @@ const threadSendFields = threadTarget.safeExtend({
     .optional(),
   replyToMessageId: Id.optional(),
   replyQuote: z.string().trim().min(1).max(REPLY_QUOTE_MAX_LENGTH).optional(),
+  /** Sent from the open page: a reply to its card that quotes nothing. */
+  fromPage: z.literal(true).optional(),
   clientNonce: z.string().min(1).max(200).optional(),
 });
 
@@ -263,7 +278,10 @@ export const appContract = {
   health: oc.output(z.object({ ok: z.literal(true), version: z.string() })),
   me: oc.output(MeSchema),
   billing: {
-    status: oc.output(BillingStatusSchema),
+    /** Claims an invite code first when one is sent, so the status already reflects it. */
+    status: oc
+      .input(z.object({ referralCode: z.string().min(1).max(64).optional() }).optional())
+      .output(BillingStatusSchema),
     /** Re-reads the subscription from the provider, e.g. right after a mobile checkout. */
     refresh: oc.output(BillingStatusSchema),
     selectFunding: oc
@@ -292,7 +310,12 @@ export const appContract = {
     checkout: oc
       .input(
         z
-          .object({ client: BillingClientSchema, interval: ByokIntervalSchema.optional() })
+          .object({
+            client: BillingClientSchema,
+            interval: ByokIntervalSchema.optional(),
+            /** The own-key plan's tier; Standard when omitted. */
+            tier: ByokTierSchema.optional(),
+          })
           .optional(),
       )
       .output(z.object({ url: z.string().url() })),
@@ -303,6 +326,8 @@ export const appContract = {
     endTrial: oc.output(BillingStatusSchema),
     /** Owners only: moves a monthly own-key plan to yearly, charging the difference now. */
     switchToYearly: oc.output(BillingStatusSchema),
+    /** Owners only: moves the own-key plan to another tier at the same interval, billing the difference now. */
+    changeTier: oc.input(z.object({ tier: ByokTierSchema })).output(BillingStatusSchema),
     /** Records who invited this organization; ignored once it has subscribed. */
     claimReferral: oc
       .input(z.object({ code: z.string().min(1).max(64) }))
@@ -320,6 +345,8 @@ export const appContract = {
         z
           .object({
             avatarStyle: AvatarStyleSchema.optional(),
+            /** Restyles every bot not pinned to another set, and is what new bots get. */
+            botAvatarSet: BotAvatarSetSchema.optional(),
             timezone: TimeZoneSchema.nullable().optional(),
             /** The language the app runs in, so emails can be written in it. */
             locale: AppLocaleSchema.optional(),
@@ -327,6 +354,7 @@ export const appContract = {
           .refine(
             (input) =>
               input.avatarStyle !== undefined ||
+              input.botAvatarSet !== undefined ||
               input.timezone !== undefined ||
               input.locale !== undefined,
             { message: "Nothing to update" },
@@ -358,6 +386,16 @@ export const appContract = {
         }),
       )
       .output(DeploymentSettingsSchema),
+  },
+  /** Admin choice of where new computers run, with that provider's connection settings. */
+  computerProvider: {
+    get: oc.output(ComputerProviderSettingsSchema),
+    update: oc.input(ComputerProviderUpdateSchema).output(ComputerProviderSettingsSchema),
+    /** The signed-in account's provider for Team Computers, over the default. */
+    account: {
+      get: oc.output(ComputerProviderSettingsSchema),
+      update: oc.input(ComputerProviderUpdateSchema).output(ComputerProviderSettingsSchema),
+    },
   },
   /** Deployment-owner view of the append-only security event log, newest first. */
   security: {
@@ -687,6 +725,7 @@ export const appContract = {
       .input(z.object({ id: Id, workersStopped: z.literal(true) }))
       .output(z.object({ ok: z.literal(true) })),
     dismissUpdate: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
+    dismissDiskWarning: oc.input(botId).output(z.object({ ok: z.literal(true) })),
     takeover: oc.input(botId).output(z.object({ leaseId: Id, expiresAt: z.string() })),
     release: oc
       .input(
@@ -1171,9 +1210,9 @@ export const appContract = {
     set: oc
       .input(
         settingsScopeInput.extend({
-          effect: z.enum(["always_allow", "deny"]),
+          effect: z.enum(["always_allow", "require_approval", "deny"]),
           matchKind: z.enum(["tool", "connector", "site"]),
-          matchValue: z.string().min(1),
+          matchValue: z.string().trim().min(1),
         }),
       )
       .output(ActionApprovalRuleSchema),
@@ -1249,6 +1288,48 @@ export const appContract = {
     getById: oc.input(z.object({ artifactId: Id })).output(ArtifactWithContentSchema),
     remove: oc.input(z.object({ artifactId: Id })).output(z.object({ ok: z.literal(true) })),
   },
+  /** Pages bots built for the caller in this Space. */
+  pages: {
+    /** Pinned first, then most recently updated. */
+    list: oc
+      .input(
+        z.strictObject({
+          botId: Id.optional(),
+          groupId: Id.optional(),
+          cursor: z.string().max(500).optional(),
+          limit: z.number().int().min(1).max(PAGE_LIST_MAX_LIMIT).optional(),
+          /** Titles containing this text, for the command palette. */
+          query: z.string().trim().min(1).max(200).optional(),
+        }),
+      )
+      .output(
+        z.strictObject({ items: z.array(PageSummarySchema), nextCursor: z.string().nullable() }),
+      ),
+    /** `link` also reads the page's share link, which only the share controls need. */
+    get: oc
+      .input(
+        z.strictObject({
+          pageId: Id,
+          version: z.number().int().positive().optional(),
+          link: z.boolean().optional(),
+        }),
+      )
+      .output(PageDetailSchema),
+    rename: oc
+      .input(z.strictObject({ pageId: Id, title: PageTitleSchema }))
+      .output(PageSummarySchema),
+    /**
+     * Turning the link on returns the page's live link, or a new one when it has none it can
+     * read; turning it off breaks the old link, so the next turn-on issues a new one.
+     */
+    setVisibility: oc
+      .input(z.strictObject({ pageId: Id, visibility: PageVisibilitySchema }))
+      .output(
+        z.strictObject({ visibility: PageVisibilitySchema, shareUrl: z.string().nullable() }),
+      ),
+    pin: oc.input(z.strictObject({ pageId: Id, pinned: z.boolean() })).output(PageSummarySchema),
+    remove: oc.input(z.strictObject({ pageId: Id })).output(z.object({ ok: z.literal(true) })),
+  },
   usage: {
     list: oc.output(z.array(UsageRecordSchema)),
     summary: oc.output(UsageSummarySchema),
@@ -1262,9 +1343,51 @@ export const appContract = {
     accountToken: oc.output(z.object({ token: z.string() })),
   },
   notifications: {
+    /** Run alerts for the signed-in user's chats in this space, live while connected. */
+    subscribe: oc.output(
+      eventIterator(
+        z.object({
+          type: z.enum(["alert", "heartbeat"]),
+          alert: ChatAlertSchema.optional(),
+        }),
+      ),
+    ),
+    subscribeCalls: oc.output(
+      eventIterator(
+        z.object({
+          type: z.enum(["incoming.calls", "heartbeat"]),
+          payload: z.object({ calls: z.array(IncomingBotCallSchema) }).optional(),
+        }),
+      ),
+    ),
+    declineIncomingCall: oc
+      .input(z.object({ callId: z.string().uuid() }))
+      .output(z.object({ ok: z.literal(true) })),
+    registerCallPush: oc
+      .input(
+        z
+          .object({
+            deviceId: z.string().uuid(),
+            platform: z.enum(["ios", "android"]),
+            expoToken: z.string().min(8).max(512).regex(/^\S+$/).optional(),
+            voipToken: z
+              .string()
+              .regex(/^[a-fA-F0-9]{64,200}$/)
+              .optional(),
+          })
+          .refine((value) =>
+            Boolean(value.expoToken || (value.platform === "ios" && value.voipToken)),
+          ),
+      )
+      .output(z.object({ ok: z.literal(true) })),
     registerPush: oc
       // No whitespace: the token store keeps the registering session on the next line.
-      .input(z.object({ token: z.string().min(8).max(512).regex(/^\S+$/) }))
+      .input(
+        z.object({
+          token: z.string().min(8).max(512).regex(/^\S+$/),
+          presentation: z.literal("android_sender").optional(),
+        }),
+      )
       .output(z.object({ ok: z.literal(true) })),
     unregisterPush: oc.output(z.object({ ok: z.literal(true) })),
   },

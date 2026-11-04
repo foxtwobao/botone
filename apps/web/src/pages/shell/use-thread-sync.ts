@@ -11,6 +11,7 @@ import {
   anySignal,
   createRefreshCoalescer,
   isRunTerminalEvent,
+  isRunWorking,
   runThreadSubscription,
 } from "@rakazo/core";
 import { fetchFresh } from "@rakazo/core/query";
@@ -21,11 +22,13 @@ import {
   openLogoAvatarActivityFeed,
   webLogoAvatarActivity,
 } from "../../lib/logo-avatar-activity.js";
+import { relistPagesForBlocks } from "../../lib/page-actions";
 import { markOnce } from "../../lib/performance";
 import type { SpaceQueries } from "../../lib/query";
 import { queryClient } from "../../lib/query";
 import type { createSpaceRpc } from "../../lib/rpc";
 import {
+  activeThreadRuns,
   isComputerStatusEvent,
   isThreadSnapshotEvent,
   prependThreadMessagePage,
@@ -311,7 +314,14 @@ export function useThreadSync({
       ? undefined
       : (queryClient.getQueryData(threadKey) ??
         (seed?.thread?.botId === active.id ? seed.thread : undefined));
-    if (cachedThread && snapshotRef.current?.botId !== active.id) commitSnapshot(cachedThread);
+    if (
+      cachedThread &&
+      snapshotRef.current?.botId !== active.id &&
+      (active.threadStatus === undefined ||
+        activeThreadRuns(cachedThread).some((run) => isRunWorking(run.status)) ===
+          isRunWorking(active.threadStatus))
+    )
+      commitSnapshot(cachedThread);
     const sidebarRefresh = createRefreshCoalescer(() => refreshBots());
     const snapshotRefresh = createRefreshCoalescer(() => refreshThread(active.id));
     const abort = new AbortController();
@@ -375,6 +385,7 @@ export function useThreadSync({
         }
         if (event.type === "thread.message.created") {
           const blocks = (event.payload.blocks as Array<{ kind?: string }>) ?? [];
+          relistPagesForBlocks(queries, queryClient, blocks);
           if (blocks.some((block) => block.kind === "child_bot")) {
             void sidebarRefresh.invalidate().catch(() => undefined);
           }
@@ -456,6 +467,13 @@ export function useThreadSync({
         );
         if (event.type === "thread.message.created" && event.payload.role === "bot") {
           markGroupReadOnReply(groupId);
+        }
+        if (event.type === "thread.message.created") {
+          relistPagesForBlocks(
+            queries,
+            queryClient,
+            (event.payload.blocks as Array<{ kind?: string }>) ?? [],
+          );
         }
         if (
           event.type === "run.started" ||

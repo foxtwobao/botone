@@ -135,6 +135,10 @@ vi.mock("./api", () => ({
   signUp: vi.fn(),
 }));
 vi.mock("./incoming-share", () => ({ hasIncomingShare: () => route.waiting }));
+const accountConfig = vi.hoisted(() => vi.fn());
+vi.mock("./model-account-client", () => ({
+  modelAccountClient: () => ({ config: accountConfig }),
+}));
 vi.mock("./sso", () => ({ continueWithSso: vi.fn() }));
 vi.mock("./passkey", () => ({ passkeysAvailable: vi.fn(), signInWithPasskey: vi.fn() }));
 vi.mock("./user-error", () => ({ credentialIssueText: vi.fn(), errorText: vi.fn() }));
@@ -149,6 +153,7 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  accountConfig.mockReset().mockResolvedValue({ enabled: false, modelAccountOnly: false });
   route.mode = "in";
   route.waiting = false;
   server.base = "https://example.invalid";
@@ -507,6 +512,7 @@ it.each(["in", "up"])(
 it.each([false, true])(
   "guides SSO accounts without a model through setup (survey: %s)",
   async (needsSignupSurvey) => {
+    accountConfig.mockResolvedValue({ enabled: true, modelAccountOnly: true });
     vi.mocked(continueWithSso).mockResolvedValue(true);
     vi.mocked(rpc).mockResolvedValue({ needsSignupSurvey, needsModel: true } as never);
     await render();
