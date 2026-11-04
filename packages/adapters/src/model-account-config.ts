@@ -40,7 +40,7 @@ export function configuredModelAccount(value: string | undefined) {
     if (
       model.kind !== "openai_compatible" ||
       model.apiKey ||
-      model.externalAccount ||
+      config.model?.externalAccount !== undefined ||
       model.headers
     )
       throw new Error();
@@ -53,6 +53,7 @@ export function configuredModelAccount(value: string | undefined) {
       credentialVersion: createHash("sha256").update(config.credential).digest("hex"),
       model,
       navigationOrigin: config.navigationOrigin,
+      serviceName: "TokenONE",
     };
   } catch {
     throw new Error("Invalid MODEL_ACCOUNT_CONNECTION configuration");

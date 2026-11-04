@@ -1,8 +1,11 @@
-import type { ExternalAccountIdentity, ExternalModelAccountProvider } from "@rakazo/adapter-kit";
-import { ExternalModelAccountError } from "@rakazo/adapter-kit";
 import { readBoundedJsonResponse } from "@rakazo/core";
 import { getLogger } from "@rakazo/logging";
 import { z } from "zod";
+import type {
+  ExternalAccountIdentity,
+  ExternalModelAccountProvider,
+} from "./model-account-provider.js";
+import { ExternalModelAccountError } from "./model-account-provider.js";
 
 const identitySchema = z.object({ issuer: z.url(), subject: z.string().min(1) });
 const keySchema = z.object({
@@ -26,6 +29,24 @@ const balanceSchema = z.object({
     }),
   }),
 });
+// Only documented protocol codes may enter logs; arbitrary upstream strings may contain secrets.
+const rejectionCodeSchema = z.enum([
+  "INVALID_CREDENTIAL",
+  "APP_DISABLED",
+  "SCOPE_FORBIDDEN",
+  "ISSUER_FORBIDDEN",
+  "REDIRECT_URI_FORBIDDEN",
+  "TOKENONE_USER_DISABLED",
+  "TOKENONE_GROUP_FORBIDDEN",
+  "APP_USER_AUTHORIZATION_REQUIRED",
+  "AUTHORIZATION_FLOW_INVALID",
+  "IDENTITY_BINDING_CONFLICT",
+  "APP_KEY_UNAVAILABLE",
+  "TOKENONE_KEY_QUOTA_EXHAUSTED",
+  "APP_KEY_RECOVERY_UNAVAILABLE",
+  "APP_SERVICE_UNAVAILABLE",
+  "APP_DATABASE_UNAVAILABLE",
+]);
 
 export interface ResellerModelAccountConfig {
   origin: string;
@@ -185,6 +206,9 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
         getLogger().warn("Model account service rejected a request", {
           operation: path,
           httpStatus,
+          rejectionCode:
+            rejectionCodeSchema.safeParse(error.success ? error.data.error : undefined).data ??
+            "unknown",
         });
         const retryable =
           response.status === 503 &&

@@ -1,6 +1,4 @@
 import { createHash } from "node:crypto";
-import type { ExternalAccountIdentity } from "@rakazo/adapter-kit";
-import type { PrismaClient } from "@rakazo/db";
 import type { BetterAuthPlugin } from "better-auth";
 import { APIError, getOAuthState } from "better-auth/api";
 import { genericOAuth } from "better-auth/plugins";
@@ -243,48 +241,17 @@ export async function isCurrentOidcAccount(
   issuer: string | undefined,
   key: TokenKey,
 ) {
-  return (await readOidcAccountIdentity(account, issuer, key)) !== null;
-}
-
-/** Reads a previously verified stored binding, not fresh authentication proof. */
-export async function readOidcAccountIdentity(
-  account: { providerId: string; accountId: string; idToken?: string | null },
-  issuer: string | undefined,
-  key: TokenKey,
-): Promise<ExternalAccountIdentity | null> {
-  if (!issuer || account.providerId !== "oidc") return null;
+  if (!issuer || account.providerId !== "oidc") return false;
   const idToken = await openIdToken(key, account.idToken);
-  if (!idToken) return null;
+  if (!idToken) return false;
   try {
     const claims = JSON.parse(Buffer.from(idToken.split(".")[1] ?? "", "base64url").toString());
-    return claims.iss === issuer &&
+    return (
+      claims.iss === issuer &&
       typeof claims.sub === "string" &&
-      claims.sub.trim().length > 0 &&
       account.accountId === oidcAccountSubject(issuer, claims.sub)
-      ? { issuer, subject: claims.sub }
-      : null;
+    );
   } catch {
-    return null;
+    return false;
   }
-}
-
-export async function readExternalAccountIdentity(
-  prisma: Pick<PrismaClient, "account">,
-  userId: string,
-  issuer: string | undefined,
-  key: TokenKey,
-) {
-  if (!issuer) return null;
-  const accounts = await prisma.account.findMany({
-    where: { userId, providerId: "oidc" },
-    select: { id: true, providerId: true, accountId: true, idToken: true },
-  });
-  const identities = await Promise.all(
-    accounts.map(async (account) => {
-      const identity = await readOidcAccountIdentity(account, issuer, key);
-      return identity ? { accountId: account.id, binding: account.accountId, ...identity } : null;
-    }),
-  );
-  const current = identities.filter((identity) => identity !== null);
-  return current.length === 1 ? current[0]! : null;
 }

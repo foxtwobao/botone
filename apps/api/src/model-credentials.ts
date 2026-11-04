@@ -50,7 +50,7 @@ export function prepareAllowedThinkingLevels(
     actor,
     provider,
     modelId,
-    { ...resolution, modelAccountOnly: deps.env.modelAccountOnly },
+    resolution,
   );
 }
 
@@ -118,8 +118,6 @@ export async function prepareModelCredential(
   codexCatalog: CodexLiveCatalog,
 ) {
   throwIfAborted(input.signal);
-  if (deps.env.modelAccountOnly)
-    throw new ORPCError("FORBIDDEN", { message: "Model account required" });
   const parsedSecret = parseModelSecret(input.plaintext);
   const requestedModelId = usableModelId(input.modelId);
   const resolvedCodexModelId =
@@ -312,8 +310,6 @@ export function createModelConnector(deps: RouterDeps, codexCatalog: CodexLiveCa
     input: ModelConnectInput,
     signal: AbortSignal | undefined,
   ) => {
-    if (deps.env.modelAccountOnly)
-      throw new ORPCError("FORBIDDEN", { message: "Model account required" });
     const credential = await modelConnectionTarget(deps, actor, input.provider, input.credentialId);
     let plaintext: string;
     try {
@@ -337,11 +333,6 @@ export function createModelConnector(deps: RouterDeps, codexCatalog: CodexLiveCa
             }
           }
         }
-      }
-      if (previousPlaintext) {
-        const previous = parseModelSecret(previousPlaintext);
-        if (previous.kind === "openai_compatible" && previous.externalAccount)
-          throw new Error("Manage this connection through Model account.");
       }
       plaintext = buildModelConnectPlaintext(input, previousPlaintext, {
         omitVisionModelIds,

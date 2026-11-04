@@ -101,6 +101,7 @@ export default function Account() {
   const router = useRouter();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
   const [me, setMe] = useState<MobileMe | null>(null);
+  const botStyleRequest = useRef(0);
   const account = accountDisplay(me ?? {}, t("Your account"));
   const [nameDialogOpen, setNameDialogOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -164,6 +165,8 @@ export default function Account() {
   // A list that fails to refresh keeps its last count, so a passing error doesn't hide the row.
   const archivedCounts = useRef({ bots: 0, groups: 0 });
   const [usage, setUsage] = useState<UsageSummary | null>(null);
+  // Messaging appears only on servers that have a chat app connected, as on web.
+  const [messagingEnabled, setMessagingEnabled] = useState(false);
   const appearance = getCachedAppearancePreference();
   const streamReplies = useSyncExternalStore(
     subscribeResponseStreaming,
@@ -273,6 +276,21 @@ export default function Account() {
   useFocusEffect(
     useCallback(() => {
       void loadTrustedLinkSites().catch(() => undefined);
+    }, []),
+  );
+
+  // Checked on every visit, so a failed check never hides Messaging for good.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void rpc("messaging/status")
+        .then((status) => {
+          if (active) setMessagingEnabled(status.enabled);
+        })
+        .catch(() => undefined);
+      return () => {
+        active = false;
+      };
     }, []),
   );
 
@@ -546,6 +564,41 @@ export default function Account() {
           />
         </View>
 
+        {me?.botAvatarSet ? (
+          <View accessibilityLabel={t("Bot style")} style={styles.section}>
+            <SettingsLabel>{t("Bot style")}</SettingsLabel>
+            <NativeSegmentedControl
+              accessibilityLabel={t("Bot style")}
+              onChange={(botAvatarSet) => {
+                const previous = me.botAvatarSet;
+                // Only the latest tap's reply may land, so a slower earlier save can't undo it.
+                const request = ++botStyleRequest.current;
+                setMe((current) => (current ? { ...current, botAvatarSet } : current));
+                rpc("preferences/update", { botAvatarSet })
+                  .then((next) => {
+                    // Take only the style, so an older snapshot can't undo another edit.
+                    if (request !== botStyleRequest.current) return;
+                    setMe((current) =>
+                      current ? { ...current, botAvatarSet: next.botAvatarSet } : next,
+                    );
+                  })
+                  .catch(() => {
+                    if (request !== botStyleRequest.current) return;
+                    setMe((current) =>
+                      current ? { ...current, botAvatarSet: previous } : current,
+                    );
+                    Alert.alert(t("Couldn't update bot style"));
+                  });
+              }}
+              options={[
+                { value: "organic", label: t("Original") },
+                { value: "rakazo", label: t("Rakazo") },
+              ]}
+              value={me.botAvatarSet}
+            />
+          </View>
+        ) : null}
+
         <SettingsGroup>
           <SettingsRow
             accessibilityRole="button"
@@ -629,7 +682,7 @@ export default function Account() {
               ...(me?.ticketBoardEnabled ? [{ title: t("Board"), href: "/board" } as const] : []),
               { title: t("Artifacts"), href: "/artifacts" },
               { title: t("Models"), href: "/models" },
-              ...(!me?.modelAccountOnly ? [{ title: t("Voice"), href: "/voice" } as const] : []),
+              { title: t("Voice"), href: "/voice" },
             ] as const
           ).map(settingsLink)}
           <ApprovalModeRow key="approvals" approvals={approvals} disabled={pending} />
@@ -649,7 +702,7 @@ export default function Account() {
                 : []),
               { title: t("Integrations"), href: "/integrations" },
               { title: t("Skills"), href: "/skills" },
-              { title: t("Messaging"), href: "/messaging" },
+              ...(messagingEnabled ? [{ title: t("Messaging"), href: "/messaging" } as const] : []),
               { title: t("AI data sharing"), href: "/ai-data-sharing" },
             ] as const
           ).map(settingsLink)}

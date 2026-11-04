@@ -128,7 +128,6 @@ describe.skipIf(!enabled)("persisted source-verified history followups", () => {
                 dataDir,
                 sandboxProvider: "fake",
                 agentRuntime: "pi",
-                modelAccountOnly: false,
                 contextStrategy: strategy,
                 wakeupDriver: "memory",
                 signupsEnabled: "true",

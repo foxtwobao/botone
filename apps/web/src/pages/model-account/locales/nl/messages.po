@@ -1,0 +1,148 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-08-26 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: nl\n"
+"Project-Id-Version: rakazo-web\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: Rakazo\n"
+"Language-Team: Dutch\n"
+"Plural-Forms: \n"
+
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API-protocol"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Approval model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Authorization incomplete."
+msgstr "Autorisatie niet voltooid."
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize again"
+msgstr "Opnieuw autoriseren"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize the model account to continue."
+msgstr "Autoriseer het modelaccount om door te gaan."
+
+#: src/components/ModelAccount.tsx
+msgid "Balance unavailable"
+msgstr "Saldo niet beschikbaar"
+
+#: src/components/ModelAccount.tsx
+msgid "Cancel"
+msgstr "Annuleren"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Choose a model"
+msgstr ""
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Close model settings"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Complete authorization in the opened window."
+msgstr "Voltooi de autorisatie in het geopende venster."
+
+#: src/components/ModelAccountOnboarding.tsx
+msgid "Connect a model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Could not confirm authorization. Try again."
+msgstr "Autorisatie kon niet worden bevestigd. Probeer opnieuw."
+
+#: src/components/ModelAccount.tsx
+msgid "Disconnection pending confirmation."
+msgstr "Verbinding verbreken wacht op bevestiging."
+
+#: src/components/ModelAccount.tsx
+msgid "Home"
+msgstr "Startpagina"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Main model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+#: src/components/ModelAccountOnboarding.tsx
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Model account"
+msgstr "Modelaccount"
+
+#: src/components/ModelAccount.tsx
+msgid "Model account unavailable"
+msgstr "Modelaccount niet beschikbaar"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Models"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Recharge"
+msgstr "Opwaarderen"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh balance"
+msgstr "Saldo vernieuwen"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Modellen vernieuwen"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry"
+msgstr "Opnieuw proberen"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry disconnect"
+msgstr "Verbinding opnieuw verbreken"
+
+#: src/components/ModelAccount.tsx
+msgid "Sign in with SSO to use the model account."
+msgstr "Meld je aan met SSO om het modelaccount te gebruiken."
+
+#: src/components/ModelAccount.tsx
+msgid "Use model account"
+msgstr "Modelaccount gebruiken"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "Autorisatie controleren…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "Autoriseren…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize model service"
+msgstr "Modeldienst autoriseren"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "Toegang tot {serviceName}-modellen autoriseren"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "Na autorisatie gebruikt deze app je {serviceName}-account voor modelaanroepen. De kosten worden van je {serviceName}-saldo afgeschreven."
+
+#: src/components/ModelAccount.tsx
+msgid "You will return to the app after authorization."
+msgstr "Na autorisatie keer je terug naar de app."
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "Akkoord en autoriseren"
+
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "modeldienst"

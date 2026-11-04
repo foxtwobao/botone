@@ -1,4 +1,4 @@
-import type { ModelAccountErrorCode } from "@rakazo/contracts";
+import type { ModelAccountErrorCode, ModelAccountStatus } from "@rakazo/contracts";
 import {
   modelAccountBalanceSchema,
   modelAccountConfigSchema,
@@ -77,4 +77,10 @@ export function createModelAccountClient(
         .pick({ connected: true })
         .parse(await request("revoke", "POST", signal)),
   };
+}
+
+/** A missing connection or unfinished authorization needs a direct user action. */
+export function modelAccountAuthorizationReason(status: ModelAccountStatus | undefined) {
+  if (!status) return null;
+  return status.recovery ?? (status.connected ? null : "authorization_required");
 }

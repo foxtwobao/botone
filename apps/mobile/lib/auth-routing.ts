@@ -1,14 +1,5 @@
 import { router } from "expo-router";
 
-/** The existing model settings are also the first-run setup when no model is configured. */
-export function signedInRoute(me: { needsSignupSurvey?: boolean; needsModel?: boolean } | null) {
-  if (me?.needsSignupSurvey)
-    return me.needsModel
-      ? { pathname: "/signup-survey" as const, params: { next: "models" } }
-      : ("/signup-survey" as const);
-  return me?.needsModel ? ("/models" as const) : ("/" as const);
-}
-
 export type AuthMode = "in" | "up" | "forgot";
 
 export const explicitSignInRoute = {

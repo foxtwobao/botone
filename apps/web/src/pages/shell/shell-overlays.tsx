@@ -157,8 +157,8 @@ export function SettingsOverlays({
           section={overlay.section}
           onSectionChange={(section) => setOverlay({ ...overlay, section })}
           billingEnabled={bootstrapMe?.billingEnabled === true}
-          modelAccountOnly={bootstrapMe?.modelAccountOnly}
           sandboxProvider={bootstrapMe?.sandboxProvider}
+          canConfigureComputers={bootstrapMe?.isAdmin === true}
           onSandboxProviderChange={(sandboxProvider) =>
             setBootstrapMe((prev) => (prev ? { ...prev, sandboxProvider } : prev))
           }
@@ -168,6 +168,16 @@ export function SettingsOverlays({
           onTimezoneChange={async (timezone) => {
             const nextMe = await rpc.preferences.update({ timezone });
             setBootstrapMe((prev) => (prev ? { ...prev, timezone: nextMe.timezone } : nextMe));
+          }}
+          botAvatarSet={bootstrapMe?.botAvatarSet}
+          onBotAvatarSetChange={async (botAvatarSet) => {
+            const nextMe = await rpc.preferences.update({ botAvatarSet });
+            setBootstrapMe((prev) =>
+              prev ? { ...prev, botAvatarSet: nextMe.botAvatarSet } : nextMe,
+            );
+            // Unpinned bots were restyled with it. The save already succeeded, so a failed
+            // refresh only waits for the roster's next poll.
+            void refreshSpaces().catch(() => undefined);
           }}
           onAccountImported={refreshSpaces}
           onImportAgent={() => {

@@ -169,6 +169,34 @@ it("only broadcasts well-formed same-origin callback landings", () => {
   expect(channels).toHaveLength(0);
 });
 
+it("completes desktop SSO without crypto.randomUUID, as on a plain-HTTP server", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("crypto", {
+    getRandomValues: (bytes: Uint8Array) => {
+      bytes.fill(5);
+      return bytes;
+    },
+  });
+  const desktop = desktopWindow();
+  let landing = "";
+  const flow = runSsoFlow(
+    async (_disableRedirect: boolean, callbackURL: (url: string) => string) => {
+      landing = callbackURL("/app");
+      return result;
+    },
+    ["/app"],
+  );
+  await vi.advanceTimersByTimeAsync(30_000);
+  expect(landing).toMatch(/[?&]nonce=/);
+  expect(new URL(landing).searchParams.get("nonce")).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  );
+  expect(desktop.popup.location.href).toBe(result.data.url);
+  desktop.land(landing);
+  await expect(flow).resolves.toBe(result);
+  expect(desktop.location.assign).toHaveBeenCalledWith("https://rakazo.example.test/app");
+});
+
 it("opens synchronously before beginning authorization", async () => {
   const { open, popup } = desktopWindow();
   await expect(
@@ -234,7 +262,6 @@ it("cancels only the owning authorization when its caller aborts", async () => {
   const controller = new AbortController();
   const begin = vi.fn(() => new Promise<never>(() => undefined));
   const flow = runSsoFlow(begin, ["/app"], {
-    popup: true,
     navigate: false,
     signal: controller.signal,
   });
@@ -242,7 +269,7 @@ it("cancels only the owning authorization when its caller aborts", async () => {
   await expect(flow).resolves.toEqual({ data: null, error: null });
   expect(popup.close).toHaveBeenCalledOnce();
   expect(channels[0]?.close).toHaveBeenCalledOnce();
-  await runSsoFlow(begin, ["/app"], { popup: true, signal: controller.signal });
+  await runSsoFlow(begin, ["/app"], { signal: controller.signal });
   expect(open).toHaveBeenCalledOnce();
   expect(begin).toHaveBeenCalledOnce();
 });
@@ -251,9 +278,9 @@ it("does not cancel a newer popup when an earlier caller unmounts", async () => 
   vi.useFakeTimers();
   const { begin, popup, channels, land } = desktopWindow();
   const earlier = new AbortController();
-  const first = runSsoFlow(begin, ["/app"], { popup: true, signal: earlier.signal });
+  const first = runSsoFlow(begin, ["/app"], { signal: earlier.signal });
   await vi.advanceTimersByTimeAsync(0);
-  const second = runSsoFlow(begin, ["/app"], { popup: true, navigate: false });
+  const second = runSsoFlow(begin, ["/app"], { navigate: false });
   await first;
   await vi.advanceTimersByTimeAsync(0);
   earlier.abort();
@@ -280,22 +307,9 @@ it("includes authorization time in the callback deadline", async () => {
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it("keeps the original web page and draft context while a popup completes", async () => {
-  const fixture = desktopWindow();
-  delete window.rakazoDesktop;
-  const flow = runSsoFlow(fixture.begin, ["/app"], { popup: true, navigate: false });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(fixture.open).toHaveBeenCalled();
-  expect(fixture.land()).toBe(true);
-  await expect(flow).resolves.toBe(result);
-  expect(fixture.location.assign).not.toHaveBeenCalled();
-  expect(fixture.popup.close).toHaveBeenCalled();
-});
-
 it("reports a popup's recovery error without navigating away from the original page", async () => {
   const fixture = desktopWindow();
-  const flow = runSsoFlow(fixture.begin, ["/app"], { popup: true, navigate: false });
+  const flow = runSsoFlow(fixture.begin, ["/app"], { navigate: false });
   await Promise.resolve();
   await Promise.resolve();
   fixture.land(`${fixture.callback()}&error=result_unknown`);

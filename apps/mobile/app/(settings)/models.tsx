@@ -13,7 +13,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LoadFailure } from "../../components/load-failure";
-import { ModelAccount } from "../../components/model-account";
 import { ModelProviders } from "../../components/model-providers";
 import type { ConnectableProvider, ModelConnectIntent } from "../../components/model-role-settings";
 import { ModelRoleSettings } from "../../components/model-role-settings";
@@ -170,19 +169,22 @@ export default function Models() {
         name: entry.providerName ?? entry.provider,
       });
     }
-    const all = popularModelProvidersFirst([...grouped.values()], (group) => group.id);
+    const all = [...grouped.values()];
     if (catalog.some((entry) => entry.provider === OPENAI_COMPATIBLE_PROVIDER_ID))
       all.push({
         id: OPENAI_COMPATIBLE_PROVIDER_ID,
         name: t("Ollama Cloud"),
         baseUrl: OLLAMA_CLOUD_BASE_URL,
       });
-    return all;
+    return popularModelProvidersFirst(
+      all,
+      (provider) => provider.id,
+      (provider) => provider.name,
+    );
   }, [catalog, t]);
 
   // Deployment-funded providers stay listed so people can still add their own key.
   const providers = useMemo(() => {
-    if (me?.modelAccountOnly) return [];
     const connected = new Set(credentials.map((entry) => canonicalPiProviderId(entry.provider)));
     const ollama = credentials.some(
       (entry) =>
@@ -191,7 +193,7 @@ export default function Models() {
     return allProviders.filter((provider) =>
       provider.baseUrl ? !ollama : !connected.has(canonicalPiProviderId(provider.id)),
     );
-  }, [allProviders, credentials, me?.modelAccountOnly]);
+  }, [allProviders, credentials]);
 
   const providerKey = (provider: ConnectableProvider) =>
     `connect:${provider.id}:${provider.baseUrl ?? ""}`;
@@ -274,7 +276,6 @@ export default function Models() {
             {shownError}
           </Text>
         ) : null}
-        <ModelAccount required={me?.modelAccountOnly} onChanged={() => void load()} />
         {me ? (
           <>
             <ModelRoleSettings
@@ -293,8 +294,14 @@ export default function Models() {
               title={t("Approval model")}
               defaultLabel={t("Choose a model")}
             />
+            <ModelRoleSettings
+              {...shared}
+              modelRole="computer"
+              title={t("Computer-use model")}
+              defaultLabel={t("Same as main model")}
+            />
             {/* Connections are the account's in every Space, so a Space's override lists only its models. */}
-            {target.scope === "account" && !me.modelAccountOnly ? (
+            {target.scope === "account" ? (
               <ModelProviders
                 catalog={catalog}
                 credentials={credentials}

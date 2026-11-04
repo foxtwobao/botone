@@ -1,4 +1,5 @@
 import { t } from "@lingui/core/macro";
+import { newClientId } from "@rakazo/core";
 import { desktopBridge } from "./desktop";
 
 type SsoResult = {
@@ -43,11 +44,11 @@ export function completeSsoCallback(): boolean {
 export async function runSsoFlow(
   begin: (disableRedirect: boolean, callbackURL: (url: string) => string) => Promise<SsoResult>,
   callbackURLs: readonly string[],
-  options: { popup?: boolean; navigate?: boolean; signal?: AbortSignal } = {},
+  options: { navigate?: boolean; signal?: AbortSignal } = {},
 ): Promise<SsoResult> {
   if (options.signal?.aborted) return { data: null, error: null };
-  if (!desktopBridge() && !options.popup) return begin(false, (url) => url);
-  const nonce = crypto.randomUUID();
+  if (!desktopBridge()) return begin(false, (url) => url);
+  const nonce = newClientId();
   const callbacks = callbackURLs.map((url) => new URL(url, window.location.href));
   const callbackURL = (url: string) => {
     const callback = new URL(SSO_CALLBACK_PATH, window.location.origin);

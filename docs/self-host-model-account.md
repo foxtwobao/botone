@@ -8,7 +8,7 @@ balance, limits and charges. Rakazo does not reserve or settle local model credi
 Configure [OIDC](self-host-accounts.md#openid-connect-sso) first. Leave local billing credentials
 unset. The API refuses to enable this connection alongside local billing.
 
-Set `MODEL_ACCOUNT_CONNECTION` on both API and worker to a JSON object:
+Set `MODEL_ACCOUNT_CONNECTION` on the API to a JSON object:
 
 ```json
 {
@@ -31,9 +31,18 @@ The server account `origin` accepts HTTP or HTTPS without an additional setting.
 on a trusted private network: application credentials and user keys travel without TLS on that
 link. Browser authorization, callbacks, model `baseUrl` and navigation still require HTTPS.
 
-Authorization discovers `/models` with a transient user key and exposes those models in the
-existing model picker. It never replaces the selected main model. Pick the desired model in
-Settings; Refresh models retries discovery. Catalog failures do not invalidate an otherwise
+Authorization discovers `/models` with the user key and exposes those models in the
+existing model picker. Set the existing generic default-model environment variable on the API
+for automatic first-time setup:
+
+```dotenv
+PI_DEFAULT_MODEL=gpt-6.1-terra
+```
+
+Use the exact model ID accepted by the configured compatible endpoint. Once authorization
+succeeds, the API initializes an unset main model with this ID and the user's authorized
+connection. It never replaces an existing main model, including on reauthorization. Leaving
+this setting unset keeps manual model selection. Refresh models retries discovery. Catalog failures do not invalidate an otherwise
 successful authorization. The API protocol defaults to Chat Completions; select Responses in
 Model account settings when the target models support it. Protocol changes do not send model
 requests or automatically retry another protocol.
@@ -47,9 +56,9 @@ without a matching channel hide navigation. Mobile uses platform defaults and op
 the system browser. If the policy cannot be loaded, navigation links are hidden while model
 authorization and balance remain available. No remote JavaScript is executed by API or mobile.
 
-The worker needs the same `BETTER_AUTH_SECRET` as the API, plus `OIDC_ISSUER`, to read the
-existing encrypted account binding. It does not need the OIDC client secret. Compose passes
-these values explicitly. No additional identity table or identity cache is created.
+The API stores the user key through the existing encrypted credential store. The worker reads
+an ordinary OpenAI-compatible connection and needs no external-account configuration or
+identity-provider credentials.
 
 All public authorization URLs require HTTPS. Register the following exact model callback using
 the public `BETTER_AUTH_URL` origin:
@@ -76,31 +85,31 @@ settings panel. If authorization is required,
 the browser opens a one-time launch URL, obtains a browser-bound cookie, and continues to the
 authorization provider. The callback checks the original app session and pinned identity.
 The same handoff supports mobile bearer sessions without putting their session tokens in URLs.
-Web and Electron use a popup and keep the original page, composer text and attachments in memory.
+Web authorizes in the current tab and returns to the original URL, including its settings panel.
+The existing composer draft storage restores saved text and mentions after the redirect; unsent
+attachments held only in memory are not restored. Electron retains its native authorization
+window so external navigation does not replace the app shell.
 Mobile returns to its previous screen, with model settings as the cold-start fallback.
-Cancelling leaves the original work intact.
+On Web, the browser Back action returns to the original page.
 
 A successful connection leaves all existing model selections intact. Choose a main model using
 the existing model settings after authorizing. An explicit Space override remains in effect.
-Managed connections are excluded from ordinary key editors. Disconnect through the Model account
+The account page manages authorization and model selection without an ordinary key editor. Disconnect through the Model account
 API to revoke the external authorization when necessary. Connected settings show the account
 status without a routine Disconnect action; older pending disconnections still offer Retry
 disconnect. Other personal model connections continue to use their own keys.
 
-The server stores a reference to the existing Account and its binding, not copied identity
-claims or a persistent model key. Every run resolves a fresh user key. Background runs can
-continue after a browser closes, but a missing, replaced or ambiguous identity fails closed.
-Disconnect removes the local connection before calling the external revoke endpoint. Already
-sent model requests may still finish and be charged.
+Authorization saves the non-expiring user key and trusted base URL as an ordinary compatible
+connection. Account binding metadata stays with the encrypted secret for account management.
+Model calls use the existing provider without contacting the authorization service or checking
+the login identity again. A model-service rejection follows ordinary credential error and
+fallback handling. Disconnect removes the local connection before calling the external revoke
+endpoint. Already sent model requests may still finish and be charged.
 
-Model authorization pauses affected tasks before a model call. Successful authorization resumes
-only runs paused for that same account binding, using their original run IDs and the existing
-executor. Completed runs and unrelated approval waits are never replayed.
-The paused task shows **Authorize and continue** only to its user. Clicking it opens the existing
-authorization flow in place; it does not require opening settings or replace the current draft.
-Tasks never open authorization windows automatically. Snapshot and live-event hints derive from
-the current server checkpoint, so old prompts, other users' tasks and ordinary input waits do
-not expose the action. Old clients retain the existing text guidance and settings entry.
+When model authorization is required, model setup follows the existing fallback and failure
+handling. Missing or unfinished account authorization opens model setup directly on entry. After
+authorizing, retry any previously failed task manually. A remotely rejected key still follows
+the ordinary provider error handling; it does not trigger a new authorization automatically.
 
 Balances are displayed with their original decimal amount and unit. They are informational;
 the model service makes the final decision on whether a request has sufficient funds. Failed
@@ -110,15 +119,16 @@ records are not an external invoice.
 
 ## Deploy and recover
 
-Deploy API and worker before allowing users to create these connections. Keep the previous
-worker running until its current jobs finish. An older worker cannot resolve an external key;
-do not roll it back onto pending external-account jobs. This implementation needs no migration.
+Keys saved by this version work through the existing API and worker credential path.
+Connections saved by an earlier version with only an account reference need one reconnection
+from the account setup prompt. Reconnection preserves their credential IDs and model selections.
 
 Changing the application credential invalidates in-flight authorization transactions. Users
 start authorization again; no credential-version registry is maintained. A lost exchange reply
 is checked with `ensure` rather than replaying the authorization code. The UI distinguishes
 incomplete authorization, unknown authorization results and pending disconnection. Existing OIDC
-sign-in is unchanged; model settings do not add an SSO linking action. Unknown exchanges are
+sign-in is unchanged. If identity binding is missing, model setup offers the existing SSO
+account-link flow directly. Unknown exchanges are
 confirmed automatically once on refresh through a session-bound recovery request. Only failed
 confirmation exposes Retry, and only failed disconnection exposes Retry disconnect. Recovery
 never starts a new authorization or repeats a code exchange.
@@ -126,9 +136,9 @@ Unknown disconnection remains recorded in the existing authorization table until
 retry succeeds. A newer authorization
 attempt in the same app session replaces the previous attempt.
 
-To disable the integration, clear `MODEL_ACCOUNT_CONNECTION` on API and worker. Saved external
-connections fail closed; ordinary personal connections keep working. No deployment key is
-substituted for an external account key. Resolve or cancel affected jobs before rolling back.
+To disable account management, clear `MODEL_ACCOUNT_CONNECTION` on the API. Existing stored
+keys remain ordinary compatible connections. Disconnect or revoke them before disabling
+management if model access should also end.
 
 Use isolated offline fixtures for verification. Live identity login, native OS browser handoff,
 and actual model charges need separate deployment acceptance; do not treat mocked browser
@@ -156,17 +166,25 @@ application only; the existing upstream workflow handles optional updater and co
 
 CI defaults to GitHub-hosted Ubuntu runners. Set `CI_RUNNER` to use a compatible custom runner.
 
-## 模型账户专用模式
+## 模型设置入口
 
-整个产品仅允许 TokenONE 模型账户，无需新增开关。未配置 `MODEL_ACCOUNT_CONNECTION` 或未完成授权时不能调用模型；不会恢复普通提供方、API Key、第三方模型 OAuth 或部署默认模型。外部云端编码代理也不启用。Web、桌面和移动端保留账户内主模型、备用模型、审批模型和 Bot 模型选择。
+Web、桌面和移动端的模型设置展示平台账户授权以及账户内的模型选择。普通连接的管理入口隐藏。服务端沿用上游的连接 API 和模型选择规则，后台任务仍可使用原有凭据和已保存的模型。启动不会删除连接或重写模型选择。语音、远程记忆、媒体生成和云代理按各自的上游配置运行。
 
-API 启动时自动清理普通模型连接、其不再被模型或语音连接引用的密钥、连接偏好和普通模型 OAuth 事务；非账户主模型／备用模型选择会删除，非账户 Bot／定时任务模型覆盖会清空，随后跟随账户默认。已有平台连接、平台模型选择、OIDC 登录身份与历史会话保留。此操作不可逆，仅回退程序不能恢复普通连接。
+首次模型设置直接展示授权内容，展示服务名称、费用说明和授权主操作；余额、充值、模型与协议管理在连接成功后显示。授权前不读取余额。进入应用时若账户尚未授权或有未完成的授权，Web 和桌面端自动打开现有设置层，移动端打开原生账户授权页面。缺少身份绑定时可在这里直接继续 SSO 绑定，无需另找账户页。确认授权成功后，Web 和桌面端自动关闭设置层，移动端返回原页面；首次设置没有上一页时返回首页。Web 首次引导若仍需选择主模型，在关闭弹层后的原页面继续，选择完成后自动进入下一步。失败、取消或结果未确认时保留授权界面。关闭后不会在同一会话中因同一状态反复弹出；外部授权由用户点击按钮后开始。
 
-升级前先停止旧 API 和 worker，再更新并启动，避免旧进程继续读取或写入旧模型配置。启动后授权模型账户，并从账户列表选择主模型；需要自动审批时也选择账户内审批模型。
+授权成功后，服务端把无过期 Key、可信服务地址、协议和模型列表保存为普通兼容连接。后续模型调用复用原有 provider，不再向授权服务取 Key 或校验账户绑定。
 
+## Compose deployment
 
-### 所有 AI 服务的接入范围
+Load the account overlay after the base Compose file so the API receives
+the external account configuration. For a source deployment, use:
 
-所有正式运行的 AI 调用仅使用平台模型账户。尚未通过平台账户接入的语音识别/合成、图片/视频生成、远程记忆服务及云端编码代理均关闭，旧的服务环境变量不会重新开启它们。Web、桌面和移动端均隐藏相应入口，移动端也不会回退到系统语音识别/合成。图片附件仍可由账户内支持图片的对话模型读取；本地记忆文档仍可查看和编辑。
+```sh
+docker compose --env-file .env \
+  -f infra/compose/docker-compose.yml \
+  -f infra/compose/docker-compose.model-account.yml up -d --build
+```
 
-升级启动时除旧模型连接外，还删除旧语音连接、远程记忆配置及相应无引用密钥，清除 Bot 的朗读/声音设置。不会删除聊天记录、本地记忆、OIDC 身份和平台模型账户。请在升级前停止旧 API 和 worker；清理不可逆，代码回滚不能恢复已删除的凭据。
+The same overlay can follow `docker-compose.prod.yml` or `docker-compose.images.yml`.
+For an image deployment in a separate directory, copy the overlay alongside the base file
+and use their local filenames. Include the overlay on subsequent Compose operations too.

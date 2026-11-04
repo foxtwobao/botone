@@ -270,20 +270,3 @@ it("grants the account's voice provider when the grant names the account copy", 
   });
   expect(upsert).toHaveBeenCalled();
 });
-
-it("excludes disabled ordinary and deployment model recipients", async () => {
-  const { deps, actor } = setup();
-  deps.env.agentRuntime = "pi";
-  deps.env.modelAccountOnly = true;
-  deps.env.deploymentModelConfigured = true;
-  deps.env.defaultProvider = "openrouter";
-  deps.env.defaultModel = "old-model";
-  vi.mocked(deps.prisma.userModelPreference.findMany).mockResolvedValue([
-    {
-      modelId: "old-model",
-      credential: { id: "ordinary", provider: "anthropic", secretId: "old-secret" },
-    },
-  ] as never);
-  const status = await aiConsentStatus(deps, actor, { uses: ["model"] });
-  expect(status.recipients).toEqual([]);
-});

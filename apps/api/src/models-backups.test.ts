@@ -6,7 +6,6 @@ import type { PrismaClient } from "@rakazo/db";
 import { describe, expect, it, vi } from "vitest";
 import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
-import { modelSetup } from "./routes/shared.js";
 
 const owner: Actor = {
   userId: "user-one",
@@ -18,8 +17,6 @@ const owner: Actor = {
 function setup(
   options: {
     actor?: Actor;
-    accountOnly?: boolean;
-    managed?: boolean;
     credits?: boolean;
     existing?: Array<Record<string, unknown>>;
     /** An openai-compatible connection with this stored list and own model. */
@@ -29,11 +26,10 @@ function setup(
   } = {},
 ) {
   const credential = {
-    id: options.managed ? "external-fixture" : "credential-one",
+    id: "credential-one",
     userId: owner.userId,
     provider: options.compatible ? "openai-compatible" : "openrouter",
     label: "fixture",
-    userPreferences: [],
     secretId: "secret-one",
     createdAt: new Date(0),
     updatedAt: new Date(0),
@@ -101,8 +97,6 @@ function setup(
     $queryRaw: vi.fn().mockResolvedValue([{ locked: 1 }]),
   };
   const prisma = {
-    userActionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
-    actionAutoReviewPreference: { findUnique: vi.fn(async () => null) },
     deploymentSettings: { findUnique: vi.fn(async () => null), findFirst: vi.fn(async () => null) },
     // Saved choices that keep a model listed after new users stop being offered it.
     bot: { findMany: vi.fn(async () => []) },
@@ -114,21 +108,12 @@ function setup(
     spaceModelRoleChoice,
     spaceSettingOverride,
     userModelCredential: {
-      findMany: vi.fn(
-        async ({
-          where,
-        }: {
-          where: { userId: string; provider?: string; id?: string | { startsWith: string } };
-        }) =>
-          !options.credits &&
-          where.userId === owner.userId &&
-          (!where.id ||
-            (typeof where.id === "string"
-              ? where.id === credential.id
-              : credential.id.startsWith(where.id.startsWith))) &&
-          (!where.provider || where.provider === credential.provider)
-            ? [credential]
-            : [],
+      findMany: vi.fn(async ({ where }: { where: { userId: string; provider?: string } }) =>
+        !options.credits &&
+        where.userId === owner.userId &&
+        (!where.provider || where.provider === credential.provider)
+          ? [credential]
+          : [],
       ),
       findFirst: vi.fn(async ({ where }: { where: { id?: string; userId: string } }) =>
         !options.credits && where.userId === owner.userId && where.id === credential.id
@@ -176,18 +161,12 @@ function setup(
                 kind: "openai_compatible",
                 baseUrl: "http://127.0.0.1:11434/v1",
                 enabledModelIds: options.compatible.enabledModelIds,
-                ...(options.managed
-                  ? {
-                      externalAccount: { accountId: "account-fixture", binding: "binding-fixture" },
-                    }
-                  : {}),
               })
             : "fake-api-key-for-offline-tests",
       ),
     },
     env: {
       agentRuntime: "pi",
-      modelAccountOnly: options.accountOnly,
       defaultProvider: "openrouter",
       defaultModel: "unused-test-model",
       webOrigin: "http://127.0.0.1:5173",
@@ -222,7 +201,7 @@ function setup(
         modelId,
         position: Number(position) - 1,
       }));
-  return { rows, roles, prisma, userModelRoleChoice, spaceModelRoleChoice, call, deps };
+  return { rows, roles, prisma, userModelRoleChoice, spaceModelRoleChoice, call };
 }
 
 const availableModel = listPiCatalog().find(
@@ -492,7 +471,34 @@ describe("Space model overrides", () => {
   });
 });
 
+const visionModel = listPiCatalog().find(
+  (entry) => entry.provider === "openrouter" && !entry.placeholder && entry.images,
+)!;
+const textOnlyModel = listPiCatalog().find(
+  (entry) => entry.provider === "openrouter" && !entry.placeholder && entry.images === false,
+)!;
+
 describe("role-based model settings API", () => {
+  it("saves a computer-use model only when it can see images", async () => {
+    const { call } = setup();
+    const accepted = await call("models/setRole", {
+      role: "computer",
+      primary: { provider: "openrouter", modelId: visionModel.id },
+    });
+    expect(accepted.response.status).toBe(200);
+    const refused = await call("models/setRole", {
+      role: "computer",
+      primary: { provider: "openrouter", modelId: textOnlyModel.id },
+    });
+    expect(refused.response.status).toBe(400);
+  });
+  it("offers only image-capable models for computer use", async () => {
+    const { call } = setup();
+    const { response } = await call("models/forRole", { role: "computer" });
+    const entries: Array<{ id: string; images?: boolean }> = (await response.json()).json;
+    expect(entries.some((entry) => entry.id === visionModel.id)).toBe(true);
+    expect(entries.some((entry) => entry.images === false)).toBe(false);
+  });
   it("accepts a decision model pinned to the provider's only connection", async () => {
     const { call } = setup();
     const primary = {
@@ -761,112 +767,4 @@ it("lets a deployment-managed model lead the main model like any other purpose",
   } finally {
     vi.unstubAllEnvs();
   }
-});
-
-describe("model account only policy", () => {
-  const compatible = {
-    enabledModelIds: ["account-model", "account-backup"],
-    defaultModel: "old-model",
-  };
-  it.each(["list", "forRole"])("excludes ordinary connections from %s", async (procedure) => {
-    const { call } = setup({ accountOnly: true, compatible });
-    const { response } = await call(
-      `models/${procedure}`,
-      procedure === "forRole" ? { role: "main" } : null,
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ json: [] });
-  });
-  it("lists only account models and pins selected primary and legacy backups", async () => {
-    const { call, roles } = setup({ accountOnly: true, managed: true, compatible });
-    const list = await call("models/list", null);
-    expect((await list.response.json()).json.map((entry: { id: string }) => entry.id)).toEqual(
-      compatible.enabledModelIds,
-    );
-    for (const [procedure, input] of [
-      ["setDefault", { provider: "openai-compatible", modelId: "account-model" }],
-      ["setBackups", [{ provider: "openai-compatible", modelId: "account-backup" }]],
-    ] as const) {
-      expect((await call(`models/${procedure}`, input)).response.status).toBe(200);
-    }
-    expect(roles()).toHaveLength(2);
-    expect(roles().every((row) => row.credentialId === "external-fixture")).toBe(true);
-    const read = await call("models/role", { role: "main" });
-    expect((await read.response.json()).json).toMatchObject({
-      primary: { modelId: "account-model" },
-      backups: [{ modelId: "account-backup" }],
-      deploymentPrimary: null,
-    });
-  });
-  it.each([
-    { provider: "openrouter", modelId: availableModel.id },
-    { provider: "openai-compatible", modelId: "old-model" },
-    { provider: "openai-compatible", modelId: "account-model", credentialId: "credential-one" },
-  ])("rejects a selection outside the account: %j", async (primary) => {
-    const { call, roles } = setup({ accountOnly: true, managed: true, compatible });
-    expect((await call("models/setRole", { role: "main", primary })).response.status).toBe(400);
-    expect(roles()).toEqual([]);
-  });
-  it.each([
-    [
-      "connect",
-      {
-        provider: "openai-compatible",
-        baseUrl: "https://models.example.test/v1",
-        apiKey: "fake-test-key",
-      },
-    ],
-    ["probeOpenAiCompatible", { baseUrl: "https://models.example.test/v1" }],
-    ["beginOAuth", { provider: "openai-codex" }],
-    ["rename", { credentialId: "credential-one", label: "renamed" }],
-    ["disconnect", { credentialId: "credential-one" }],
-  ])("rejects ordinary %s requests before performing work", async (procedure, input) => {
-    const { call } = setup({ accountOnly: true });
-    expect((await call(`models/${procedure}`, input)).response.status).toBe(403);
-  });
-});
-
-it("requires an account model even when deployment credentials exist", async () => {
-  const { deps } = setup({ accountOnly: true });
-  deps.env.deploymentModelConfigured = true;
-  const setupState = await modelSetup(deps, owner);
-  expect(setupState).toMatchObject({ needsModel: true, model: null, main: null });
-});
-
-it("reports an approval checker only after an account model is selected", async () => {
-  const { call } = setup({
-    accountOnly: true,
-    managed: true,
-    compatible: { enabledModelIds: ["account-model"], defaultModel: "old-model" },
-  });
-  const before = await call("autoReview/get", { scope: "account" });
-  expect(before.response.status).toBe(200);
-  expect((await before.response.json()).json.checkerAvailable).toBe(false);
-  expect(
-    (
-      await call("models/setRole", {
-        role: "approval",
-        scope: "account",
-        primary: { provider: "openai-compatible", modelId: "account-model" },
-      })
-    ).response.status,
-  ).toBe(200);
-  const after = await call("autoReview/get", { scope: "account" });
-  expect((await after.response.json()).json.checkerAvailable).toBe(true);
-});
-
-it("disables unsupported AI services before reading credentials or calling providers", async () => {
-  const { call } = setup({ accountOnly: true });
-  for (const [path, input] of [
-    ["voice/connect", { provider: "openai", apiKey: "fake-key" }],
-    ["voice/prepare", {}],
-    ["voice/voices", {}],
-    ["memory/connectProvider", { provider: "fixture", settings: {}, credentials: {} }],
-    ["memory/setDefaultScope", { defaultMemoryScope: "shared" }],
-  ] as const)
-    expect((await call(path, input)).response.status).toBe(403);
-  for (const path of ["voice/catalog", "voice/credentials"])
-    expect(await (await call(path, {})).response.json()).toEqual({ json: [] });
-  expect((await (await call("voice/status", {})).response.json()).json.ready).toBe(false);
-  expect(await (await call("memory/providerConfig", {})).response.json()).toEqual({ json: null });
 });

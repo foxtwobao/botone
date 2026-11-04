@@ -1,4 +1,4 @@
-import type { AgentRunRequest, ExternalModelKeyResolver, SecretStore } from "@rakazo/adapter-kit";
+import type { AgentRunRequest, SecretStore } from "@rakazo/adapter-kit";
 import type {
   ModelRole,
   ModelRoleChoice,
@@ -33,6 +33,8 @@ export function deploymentModelRole(
       backups: [],
     };
   }
+  // No computer model means the main model works the screen itself.
+  if (role === "computer") return { primary: null, backups: [] };
   const provider = defaults.settings?.defaultModelProvider ?? defaults.deployment?.provider;
   const modelId =
     usableModelId(defaults.settings?.defaultModelId) ?? usableModelId(defaults.deployment?.model);
@@ -72,12 +74,7 @@ export type MemberMainModel = ModelRoleChoice & {
 
 /** The member's main model and the connection that serves it, resolved as validation does. */
 export async function resolveMemberMainModel(
-  deps: {
-    prisma: PrismaClient;
-    secretStore: Pick<SecretStore, "load">;
-    modelAccountOnly?: boolean;
-    externalModelKey?: ExternalModelKeyResolver;
-  },
+  deps: { prisma: PrismaClient; secretStore: Pick<SecretStore, "load"> },
   scope: { userId: string; spaceId: string },
 ): Promise<MemberMainModel | null> {
   const { primary } = await appliedModelRole(deps.prisma, scope, "main");
@@ -88,10 +85,7 @@ export async function resolveMemberMainModel(
     scope,
     primary.provider,
     primary.modelId,
-    {
-      credentialId: primary.credentialId,
-      modelAccountOnly: deps.modelAccountOnly || Boolean(deps.externalModelKey),
-    },
+    { credentialId: primary.credentialId },
   );
   return { ...primary, credential };
 }

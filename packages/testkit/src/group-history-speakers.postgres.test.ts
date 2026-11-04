@@ -90,7 +90,6 @@ describe.skipIf(!databaseAvailable)("group history keeps roles and speakers", ()
         dataDir,
         sandboxProvider: "fake",
         agentRuntime: "pi",
-        modelAccountOnly: false,
         wakeupDriver: "memory",
         signupsEnabled: "true",
         composio: new ComposioConnector({ client: new FakeComposioClient() }),

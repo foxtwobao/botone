@@ -46,6 +46,7 @@ import {
   signOut,
   signUp,
   spaceSelectionSeq,
+  subscribeIncomingCallEvents,
   subscribeServerReachable,
   subscribeSessionRejected,
   subscribeThread,
@@ -2838,6 +2839,30 @@ describe("mobile thread subscription", () => {
     vi.mocked(SecureStore.getItemAsync).mockResolvedValue("");
   });
 
+  it("shares the bounded SSE transport for one account call stream", async () => {
+    const call = {
+      id: "bot-1",
+      spaceId: "space-1",
+      name: "Caller",
+      color: "",
+      avatarSet: "rakazo",
+      incomingCall: {
+        callId: "call-1",
+        reason: "Review",
+        opening: "Hello",
+        expiresAt: new Date(Date.now() + 45000).toISOString(),
+      },
+    };
+    const frame = `data: ${JSON.stringify({ json: { type: "incoming.calls", payload: { calls: [call] } } })}\n\n`;
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(frame, { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    const onCalls = vi.fn();
+    await subscribeIncomingCallEvents(onCalls, new AbortController().signal);
+    expect(onCalls).toHaveBeenCalledWith([call]);
+    expect(fetch.mock.calls[0]?.[0]).toContain("notifications/subscribeCalls");
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
   it("parses fragmented SSE frames and ignores malformed data and completion markers", async () => {
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
@@ -3390,27 +3415,6 @@ describe("discarded mobile thread refresh cursor", () => {
 });
 
 describe("mobile thread event reduction", () => {
-  it("tracks model authorization waits and clears the hint for other input waits", () => {
-    const run = { id: "run-1", userId: "owner", status: "running" };
-    const initial = { ...snapshot(), run, activeRuns: [run] };
-    const waiting = applyMobileThreadEvent(initial, {
-      type: "run.waiting_input",
-      seq: 5,
-      runId: run.id,
-      payload: { userId: "owner", modelAuthorizationRequired: true },
-    });
-    expect(waiting?.run?.modelAuthorizationRequired).toBe(true);
-    expect(waiting?.activeRuns?.[0]?.modelAuthorizationRequired).toBe(true);
-    const otherInput = applyMobileThreadEvent(waiting, {
-      type: "run.waiting_input",
-      seq: 6,
-      runId: run.id,
-      payload: { userId: "owner" },
-    });
-    expect(otherInput?.run?.modelAuthorizationRequired).toBeUndefined();
-    expect(otherInput?.activeRuns?.[0]?.modelAuthorizationRequired).toBeUndefined();
-  });
-
   it("appends an emoji reply with its exact target", () => {
     const initial = snapshot([mobileMessage("message-1", [{ kind: "text", text: "Done" }])]);
 

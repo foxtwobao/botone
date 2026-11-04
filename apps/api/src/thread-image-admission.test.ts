@@ -81,7 +81,13 @@ function fixture(group = false) {
     imageHandling: "confirm" | "file" | null = "confirm",
   ) =>
     sendThreadMessage(
-      { prisma, events: { notify } as never, jobs: { enqueue } as never, imageAdmission },
+      {
+        prisma,
+        sandbox: {} as never,
+        events: { notify } as never,
+        jobs: { enqueue } as never,
+        imageAdmission,
+      },
       { userId: "user-1", spaceId: "space-1" } as Actor,
       (group
         ? { kind: "group", groupId: "group-1", threadId: "thread-1" }
@@ -514,42 +520,4 @@ describe("current image send admission", () => {
     expect(enqueue).not.toHaveBeenCalled();
     expect(releaseTakeover).not.toHaveBeenCalled();
   });
-});
-
-it("checks the account connection for a bot image instead of its old ordinary connection", async () => {
-  const { tx, send } = fixture();
-  tx.bot.findFirst.mockResolvedValue({
-    id: "bot-1",
-    modelProvider: "openai-compatible",
-    modelId: "account-vision",
-  });
-  const findMany = vi.fn(async () => [
-    { id: "external-fixture", provider: "openai-compatible", secretId: "account-secret" },
-  ]);
-  Object.assign(tx.userModelCredential, { findMany });
-  tx.secret.findFirst.mockResolvedValue({ id: "account-secret", ciphertext: "synthetic" });
-  await expect(
-    send({
-      modelAccountOnly: true,
-      deployment: null,
-      secrets: {
-        load: async () =>
-          JSON.stringify({
-            kind: "openai_compatible",
-            baseUrl: "https://models.example.test/v1",
-            externalAccount: { accountId: "fixture", binding: "fixture" },
-            enabledModelIds: ["account-vision"],
-            visionModelIds: ["account-vision"],
-          }),
-      },
-    }),
-  ).resolves.toMatchObject({ runId: "run-1" });
-  expect(findMany).toHaveBeenCalledWith(
-    expect.objectContaining({
-      where: expect.objectContaining({ id: { startsWith: "external-" } }),
-    }),
-  );
-  expect(tx.secret.findFirst).toHaveBeenCalledWith(
-    expect.objectContaining({ where: expect.objectContaining({ id: "account-secret" }) }),
-  );
 });

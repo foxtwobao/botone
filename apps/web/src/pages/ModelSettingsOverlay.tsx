@@ -8,6 +8,7 @@ import {
   OPENAI_COMPATIBLE_PROVIDER_ID,
   savedCompatibleEndpointMatches,
 } from "@rakazo/contracts";
+import { popularModelProvidersFirst } from "@rakazo/core";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,10 +29,10 @@ import {
 } from "@rakazo/ui-web";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ModelAccount } from "../components/ModelAccount";
 import type { ModelCredential } from "../lib/model-auth";
 import type { ModelRoleConnectIntent } from "./ModelRoleSettings";
 import { ModelRoleSettings } from "./ModelRoleSettings";
+import { ModelSettingsEntry } from "./model-account/ModelSettingsEntry";
 import { CompatibleModelFields } from "./model-settings/compatible-model-fields";
 import { CompatibleKeyControls, ConnectionControls } from "./model-settings/connection-controls";
 import { ConnectionNameField, ProvidersSection } from "./model-settings/providers-section";
@@ -39,7 +40,7 @@ import type { ConnectableProvider } from "./model-settings/role-model-picker";
 import { SpaceBotsModelNotice } from "./model-settings/space-bots-model";
 import { useModelSettings } from "./model-settings/use-model-settings";
 
-export function ModelSettingsOverlay({
+function ConnectionModelSettings({
   onClose,
   embedded = false,
   scope,
@@ -96,32 +97,28 @@ export function ModelSettingsOverlay({
     panelRef.current?.scrollIntoView?.({ block: "nearest" });
   }, [connectionAt]);
 
-  const providers: ConnectableProvider[] = (me?.modelAccountOnly ? [] : groups)
-    .filter((group) => !credentialByProvider.has(group.id))
-    .map((group) => ({ id: group.id, name: group.name }));
-  if (
-    !me?.modelAccountOnly &&
-    groups.some((group) => group.id === OPENAI_COMPATIBLE_PROVIDER_ID) &&
-    !isOllamaCloudBaseUrl(credentialByProvider.get(OPENAI_COMPATIBLE_PROVIDER_ID)?.baseUrl)
-  )
-    providers.push({
-      id: OPENAI_COMPATIBLE_PROVIDER_ID,
-      name: t`Ollama Cloud`,
-      baseUrl: OLLAMA_CLOUD_BASE_URL,
-    });
   // Adding another account is open to every provider, connected or not.
-  const allProviders: ConnectableProvider[] = [
-    ...groups.map((group) => ({ id: group.id, name: group.name })),
-    ...(groups.some((group) => group.id === OPENAI_COMPATIBLE_PROVIDER_ID)
-      ? [
-          {
-            id: OPENAI_COMPATIBLE_PROVIDER_ID,
-            name: t`Ollama Cloud`,
-            baseUrl: OLLAMA_CLOUD_BASE_URL,
-          },
-        ]
-      : []),
-  ];
+  const allProviders = popularModelProvidersFirst<ConnectableProvider>(
+    [
+      ...groups.map((group) => ({ id: group.id, name: group.name })),
+      ...(groups.some((group) => group.id === OPENAI_COMPATIBLE_PROVIDER_ID)
+        ? [
+            {
+              id: OPENAI_COMPATIBLE_PROVIDER_ID,
+              name: t`Ollama Cloud`,
+              baseUrl: OLLAMA_CLOUD_BASE_URL,
+            },
+          ]
+        : []),
+    ],
+    (entry) => entry.id,
+    (entry) => entry.name,
+  );
+  const providers = allProviders.filter((entry) =>
+    entry.baseUrl
+      ? !isOllamaCloudBaseUrl(credentialByProvider.get(OPENAI_COMPATIBLE_PROVIDER_ID)?.baseUrl)
+      : !credentialByProvider.has(entry.id),
+  );
   const connectionName = (entry: ModelCredential) => {
     const group = groups.find((item) => item.id === entry.provider);
     return connectionDisplayName(
@@ -148,7 +145,6 @@ export function ModelSettingsOverlay({
     credentialId: string | null,
     at: string,
   ) {
-    if (me?.modelAccountOnly) return;
     model.chooseProvider(next.id, next.baseUrl, credentialId);
     intentRef.current = {
       makeDefault: intent?.makeDefault ?? false,
@@ -282,7 +278,6 @@ export function ModelSettingsOverlay({
 
   const content = (
     <>
-      {scope === "account" ? <ModelAccount required={me?.modelAccountOnly} /> : null}
       {error && !connectionAt ? (
         <p className="mb-4 text-sm text-destructive" role="alert">
           {error}
@@ -308,7 +303,7 @@ export function ModelSettingsOverlay({
             onManage={(id, credentialId) =>
               openConnection({ id, name: id }, null, credentialId, "main")
             }
-            panel={!me.modelAccountOnly && connectionAt === "main" ? panelFor(true) : null}
+            panel={connectionAt === "main" ? panelFor(true) : null}
             thinking
             onChanged={() => void refresh()}
           />
@@ -331,9 +326,25 @@ export function ModelSettingsOverlay({
             onManage={(id, credentialId) =>
               openConnection({ id, name: id }, null, credentialId, "approval")
             }
-            panel={!me.modelAccountOnly && connectionAt === "approval" ? panelFor(true) : null}
+            panel={connectionAt === "approval" ? panelFor(true) : null}
           />
-          {scope === "space" || me.modelAccountOnly ? null : (
+          <ModelRoleSettings
+            userId={me.userId}
+            spaceId={me.spaceId}
+            scope={scope}
+            credentials={credentials}
+            modelRole="computer"
+            title={t`Computer-use model`}
+            defaultLabel={t`Same as main model`}
+            providers={providers}
+            providerLabel={providerLabel}
+            onConnect={(next, intent) => openConnection(next, intent, null, "computer")}
+            onManage={(id, credentialId) =>
+              openConnection({ id, name: id }, null, credentialId, "computer")
+            }
+            panel={connectionAt === "computer" ? panelFor(true) : null}
+          />
+          {scope === "space" ? null : (
             <ProvidersSection
               credentials={credentials}
               providers={allProviders}
@@ -434,4 +445,8 @@ export function ModelSettingsOverlay({
       </DialogContent>
     </Dialog>
   );
+}
+
+export function ModelSettingsOverlay(props: Parameters<typeof ConnectionModelSettings>[0]) {
+  return <ModelSettingsEntry {...props} fallback={<ConnectionModelSettings {...props} />} />;
 }

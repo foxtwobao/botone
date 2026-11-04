@@ -5,6 +5,7 @@ import {
   CHATGPT_OAUTH_PROVIDER,
   CodexCatalogCache,
   codexLiveCatalogsForSpace,
+  connectedModelSeesImages,
   connectionServesModel,
   createFaviconResolver,
   decisionModelCatalog,
@@ -14,8 +15,6 @@ import {
   kickModelCredentialRefresh,
   listAvailablePiCatalog,
   McpOAuthBroker,
-  modelAccountCatalog,
-  modelAccountRole,
   modelCredentialAuthKindsForSpace,
   offeredCatalog,
   providerCatalogCache,
@@ -112,7 +111,6 @@ export function createRouterContext(deps: RouterDeps) {
     ((scope: { userId: string; spaceId: string }, secretId: string, provider: string) =>
       kickModelCredentialRefresh(deps.prisma, deps.secrets, scope, secretId, provider));
   const botModelValidation = (actor: Actor) => ({
-    modelAccountOnly: deps.env.modelAccountOnly,
     prisma: deps.prisma,
     secretStore: deps.secrets,
     codexCatalog,
@@ -137,8 +135,6 @@ export function createRouterContext(deps: RouterDeps) {
   // The scripted fixture only exists to drive the scripted runtime; a real runtime
   // cannot execute it, so it stays out of the user-facing catalog otherwise.
   const chatCatalog = async (actor: Actor) => {
-    if (deps.env.modelAccountOnly)
-      return modelAccountCatalog(deps.prisma, deps.secrets, actor.userId);
     const catalog = await catalogForSpace(actor);
     return deps.env.agentRuntime === "scripted" ? [...catalog, scriptedCatalogEntry] : catalog;
   };
@@ -202,8 +198,6 @@ export function createRouterContext(deps: RouterDeps) {
     role: ModelRole,
     settings: ModelRoleSettings,
   ): Promise<ModelRoleView> => {
-    if (deps.env.modelAccountOnly)
-      return { ...modelAccountRole(settings), deploymentPrimary: null };
     const defaults =
       role === "main"
         ? {
@@ -218,7 +212,6 @@ export function createRouterContext(deps: RouterDeps) {
   };
   const modelRoleCatalog = async (actor: Actor, role: ModelRole): Promise<ModelCatalogEntry[]> => {
     const catalog = await chatCatalog(actor);
-    if (deps.env.modelAccountOnly) return catalog.filter((entry) => modelSupportsRole(entry, role));
     const decisions = role === "approval" ? decisionModelCatalog() : [];
     const managedProviders = new Set(
       catalog.filter((entry) => "managed" in entry && entry.managed).map((entry) => entry.provider),
@@ -286,10 +279,7 @@ export function createRouterContext(deps: RouterDeps) {
           entry.provider === canonicalPiProviderId(choice.provider) && entry.id === choice.modelId,
       );
       // A row pinned to a connection runs only there, never on the deployment's.
-      const resolution = {
-        credentialId: choice.credentialId,
-        modelAccountOnly: deps.env.modelAccountOnly,
-      };
+      const resolution = { credentialId: choice.credentialId };
       const credential = await findConnectedModelCredential(
         deps.prisma,
         deps.secrets,
@@ -298,7 +288,13 @@ export function createRouterContext(deps: RouterDeps) {
         choice.modelId,
         resolution,
       );
-      if (!credential && (choice.credentialId || !(entry && "managed" in entry && entry.managed)))
+      // Computer mode runs only on the member's own connections.
+      if (
+        !credential &&
+        (role === "computer" ||
+          choice.credentialId ||
+          !(entry && "managed" in entry && entry.managed))
+      )
         throw new ORPCError("BAD_REQUEST", { message: "Connect that model provider first" });
       // Another account of the provider listing the model does not make it run on this one;
       // the catalog names the connections that can, as the picker shows.
@@ -311,6 +307,18 @@ export function createRouterContext(deps: RouterDeps) {
         throw new ORPCError("BAD_REQUEST", {
           message: "That model is not available for this connection",
         });
+      if (
+        role === "computer" &&
+        !(await connectedModelSeesImages(
+          { prisma: deps.prisma, secretStore: deps.secrets },
+          actor.userId,
+          choice.provider,
+          choice.modelId,
+          credential,
+          entry?.images,
+        ))
+      )
+        throw new ORPCError("BAD_REQUEST", { message: "Choose a model that can see images" });
       if (choice.thinkingLevel) {
         const { allowed } = await prepareAllowedThinkingLevels(
           deps,
@@ -358,28 +366,6 @@ export function createRouterContext(deps: RouterDeps) {
       return asTenant(actor, () => next({ context: { ...context, actor } }));
     })
     .use(async ({ context, next, path }, input) => {
-      if (
-        deps.env.modelAccountOnly &&
-        path[0] === "models" &&
-        [
-          "connect",
-          "probeOpenAiCompatible",
-          "probeCatalog",
-          "beginOAuth",
-          "submitOAuthCode",
-          "completeOAuth",
-          "finishOAuth",
-          "rename",
-          "disconnect",
-        ].includes(path[1] ?? "")
-      )
-        throw new ORPCError("FORBIDDEN", { message: "Model account required" });
-      if (
-        deps.env.modelAccountOnly &&
-        ((path[0] === "voice" && !["catalog", "status", "credentials"].includes(path[1] ?? "")) ||
-          (path[0] === "memory" && ["connectProvider", "setDefaultScope"].includes(path[1] ?? "")))
-      )
-        throw new ORPCError("FORBIDDEN", { message: "Service unavailable" });
       const result = await next();
       const event = procedureSecurityEvent(path, input, context.actor);
       if (event) await recordSecurityEvent(event);
@@ -387,7 +373,7 @@ export function createRouterContext(deps: RouterDeps) {
     });
 
   const callsEnabled = authed.use(async ({ next }) => {
-    if (deps.env.modelAccountOnly || !deps.env?.phoneCallsEnabled) throw new ORPCError("NOT_FOUND");
+    if (!deps.env?.phoneCallsEnabled) throw new ORPCError("NOT_FOUND");
     return next();
   });
 

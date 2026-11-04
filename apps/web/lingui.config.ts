@@ -23,6 +23,20 @@ export default defineConfig({
     {
       path: "<rootDir>/src/locales/{locale}/messages",
       include: ["src"],
+      exclude: [
+        "**/locales/**",
+        "**/*.test.*",
+        "src/pages/model-account/**",
+        "src/components/ModelAccount*.tsx",
+      ],
+    },
+    {
+      path: "<rootDir>/src/pages/model-account/locales/{locale}/messages",
+      include: [
+        "src/pages/model-account",
+        "src/components/ModelAccount.tsx",
+        "src/components/ModelAccountOnboarding.tsx",
+      ],
       exclude: ["**/locales/**", "**/*.test.*"],
     },
   ],

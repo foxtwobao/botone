@@ -43,6 +43,7 @@ import {
 import { deviceVoices, setVoiceForBot, voiceForBot, voiceLabel } from "../lib/bot-voices";
 import { chatModelPickerChoices } from "../lib/chat-model";
 import { COMPUTER_LIFECYCLE_TIMEOUT_MS } from "../lib/computer";
+import { notifyConversationCleared } from "../lib/conversation-cleared";
 import { loadDeviceVoiceEnabled } from "../lib/device-voice";
 import { useI18n } from "../lib/i18n";
 import { afterChatNotifyChange } from "../lib/live-notifications";
@@ -637,34 +638,32 @@ export default function BotSettingsScreen() {
             <SettingsGroup label={t("Computer")}>
               <ComputerModePicker plain value={computerMode} onChange={setComputerMode} />
             </SettingsGroup>
-            {!me?.modelAccountOnly ? (
-              <SettingsGroup label={t("Voice")}>
-                <View style={styles.row}>
-                  <Text style={[styles.rowLabel, { color: tokens.foreground }]}>
-                    {t("Read replies aloud")}
-                  </Text>
-                  <NativeSwitch
-                    accessibilityLabel={t("Read replies aloud")}
-                    onValueChange={setAutoSpeak}
-                    value={autoSpeak}
-                  />
-                </View>
-                {deviceVoiceEnabled ? (
-                  voiceError ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t("Device voice")}
-                      accessibilityValue={{ text: voiceError }}
-                      onPress={() => void retryDeviceVoices()}
-                    >
-                      {voiceRow}
-                    </Pressable>
-                  ) : (
-                    voiceRow
-                  )
-                ) : null}
-              </SettingsGroup>
-            ) : null}
+            <SettingsGroup label={t("Voice")}>
+              <View style={styles.row}>
+                <Text style={[styles.rowLabel, { color: tokens.foreground }]}>
+                  {t("Read replies aloud")}
+                </Text>
+                <NativeSwitch
+                  accessibilityLabel={t("Read replies aloud")}
+                  onValueChange={setAutoSpeak}
+                  value={autoSpeak}
+                />
+              </View>
+              {deviceVoiceEnabled ? (
+                voiceError ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("Device voice")}
+                    accessibilityValue={{ text: voiceError }}
+                    onPress={() => void retryDeviceVoices()}
+                  >
+                    {voiceRow}
+                  </Pressable>
+                ) : (
+                  voiceRow
+                )
+              ) : null}
+            </SettingsGroup>
             <SettingsGroup label={t("Permissions")}>
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: tokens.foreground }]}>
@@ -829,6 +828,7 @@ export default function BotSettingsScreen() {
                       style: "destructive",
                       onPress: () => {
                         void rpc("threads/clear", { botId })
+                          .then(() => notifyConversationCleared(botId))
                           .then(() => router.back())
                           .catch((err) => setError(errorText(err)));
                       },

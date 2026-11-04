@@ -1,6 +1,5 @@
 import { AiConsentBlocked, callIdFromClientNonce, INTERIM_BARGE_IN_MS } from "@rakazo/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { rpc } from "./api";
 import type { CallClip, CallDeps, CallEnded, DictationHandlers } from "./call-session";
 import {
   ExpectedTurnFailure,
@@ -82,13 +81,6 @@ vi.mock("./api", () => ({
   rpc: vi.fn(),
   subscribeThread: vi.fn(),
 }));
-
-// Native recognition fixtures explicitly permit speech; production reads the account policy.
-beforeEach(() => {
-  vi.mocked(rpc).mockImplementation(async (proc) =>
-    proc === "me" ? ({ modelAccountOnly: false } as never) : (undefined as never),
-  );
-});
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -187,6 +179,22 @@ function fakes(opts: { onDevice?: boolean } = {}) {
 afterEach(() => endCall());
 
 describe("mobile call session", () => {
+  it("retains an answered incoming call's id through speech, messages and hang-up", async () => {
+    const fake = fakes();
+    const id = startCall(
+      { botId: "bot-1", botName: "Caller", answered: { callId: "incoming-1" } },
+      fake.deps,
+    );
+    expect(id).toBe("incoming-1");
+    await flush();
+    fake.say("Hello");
+    await flush();
+    expect(fake.send).toHaveBeenCalledWith("bot-1", "Hello", expect.stringContaining("incoming-1"));
+    endCall();
+    await flush();
+    expect(fake.closeCall).toHaveBeenCalledWith("bot-1", "incoming-1");
+  });
+
   it("starts listening for the bot on the call", async () => {
     const fake = fakes();
     startCall({ botId: "bot-1", botName: "Ada" }, fake.deps);

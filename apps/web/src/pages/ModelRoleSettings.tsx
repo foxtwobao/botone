@@ -158,18 +158,20 @@ export function ModelRoleSettings({
       ? (entryFor(primary)?.thinkingLevels ?? []).filter((level) => level !== "off")
       : [];
   // Grouped by the connection that runs them.
-  const options: RoleModelOption[] = connectedBackupOptions(state.catalog, credentials).map(
-    (choice) => ({
-      ...(entryFor(choice) ?? {
-        provider: choice.provider,
-        id: choice.modelId,
-        label: choice.label,
-        billing: "",
-      }),
-      providerName: choice.credentialId ? choice.connectionName : providerLabel(choice.provider),
-      ...(choice.credentialId ? { credentialId: choice.credentialId } : {}),
+  const options: RoleModelOption[] = connectedBackupOptions(
+    state.catalog,
+    credentials,
+    role === "computer",
+  ).map((choice) => ({
+    ...(entryFor(choice) ?? {
+      provider: choice.provider,
+      id: choice.modelId,
+      label: choice.label,
+      billing: "",
     }),
-  );
+    providerName: choice.credentialId ? choice.connectionName : providerLabel(choice.provider),
+    ...(choice.credentialId ? { credentialId: choice.credentialId } : {}),
+  }));
   // A pinned row runs on its connection; others on the provider's newest.
   const connectionFor = (choice: ModelRoleChoice) =>
     choice.credentialId
@@ -406,7 +408,7 @@ export function ModelRoleSettings({
                       <DropdownMenuSeparator />
                     </>
                   ) : null}
-                  {connection && !connection.managed ? (
+                  {connection ? (
                     <DropdownMenuItem onClick={() => onManage(connection.provider, connection.id)}>
                       <Trans>Manage {providerName(choice)}</Trans>
                     </DropdownMenuItem>

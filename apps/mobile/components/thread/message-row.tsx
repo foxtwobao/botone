@@ -23,10 +23,8 @@ import { ThreadReadOnlyContext } from "../../lib/thread-read-only";
 import type { UserBubble } from "../../lib/user-bubble";
 import { BotAvatar } from "../bot-avatar";
 import type { ImageArtifactPreviewTarget } from "../image-artifact-viewer";
-import type { MarkdownArtifactPreviewTarget } from "../markdown-artifact-preview";
 import { presentMessageMenu } from "../message-action-menu";
 import { MessageContextMenu } from "../message-context-menu";
-import { ModelAccount } from "../model-account";
 import { ReplyLine } from "../reply-line";
 import { TimeSeparator } from "../time-separator";
 import { UnreadDivider } from "../unread-divider";
@@ -34,7 +32,6 @@ import type { MessageActionProps } from "./message-bubble";
 import { MessageBubble } from "./message-bubble";
 
 export type MessageRowActions = {
-  refresh?: () => void | Promise<void>;
   helperToggle: (
     measure: (done: (y: number, cardBottom: number) => void) => void,
     toggle: () => void,
@@ -55,7 +52,7 @@ export type MessageRowActions = {
   ) => Promise<void>;
   openBot: (id: string, name: string) => void;
   openComputer: (id: string, name: string) => void;
-  previewMarkdown: (target: MarkdownArtifactPreviewTarget) => void;
+  previewFile: (artifactId: string) => void;
   previewImage: (target: ImageArtifactPreviewTarget) => void;
   jump: (messageId: string) => void;
   dismissChoice: (messageId: string, question: string) => void;
@@ -75,9 +72,7 @@ type MessageRowProps = {
   members?: MobileSnapshot["members"];
   readOnly: boolean;
   onCall: boolean;
-  voiceEnabled?: boolean;
   canAnswer: boolean;
-  canAuthorizeModelAccount?: boolean;
   canDismiss: boolean;
   highlighted: boolean;
   separator: boolean;
@@ -114,9 +109,7 @@ export const MessageRow = memo(function MessageRow({
   members,
   readOnly,
   onCall,
-  voiceEnabled = true,
   canAnswer,
-  canAuthorizeModelAccount,
   canDismiss,
   highlighted,
   separator,
@@ -180,8 +173,7 @@ export const MessageRow = memo(function MessageRow({
       quotableMessageSegments(message.role, message.blocks).length > 0;
     const includeReact = !readOnly && canReactToThreadMessage(message);
     // The call already reads replies aloud; a second voice would talk over it.
-    const includeSpeak =
-      voiceEnabled && message.role === "bot" && !onCall && Boolean(blockText(message));
+    const includeSpeak = message.role === "bot" && !onCall && Boolean(blockText(message));
     const includeSelect = messageText.trim().length > 0;
     // Any sent message can be marked unread; the next open starts New at the first reply from it.
     const includeUnread = !readOnly && !markedUnread && canMarkMessageUnread(message);
@@ -364,7 +356,6 @@ export const MessageRow = memo(function MessageRow({
     markedUnread,
     readOnly,
     onCall,
-    voiceEnabled,
     colorScheme,
     t,
     locale,
@@ -452,7 +443,7 @@ export const MessageRow = memo(function MessageRow({
                 onOpenBot={actions.openBot}
                 onOpenComputer={actions.openComputer}
                 onChoiceDismissed={onChoiceDismissed}
-                onPreviewMarkdown={actions.previewMarkdown}
+                onPreviewFile={actions.previewFile}
                 onPreviewImage={actions.previewImage}
                 peerExchange={peerExchange}
                 onOpenPeerChat={actions.openPeerChat}
@@ -463,9 +454,6 @@ export const MessageRow = memo(function MessageRow({
               />
             </ThreadReadOnlyContext.Provider>
           </MessageContextMenu>
-          {canAuthorizeModelAccount ? (
-            <ModelAccount resumeTask onChanged={actions.refresh} />
-          ) : null}
           {displayedReactions.size > 0 ? (
             <View
               style={{

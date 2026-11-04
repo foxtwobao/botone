@@ -146,7 +146,6 @@ beforeEach(async () => {
   state.rpc
     .mockReset()
     .mockImplementation(async (proc: string, input?: Record<string, unknown>) => {
-      if (proc === "me") return { modelAccountOnly: false };
       if (proc === "spaceSettings/overrides") return state.overrides;
       if (proc === "spaceSettings/setOverride") {
         const setting = input!.setting as string;

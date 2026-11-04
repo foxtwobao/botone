@@ -1,0 +1,148 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-08-26 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: rakazo-web\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API protocol"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Approval model"
+msgstr "Approval model"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorization incomplete."
+msgstr "Authorization incomplete."
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize again"
+msgstr "Authorize again"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize the model account to continue."
+msgstr "Authorize the model account to continue."
+
+#: src/components/ModelAccount.tsx
+msgid "Balance unavailable"
+msgstr "Balance unavailable"
+
+#: src/components/ModelAccount.tsx
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Choose a model"
+msgstr "Choose a model"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Close model settings"
+msgstr "Close model settings"
+
+#: src/components/ModelAccount.tsx
+msgid "Complete authorization in the opened window."
+msgstr "Complete authorization in the opened window."
+
+#: src/components/ModelAccountOnboarding.tsx
+msgid "Connect a model"
+msgstr "Connect a model"
+
+#: src/components/ModelAccount.tsx
+msgid "Could not confirm authorization. Try again."
+msgstr "Could not confirm authorization. Try again."
+
+#: src/components/ModelAccount.tsx
+msgid "Disconnection pending confirmation."
+msgstr "Disconnection pending confirmation."
+
+#: src/components/ModelAccount.tsx
+msgid "Home"
+msgstr "Home"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Main model"
+msgstr "Main model"
+
+#: src/components/ModelAccount.tsx
+#: src/components/ModelAccountOnboarding.tsx
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Model account"
+msgstr "Model account"
+
+#: src/components/ModelAccount.tsx
+msgid "Model account unavailable"
+msgstr "Model account unavailable"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Models"
+msgstr "Models"
+
+#: src/components/ModelAccount.tsx
+msgid "Recharge"
+msgstr "Recharge"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh balance"
+msgstr "Refresh balance"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Refresh models"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry"
+msgstr "Retry"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry disconnect"
+msgstr "Retry disconnect"
+
+#: src/components/ModelAccount.tsx
+msgid "Sign in with SSO to use the model account."
+msgstr "Sign in with SSO to use the model account."
+
+#: src/components/ModelAccount.tsx
+msgid "Use model account"
+msgstr "Use model account"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "Checking authorization…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "Authorizing…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize model service"
+msgstr "Authorize model service"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "Authorize access to {serviceName} models"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+
+#: src/components/ModelAccount.tsx
+msgid "You will return to the app after authorization."
+msgstr "You will return to the app after authorization."
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "Agree and authorize"
+
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "model service"

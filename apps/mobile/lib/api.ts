@@ -5,6 +5,7 @@ import type {
   BotSection,
   ComputerStatus,
   Group,
+  IncomingBotCall,
   Me,
   MessageBlock,
   ModelCatalogEntry,
@@ -23,6 +24,7 @@ import {
   accountSecuritySchema,
   authCapabilitiesSchema,
   CLIENT_UPDATE_REQUIRED_STATUS,
+  IncomingBotCallSchema,
   legacyAccountSecurity,
   legacyAuthCapabilitiesSchema,
 } from "@rakazo/contracts";
@@ -73,6 +75,7 @@ import {
   syncMobileAvatarSession,
 } from "./logo-avatar-activity";
 import { reportMobileError } from "./monitoring";
+import { followSelectedSpace, selectedSpaceChanged } from "./referral";
 import { API_BASE_STORAGE_KEY as ENDPOINT_KEY } from "./server-config";
 import { fetchServer, loadServerHeaders, saveServerHeaders, serverHeaders } from "./server-headers";
 import {
@@ -114,6 +117,7 @@ function setCachedApiBase(url: string): void {
   for (const listener of apiBaseListeners) listener();
 }
 let cachedSpaceId = "";
+followSelectedSpace(() => cachedSpaceId || null);
 /** Bumped on every in-memory Space selection change so a delayed response
  * cannot treat a later reselection of the same Space id as its own. */
 let spaceSelectionGeneration = 0;
@@ -128,6 +132,8 @@ export function spaceSelectionSeq(): number {
 
 function bumpSpaceSelectionGeneration(): void {
   spaceSelectionGeneration += 1;
+  // Another Space can belong to another organization, with its own invite link.
+  selectedSpaceChanged();
 }
 
 /** Keeps a timeout or cancel reason; turns transport and parsing detail into copy. */
@@ -1134,6 +1140,7 @@ export type MobileBot = Pick<
   | "threadId"
   | "pinned"
   | "status"
+  | "threadStatus"
   | "sectionId"
   | "archivedAt"
   | "unread"
@@ -1162,12 +1169,12 @@ export type MobileMe = Pick<
   | "hostCredentialProvider"
   | "hostCredentialSource"
   | "needsModel"
-  | "modelAccountOnly"
   | "isDeploymentOwner"
   | "needsSignupSurvey"
   | "billingEnabled"
   | "paymentWalletProvider"
   | "ticketBoardEnabled"
+  | "botAvatarSet"
 >;
 
 export type MobileModel = ModelCatalogEntry;
@@ -1197,8 +1204,7 @@ export type MobileSpace = Space;
 export type MobileSpaceNavigation = SpaceNavigation;
 
 /** A run as live events report it, before a refresh brings the full record. */
-type MobileRun = Pick<Run, "id"> &
-  Partial<Pick<Run, "botId" | "userId" | "modelAuthorizationRequired">> & { status: string };
+type MobileRun = Pick<Run, "id"> & Partial<Pick<Run, "botId" | "userId">> & { status: string };
 
 /**
  * A thread as the screen holds it: live events patch it between refreshes, and a saved chat
@@ -1320,6 +1326,7 @@ export function blockText(message: MobileMessage) {
         return `${block.status === "archived" ? "Archived" : block.status === "deleted" ? "Deleted" : "Bot"} ${block.name ?? ""}`;
       }
       if (block.kind === "chart") return `[chart: ${block.name ?? "chart"}]`;
+      if (block.kind === "page") return `[page: ${block.title}]`;
       if (block.kind === "image") return `[image: ${block.name ?? "attachment"}]`;
       if (block.kind === "file") {
         return `[file: ${block.name ?? "attachment"}${block.size ? ` (${block.size} bytes)` : ""}]`;
@@ -1368,15 +1375,68 @@ export async function subscribeThread(
   cursor: number,
   onEvent: (event: ThreadEvent) => void,
   signal: AbortSignal,
+  requestContext?: ApiRequestContext,
 ) {
-  const context = await captureApiRequestContext();
+  const context = requestContext ?? (await captureApiRequestContext());
   syncMobileAvatarSession(currentApiBase(), currentSessionGeneration());
   const activityFeed = beginMobileAvatarFeed(target, cursor);
+  return subscribeRpcEvents(
+    "threads/subscribe",
+    { ...target, cursor },
+    (event) => {
+      const threadId = event.threadId ?? activityFeed.threadId;
+      if (threadId && typeof event.seq === "number" && event.seq > cursor)
+        mobileLogoAvatarActivity.apply(activityFeed.source, {
+          threadId,
+          seq: event.seq,
+          botId: event.botId,
+          runId: event.runId,
+          type: event.type,
+          payload: event.payload ?? {},
+        });
+      onEvent(displayIdentityEvent(event, identityLabels()));
+    },
+    signal,
+    context,
+    () => mobileLogoAvatarActivity.resetSource(activityFeed.source),
+  );
+}
+
+export async function subscribeIncomingCallEvents(
+  onCalls: (calls: IncomingBotCall[]) => void,
+  signal: AbortSignal,
+) {
+  const context = await captureApiRequestContext(null);
+  return subscribeRpcEvents(
+    "notifications/subscribeCalls",
+    {},
+    (event) => {
+      if (event.type !== "incoming.calls") return;
+      const calls = IncomingBotCallSchema.array().safeParse(event.payload?.calls);
+      if (calls.success) onCalls(calls.data);
+    },
+    signal,
+    context,
+  );
+}
+
+async function subscribeRpcEvents(
+  procedure: string,
+  input: Record<string, unknown>,
+  onEvent: (event: ThreadEvent) => void,
+  signal: AbortSignal,
+  context: ApiRequestContext,
+  onClose: () => void = () => {},
+) {
   const current = () =>
     context.apiBase === currentApiBase() &&
     context.sessionGeneration === currentSessionGeneration();
+  if (!current()) {
+    onClose();
+    return;
+  }
   const res = await fetchServer(
-    `${context.apiBase}/rpc/threads/subscribe`,
+    `${context.apiBase}/rpc/${procedure}`,
     {
       method: "POST",
       headers: {
@@ -1385,20 +1445,20 @@ export async function subscribeThread(
         origin: "rakazo://",
         ...context.headers,
       },
-      body: JSON.stringify({ json: { ...target, cursor } }),
+      body: JSON.stringify({ json: input }),
       signal,
     },
     context.apiBase,
   ).catch((error: unknown) => {
-    mobileLogoAvatarActivity.resetSource(activityFeed.source);
+    onClose();
     if (current() && !signal.aborted && isServerUnreachable(error)) noteServerReachable(false);
     throw error;
   });
   if (current()) noteServerReachable(!isUnreachableStatus(res.status));
   if (!res.ok || !res.body) {
-    mobileLogoAvatarActivity.resetSource(activityFeed.source);
+    onClose();
     cancelResponseBody(res);
-    throw httpError(`rpc threads/subscribe failed (${res.status})`, res);
+    throw httpError(`rpc ${procedure} failed (${res.status})`, res);
   }
   const reader = res.body.getReader();
   let finished = false;
@@ -1434,21 +1494,11 @@ export async function subscribeThread(
         // Heartbeats prove liveness only; forwarding one would advance the caller's cursor.
         if (parsed.json?.type && parsed.json.type !== "heartbeat") {
           if (!current()) {
-            mobileLogoAvatarActivity.resetSource(activityFeed.source);
+            onClose();
             return;
           }
           const event = parsed.json;
-          const threadId = event.threadId ?? activityFeed.threadId;
-          if (threadId && typeof event.seq === "number" && event.seq > cursor)
-            mobileLogoAvatarActivity.apply(activityFeed.source, {
-              threadId,
-              seq: event.seq,
-              botId: event.botId,
-              runId: event.runId,
-              type: event.type,
-              payload: event.payload ?? {},
-            });
-          onEvent(displayIdentityEvent(event, identityLabels()));
+          onEvent(event);
         }
       } catch {
         // Malformed frames and callback errors do not interrupt the subscription.
@@ -1503,7 +1553,7 @@ export async function subscribeThread(
       if (start < value.byteLength) appendFrameBytes(value.subarray(start));
     }
   } finally {
-    mobileLogoAvatarActivity.resetSource(activityFeed.source);
+    onClose();
     if (!finished) {
       try {
         void Promise.resolve(reader.cancel()).catch(() => undefined);
@@ -1592,8 +1642,6 @@ export function applyMobileThreadEvent(
   }
   if (event.type === "run.waiting_input" || event.type === "computer.takeover.requested") {
     const status = event.type === "run.waiting_input" ? "waiting_input" : "waiting_takeover";
-    const modelAuthorizationRequired =
-      event.type === "run.waiting_input" && event.payload?.modelAuthorizationRequired === true;
     const progressId = progressMessageId(event);
     // Waiting pauses drop live progress server-side; clear a leftover bubble so
     // the waiting footer is not hidden behind a stale "Working…" row.
@@ -1614,18 +1662,14 @@ export function applyMobileThreadEvent(
     const runChanged = Boolean(
       knownInRun &&
         prev.run &&
-        (prev.run.status !== status ||
-          Boolean(prev.run.modelAuthorizationRequired) !== modelAuthorizationRequired ||
-          (userId !== undefined && prev.run.userId !== userId)),
+        (prev.run.status !== status || (userId !== undefined && prev.run.userId !== userId)),
     );
     const activeRunChanged = Boolean(
       knownInActive &&
         prev.activeRuns?.some(
           (candidate) =>
             candidate.id === runId &&
-            (candidate.status !== status ||
-              Boolean(candidate.modelAuthorizationRequired) !== modelAuthorizationRequired ||
-              (userId !== undefined && candidate.userId !== userId)),
+            (candidate.status !== status || (userId !== undefined && candidate.userId !== userId)),
         ),
     );
     const computer =
@@ -1647,7 +1691,6 @@ export function applyMobileThreadEvent(
     }
     if (needsInsert && runId) {
       const waitingRun = {
-        ...(modelAuthorizationRequired ? { modelAuthorizationRequired: true } : {}),
         id: runId,
         status,
         ...(event.botId ? { botId: event.botId } : {}),
@@ -1670,22 +1713,12 @@ export function applyMobileThreadEvent(
     }
     const run =
       runChanged && prev.run
-        ? {
-            ...prev.run,
-            status,
-            modelAuthorizationRequired: modelAuthorizationRequired || undefined,
-            ...(userId !== undefined ? { userId } : {}),
-          }
+        ? { ...prev.run, status, ...(userId !== undefined ? { userId } : {}) }
         : prev.run;
     const activeRuns = activeRunChanged
       ? prev.activeRuns?.map((candidate) =>
           candidate.id === runId
-            ? {
-                ...candidate,
-                status,
-                modelAuthorizationRequired: modelAuthorizationRequired || undefined,
-                ...(userId !== undefined ? { userId } : {}),
-              }
+            ? { ...candidate, status, ...(userId !== undefined ? { userId } : {}) }
             : candidate,
         )
       : prev.activeRuns;

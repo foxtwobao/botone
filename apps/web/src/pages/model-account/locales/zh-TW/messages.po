@@ -1,0 +1,149 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: rakazo-web\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-26 00:00+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh-TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: @lingui/cli\n"
+
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "API 協定"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Approval model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Authorization incomplete."
+msgstr "授權尚未完成。"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize again"
+msgstr "重新授權"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize the model account to continue."
+msgstr "請授權模型帳戶以繼續。"
+
+#: src/components/ModelAccount.tsx
+msgid "Balance unavailable"
+msgstr "暫時無法取得餘額"
+
+#: src/components/ModelAccount.tsx
+msgid "Cancel"
+msgstr "取消"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Choose a model"
+msgstr ""
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Close model settings"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Complete authorization in the opened window."
+msgstr "請在開啟的視窗中完成授權。"
+
+#: src/components/ModelAccountOnboarding.tsx
+msgid "Connect a model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Could not confirm authorization. Try again."
+msgstr "無法確認授權結果，請重試。"
+
+#: src/components/ModelAccount.tsx
+msgid "Disconnection pending confirmation."
+msgstr "正在等待確認中斷連線的結果。"
+
+#: src/components/ModelAccount.tsx
+msgid "Home"
+msgstr "平台首頁"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Main model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+#: src/components/ModelAccountOnboarding.tsx
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Model account"
+msgstr "模型帳戶"
+
+#: src/components/ModelAccount.tsx
+msgid "Model account unavailable"
+msgstr "模型帳戶暫時無法使用"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Models"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Recharge"
+msgstr "儲值"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh balance"
+msgstr "重新整理餘額"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "重新整理模型"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry"
+msgstr "重試"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry disconnect"
+msgstr "重試中斷連線"
+
+#: src/components/ModelAccount.tsx
+msgid "Sign in with SSO to use the model account."
+msgstr "請使用 SSO 登入後使用模型帳戶。"
+
+#: src/components/ModelAccount.tsx
+msgid "Use model account"
+msgstr "使用模型帳戶"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "正在檢查授權…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "正在授權…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize model service"
+msgstr "授權使用模型服務"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "授權使用 {serviceName} 模型服務"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "授權後，本應用將透過你的 {serviceName} 帳號呼叫模型服務。模型使用費用將從你的 {serviceName} 帳戶餘額中扣除。"
+
+#: src/components/ModelAccount.tsx
+msgid "You will return to the app after authorization."
+msgstr "授權完成後自動返回應用程式。"
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "同意並前往授權"
+
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "模型服務"

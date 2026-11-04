@@ -6,12 +6,27 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 type UiWebModule = typeof UiWeb;
 
 /** Provider rows end with their "Connect" action; models show their name alone. */
 const optionName = (entry: Element) => entry.textContent?.replace(/Connect$/, "");
+const accountPolicy = vi.hoisted(() => ({ enabled: false }));
+vi.mock("./model-account/queries", () => ({
+  modelAccountConfigQuery: {
+    queryKey: ["fixture-account-config"],
+    queryFn: async () => ({
+      enabled: accountPolicy.enabled,
+      modelAccountOnly: accountPolicy.enabled,
+    }),
+  },
+  modelAccountStatusQuery: () => ({
+    queryKey: ["fixture-account-status"],
+    queryFn: async () => ({ connected: true, credentialId: "external-fixture" }),
+  }),
+}));
 const models = vi.hoisted(() => ({
   list: vi.fn(),
   role: vi.fn(),
@@ -318,19 +333,27 @@ async function renderSettings(
   embedded = true,
   queryClient = testQueryClient(),
   scope: "account" | "space" = "account",
+  accountOnly = false,
 ) {
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
+  accountPolicy.enabled = accountOnly;
+  queryClient.setQueryData(["fixture-account-config"], {
+    enabled: accountOnly,
+    modelAccountOnly: accountOnly,
+  });
   await act(async () => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <ModelSettingsOverlay embedded={embedded} scope={scope} onClose={() => undefined} />
+        <MemoryRouter>
+          <ModelSettingsOverlay embedded={embedded} scope={scope} onClose={() => undefined} />
+        </MemoryRouter>
       </QueryClientProvider>,
     );
   });
   await act(async () => {
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
   return {
     container,
@@ -344,6 +367,7 @@ async function renderSettings(
 }
 
 beforeEach(() => {
+  accountPolicy.enabled = false;
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
@@ -926,7 +950,7 @@ it("lists not-connected providers by name alone", async () => {
   const view = await renderSettings();
   try {
     await openPicker("Change Main model");
-    expect(pickerOptions()).toEqual(["DeepSeek", "OpenAI-compatible", "Ollama Cloud"]);
+    expect(pickerOptions()).toEqual(["DeepSeek", "Ollama Cloud", "OpenAI-compatible"]);
     expect(document.querySelectorAll("[cmdk-group-heading]")).toHaveLength(0);
   } finally {
     await view.unmount();
@@ -1612,10 +1636,9 @@ it("shows what a disconnect left, not a read sent before it", async () => {
   }
 });
 
-it("hides ordinary provider connections in account-only mode while retaining model selection", async () => {
+it("offers only account credentials even when the server lists ordinary connections", async () => {
   vi.mocked(rpc.me).mockResolvedValue({
     ...account("openai-compatible", "account-model"),
-    modelAccountOnly: true,
   });
   models.list.mockResolvedValue([
     {
@@ -1631,23 +1654,31 @@ it("hides ordinary provider connections in account-only mode while retaining mod
       label: "Account backup",
       credentialIds: ["external-fixture"],
     },
+    { provider: "openrouter", id: "hosted-fixture", label: "Hosted fixture", managed: true },
   ]);
   models.credentials.mockResolvedValue([
     {
       id: "external-fixture",
       label: "Model account",
       provider: "openai-compatible",
-      managed: true,
       enabledModelIds: ["account-model", "account-backup"],
     },
+    {
+      id: "personal-fixture",
+      provider: "openai-compatible",
+      label: "Personal fixture",
+      enabledModelIds: ["personal-only"],
+    },
   ]);
-  const view = await renderSettings();
+  const view = await renderSettings(true, testQueryClient(), "account", true);
   try {
     expect(view.container.textContent).not.toContain("Add provider");
     expect(view.container.textContent).not.toContain("Providers");
     expect(view.container.querySelector('input[placeholder*="key"]')).toBeNull();
     await openPicker("Add fallback");
     expect(pickerOptions()).toContain("Account backup");
+    expect(pickerOptions()).not.toContain("Hosted fixture");
+    expect(pickerOptions()).not.toContain("personal-only");
     expect(pickerOptions().some((name) => name?.includes("Connect"))).toBe(false);
     await choose("Account backup");
     expect(models.setRole).toHaveBeenCalled();

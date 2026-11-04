@@ -175,7 +175,6 @@ describe.skipIf(!enabled)("unfinished broad history search", () => {
               dataDir,
               sandboxProvider: "fake",
               agentRuntime: "pi",
-              modelAccountOnly: false,
               wakeupDriver: "memory",
               signupsEnabled: "true",
               composio,

@@ -77,7 +77,6 @@ describe.skipIf(!databaseAvailable)("eval history accounting", () => {
                 dataDir,
                 sandboxProvider: "fake",
                 agentRuntime: "pi",
-                modelAccountOnly: false,
                 wakeupDriver: "memory",
                 signupsEnabled: "true",
                 composio,

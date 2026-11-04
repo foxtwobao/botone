@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { ReactNode } from "react";
 import { act } from "react";
@@ -6,6 +7,9 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+const client = new QueryClient({
+  defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+});
 const account = vi.hoisted(() => ({ load: (_me: unknown) => {} }));
 
 vi.mock("../lib/rpc", () => ({
@@ -45,6 +49,8 @@ vi.mock("@lingui/react/macro", () => {
 import { OnboardingPage } from "./Onboarding";
 
 beforeEach(() => {
+  client.clear();
+  client.setQueryData(["model-account-config"], { enabled: false });
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
     "ResizeObserver",
@@ -67,11 +73,13 @@ it("marks onboarding as usable for the desktop only once a step shows", async ()
   // The shell sends a new account to /onboarding, which loads before it picks a step.
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={["/onboarding"]}>
-        <Routes>
-          <Route path="/onboarding/:step?" element={<OnboardingPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={["/onboarding"]}>
+          <Routes>
+            <Route path="/onboarding/:step?" element={<OnboardingPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   const marked = () => host.querySelector('[data-rakazo-surface="onboarding"]');
@@ -89,11 +97,13 @@ it("finds and searches a long custom endpoint list during onboarding", async () 
   const root = createRoot(document.body.appendChild(document.createElement("div")));
   await act(async () =>
     root.render(
-      <MemoryRouter initialEntries={["/onboarding"]}>
-        <Routes>
-          <Route path="/onboarding/:step?" element={<OnboardingPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={["/onboarding"]}>
+          <Routes>
+            <Route path="/onboarding/:step?" element={<OnboardingPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
   await act(async () =>

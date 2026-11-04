@@ -11,7 +11,11 @@ import {
   modelOutputLeavesInputRoom,
 } from "@rakazo/contracts";
 import { enabledOpenAiCompatibleModelIds } from "./model-selection.js";
-import { modelIdSupportsImages, updateModelImageCapabilities } from "./model-vision.js";
+import {
+  compatibleModelSeesImages,
+  modelIdSupportsImages,
+  updateModelImageCapabilities,
+} from "./model-vision.js";
 import { normalizeOpenAiCompatibleBaseUrl } from "./openai-compatible-url.js";
 import { modelCredentialAuthKind } from "./pi-catalog-availability.js";
 import type { StoredModelSecret } from "./pi-oauth.js";
@@ -321,7 +325,6 @@ export function modelCredentialDto(
   return {
     ...compatibleCredential,
     authKind: "openai_compatible",
-    ...(parsed.externalAccount ? { managed: true, hasKey: true } : {}),
     supportsImages:
       parsed.visionModelIds !== undefined
         ? modelIdSupportsImages(parsed.visionModelIds, row.defaultModel)
@@ -342,6 +345,9 @@ export function modelCredentialDto(
     ...(parsed.enabledModelIds !== undefined
       ? { enabledModelIds: enabledOpenAiCompatibleModelIds(parsed, row.defaultModel) }
       : {}),
+    visionModelIds: enabledOpenAiCompatibleModelIds(parsed, row.defaultModel).filter((id) =>
+      compatibleModelSeesImages(row, parsed, id),
+    ),
     thinkingLevels: getSupportedThinkingLevels(
       openAiCompatibleModel(
         row.defaultModel ?? "custom",

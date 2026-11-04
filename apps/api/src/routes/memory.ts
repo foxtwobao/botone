@@ -137,7 +137,6 @@ export function memoryRoutes(ctx: RouterContext) {
         return docs.map((d) => `# ${d.path}\n\n${d.content}`).join("\n\n");
       }),
       providerConfig: authed.memory.providerConfig.handler(async ({ context }) => {
-        if (deps.env.modelAccountOnly) return null;
         const config = await findSpaceMemoryConfig(deps.prisma, context.actor.spaceId);
         return config ? serializeSpaceMemoryConfig(config) : null;
       }),

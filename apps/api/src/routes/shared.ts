@@ -8,8 +8,14 @@ import {
   selectConfiguredModel,
 } from "@rakazo/adapters";
 import type { Actor, Me } from "@rakazo/contracts";
-import { attachmentMaxBytes, attachmentMaxCount, canonicalPiProviderId } from "@rakazo/contracts";
+import {
+  attachmentMaxBytes,
+  attachmentMaxCount,
+  canonicalPiProviderId,
+  resolveBotAvatarSet,
+} from "@rakazo/contracts";
 import { isAdmin } from "../admins.js";
+import { effectiveSandboxProvider } from "../computer-provider-config.js";
 import type { RouterDeps } from "../router.js";
 
 export { createAdapterContext as computerContext } from "@rakazo/adapter-kit";
@@ -29,15 +35,18 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
         name: true,
         timezone: true,
         locale: true,
+        botAvatarSet: true,
         signupSurvey: { select: { userId: true } },
       },
     }),
     modelSetup(deps, actor),
     isAdmin(deps, actor.userId),
   ]);
+  // Where the deployment runs computers once an admin's choice in Settings applies.
+  const sandboxProvider = effectiveSandboxProvider(setup.settings, deps.env.sandboxProvider);
   return {
     ticketBoardEnabled: deps.env.ticketBoardEnabled === true,
-    phoneCallsEnabled: !deps.env.modelAccountOnly && deps.env.phoneCallsEnabled === true,
+    phoneCallsEnabled: deps.env.phoneCallsEnabled === true,
     navLinks: deps.env.navLinks ?? [],
     maxUploadSizeBytes: attachmentMaxBytes(deps.env),
     maxAttachmentsPerMessage: attachmentMaxCount(deps.env),
@@ -48,25 +57,20 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
     isDeploymentOwner: false,
     isAdmin: admin,
     needsModel: setup.needsModel,
-    ...(deps.env.modelAccountOnly ? { modelAccountOnly: true } : {}),
-    defaultProvider: deps.env.modelAccountOnly
-      ? (setup.model?.provider ?? null)
-      : canonicalPiProviderId(setup.model?.provider ?? deps.env.defaultProvider),
-    defaultModel: deps.env.modelAccountOnly
-      ? (setup.model?.modelId ?? null)
-      : (setup.model?.modelId ?? deps.env.defaultModel),
+    defaultProvider: canonicalPiProviderId(setup.model?.provider ?? deps.env.defaultProvider),
+    defaultModel: setup.model?.modelId ?? deps.env.defaultModel,
     // Set only while the active default is the deployment's own, running on host credentials.
     ...hostCredentials(
-      !deps.env.modelAccountOnly &&
-        !setup.main &&
+      !setup.main &&
         !setup.settings?.defaultModelProvider &&
         Boolean(deps.env.deploymentModelHostCredentials),
       deps.env.defaultProvider,
     ),
-    computerHost: computerHostFor(setup.settings?.computerHost, deps.env.sandboxProvider),
+    computerHost: computerHostFor(setup.settings?.computerHost, sandboxProvider),
     canChooseHostComputer:
-      Boolean(deps.env.desktopHostChoiceEnabled) && deps.env.sandboxProvider === "docker",
-    sandboxProvider: deps.env.sandboxProvider,
+      Boolean(deps.env.desktopHostChoiceEnabled) && sandboxProvider === "docker",
+    // The deployment's provider: an account's own choice covers only its Team Computers.
+    sandboxProvider,
     mcpStdioEnabled:
       admin &&
       mcpStdioAvailable({
@@ -74,6 +78,7 @@ export async function meDto(deps: RouterDeps, actor: Actor): Promise<Me> {
         allowedCommands: deps.env.mcpStdioAllowedCommands,
       }),
     avatarStyle: "organic",
+    botAvatarSet: resolveBotAvatarSet(user.botAvatarSet),
     timezone: user.timezone ?? null,
     locale: user.locale ?? null,
     billingEnabled: Boolean(deps.billing),
@@ -98,21 +103,13 @@ function computerHostFor(
 /** The main model chat runs: the member's while it can run, else the deployment's. */
 export async function modelSetup(deps: RouterDeps, actor: Actor) {
   const [member, settings] = await Promise.all([
-    resolveMemberMainModel(
-      {
-        prisma: deps.prisma,
-        secretStore: deps.secrets,
-        modelAccountOnly: deps.env.modelAccountOnly,
-      },
-      actor,
-    ),
+    resolveMemberMainModel({ prisma: deps.prisma, secretStore: deps.secrets }, actor),
     deps.prisma.deploymentSettings.findUnique({ where: { id: "default" } }),
   ]);
   const main =
     member &&
     (member.credential ||
-      (!deps.env.modelAccountOnly &&
-        deps.billing?.modelCreditsEnabled &&
+      (deps.billing?.modelCreditsEnabled &&
         (await hasHostedModelCredits(deps.prisma, actor, member.provider))))
       ? member
       : null;
@@ -120,19 +117,16 @@ export async function modelSetup(deps: RouterDeps, actor: Actor) {
   // A balance keeps paying for the deployment model after switching to an own key.
   const creditsAvailable = funding?.funding === "credits" || (funding?.balanceUsd ?? 0) > 0;
   const hasDeployment =
-    !deps.env.modelAccountOnly &&
     Boolean(deps.env.deploymentModelConfigured) &&
     (!funding?.creditPurchasesEnabled || creditsAvailable);
   return {
     main,
     model:
       main ??
-      (deps.env.modelAccountOnly
-        ? null
-        : deploymentModelRole("main", {
-            settings,
-            deployment: { provider: deps.env.defaultProvider, model: deps.env.defaultModel },
-          }).primary),
+      deploymentModelRole("main", {
+        settings,
+        deployment: { provider: deps.env.defaultProvider, model: deps.env.defaultModel },
+      }).primary,
     settings,
     funding,
     creditsAvailable,
@@ -156,7 +150,6 @@ export async function botsRunOwnModels(deps: RouterDeps, actor: Actor, botIds: s
             actor,
             bot.modelProvider,
             bot.modelId,
-            { modelAccountOnly: deps.env.modelAccountOnly },
           )
         : null;
       return selectConfiguredModel({ override: bot, overrideCredential, main: null, defaults: {} })

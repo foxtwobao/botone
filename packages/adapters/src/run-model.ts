@@ -5,7 +5,6 @@ import type {
   ModelCredentialFailedState,
   ModelCredentialRetireReason,
 } from "@rakazo/adapter-kit";
-import { ExternalModelAccountError } from "@rakazo/adapter-kit";
 import {
   CLOUDFLARE_AI_GATEWAY_CONFIG_MESSAGE,
   CLOUDFLARE_WORKERS_AI_PROVIDER_ID,
@@ -31,7 +30,7 @@ import {
   validateConnectedModelChoice,
   validateModelAuthAvailability,
 } from "./model-selection.js";
-import { modelIdSupportsImages } from "./model-vision.js";
+import { compatibleModelSeesImages } from "./model-vision.js";
 import { assertAllowedOpenAiCompatibleUrl } from "./openai-compatible-url.js";
 import { codexLiveModel } from "./pi-codex-catalog.js";
 import { toOAuthCredential } from "./pi-credentials.js";
@@ -56,7 +55,6 @@ export function runtimeFallbackModel(runtime: AgentRuntime) {
 
 export function isTerminalModelSetupError(error: unknown): boolean {
   return (
-    (error instanceof ExternalModelAccountError && !error.retryable) ||
     error instanceof UnavailableModelForAuthError ||
     error instanceof HostedModelCreditsRequiredError ||
     isRetiredModelCredentialError(error) ||
@@ -76,7 +74,6 @@ export async function fleetPrepareDeps(
   return {
     prisma: deps.prisma,
     modelChange: {
-      modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey),
       hostedProvider,
       secretStore: deps.secretStore,
       codexCatalog: deps.codexCatalog,
@@ -229,16 +226,12 @@ async function resolveModelKeyMaterial(
   ownCredential?: true;
   redact: string[];
 }> {
-  if ((deps.modelAccountOnly || deps.externalModelKey) && !credential)
-    throw new UnavailableModelForAuthError(MISSING_MODEL_RUN_ERROR);
   if (credential) {
     return withModelCredentialLock(credential.secretId, async () => {
       const row = await deps.prisma.secret.findFirst({
         where: { id: credential.secretId, userId, spaceId: null },
       });
       if (!row) {
-        if (deps.modelAccountOnly || deps.externalModelKey)
-          throw new UnavailableModelForAuthError(MISSING_MODEL_RUN_ERROR);
         if (await modelCreditBillingEnabled(deps))
           throw new Error("Connect that model provider again.");
         if (requireStoredSecret) throw new Error("Backup model credential is no longer available");
@@ -249,12 +242,6 @@ async function resolveModelKeyMaterial(
         return { apiKey: deploymentKeyFor(deps, provider), redact: [] };
       }
       const plaintext = await deps.secretStore.load(row.ciphertext, row.id);
-      const stored = parseModelSecret(plaintext);
-      if (
-        (deps.modelAccountOnly || deps.externalModelKey) &&
-        (stored.kind !== "openai_compatible" || !stored.externalAccount)
-      )
-        throw new UnavailableModelForAuthError(MISSING_MODEL_RUN_ERROR);
       registerSecrets?.(secretValuesToRedact(parseModelSecret(plaintext)));
       const persist = persistStoredModelSecret(
         deps.prisma,
@@ -270,14 +257,7 @@ async function resolveModelKeyMaterial(
         parseModelSecret(plaintext).maxTokens,
       );
       const resolveAuth = () =>
-        resolveModelAuth(plaintext, credential.provider, {
-          persist,
-          retire,
-          externalKey: deps.externalModelKey
-            ? (reference, baseUrl) =>
-                deps.externalModelKey!(userId, reference, baseUrl, deps.shutdownSignal)
-            : undefined,
-        });
+        resolveModelAuth(plaintext, credential.provider, { persist, retire });
       let resolved: Awaited<ReturnType<typeof resolveAuth>> | undefined;
       let liveCodex: Awaited<ReturnType<typeof codexLiveModel>> | undefined;
       const authError = validateModelAuthAvailability(provider, modelId, plaintext);
@@ -295,15 +275,6 @@ async function resolveModelKeyMaterial(
         if (!liveCodex) throw new UnavailableModelForAuthError(authError);
       }
       resolved ??= await resolveAuth();
-      if (resolved.apiKey) registerSecrets?.([resolved.apiKey]);
-      if (
-        resolved.secret.kind === "openai_compatible" &&
-        resolved.secret.externalAccount &&
-        !(await deps.prisma.userModelCredential.findFirst({
-          where: { id: credential.id, userId, secretId: credential.secretId },
-        }))
-      )
-        throw new Error("Model account connection was removed.");
       if (
         !liveCodex &&
         deps.codexCatalog &&
@@ -334,12 +305,7 @@ async function resolveModelKeyMaterial(
       const acceptsImages =
         credential.provider === OPENAI_COMPATIBLE_PROVIDER_ID &&
         resolved.secret.kind === "openai_compatible"
-          ? modelIdSupportsImages(resolved.secret.visionModelIds, modelId) ||
-            // Legacy secrets have no per-model list, so keep their existing
-            // capability scoped to the model saved in the space preference.
-            (resolved.secret.visionModelIds === undefined &&
-              credential.supportsImages === true &&
-              credential.defaultModel?.trim() === modelId.trim())
+          ? compatibleModelSeesImages(credential, resolved.secret, modelId)
           : liveCodex?.supportsImages;
       const accountId = resolved.secret.kind === "api_key" ? resolved.secret.accountId : undefined;
       const gatewayId = resolved.secret.kind === "api_key" ? resolved.secret.gatewayId : undefined;
@@ -462,11 +428,7 @@ export async function resolveConnectedModelKey(
     scope,
     provider,
     modelId,
-    {
-      hostedProvider,
-      credentialId,
-      modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey),
-    },
+    { hostedProvider, credentialId, codexCatalog: deps.codexCatalog },
   );
   if (validationError) throw new Error(validationError);
   const credential = await findConnectedModelCredential(
@@ -475,7 +437,7 @@ export async function resolveConnectedModelKey(
     scope,
     provider,
     modelId,
-    { credentialId, modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey) },
+    { credentialId },
   );
   if (!credential && provider !== hostedProvider) throw new Error(PINNED_PROVIDER_NOT_CONNECTED);
   const resolved = await resolveModelKey(
@@ -555,7 +517,6 @@ export async function resolveRunModel(
           scope,
           override!.modelProvider!,
           override!.modelId,
-          { modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey) },
         )
       : Promise.resolve(null),
     resolveMemberMainModel(deps, scope),

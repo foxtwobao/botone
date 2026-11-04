@@ -26,11 +26,10 @@ vi.mock("expo-secure-store", () => ({
 vi.mock("./live-notifications", () => ({ stopLiveNotifications: vi.fn(async () => undefined) }));
 vi.mock("./thread-feedback", () => ({ clearFailedSends: vi.fn() }));
 vi.mock("./network-cache", () => ({ clearNetworkCache: vi.fn() }));
-// The fixture permits device voice; unrelated provider requests fail.
+// Signed out, every request fails; device voice needs none of them to start the microphone.
 vi.mock("./api", () => ({
   blockText: vi.fn(),
-  rpc: vi.fn(async (path: string) => {
-    if (path === "me") return { modelAccountOnly: false };
+  rpc: vi.fn(async () => {
     throw new Error("Unauthorized");
   }),
 }));

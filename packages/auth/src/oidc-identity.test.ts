@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
-import { oidcAccountSubject, readOidcAccountIdentity } from "./oidc.js";
+import { readOidcAccountIdentity } from "./external-account-identity.js";
+import { oidcAccountSubject } from "./oidc.js";
 import { sealIdToken } from "./token-storage.js";
 
 const issuer = "https://identity.example.test";

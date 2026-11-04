@@ -50,7 +50,7 @@ export interface VoiceDeps {
   prisma: PrismaClient;
   secrets: SecretStore;
   /** The instance flag (`MCP_ALLOW_PRIVATE_ENDPOINT`). */
-  env?: { mcpAllowPrivateEndpoint?: boolean; modelAccountOnly?: boolean };
+  env?: { mcpAllowPrivateEndpoint?: boolean };
   /** Set only when `VOICE_SUMMARY_MIN_CHARS` turns spoken summaries on. */
   speechSummary?: { summarize: SpeechSummarizer; minChars: number };
 }
@@ -64,8 +64,6 @@ async function voiceMayUsePrivateEndpoint(deps: VoiceDeps, provider: string) {
 
 /** The voice adapter for a credential, with the caller's private-endpoint decision. */
 export async function voiceProviderFor(deps: VoiceDeps, provider: string) {
-  if (deps.env?.modelAccountOnly)
-    throw new ORPCError("FORBIDDEN", { message: "Service unavailable" });
   return createVoiceProvider(provider, {
     allowPrivateEndpoint: await voiceMayUsePrivateEndpoint(deps, provider),
   });
@@ -228,7 +226,6 @@ export async function loadVoiceCredential(
   provider?: string,
   scope?: SettingsScope,
 ) {
-  if (deps.env?.modelAccountOnly) return null;
   const cred = provider
     ? await findVoiceCredential(deps.prisma, actor, provider, scope)
     : await findDefaultVoiceCredential(deps.prisma, actor, scope);
@@ -285,8 +282,6 @@ export async function persistVoiceCredential(
       ? // An unreadable old secret only means nothing is inherited; the form must be complete.
         await loadVoiceCredential(deps, actor, input.provider).catch(() => null)
       : null;
-  if (deps.env?.modelAccountOnly)
-    throw new ORPCError("FORBIDDEN", { message: "Service unavailable" });
   const allowPrivateEndpoint = await voiceMayUsePrivateEndpoint(deps, input.provider);
   const plaintext = voiceCredentialPlaintext({
     ...input,
@@ -607,7 +602,6 @@ export function mountVoiceHttpRoutes(
   app.post("/api/voice/speak", async (c) => {
     const actor = await authenticate(c);
     if (!actor) return c.json({ error: "Unauthorized" }, 401);
-    if (deps.env?.modelAccountOnly) return c.json({ error: "Service unavailable" }, 403);
     const raw = await readBoundedBody(c.req.raw, MAX_SPEAK_REQUEST_BYTES);
     if (raw === null) return c.json({ error: "Request body is too large." }, 413);
     const body = parseVoiceRequestBody(raw);
@@ -641,7 +635,6 @@ export function mountVoiceHttpRoutes(
   app.post("/api/voice/transcribe", async (c) => {
     const actor = await authenticate(c);
     if (!actor) return c.json({ error: "Unauthorized" }, 401);
-    if (deps.env?.modelAccountOnly) return c.json({ error: "Service unavailable" }, 403);
     const raw = await readBoundedBody(c.req.raw, MAX_TRANSCRIBE_REQUEST_BYTES);
     if (raw === null) return c.json({ error: "Request body is too large." }, 413);
     const body = parseVoiceRequestBody(raw);

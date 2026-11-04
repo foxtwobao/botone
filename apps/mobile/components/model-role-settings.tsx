@@ -131,7 +131,7 @@ export function ModelRoleSettings({
         canonicalPiProviderId(entry.provider) === canonicalPiProviderId(choice.provider) &&
         entry.id === choice.modelId,
     );
-  const options = connectedBackupOptions(state.catalog, credentials);
+  const options = connectedBackupOptions(state.catalog, credentials, role === "computer");
   const optionFor = (choice: ModelRoleChoice) =>
     options.find((option) => backupChoiceKey(option) === backupChoiceKey(choice));
   const modelLabel = (choice: ModelRoleChoice) =>
@@ -219,7 +219,9 @@ export function ModelRoleSettings({
 
   function pickerRequest(slot: Slot, narrowed?: Narrowed): ModelPickerRequest {
     const primarySlot = isPrimarySlot(slot);
-    const all = narrowed ? connectedBackupOptions(narrowed.catalog, narrowed.credentials) : options;
+    const all = narrowed
+      ? connectedBackupOptions(narrowed.catalog, narrowed.credentials, role === "computer")
+      : options;
     const pool = all.filter(
       (option) => !narrowed || option.credentialId === narrowed.choice.credentialId,
     );
@@ -334,7 +336,7 @@ export function ModelRoleSettings({
       void commit(next);
     } else if (id === "manage") {
       const connection = connectionFor(choice);
-      if (connection && !connection.managed) onManage(connection);
+      if (connection) onManage(connection);
     } else if (id === "remove") {
       void commit(rows.filter((_, item) => item !== index));
     }
@@ -383,7 +385,7 @@ export function ModelRoleSettings({
           ...thinkingMenu,
           ...(index > 0 ? [{ id: "moveUp", title: t("Move up") }] : []),
           ...(index < rows.length - 1 ? [{ id: "moveDown", title: t("Move down") }] : []),
-          ...(connectionFor(choice) && !connectionFor(choice)?.managed
+          ...(connectionFor(choice)
             ? [
                 {
                   id: "manage",

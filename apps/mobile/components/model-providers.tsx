@@ -33,7 +33,6 @@ export function ModelProviders({
         canonicalPiProviderId(entry.provider) === canonicalPiProviderId(credential.provider),
     )?.providerName ?? credential.provider;
   const rows = credentials
-    .filter((credential) => !credential.managed)
     .map((credential) => {
       const provider = providerName(credential);
       const name = connectionDisplayName(credential, provider);
