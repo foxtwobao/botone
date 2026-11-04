@@ -1,7 +1,14 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import type { Routine } from "@rakazo/contracts";
-import { activeBotId, completeOnboarding, createNamedBot, rpc, signup } from "./helpers";
+import {
+  activeBotId,
+  captureScreenshot,
+  completeOnboarding,
+  createNamedBot,
+  rpc,
+  signup,
+} from "./helpers";
 
 async function openComposer(page: Page, prefix: string) {
   await signup(page, `${prefix}-${Date.now()}@rakazo.test`, "password12", "Draft Keeper");
@@ -28,6 +35,19 @@ async function mentionRoutine(page: Page, composer: Locator, name: string) {
   await expect(page.getByRole("option", { name: `@${name}` })).toBeVisible();
   await composer.press("Enter");
 }
+
+test("repeated messages do not prompt for a GitHub star", async ({ page }, testInfo) => {
+  const composer = await openComposer(page, "no-star-prompt");
+  const transcript = page.getByTestId("transcript");
+  for (let index = 1; index <= 7; index++) {
+    const text = `Message ${index}`;
+    await composer.fill(text);
+    await composer.press("Enter");
+    await expect(transcript.getByText(text, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole("link", { name: "Star on GitHub", exact: true })).toHaveCount(0);
+  await captureScreenshot(page, testInfo, "chat-without-star-prompt");
+});
 
 test("a routine that already ran is not put back when the thread refresh fails", {
   tag: "@nightly",
