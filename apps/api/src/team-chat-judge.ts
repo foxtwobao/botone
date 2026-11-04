@@ -1,13 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type {
-  AgentRunModel,
-  AgentRuntime,
-  ExternalModelKeyResolver,
-  SecretStore,
-} from "@rakazo/adapter-kit";
+import type { AgentRunModel, AgentRuntime, SecretStore } from "@rakazo/adapter-kit";
 import {
   deploymentModelRole,
-  findConnectedModelCredential,
   formatCurrentTimeInstruction,
   hasHostedModelCredits,
   hostedModelCreditObserver,
@@ -119,8 +113,6 @@ interface ModelTeamChatEngagementJudgeDeps {
   prisma: PrismaClient;
   runtime: AgentRuntime;
   secrets: SecretStore;
-  externalModelKey?: ExternalModelKeyResolver;
-  modelAccountOnly?: boolean;
   deploymentProvider: string;
   deploymentModel: string;
   deploymentModelKey?: string;
@@ -231,27 +223,13 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
     });
     const scope = { userId: bot.userId, spaceId: bot.spaceId };
     const member = await resolveMemberMainModel(
-      {
-        prisma: this.deps.prisma,
-        secretStore: this.deps.secrets,
-        externalModelKey: this.deps.externalModelKey,
-        modelAccountOnly: this.deps.modelAccountOnly,
-      },
+      { prisma: this.deps.prisma, secretStore: this.deps.secrets },
       scope,
     );
     const requestedProvider = this.deps.providerOverride ?? bot.modelProvider;
     const requestedModel = this.deps.modelOverride ?? bot.modelId;
     const overrideCredential = requestedProvider
-      ? this.deps.modelAccountOnly || this.deps.externalModelKey
-        ? await findConnectedModelCredential(
-            this.deps.prisma,
-            this.deps.secrets,
-            scope,
-            requestedProvider,
-            requestedModel,
-            { modelAccountOnly: true },
-          )
-        : await findModelCredential(this.deps.prisma, scope, requestedProvider)
+      ? await findModelCredential(this.deps.prisma, scope, requestedProvider)
       : null;
     const explicitJudgeOverride = Boolean(this.deps.providerOverride && this.deps.modelOverride);
     const useOverride = Boolean(
@@ -277,8 +255,7 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
     const hosted =
       settings?.modelCreditsEnabled &&
       (await hasHostedModelCredits(this.deps.prisma, scope, provider));
-    if ((this.deps.modelAccountOnly || this.deps.externalModelKey) && !credential) return null;
-    if (!credential || (hosted && !this.deps.modelAccountOnly && !this.deps.externalModelKey)) {
+    if (!credential || hosted) {
       const apiKey =
         provider === this.deps.deploymentProvider ? this.deps.deploymentModelKey : undefined;
       const callObserver = settings?.modelCreditsEnabled
@@ -310,12 +287,6 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
       });
     };
     const plaintext = await this.deps.secrets.load(secret.ciphertext, secret.id);
-    const stored = parseModelSecret(plaintext);
-    if (
-      (this.deps.modelAccountOnly || this.deps.externalModelKey) &&
-      (stored.kind !== "openai_compatible" || !stored.externalAccount)
-    )
-      return null;
     const retire = retireToReconnectMarker(
       this.deps.prisma,
       this.deps.secrets,
@@ -323,22 +294,8 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
       credential,
       parseModelSecret(plaintext).maxTokens,
     );
-    const auth = await resolveModelAuth(plaintext, provider, {
-      persist,
-      retire,
-      externalKey: this.deps.externalModelKey
-        ? (reference, baseUrl) => this.deps.externalModelKey!(bot.userId, reference, baseUrl)
-        : undefined,
-    });
+    const auth = await resolveModelAuth(plaintext, provider, { persist, retire });
     const parsed = auth.secret;
-    if (
-      parsed.kind === "openai_compatible" &&
-      parsed.externalAccount &&
-      !(await this.deps.prisma.userModelCredential.findFirst({
-        where: { id: credential.id, userId: bot.userId, secretId: credential.secretId },
-      }))
-    )
-      return null;
     const limit = parsed.maxTokens !== undefined ? { maxTokens: parsed.maxTokens } : {};
     const context =
       parsed.kind === "oauth"
@@ -374,8 +331,7 @@ export class ModelTeamChatEngagementJudge implements TeamChatEngagementJudge {
         model: {
           provider,
           id: modelId,
-          apiKey: auth.apiKey,
-          apiProtocol: parsed.apiProtocol,
+          apiKey: parsed.apiKey,
           baseUrl: parsed.baseUrl,
           headers: parsed.headers,
           allowPrivateEndpoint: this.deps.allowPrivateEndpoint === true,

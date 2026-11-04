@@ -28,7 +28,6 @@ export default function SpaceSettings() {
   const { t } = useI18n();
   const sideInsets = useSideInsets();
   const styles = useThemedStyles(createStyles);
-  const [modelAccountOnly, setModelAccountOnly] = useState(true);
   const [overrides, setOverrides] = useState<SpaceSetting[] | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,11 +50,6 @@ export default function SpaceSettings() {
         .catch((err: unknown) => {
           if (current) setLoadError(errorText(err, t("Something went wrong. Try again.")));
         });
-      void rpc("me")
-        .then((me) => {
-          if (current) setModelAccountOnly(me.modelAccountOnly === true);
-        })
-        .catch(() => undefined);
       return () => {
         current = false;
       };
@@ -147,7 +141,7 @@ export default function SpaceSettings() {
         ) : null}
         <SettingsGroup accessibilityLabel={t("Customize")} label={t("Customize")}>
           {row("models", t("Models"))}
-          {!modelAccountOnly ? row("voice", t("Voice")) : null}
+          {row("voice", t("Voice"))}
           {row("confirmations", t("Approvals"))}
           {row("credentials", t("Vault"))}
         </SettingsGroup>

@@ -334,7 +334,7 @@ export function ModelRoleSettings({
       void commit(next);
     } else if (id === "manage") {
       const connection = connectionFor(choice);
-      if (connection && !connection.managed) onManage(connection);
+      if (connection) onManage(connection);
     } else if (id === "remove") {
       void commit(rows.filter((_, item) => item !== index));
     }
@@ -383,7 +383,7 @@ export function ModelRoleSettings({
           ...thinkingMenu,
           ...(index > 0 ? [{ id: "moveUp", title: t("Move up") }] : []),
           ...(index < rows.length - 1 ? [{ id: "moveDown", title: t("Move down") }] : []),
-          ...(connectionFor(choice) && !connectionFor(choice)?.managed
+          ...(connectionFor(choice)
             ? [
                 {
                   id: "manage",

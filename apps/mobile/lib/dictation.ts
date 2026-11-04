@@ -6,7 +6,6 @@
 
 import { supportedSpeechTag } from "@rakazo/core";
 import { Platform } from "react-native";
-import { rpc } from "./api";
 import { reportMobileError } from "./monitoring";
 
 /** Quiet gap that ends an utterance. A natural breath is well under it, a finished turn well over. */
@@ -101,7 +100,6 @@ let active: Session | null = null;
 /** True when the device can recognise speech itself and the caller allowed it. */
 export async function available(): Promise<boolean> {
   try {
-    if ((await rpc("me")).modelAccountOnly) return false;
     const recognizer = await load();
     if (!recognizer.isRecognitionAvailable()) return false;
     return (await recognizer.requestPermissionsAsync()).granted;
@@ -137,7 +135,6 @@ export async function listen(opts: {
   if (opts.signal?.aborted) return;
   stop();
   const mine = token;
-  if ((await rpc("me")).modelAccountOnly || token !== mine || opts.signal?.aborted) return;
   const recognizer = await load();
   const lang = supportedSpeechTag(opts.lang || "en-US", await supportedLocales(recognizer));
   // A hang-up or a newer session landed while the native module was loading.

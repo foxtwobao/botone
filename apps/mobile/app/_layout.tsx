@@ -24,6 +24,7 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-g
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AccountAuthorizationPrompt } from "../components/account-authorization-prompt";
 import { AppErrorBoundary } from "../components/app-error-boundary";
 import { CallCard } from "../components/CallCard";
 import { chatRouteHeader } from "../components/chat-route-header";
@@ -487,6 +488,7 @@ function LayoutContent() {
                 </SplitFrame>
                 <VoicePlayerBar style={{ marginTop: 8, marginBottom: insets.bottom + 8 }} />
               </View>
+              <AccountAuthorizationPrompt />
               <ComputerUpdateProgress />
               <MessageMenuHost />
               <MessageActionSheetHost />

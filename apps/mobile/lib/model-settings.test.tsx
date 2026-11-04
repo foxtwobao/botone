@@ -8,6 +8,16 @@ import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { Alert } from "react-native";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("./model-account-client", () => ({
+  modelAccountClient: () => ({ config: async () => ({ enabled: false }) }),
+  modelAccountStatusQuery: () => ({
+    queryKey: ["fixture-status"],
+    queryFn: async () => ({ credentialId: "credential-fixture" }),
+  }),
+}));
+
+import ModelAccountPage from "../app/(settings)/model-account";
 import ModelConnection from "../app/(settings)/model-connection";
 import Models from "../app/(settings)/models";
 import type { ModelConnectionRequest } from "./model-connection-request";
@@ -797,15 +807,11 @@ it("searches discovered models without losing the selected default", async () =>
   expect(field("found-1")?.checked).toBe(true);
 });
 
-it("hides ordinary connection choices in account-only mode", async () => {
+it("shows the independent account page without ordinary connection choices", async () => {
   saved.modelAccountOnly = true;
-  expect(await notConnectedChoices()).toEqual([]);
+  await remount(async () => {
+    await act(async () => root.render(createElement(ModelAccountPage)));
+  });
   expect(container.textContent).not.toContain("Add provider");
-});
-
-it("redirects old connection links to account model settings", async () => {
-  saved.modelAccountOnly = true;
-  await remount(() => renderConnection());
-  expect(replace).toHaveBeenCalledWith("/models");
   expect(field("OpenAI-compatible server URL")).toBeNull();
 });

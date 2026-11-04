@@ -629,7 +629,7 @@ export default function Account() {
               ...(me?.ticketBoardEnabled ? [{ title: t("Board"), href: "/board" } as const] : []),
               { title: t("Artifacts"), href: "/artifacts" },
               { title: t("Models"), href: "/models" },
-              ...(!me?.modelAccountOnly ? [{ title: t("Voice"), href: "/voice" } as const] : []),
+              { title: t("Voice"), href: "/voice" },
             ] as const
           ).map(settingsLink)}
           <ApprovalModeRow key="approvals" approvals={approvals} disabled={pending} />

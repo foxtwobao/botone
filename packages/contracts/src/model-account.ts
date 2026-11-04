@@ -13,15 +13,18 @@ export const accountNavigationSchema = z.object({
   productHosts: z.array(z.string()).default([]),
 });
 export const modelAccountConfigSchema = z.discriminatedUnion("enabled", [
-  z.object({ enabled: z.literal(false) }),
+  z.object({ enabled: z.literal(false), modelAccountOnly: z.boolean().optional() }),
   z.object({
     enabled: z.literal(true),
+    modelAccountOnly: z.boolean().optional(),
+    serviceName: z.string().trim().min(1).max(80).optional(),
     navigation: accountNavigationSchema.optional(),
   }),
 ]);
 export const modelAccountStatusSchema = z.object({
   enabled: z.boolean(),
   connected: z.boolean(),
+  credentialId: z.string().optional(),
   linked: z.boolean().optional(),
   apiProtocol: z.enum(["chat-completions", "responses"]).optional(),
   recovery: z

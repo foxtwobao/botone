@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import type { JobPublisher, ProductAnalytics, SandboxProvider } from "@rakazo/adapter-kit";
-import { isModelAccountAuthorizationCheckpoint, runContinueJob } from "@rakazo/adapter-kit";
+import { runContinueJob } from "@rakazo/adapter-kit";
 import { cancelComputerRunWork, screenLeaseIdForRun, toComputerRef } from "@rakazo/adapters";
 import type {
   Actor,
@@ -625,7 +625,6 @@ function messagesWithLiveEvents(
 
 function mapRun(run: {
   id: string;
-  checkpoint?: string | null;
   userId: string;
   botId: string;
   threadId: string;
@@ -642,9 +641,6 @@ function mapRun(run: {
 }) {
   return {
     id: run.id,
-    ...(run.status === "waiting_input" && isModelAccountAuthorizationCheckpoint(run.checkpoint)
-      ? { modelAuthorizationRequired: true }
-      : {}),
     userId: run.userId,
     botId: run.botId,
     threadId: run.threadId,

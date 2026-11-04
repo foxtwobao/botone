@@ -1,18 +1,14 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { JobPublisher, SecretStore } from "@rakazo/adapter-kit";
-import {
-  ExternalModelAccountError,
-  modelAccountAuthorizationCheckpoint,
-} from "@rakazo/adapter-kit";
+import type { SecretStore } from "@rakazo/adapter-kit";
 import type { configuredModelAccount } from "@rakazo/adapters";
 import {
   discoverModelAccountModels,
+  ExternalModelAccountError,
   parseModelSecret,
   readHomeNavigation,
-  resumeModelAccountRuns,
-  serializeModelSecret,
 } from "@rakazo/adapters";
 import type { Auth } from "@rakazo/auth";
+import { readExternalAccountIdentity } from "@rakazo/auth/identity";
 import type { Actor } from "@rakazo/contracts";
 import { modelAccountSettingsSchema, OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
@@ -27,6 +23,8 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
+
+import { parseModelAccountSecret, serializeModelAccountSecret } from "./model-account-secret.js";
 
 type Connection = NonNullable<ReturnType<typeof configuredModelAccount>>;
 const CALLBACK = "/api/model-account/callback";
@@ -50,10 +48,12 @@ type Transaction = {
 
 export function modelAccountRoutes(deps: {
   connection: Connection | undefined;
+  modelAccountOnly?: boolean;
+  defaultModel?: string;
   prisma: PrismaClient;
   auth: Auth;
   secrets: SecretStore;
-  jobs?: JobPublisher;
+  issuer?: string;
   modelFetch?: typeof fetch;
   navigationFetch?: typeof fetch;
   webOrigin: string;
@@ -75,8 +75,10 @@ export function modelAccountRoutes(deps: {
     getLogger().warn("Model account operation failed", { operation: c.req.routePath });
     return c.json({ error: "unavailable" }, 503);
   });
+  const currentIdentity = async (userId: string) =>
+    readExternalAccountIdentity(prisma, userId, deps.issuer, (await auth.$context).secretConfig);
   const identity = async (userId: string) => {
-    const value = await auth.externalAccountIdentity(userId);
+    const value = await currentIdentity(userId);
     if (!value) throw new HTTPException(403, { message: "link_required" });
     return value;
   };
@@ -115,12 +117,15 @@ export function modelAccountRoutes(deps: {
       if (requireCatalog) throw error;
       /* Authorization remains valid when model discovery is temporarily unavailable. */
     }
-    const plaintext = serializeModelSecret({
-      ...connection.model,
-      apiProtocol: configured.apiProtocol ?? "chat-completions",
-      enabledModelIds: models,
+    const plaintext = serializeModelAccountSecret(
+      {
+        ...connection.model,
+        apiProtocol: configured.apiProtocol ?? "chat-completions",
+        enabledModelIds: models,
+        apiKey,
+      },
       externalAccount,
-    });
+    );
     const stored = await secrets.put(plaintext, {
       ...owner,
       operationId: "model-account",
@@ -169,6 +174,22 @@ export function modelAccountRoutes(deps: {
         },
         update: { secretId: stored.id },
       });
+      if (deps.defaultModel) {
+        // The primary key makes initialization race-safe with a user's own model selection.
+        await tx.userModelRoleChoice.createMany({
+          data: [
+            {
+              userId: owner.userId,
+              role: "main",
+              position: 0,
+              provider: OPENAI_COMPATIBLE_PROVIDER_ID,
+              modelId: deps.defaultModel,
+              credentialId: id,
+            },
+          ],
+          skipDuplicates: true,
+        });
+      }
       await tx.modelOAuthSession.deleteMany({
         where: { userId: owner.userId, provider: "external-model-revoke", scope: current.binding },
       });
@@ -179,7 +200,6 @@ export function modelAccountRoutes(deps: {
           secretId: previous.secretId,
         });
     });
-    if (deps.jobs) await resumeModelAccountRuns(prisma, deps.jobs, owner.userId, externalAccount);
   };
   app.get("/oidc", async (c) => {
     if (!connection) return c.text("Not available", 404);
@@ -213,16 +233,21 @@ export function modelAccountRoutes(deps: {
     return new Response(null, { status: 302, headers: result });
   });
   app.get("/config", async (c) => {
-    if (!connection) return c.json({ enabled: false });
+    if (!connection)
+      return c.json({
+        enabled: false,
+        ...(deps.modelAccountOnly ? { modelAccountOnly: true } : {}),
+      });
     const navigation = await readHomeNavigation(
       connection.navigationOrigin,
       deps.navigationFetch,
     ).catch(() => undefined);
     return c.json({
       enabled: true,
+      serviceName: connection.serviceName,
+      ...(deps.modelAccountOnly ? { modelAccountOnly: true } : {}),
       navigation,
-      // Installed clients still validate the original response envelope. These are derived
-      // public defaults, not deployment inputs; no default model is selected by authorization.
+      // Installed clients still validate these derived fields in the original response envelope.
       ...(navigation ? { ...navigation.defaults, modelId: "" } : {}),
     });
   });
@@ -230,7 +255,7 @@ export function modelAccountRoutes(deps: {
     if (!connection) return c.json({ enabled: false, connected: false });
     const signed = await session(c.req.raw);
     if (!signed) return c.json({ error: "login_required" }, 401);
-    const current = await auth.externalAccountIdentity(signed.user.id);
+    const current = await currentIdentity(signed.user.id);
     const credential = current
       ? await prisma.userModelCredential.findFirst({
           where: { id: `external-${current.accountId}`, userId: signed.user.id },
@@ -243,12 +268,16 @@ export function modelAccountRoutes(deps: {
         where: { id: credential.secretId, userId: signed.user.id },
       });
       if (secret) {
-        const parsed = parseModelSecret(await secrets.load(secret.ciphertext, secret.id));
+        const { secret: parsed, binding } = parseModelAccountSecret(
+          await secrets.load(secret.ciphertext, secret.id),
+        );
         if (parsed.kind === "openai_compatible")
           apiProtocol = parsed.apiProtocol === "responses" ? "responses" : "chat-completions";
         connected =
           parsed.kind === "openai_compatible" &&
-          parsed.externalAccount?.binding === current.binding;
+          Boolean(parsed.apiKey) &&
+          binding?.binding === current.binding &&
+          binding.accountId === current.accountId;
       }
     }
     const pending = await prisma.modelOAuthSession.findFirst({
@@ -261,18 +290,7 @@ export function modelAccountRoutes(deps: {
       | "authorization_unknown"
       | "revocation_unknown"
       | undefined;
-    if (
-      current &&
-      (await prisma.run.findFirst({
-        where: {
-          userId: signed.user.id,
-          status: "waiting_input",
-          checkpoint: modelAccountAuthorizationCheckpoint(current),
-        },
-        select: { id: true },
-      }))
-    )
-      recovery = "authorization_required";
+    if (credential && current && !connected) recovery = "authorization_required";
     if (pending) {
       const transaction = JSON.parse(
         await secrets.load(pending.ciphertext, pending.id),
@@ -294,6 +312,7 @@ export function modelAccountRoutes(deps: {
     return c.json({
       enabled: true,
       connected,
+      ...(connected && credential ? { credentialId: credential.id } : {}),
       linked: Boolean(current),
       ...(connected ? { apiProtocol } : {}),
       ...(recovery ? { recovery } : {}),
@@ -323,11 +342,16 @@ export function modelAccountRoutes(deps: {
     });
     if (!credential) return c.json({ error: "authorization_required" }, 403);
     const row = await prisma.secret.findUniqueOrThrow({ where: { id: credential.secretId } });
-    const secret = parseModelSecret(await secrets.load(row.ciphertext, row.id));
-    if (secret.kind !== "openai_compatible" || secret.externalAccount?.binding !== current.binding)
+    const { secret, binding } = parseModelAccountSecret(await secrets.load(row.ciphertext, row.id));
+    if (
+      secret.kind !== "openai_compatible" ||
+      !secret.apiKey ||
+      binding?.binding !== current.binding ||
+      binding.accountId !== current.accountId
+    )
       return c.json({ error: "authorization_required" }, 403);
     const stored = await secrets.put(
-      serializeModelSecret({ ...secret, apiProtocol: input.apiProtocol }),
+      serializeModelAccountSecret({ ...secret, apiProtocol: input.apiProtocol }, binding),
       {
         userId: signed.user.id,
         spaceId: owner.spaceId,
@@ -613,7 +637,11 @@ export function modelAccountRoutes(deps: {
         ? "rakazo://model-authorization"
         : (value.returnTo ?? new URL("/app", deps.webOrigin).href),
     );
-    if (outcome) destination.searchParams.set("error", outcome);
+    if (outcome)
+      destination.searchParams.set(
+        value.native || destination.pathname === "/sso/callback" ? "error" : "modelAccountError",
+        outcome,
+      );
     return c.redirect(destination.href);
   });
   app.post("/revoke", async (c) => {

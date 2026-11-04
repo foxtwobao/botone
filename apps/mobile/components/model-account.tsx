@@ -4,47 +4,22 @@ import type {
   ModelAccountStatus,
 } from "@rakazo/contracts";
 import { modelAccountErrorCodeSchema } from "@rakazo/contracts";
-import {
-  createModelAccountClient,
-  ModelAccountClientError,
-  resolveAccountNavigation,
-} from "@rakazo/core";
+import { ModelAccountClientError, resolveAccountNavigation } from "@rakazo/core";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, AppState, Linking, View } from "react-native";
-import { authHeaders, currentApiBase } from "../lib/api";
-import { useI18n } from "../lib/i18n";
-import { fetchServer } from "../lib/server-headers";
-import { currentSessionGeneration } from "../lib/session";
+import { ActivityIndicator, Alert, AppState, Linking, View } from "react-native";
+import { modelAccountClient as client } from "../lib/model-account-client";
+import { useI18n } from "../lib/model-account-i18n";
+import { continueWithSso } from "../lib/sso";
+import { errorText } from "../lib/user-error";
 import { MenuPickerMenu } from "./menu-picker";
-import { NativeActionButton } from "./native-action-button";
 import { SettingsGroup, SettingsRow } from "./settings-group";
-
-function client() {
-  const base = currentApiBase();
-  const generation = currentSessionGeneration();
-  return createModelAccountClient(async (url, init) => {
-    const headers = new Headers(await authHeaders());
-    if (base !== currentApiBase() || generation !== currentSessionGeneration())
-      throw new Error("Account changed");
-    new Headers(init?.headers).forEach((value, key) => {
-      headers.set(key, value);
-    });
-    headers.set("origin", "rakazo://");
-    const response = await fetchServer(url, { ...init, headers }, base);
-    if (base !== currentApiBase() || generation !== currentSessionGeneration())
-      throw new Error("Account changed");
-    return response;
-  }, `${base}/api/model-account`);
-}
 
 export function ModelAccount({
   onChanged,
-  resumeTask = false,
   required = false,
 }: {
   onChanged?: () => void | Promise<void>;
-  resumeTask?: boolean;
   required?: boolean;
 }) {
   const { t } = useI18n();
@@ -52,19 +27,23 @@ export function ModelAccount({
   const [status, setStatus] = useState<ModelAccountStatus>();
   const [balance, setBalance] = useState<string>();
   const [error, setError] = useState<ModelAccountErrorCode>();
+  const [identityError, setIdentityError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const actionAbort = useRef<AbortController | null>(null);
   const refresh = useCallback(
-    async (api: ReturnType<typeof client>, signal?: AbortSignal) => {
+    async (api: ReturnType<typeof client>, signal?: AbortSignal, includeBalance = true) => {
       const latest = await api.status(signal);
       if (signal?.aborted) return;
       setStatus(latest);
+      if (latest.linked) setIdentityError(undefined);
       if (latest.recovery !== "authorization_unknown" && latest.recovery !== "revocation_unknown")
         setError((previous) => (previous === "result_unknown" ? undefined : previous));
-      if (latest.linked === false) {
+      if (latest.linked === false || !latest.connected || latest.recovery) {
         setBalance(undefined);
         return;
       }
+      if (!includeBalance) return;
       try {
         const funds = await api.balance(signal);
         if (!signal?.aborted) setBalance(`${funds.amount} ${funds.unit}`);
@@ -81,6 +60,7 @@ export function ModelAccount({
       setConfig(undefined);
       setStatus(undefined);
       setBalance(undefined);
+      setIdentityError(undefined);
       setError(undefined);
       const api = client();
       const update = () => {
@@ -105,7 +85,7 @@ export function ModelAccount({
         actionAbort.current?.abort();
         subscription.remove();
       };
-    }, [refresh]),
+    }, [refresh, attempt]),
   );
   if (!config?.enabled)
     return required && (config || error) ? (
@@ -114,17 +94,28 @@ export function ModelAccount({
       </SettingsGroup>
     ) : null;
   const navigation = resolveAccountNavigation(config);
+  const serviceName = config.serviceName ?? t("model service");
+  const authorizationTitle = config.serviceName
+    ? t("Authorize access to {serviceName} models", { serviceName })
+    : t("Authorize model service");
+  const disclosure = t(
+    "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance.",
+    { serviceName },
+  );
   const act = async (
-    kind: "connect" | "revoke" | "refresh" | "models" | "protocol",
+    kind: "connect" | "revoke" | "refresh" | "models" | "protocol" | "identity",
     protocol?: "chat-completions" | "responses",
   ) => {
     const abort = new AbortController();
     actionAbort.current = abort;
     setBusy(true);
     setError(undefined);
+    setIdentityError(undefined);
     const api = client();
     try {
-      if (kind === "protocol" && protocol) await api.settings(protocol, abort.signal);
+      if (kind === "identity") {
+        if (!(await continueWithSso("link"))) return;
+      } else if (kind === "protocol" && protocol) await api.settings(protocol, abort.signal);
       else if (kind === "models") await api.refreshModels(abort.signal);
       else if (kind === "revoke") await api.revoke(abort.signal);
       else if (kind !== "refresh") {
@@ -146,10 +137,11 @@ export function ModelAccount({
         }
       }
       abort.signal.throwIfAborted();
-      await refresh(api, abort.signal);
+      await refresh(api, abort.signal, kind === "refresh");
       await onChanged?.();
     } catch (cause) {
       if (abort.signal.aborted) return;
+      if (kind === "identity") setIdentityError(errorText(cause, t("Could not continue")));
       setError(cause instanceof ModelAccountClientError ? cause.code : "unavailable");
       await refresh(api, abort.signal).catch(() => undefined);
     } finally {
@@ -158,8 +150,14 @@ export function ModelAccount({
     }
   };
   const identityUnavailable = status?.linked === false || error === "link_required";
+  const setup =
+    !status?.connected ||
+    Boolean(status.recovery) ||
+    identityUnavailable ||
+    error === "authorization_required";
   const message =
-    status?.recovery === "revocation_unknown"
+    identityError ??
+    (status?.recovery === "revocation_unknown"
       ? t("Disconnection pending confirmation.")
       : error &&
           error !== "authorization_required" &&
@@ -176,35 +174,42 @@ export function ModelAccount({
                 ? t("Sign in with SSO to use the model account.")
                 : error
                   ? t("Model account unavailable")
-                  : undefined;
-  if (resumeTask) {
+                  : undefined);
+
+  if (!status)
     return (
-      <SettingsGroup footer={error || identityUnavailable ? message : undefined}>
-        <NativeActionButton
-          label={
-            status?.recovery === "revocation_unknown"
-              ? t("Retry disconnect")
-              : status?.recovery === "authorization_unknown"
-                ? t("Retry")
-                : t("Authorize and continue")
-          }
-          disabled={busy || identityUnavailable}
-          onPress={() =>
-            void act(
-              status?.recovery === "revocation_unknown"
-                ? "revoke"
-                : status?.recovery === "authorization_unknown"
-                  ? "refresh"
-                  : "connect",
-            )
-          }
-        />
+      <SettingsGroup
+        label={authorizationTitle}
+        footer={error ? t("Model account unavailable") : undefined}
+      >
+        {error ? (
+          <SettingsRow title={t("Retry")} onPress={() => setAttempt((value) => value + 1)} />
+        ) : (
+          <SettingsRow title={t("Checking authorization…")} trailing={<ActivityIndicator />} />
+        )}
       </SettingsGroup>
     );
-  }
   return (
-    <SettingsGroup label={t("Model account")} footer={message}>
-      {status?.connected && !message ? <SettingsRow title={t("Connected to TokenONE")} /> : null}
+    <SettingsGroup
+      label={setup ? authorizationTitle : t("Model account")}
+      footer={
+        setup
+          ? [disclosure, message, t("You will return to the app after authorization.")]
+              .filter(Boolean)
+              .join("\n")
+          : message
+      }
+    >
+      {!setup && status?.connected && !message ? <SettingsRow title={t("Connected")} /> : null}
+      {identityUnavailable ? (
+        <SettingsRow
+          title={t("Continue with {name}", { name: "SSO" })}
+          disabled={busy}
+          prominent
+          trailing={busy ? <ActivityIndicator /> : undefined}
+          onPress={() => void act("identity")}
+        />
+      ) : null}
       {!identityUnavailable &&
       status?.recovery !== "revocation_unknown" &&
       (!status?.connected ||
@@ -213,21 +218,25 @@ export function ModelAccount({
         status?.recovery) ? (
         <SettingsRow
           title={
-            error === "authorization_required" || status?.recovery === "authorization_required"
-              ? t("Authorize again")
-              : status?.recovery === "authorization_unknown" || error === "result_unknown"
-                ? t("Retry")
-                : status?.recovery === "authorization_pending"
-                  ? t("Authorize again")
-                  : t("Use model account")
+            busy
+              ? t("Authorizing…")
+              : error === "authorization_required" || status?.recovery === "authorization_required"
+                ? t("Authorize again")
+                : status?.recovery === "authorization_unknown" || error === "result_unknown"
+                  ? t("Retry")
+                  : status?.recovery === "authorization_pending"
+                    ? t("Authorize again")
+                    : t("Agree and authorize")
           }
           disabled={busy}
+          prominent
+          trailing={busy ? <ActivityIndicator /> : undefined}
           onPress={() =>
             void act(status?.recovery === "authorization_unknown" ? "refresh" : "connect")
           }
         />
       ) : null}
-      {status?.connected ? (
+      {!setup && status?.connected ? (
         <SettingsRow
           title={t("Refresh models")}
           disabled={busy}
@@ -242,7 +251,7 @@ export function ModelAccount({
           onPress={() => void act("revoke")}
         />
       ) : null}
-      {status?.connected ? (
+      {!setup && status?.connected ? (
         <MenuPickerMenu
           label={t("API protocol")}
           choices={[
@@ -264,13 +273,15 @@ export function ModelAccount({
           </View>
         </MenuPickerMenu>
       ) : null}
-      <SettingsRow
-        title={t("Refresh balance")}
-        value={balance}
-        disabled={busy}
-        onPress={() => void act("refresh")}
-      />
-      {navigation ? (
+      {!setup ? (
+        <SettingsRow
+          title={t("Refresh balance")}
+          value={balance}
+          disabled={busy}
+          onPress={() => void act("refresh")}
+        />
+      ) : null}
+      {!setup && navigation ? (
         <>
           <SettingsRow
             title={t("Home")}

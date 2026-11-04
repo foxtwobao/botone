@@ -1141,11 +1141,6 @@ describe("thread composer isolation", () => {
     expect(props.startVoiceCall).toHaveBeenCalledOnce();
   });
 
-  it("hides the call control when voice is unavailable", () => {
-    render({ voiceEnabled: false });
-    expect(container.querySelector('[aria-label="Call"]')).toBeNull();
-  });
-
   it("focuses the input when its padding wrapper is pressed without adding an accessibility stop", () => {
     const field = container.querySelector("input")!;
     const wrapper = field.parentElement!;

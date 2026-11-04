@@ -154,7 +154,6 @@ export async function requestUserCall(
     events: ThreadEvents;
     jobs: JobPublisher;
     phoneCallsEnabled?: boolean;
-    modelAccountOnly?: boolean;
     phoneCallCooldownMinutes?: number;
     phoneCallRingSeconds?: number;
     runLease?: ExecutorDeps["runLease"];
@@ -162,7 +161,7 @@ export async function requestUserCall(
   run: { id: string; spaceId: string; userId: string; threadId: string; botId: string },
   input: { reason: string; opening: string },
 ) {
-  if (deps.modelAccountOnly || !deps.phoneCallsEnabled) return { error: "Calls are disabled." };
+  if (!deps.phoneCallsEnabled) return { error: "Calls are disabled." };
   const request = newCallRequest({ ...input, phoneCallRingSeconds: deps.phoneCallRingSeconds });
   if ("error" in request) return request;
   // The call cooldown is per person across all their Spaces; every other read and

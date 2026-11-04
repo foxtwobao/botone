@@ -822,10 +822,6 @@ msgstr "API anahtarı üstbilgisi"
 msgid "API keys"
 msgstr "API anahtarları"
 
-#: src/components/ModelAccount.tsx
-msgid "API protocol"
-msgstr ""
-
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Görünüm"
@@ -938,10 +934,6 @@ msgstr "Kimlik doğrulama başarısız."
 msgid "Authorization code"
 msgstr "Yetkilendirme kodu"
 
-#: src/components/ModelAccount.tsx
-msgid "Authorization incomplete."
-msgstr ""
-
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
 msgstr "Yetkilendirme parametreleri (isteğe bağlı)"
@@ -957,18 +949,6 @@ msgstr "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar dene."
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "Yetkilendir"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize again"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize and continue"
-msgstr "Yetkilendir ve devam et"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize the model account to continue."
-msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1024,10 +1004,6 @@ msgstr "Geri"
 #: src/pages/Auth.tsx
 msgid "Back to sign in"
 msgstr "Oturum açmaya geri dön"
-
-#: src/components/ModelAccount.tsx
-msgid "Balance unavailable"
-msgstr ""
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1183,7 +1159,6 @@ msgstr "Görselleri okuyamaz"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/markdown-link-prompt.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/ModelCredits.tsx
 #: src/components/PasskeySettings.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -1531,10 +1506,6 @@ msgstr ""
 msgid "Complete"
 msgstr "Tamamlandı"
 
-#: src/components/ModelAccount.tsx
-msgid "Complete authorization in the opened window."
-msgstr ""
-
 #: src/components/SubagentCard.tsx
 msgid "Completed"
 msgstr "Tamamlandı"
@@ -1684,10 +1655,6 @@ msgstr "Bağlandı"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "{0} bağlandı."
-
-#: src/components/ModelAccount.tsx
-msgid "Connected to TokenONE"
-msgstr "TokenONE bağlantısı kuruldu"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -1854,10 +1821,6 @@ msgstr "OAuth tamamlanamadı"
 
 #: src/components/DesktopUpdates.tsx
 msgid "Could not complete the update. Try again."
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Could not confirm authorization. Try again."
 msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
@@ -2669,10 +2632,6 @@ msgstr "{disconnectName} bağlantısı kesildi."
 msgid "Disconnecting…"
 msgstr "Bağlantı kesiliyor…"
 
-#: src/components/ModelAccount.tsx
-msgid "Disconnection pending confirmation."
-msgstr ""
-
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
 #: src/components/PasskeyOffer.tsx
@@ -3237,10 +3196,6 @@ msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk, release to send"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Home"
 msgstr ""
 
 #: src/lib/cron.ts
@@ -3878,15 +3833,6 @@ msgstr "Model"
 #: src/lib/model-connection-preflight.ts
 msgid "Model \"{modelId}\" was not listed."
 msgstr "\"{modelId}\" modeli listelenmedi."
-
-#: src/components/ModelAccount.tsx
-#: src/pages/Onboarding.tsx
-msgid "Model account"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Model account unavailable"
-msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4726,10 +4672,6 @@ msgstr ""
 msgid "Recent"
 msgstr "Son"
 
-#: src/components/ModelAccount.tsx
-msgid "Recharge"
-msgstr ""
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
 msgstr ""
@@ -4818,16 +4760,8 @@ msgstr "Yönlendirme URI'si"
 msgid "Refresh"
 msgstr "Yenile"
 
-#: src/components/ModelAccount.tsx
-msgid "Refresh balance"
-msgstr ""
-
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Refresh models"
 msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -5075,7 +5009,6 @@ msgstr ""
 #: src/components/AccountAccess.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/integrations/skills-dialog.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/AdminAccessPage.tsx
 #: src/pages/Auth.tsx
@@ -5085,10 +5018,6 @@ msgstr ""
 #: src/pages/SpaceSettingOverrides.tsx
 msgid "Retry"
 msgstr "Yeniden dene"
-
-#: src/components/ModelAccount.tsx
-msgid "Retry disconnect"
-msgstr ""
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5552,10 +5481,6 @@ msgstr "SSO bağlamak için mevcut hesabınıza giriş yapın"
 #: src/components/PasskeySignIn.tsx
 msgid "Sign in with passkey"
 msgstr "Geçiş anahtarıyla oturum aç"
-
-#: src/components/ModelAccount.tsx
-msgid "Sign in with SSO to use the model account."
-msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6404,10 +6329,6 @@ msgstr "{label}: varsayılanlarını kullan"
 
 #: src/components/integrations/plugin-marketplace.tsx
 msgid "Use in this bot"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
 msgstr ""
 
 #: src/components/ModelCredits.tsx

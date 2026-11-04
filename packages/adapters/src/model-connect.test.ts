@@ -947,18 +947,3 @@ it("requires HTTPS when saving new or inherited headers on public HTTP", () => {
     vi.unstubAllEnvs();
   }
 });
-
-it("marks externally managed connections without exposing their account reference", () => {
-  const plaintext = serializeModelSecret({
-    kind: "openai_compatible",
-    baseUrl: "https://models.example.test/v1",
-    externalAccount: { accountId: "existing-account", binding: "existing-binding" },
-  });
-  const dto = modelCredentialDto(
-    { id: "connection", provider: "openai-compatible", label: "Model account" },
-    plaintext,
-  );
-  expect(dto.managed).toBe(true);
-  expect(dto).not.toHaveProperty("externalAccount");
-  expect(dto).not.toHaveProperty("apiKey");
-});

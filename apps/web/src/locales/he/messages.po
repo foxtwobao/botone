@@ -822,10 +822,6 @@ msgstr "header של מפתח API"
 msgid "API keys"
 msgstr "מפתחות API"
 
-#: src/components/ModelAccount.tsx
-msgid "API protocol"
-msgstr ""
-
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "מראה"
@@ -938,10 +934,6 @@ msgstr "האימות נכשל."
 msgid "Authorization code"
 msgstr "קוד הרשאה"
 
-#: src/components/ModelAccount.tsx
-msgid "Authorization incomplete."
-msgstr ""
-
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
 msgstr "פרמטרים להרשאה (אופציונלי)"
@@ -957,18 +949,6 @@ msgstr "תם הזמן לאישור ההרשאה. אפשר לנסות שוב."
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "מתן הרשאה"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize again"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize and continue"
-msgstr "אישור והמשך"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize the model account to continue."
-msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1024,10 +1004,6 @@ msgstr "חזרה"
 #: src/pages/Auth.tsx
 msgid "Back to sign in"
 msgstr "חזרה להתחברות"
-
-#: src/components/ModelAccount.tsx
-msgid "Balance unavailable"
-msgstr ""
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1183,7 +1159,6 @@ msgstr "לא ניתן לקרוא תמונות"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/markdown-link-prompt.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/ModelCredits.tsx
 #: src/components/PasskeySettings.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -1531,10 +1506,6 @@ msgstr "צפוף"
 msgid "Complete"
 msgstr "הושלם"
 
-#: src/components/ModelAccount.tsx
-msgid "Complete authorization in the opened window."
-msgstr ""
-
 #: src/components/SubagentCard.tsx
 msgid "Completed"
 msgstr "הושלם"
@@ -1684,10 +1655,6 @@ msgstr "מחובר"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "{0} מחובר."
-
-#: src/components/ModelAccount.tsx
-msgid "Connected to TokenONE"
-msgstr "מחובר ל-TokenONE"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -1855,10 +1822,6 @@ msgstr "לא ניתן להשלים את OAuth"
 #: src/components/DesktopUpdates.tsx
 msgid "Could not complete the update. Try again."
 msgstr "לא ניתן להשלים את העדכון. אפשר לנסות שוב."
-
-#: src/components/ModelAccount.tsx
-msgid "Could not confirm authorization. Try again."
-msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2669,10 +2632,6 @@ msgstr "{disconnectName} נותק."
 msgid "Disconnecting…"
 msgstr "מנתק…"
 
-#: src/components/ModelAccount.tsx
-msgid "Disconnection pending confirmation."
-msgstr ""
-
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
 #: src/components/PasskeyOffer.tsx
@@ -3237,10 +3196,6 @@ msgstr ""
 
 #: src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk, release to send"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Home"
 msgstr ""
 
 #: src/lib/cron.ts
@@ -3878,15 +3833,6 @@ msgstr "מודל"
 #: src/lib/model-connection-preflight.ts
 msgid "Model \"{modelId}\" was not listed."
 msgstr "המודל \"{modelId}\" לא הופיע ברשימה."
-
-#: src/components/ModelAccount.tsx
-#: src/pages/Onboarding.tsx
-msgid "Model account"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Model account unavailable"
-msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4726,10 +4672,6 @@ msgstr ""
 msgid "Recent"
 msgstr "אחרונים"
 
-#: src/components/ModelAccount.tsx
-msgid "Recharge"
-msgstr ""
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
 msgstr ""
@@ -4818,16 +4760,8 @@ msgstr "כתובת הפניה (Redirect URI)"
 msgid "Refresh"
 msgstr "רענון"
 
-#: src/components/ModelAccount.tsx
-msgid "Refresh balance"
-msgstr ""
-
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Refresh models"
 msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -5075,7 +5009,6 @@ msgstr "משחזר את סביבת העבודה"
 #: src/components/AccountAccess.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/integrations/skills-dialog.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/AdminAccessPage.tsx
 #: src/pages/Auth.tsx
@@ -5085,10 +5018,6 @@ msgstr "משחזר את סביבת העבודה"
 #: src/pages/SpaceSettingOverrides.tsx
 msgid "Retry"
 msgstr "לנסות שוב"
-
-#: src/components/ModelAccount.tsx
-msgid "Retry disconnect"
-msgstr ""
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5552,10 +5481,6 @@ msgstr "יש להתחבר לחשבון הקיים כדי לקשר SSO"
 #: src/components/PasskeySignIn.tsx
 msgid "Sign in with passkey"
 msgstr "כניסה עם מפתח גישה"
-
-#: src/components/ModelAccount.tsx
-msgid "Sign in with SSO to use the model account."
-msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6404,10 +6329,6 @@ msgstr "שימוש בברירות המחדל עבור {label}"
 
 #: src/components/integrations/plugin-marketplace.tsx
 msgid "Use in this bot"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
 msgstr ""
 
 #: src/components/ModelCredits.tsx

@@ -406,7 +406,7 @@ export function ModelRoleSettings({
                       <DropdownMenuSeparator />
                     </>
                   ) : null}
-                  {connection && !connection.managed ? (
+                  {connection ? (
                     <DropdownMenuItem onClick={() => onManage(connection.provider, connection.id)}>
                       <Trans>Manage {providerName(choice)}</Trans>
                     </DropdownMenuItem>

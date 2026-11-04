@@ -693,44 +693,42 @@ export function BotSettings({
                 </div>
               ) : null}
             </SettingsGroup>
-            {!me?.modelAccountOnly ? (
-              <SettingsGroup label={t`Voice`}>
+            <SettingsGroup label={t`Voice`}>
+              <label
+                htmlFor={`${ids}-auto-speak`}
+                className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm text-foreground"
+              >
+                <span className={rowLabelClass}>
+                  <Trans>Read replies aloud</Trans>
+                </span>
+                <Switch
+                  id={`${ids}-auto-speak`}
+                  checked={autoSpeak}
+                  onCheckedChange={(checked) => setAutoSpeak(checked)}
+                />
+              </label>
+              {voices?.length ? (
                 <label
-                  htmlFor={`${ids}-auto-speak`}
-                  className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm text-foreground"
+                  htmlFor={`${ids}-voice`}
+                  className="flex min-h-11 items-center justify-between gap-3 text-sm text-foreground"
                 >
-                  <span className={rowLabelClass}>
-                    <Trans>Read replies aloud</Trans>
-                  </span>
-                  <Switch
-                    id={`${ids}-auto-speak`}
-                    checked={autoSpeak}
-                    onCheckedChange={(checked) => setAutoSpeak(checked)}
-                  />
-                </label>
-                {voices?.length ? (
-                  <label
-                    htmlFor={`${ids}-voice`}
-                    className="flex min-h-11 items-center justify-between gap-3 text-sm text-foreground"
+                  <Trans>Voice</Trans>
+                  <NativeSelect
+                    id={`${ids}-voice`}
+                    className="max-w-2/3"
+                    value={voiceId}
+                    onChange={(event) => setVoiceId(event.target.value)}
                   >
-                    <Trans>Voice</Trans>
-                    <NativeSelect
-                      id={`${ids}-voice`}
-                      className="max-w-2/3"
-                      value={voiceId}
-                      onChange={(event) => setVoiceId(event.target.value)}
-                    >
-                      <NativeSelectOption value="">{t`Account default`}</NativeSelectOption>
-                      {voices.map((voice) => (
-                        <NativeSelectOption key={voice.id} value={voice.id}>
-                          {voice.label}
-                        </NativeSelectOption>
-                      ))}
-                    </NativeSelect>
-                  </label>
-                ) : null}
-              </SettingsGroup>
-            ) : null}
+                    <NativeSelectOption value="">{t`Account default`}</NativeSelectOption>
+                    {voices.map((voice) => (
+                      <NativeSelectOption key={voice.id} value={voice.id}>
+                        {voice.label}
+                      </NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </label>
+              ) : null}
+            </SettingsGroup>
             <SettingsGroup label={t`Permissions`}>
               <div className="flex min-h-11 items-center justify-between gap-3 text-sm">
                 <label htmlFor={`${ids}-daily-check-ins`} className={rowLabelClass}>

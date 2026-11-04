@@ -38,7 +38,7 @@ import type { EmailLocaleOf } from "./email.js";
 import { emailLocale, passwordResetEmail, signInCodeEmail, verificationEmail } from "./email.js";
 import { hasRecentIdentityConfirmation, identityConfirmation } from "./identity-confirmation.js";
 import type { OidcConfig } from "./oidc.js";
-import { isCurrentOidcAccount, oidcDiscovery, readExternalAccountIdentity } from "./oidc.js";
+import { isCurrentOidcAccount, oidcDiscovery } from "./oidc.js";
 import { passkeyRelyingParty } from "./passkey.js";
 import type { TokenKey } from "./token-storage.js";
 import { encryptStoredOAuthTokens, openIdToken, sealIdToken } from "./token-storage.js";
@@ -663,8 +663,6 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
   authContext = auth.$context;
   return Object.assign(auth, {
     emailCodeSignIn,
-    externalAccountIdentity: async (userId: string) =>
-      readExternalAccountIdentity(prisma, userId, env.oidc?.issuer, await tokenKey()),
     /** Encrypts OAuth tokens stored before encryption was enabled. Safe to rerun. */
     encryptStoredOAuthTokens: async () => encryptStoredOAuthTokens(prisma, await tokenKey()),
     ssoAvailability: () => discovery?.availability(),
@@ -807,5 +805,3 @@ function isOidcCallback(
 ): boolean {
   return ctx?.path === "/callback/:id" && ctx.params?.id === "oidc";
 }
-
-export { readExternalAccountIdentity } from "./oidc.js";

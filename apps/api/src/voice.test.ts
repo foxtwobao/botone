@@ -11,7 +11,6 @@ import {
   disconnectVoiceCredential,
   fishSpeechModelValue,
   isVoiceProviderFailure,
-  loadVoiceCredential,
   MAX_SPEAK_REQUEST_BYTES,
   MAX_TRANSCRIBE_REQUEST_BYTES,
   mountVoiceHttpRoutes,
@@ -25,7 +24,6 @@ import {
   voiceChoicesChanged,
   voiceCredentialPlaintext,
   voiceCredentialServer,
-  voiceProviderFor,
 } from "./voice.js";
 
 describe("toVoiceStatus", () => {
@@ -1151,34 +1149,3 @@ describe("transcribeInboundVoice", () => {
     expect(transcribe).not.toHaveBeenCalled();
   });
 });
-
-it("refuses stored and new voice connections in account-only mode", async () => {
-  const deps = { env: { modelAccountOnly: true } } as VoiceDeps;
-  const actor = { userId: "fixture", spaceId: "fixture" } as Actor;
-  expect(await loadVoiceCredential(deps, actor, "openai")).toBeNull();
-  await expect(voiceProviderFor(deps, "openai")).rejects.toMatchObject({ code: "FORBIDDEN" });
-  await expect(
-    persistVoiceCredential(deps, actor, { provider: "openai", plaintext: "fake-key" }),
-  ).rejects.toMatchObject({ code: "FORBIDDEN" });
-  expect(
-    await transcribeInboundVoice(deps, actor, {
-      audio: new Uint8Array(),
-      mimeType: "audio/wav",
-      signal: new AbortController().signal,
-    }),
-  ).toBeNull();
-});
-
-it.each(["speak", "transcribe"])(
-  "blocks direct %s HTTP requests without contacting any provider",
-  async (path) => {
-    const app = new Hono();
-    mountVoiceHttpRoutes(
-      app,
-      { env: { modelAccountOnly: true } } as VoiceDeps,
-      async () => ({ userId: "fixture", spaceId: "fixture" }) as Actor,
-    );
-    const response = await app.request(`/api/voice/${path}`, { method: "POST", body: "{}" });
-    expect(response.status).toBe(403);
-  },
-);

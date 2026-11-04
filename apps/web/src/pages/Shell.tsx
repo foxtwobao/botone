@@ -16,7 +16,6 @@ import {
   isActive,
   isRunWorking,
   memberName,
-  modelAccountAuthorizationMessageIds,
 } from "@rakazo/core";
 import { fetchFresh, writeSaved } from "@rakazo/core/query";
 import type { GroupAvatarMember } from "@rakazo/ui-web";
@@ -69,6 +68,7 @@ import type { AppearancePreference } from "../lib/ui-appearance";
 import { getUiAppearancePreference, setUiAppearance } from "../lib/ui-appearance";
 import { useDesktopBadge } from "../lib/use-desktop-badge";
 import { HostComputerPrompt } from "./HostComputerPrompt";
+import { useAccountAuthorizationPrompt } from "./model-account/use-account-authorization-prompt";
 import { RoutineList } from "./RoutineEditor";
 import { useSettingsNavItems } from "./settings-nav";
 import { ArchivedChats } from "./shell/archived-chats";
@@ -149,6 +149,11 @@ function SpaceShell() {
     overlay,
     setOverlay,
   } = useShellNavigation();
+  useAccountAuthorizationPrompt(
+    userId ?? undefined,
+    () => setOverlay({ kind: "settings", section: "models", spaceId: null }),
+    overlay?.kind === "settings" && overlay.section === "models",
+  );
   const queries = spaceQueries(userId ?? null, shellSpaceId);
   const roster = useSpaceRoster({ rpc, seed, botId, groupId, navigate, redirectKeepingOverlay });
   const {
@@ -486,10 +491,6 @@ function SpaceShell() {
       : null;
   const currentRuns = activeThreadRuns(activeSnapshot);
   const answerableAskIds = useMemo(() => answerableAskMessageIds(activeSnapshot), [activeSnapshot]);
-  const modelAuthorizationIds = useMemo(
-    () => modelAccountAuthorizationMessageIds(activeSnapshot, userId),
-    [activeSnapshot, userId],
-  );
   const dismissableAskIds = useMemo(
     () => dismissableAskMessageIds(activeSnapshot, userId),
     [activeSnapshot, userId],
@@ -1038,7 +1039,6 @@ function SpaceShell() {
               unreadAfterSeq={read.unreadAfterSeq}
               loadingOlder={loadingOlder}
               answerableAskIds={answerableAskIds}
-              modelAuthorizationIds={modelAuthorizationIds}
               dismissableAskIds={dismissableAskIds}
               running={transcriptRunning}
               workingBots={workingBots}

@@ -1,5 +1,4 @@
 import type { ProductAnalytics, RealtimeFanout } from "@rakazo/adapter-kit";
-import { isModelAccountAuthorizationCheckpoint } from "@rakazo/adapter-kit";
 import type {
   BotSecretDestination,
   LoginFieldInput,
@@ -206,8 +205,6 @@ export interface PauseRunForInput {
   leaseOwner: string;
   leaseFence: number;
   blocks: MessageBlock[];
-  /** A server-owned prerequisite checkpoint restored before any model call. */
-  checkpoint?: string;
   /**
    * Unredacted choice actions for resume. Persisted only on the run checkpoint
    * (not in message blocks) so clients still see redacted labels.
@@ -1329,7 +1326,6 @@ export async function pauseRunForInput(
         status: "waiting_input",
         leaseOwner: null,
         leaseExpiresAt: null,
-        ...(input.checkpoint !== undefined ? { checkpoint: input.checkpoint } : {}),
         ...(input.offeredActions?.length
           ? { checkpoint: choiceAskCheckpoint(input.offeredActions) }
           : {}),
@@ -1374,12 +1370,7 @@ export async function pauseRunForInput(
       botId: input.botId,
       type: "run.waiting_input",
       runId: input.runId,
-      payload: {
-        ...(run?.userId ? { userId: run.userId } : {}),
-        ...(isModelAccountAuthorizationCheckpoint(input.checkpoint)
-          ? { modelAuthorizationRequired: true }
-          : {}),
-      },
+      payload: run?.userId ? { userId: run.userId } : {},
     });
     await tx.event.deleteMany({
       where: { runId: input.runId, ...transientRunEventsWhere() },

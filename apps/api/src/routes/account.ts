@@ -1,7 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import {
   effectiveModelRole,
-  findConnectedModelCredential,
   hasHostedModelCredits,
   isAutoReviewCheckerConfigured,
   PushSessionEndedError,
@@ -279,17 +278,13 @@ export function accountRoutes(ctx: RouterContext) {
     },
     voice: {
       catalog: authed.voice.catalog.handler(async () =>
-        deps.env.modelAccountOnly
-          ? []
-          : listVoiceCatalog({ allowPrivateEndpoint: deps.env?.mcpAllowPrivateEndpoint }),
+        listVoiceCatalog({ allowPrivateEndpoint: deps.env?.mcpAllowPrivateEndpoint }),
       ),
       status: authed.voice.status.handler(async ({ context, input }) => {
-        if (deps.env.modelAccountOnly) return toVoiceStatus(null);
         const cred = await findDefaultVoiceCredential(deps.prisma, context.actor, input?.scope);
         return toVoiceStatus(cred);
       }),
       credentials: authed.voice.credentials.handler(async ({ context, input }) => {
-        if (deps.env.modelAccountOnly) return [];
         const target = await voicePreferenceTarget(deps.prisma, context.actor, input?.scope);
         const [rows, preferences] = await Promise.all([
           deps.prisma.userVoiceCredential.findMany({
@@ -410,21 +405,6 @@ async function loadAutoReviewSettings(deps: RouterDeps, actor: Actor, scope?: Se
     ...(deploymentChecker || !role.primary ? [] : [role.primary]),
     ...role.backups,
   ];
-  if (deps.env.modelAccountOnly) {
-    const connections = await Promise.all(
-      memberChoices.map((choice) =>
-        findConnectedModelCredential(
-          deps.prisma,
-          deps.secrets,
-          actor,
-          choice.provider,
-          choice.modelId,
-          { credentialId: choice.credentialId, modelAccountOnly: true },
-        ),
-      ),
-    );
-    return { ...settings, checkerAvailable: connections.some(Boolean) };
-  }
   const environmentAvailable = isAutoReviewCheckerConfigured({ env: process.env });
   if (memberChoices.length === 0) {
     // The deployment's checker runs on its own configuration or on the member's key for it.

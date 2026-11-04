@@ -29,6 +29,10 @@ const { stack, sheet } = vi.hoisted(() => ({
   sheet: { canGoBack: vi.fn(), goBack: vi.fn(), dispatch: vi.fn() },
 }));
 
+vi.mock("../components/model-account-routes", () => ({
+  ModelAccountRoutes: ({ children }: { children: ReactNode }) => children,
+}));
+
 vi.mock("expo-router", () => {
   function Stack(props: { screenOptions: ScreenOptions; children?: ReactNode }) {
     stack.screenOptions = props.screenOptions;

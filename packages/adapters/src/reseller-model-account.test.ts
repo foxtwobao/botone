@@ -1,6 +1,6 @@
-import { ExternalModelAccountError } from "@rakazo/adapter-kit";
 import { getLogger } from "@rakazo/logging";
 import { describe, expect, it, vi } from "vitest";
+import { ExternalModelAccountError } from "./model-account-provider.js";
 import { ResellerModelAccountProvider } from "./reseller-model-account.js";
 
 const identity = { issuer: "https://identity.example.test", subject: "subject-1" };
@@ -26,6 +26,7 @@ describe("external model account protocol", () => {
       expect(warning).toHaveBeenLastCalledWith("Model account service rejected a request", {
         operation: "keys/ensure",
         httpStatus: 401,
+        rejectionCode: "unknown",
       });
       const transport = vi.fn<typeof fetch>(async () => {
         throw new Error("private transport detail");
@@ -58,6 +59,34 @@ describe("external model account protocol", () => {
       const logged = JSON.stringify(warning.mock.calls);
       for (const secret of ["private", config.credential, identity.subject, identity.issuer])
         expect(logged).not.toContain(secret);
+    } finally {
+      warning.mockRestore();
+    }
+  });
+
+  it.each([
+    "TOKENONE_GROUP_FORBIDDEN",
+    "TOKENONE_USER_DISABLED",
+    "APP_USER_AUTHORIZATION_REQUIRED",
+    "SCOPE_FORBIDDEN",
+    "AUTHORIZATION_FLOW_INVALID",
+  ])("records the safe authorization failure code %s without response details", async (code) => {
+    const warning = vi.spyOn(getLogger(), "warn").mockImplementation(() => undefined);
+    try {
+      const { provider, fetch } = fixture(
+        { error: code, retryable: false, detail: "private response detail" },
+        403,
+      );
+      await expect(
+        provider.complete({ code: "private-authorization-code", codeVerifier: "v".repeat(43) }),
+      ).rejects.toMatchObject({ reason: "rejected" });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(warning).toHaveBeenCalledExactlyOnceWith("Model account service rejected a request", {
+        operation: "authorizations/complete",
+        httpStatus: 403,
+        rejectionCode: code,
+      });
+      expect(JSON.stringify(warning.mock.calls)).not.toContain("private");
     } finally {
       warning.mockRestore();
     }

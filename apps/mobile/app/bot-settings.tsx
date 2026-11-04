@@ -637,34 +637,32 @@ export default function BotSettingsScreen() {
             <SettingsGroup label={t("Computer")}>
               <ComputerModePicker plain value={computerMode} onChange={setComputerMode} />
             </SettingsGroup>
-            {!me?.modelAccountOnly ? (
-              <SettingsGroup label={t("Voice")}>
-                <View style={styles.row}>
-                  <Text style={[styles.rowLabel, { color: tokens.foreground }]}>
-                    {t("Read replies aloud")}
-                  </Text>
-                  <NativeSwitch
-                    accessibilityLabel={t("Read replies aloud")}
-                    onValueChange={setAutoSpeak}
-                    value={autoSpeak}
-                  />
-                </View>
-                {deviceVoiceEnabled ? (
-                  voiceError ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t("Device voice")}
-                      accessibilityValue={{ text: voiceError }}
-                      onPress={() => void retryDeviceVoices()}
-                    >
-                      {voiceRow}
-                    </Pressable>
-                  ) : (
-                    voiceRow
-                  )
-                ) : null}
-              </SettingsGroup>
-            ) : null}
+            <SettingsGroup label={t("Voice")}>
+              <View style={styles.row}>
+                <Text style={[styles.rowLabel, { color: tokens.foreground }]}>
+                  {t("Read replies aloud")}
+                </Text>
+                <NativeSwitch
+                  accessibilityLabel={t("Read replies aloud")}
+                  onValueChange={setAutoSpeak}
+                  value={autoSpeak}
+                />
+              </View>
+              {deviceVoiceEnabled ? (
+                voiceError ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("Device voice")}
+                    accessibilityValue={{ text: voiceError }}
+                    onPress={() => void retryDeviceVoices()}
+                  >
+                    {voiceRow}
+                  </Pressable>
+                ) : (
+                  voiceRow
+                )
+              ) : null}
+            </SettingsGroup>
             <SettingsGroup label={t("Permissions")}>
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: tokens.foreground }]}>

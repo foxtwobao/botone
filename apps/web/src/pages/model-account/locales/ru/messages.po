@@ -1,0 +1,148 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-09-07 14:00+0700\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: ru\n"
+"Project-Id-Version: rakazo-web\n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/components/ModelAccount.tsx
+msgid "API protocol"
+msgstr "Протокол API"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Approval model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Authorization incomplete."
+msgstr "Авторизация не завершена."
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize again"
+msgstr "Авторизовать повторно"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize the model account to continue."
+msgstr "Авторизуйте аккаунт моделей, чтобы продолжить."
+
+#: src/components/ModelAccount.tsx
+msgid "Balance unavailable"
+msgstr "Баланс недоступен"
+
+#: src/components/ModelAccount.tsx
+msgid "Cancel"
+msgstr "Отмена"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Choose a model"
+msgstr ""
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Close model settings"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Complete authorization in the opened window."
+msgstr "Завершите авторизацию в открытом окне."
+
+#: src/components/ModelAccountOnboarding.tsx
+msgid "Connect a model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Could not confirm authorization. Try again."
+msgstr "Не удалось подтвердить авторизацию. Повторите попытку."
+
+#: src/components/ModelAccount.tsx
+msgid "Disconnection pending confirmation."
+msgstr "Отключение ожидает подтверждения."
+
+#: src/components/ModelAccount.tsx
+msgid "Home"
+msgstr "Главная"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Main model"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+#: src/components/ModelAccountOnboarding.tsx
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Model account"
+msgstr "Аккаунт моделей"
+
+#: src/components/ModelAccount.tsx
+msgid "Model account unavailable"
+msgstr "Аккаунт моделей недоступен"
+
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Models"
+msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Recharge"
+msgstr "Пополнить"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh balance"
+msgstr "Обновить баланс"
+
+#: src/components/ModelAccount.tsx
+msgid "Refresh models"
+msgstr "Обновить модели"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry"
+msgstr "Повторить"
+
+#: src/components/ModelAccount.tsx
+msgid "Retry disconnect"
+msgstr "Повторить отключение"
+
+#: src/components/ModelAccount.tsx
+msgid "Sign in with SSO to use the model account."
+msgstr "Войдите через SSO, чтобы использовать аккаунт моделей."
+
+#: src/components/ModelAccount.tsx
+msgid "Use model account"
+msgstr "Использовать аккаунт моделей"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "Проверка авторизации…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "Авторизация…"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize model service"
+msgstr "Разрешить использование моделей"
+
+#: src/components/ModelAccount.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "Разрешить модели {serviceName}"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "После авторизации приложение будет вызывать модели через ваш аккаунт {serviceName}. Стоимость использования списывается с вашего баланса {serviceName}."
+
+#: src/components/ModelAccount.tsx
+msgid "You will return to the app after authorization."
+msgstr "После авторизации вы вернётесь в приложение."
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "Согласиться и авторизовать"
+
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "сервис моделей"

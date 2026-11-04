@@ -1,7 +1,6 @@
 import type { AgentRunRequest, ComputerRef, SemanticMemoryProvider } from "@rakazo/adapter-kit";
 import {
   DEFAULT_CONTEXT_STRATEGY,
-  ExternalModelAccountError,
   isModelCredentialRejected,
   runContinueJob,
   SandboxUnavailableError,
@@ -105,7 +104,6 @@ import {
 } from "./history-speakers.js";
 import { createMediaGenerationProvider } from "./media-generation-factory.js";
 import { loadAgentMemoryContext } from "./memory-context.js";
-import { pauseModelAccountRun } from "./model-account-recovery.js";
 import { HostedModelCreditsRequiredError } from "./model-credit-observer.js";
 import {
   effectiveModelRole,
@@ -245,12 +243,10 @@ async function verbatimMcpServersForRun(
 export function createRunExecutor(executorDeps: ExecutorDeps) {
   const contextStrategy = executorDeps.contextStrategy ?? DEFAULT_CONTEXT_STRATEGY;
   const web = executorDeps.web ?? createWebProvider();
-  const mediaGeneration = executorDeps.modelAccountOnly
-    ? undefined
-    : (executorDeps.mediaGeneration ?? createMediaGenerationProvider());
+  const mediaGeneration = executorDeps.mediaGeneration ?? createMediaGenerationProvider();
   const browser =
     executorDeps.browser ?? createBrowserProvider(undefined, { sandbox: executorDeps.sandbox });
-  const cloudAgent = executorDeps.modelAccountOnly ? null : executorDeps.cloudAgent;
+  const cloudAgent = executorDeps.cloudAgent;
   const resolveConnectedModel = resolveConnectedRunModel.bind(undefined, executorDeps);
 
   // Run-scoped connector state (installed MCP sessions) outlives one attempt
@@ -560,7 +556,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
           deps.prisma.deploymentSettings.findUnique({
             where: { id: "default" },
           }),
-          deps.modelAccountOnly ? null : deps.memoryProviders.resolve(run.spaceId),
+          deps.memoryProviders.resolve(run.spaceId),
           deps.prisma.taughtSkill.findMany({
             where: { botId: run.botId, spaceId: run.spaceId, status: "saved" },
           }),
@@ -609,7 +605,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
                 run,
                 modelChoice.modelProvider,
                 modelChoice.modelId,
-                { modelAccountOnly: Boolean(deps.modelAccountOnly || deps.externalModelKey) },
               )
             : null;
         runAbortController = new AbortController();
@@ -955,20 +950,6 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
               ),
             };
           } catch (error) {
-            if (
-              error instanceof ExternalModelAccountError &&
-              error.reason === "authorization_required" &&
-              error.reference
-            ) {
-              await pauseModelAccountRun(
-                deps,
-                run,
-                { attemptId: attempt.id, workerId, fence },
-                error.reference,
-                selected.credential,
-              );
-              return;
-            }
             // An incompatible saved model or a dead (already retired) credential is a
             // configuration error: record it on the run rather than retrying setup.
             const terminal = isTerminalModelSetupError(error);
@@ -1197,7 +1178,7 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         const builtins = [
           ...selectBuiltinToolsForRun({
             ticketBoardEnabled: deps.ticketBoardEnabled,
-            phoneCallsEnabled: !deps.modelAccountOnly && deps.phoneCallsEnabled,
+            phoneCallsEnabled: deps.phoneCallsEnabled,
             historyRetrievalEnabled: contextStrategy !== "current",
             graphicalToolsAllowed,
             pageBrowserAllowed,

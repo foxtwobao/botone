@@ -1347,7 +1347,6 @@ export type MessagingAgentConnection = z.infer<typeof MessagingAgentConnectionSc
 
 export const RunSchema = z.object({
   id: Id,
-  modelAuthorizationRequired: z.boolean().optional(),
   userId: Id.optional(),
   botId: Id,
   threadId: Id,
@@ -1469,7 +1468,6 @@ export const ModelApiProtocolSchema = z.enum([
 export type ModelApiProtocol = z.infer<typeof ModelApiProtocolSchema>;
 
 export const ModelCredentialSchema = z.object({
-  managed: z.boolean().optional(),
   /** Computed space preference order; credentials themselves remain newest first. */
   preferenceRank: z.number().int().nonnegative().optional(),
   ...ModelContextLimitsSchema.shape,
@@ -1870,7 +1868,6 @@ export const MeSchema = z.object({
   /** Listed in RAKAZO_ADMIN_EMAILS with a verified email: reviews plugins, adds stdio MCP servers, grants access. */
   isAdmin: z.boolean().default(false),
   needsModel: z.boolean(),
-  modelAccountOnly: z.boolean().optional(),
   defaultProvider: z.string().nullable(),
   defaultModel: z.string().nullable(),
   /** Provider the active default runs on with the server's own credentials, without a key. */

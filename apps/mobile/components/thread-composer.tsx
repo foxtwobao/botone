@@ -80,7 +80,6 @@ type ThreadComposerProps = {
   attachmentIds: string[];
   botId?: string;
   onCall: boolean;
-  voiceEnabled?: boolean;
   working: boolean;
   sending: boolean;
   styles: { circleButton: ViewStyle; composerFill: ViewStyle };
@@ -104,7 +103,6 @@ export function ThreadComposer({
   attachmentIds,
   botId,
   onCall,
-  voiceEnabled = true,
   working,
   sending,
   styles,
@@ -714,7 +712,7 @@ export function ThreadComposer({
               </TextInput>
             </Pressable>
           </View>
-          {voiceEnabled && !canSend && botId && !onCall ? (
+          {!canSend && botId && !onCall ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t("Call")}

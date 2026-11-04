@@ -316,7 +316,6 @@ async function speakOnDevice(
   const utterances = toUtterances(text);
   if (utterances.length === 0) return false;
   const mine = epoch ?? beginSpeech();
-  if ((await rpc("me")).modelAccountOnly) return false;
   if (!isCurrentSpeech(mine)) return false;
   // Claim the session before importing so a newer call cannot start during
   // that await and then overlap this call's remaining chunks.

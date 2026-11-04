@@ -1,0 +1,5 @@
+# Add after any base Compose file when external model accounts are configured.
+services:
+  api:
+    environment:
+      MODEL_ACCOUNT_CONNECTION:

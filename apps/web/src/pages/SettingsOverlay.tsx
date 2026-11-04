@@ -44,7 +44,6 @@ export function SettingsOverlay({
   onAccountImported,
   onImportAgent,
   billingEnabled = false,
-  modelAccountOnly = false,
   sandboxProvider,
   onSandboxProviderChange,
   messagingEnabled = false,
@@ -72,7 +71,6 @@ export function SettingsOverlay({
   onAccountImported?: () => Promise<void>;
   onImportAgent?: () => void;
   billingEnabled?: boolean;
-  modelAccountOnly?: boolean;
   sandboxProvider?: string | null;
   onSandboxProviderChange?: (sandboxProvider: string) => void;
   messagingEnabled?: boolean;
@@ -96,7 +94,6 @@ export function SettingsOverlay({
   const showUpdates = Boolean(desktopBridge()?.update);
   // A section that isn't available yet (billing before its flag loads) shows General until it is.
   const section =
-    (requestedSection === "voice" && modelAccountOnly) ||
     (requestedSection === "computer" && !showComputer) ||
     (requestedSection === "billing" && !billingEnabled) ||
     (requestedSection === "messaging" && !messagingEnabled) ||
@@ -140,7 +137,6 @@ export function SettingsOverlay({
     computer: showComputer,
     billing: billingEnabled,
     updates: showUpdates,
-    voice: !modelAccountOnly,
   });
 
   useEffect(() => {
@@ -418,7 +414,6 @@ export function SettingsOverlay({
                       embedded
                       onClose={requestClose}
                       config={memoryConfig}
-                      modelAccountOnly={modelAccountOnly}
                       onConfigChange={onMemoryConfigChange}
                       onBusyChange={setMemoryBusy}
                     />

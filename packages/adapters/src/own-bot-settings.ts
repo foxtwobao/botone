@@ -77,12 +77,10 @@ export async function listDefaultVoices(
     prisma: PrismaClient;
     secretStore: Pick<SecretStore, "load">;
     mcpAllowPrivateEndpoint?: boolean;
-    modelAccountOnly?: boolean;
   },
   scope: Pick<Actor, "userId" | "spaceId">,
   context: AdapterContext,
 ): Promise<VoiceInfo[] | null> {
-  if (deps.modelAccountOnly) return null;
   const credential = await findDefaultVoiceCredential(deps.prisma, scope);
   const secret =
     credential &&
@@ -141,8 +139,6 @@ export async function prepareOwnBotSettings(
   listVoices: () => Promise<VoiceInfo[] | null> = async () => null,
 ): Promise<{ data: BotSettingsValues } | { error: string }> {
   const data: BotSettingsValues = {};
-  if (deps.modelChange.modelAccountOnly && (args.readAloud === true || args.voice !== undefined))
-    return { error: "Service unavailable" };
   if (args.readAloud !== undefined) {
     if (typeof args.readAloud !== "boolean") return { error: "readAloud must be true or false." };
     data.autoSpeak = args.readAloud;

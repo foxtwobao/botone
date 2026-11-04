@@ -205,7 +205,6 @@ export function useThreadVoiceCall({
     voiceCallStarting.current = true;
     const loadVoiceStatus = () => rpc("voice/status");
     try {
-      if ((await rpc("me")).modelAccountOnly) return;
       const [plan, callerName] = await Promise.all([
         resolveVoiceCallPlan({
           loadDeviceVoiceEnabled,

@@ -250,16 +250,3 @@ it("update_bot persists a daily check-in opt-out and returns the saved value", a
     (await readOwnBotSettings(deps(), scope, { ...bot, dailyCheckIns: false })).dailyCheckIns,
   ).toBe(false);
 });
-
-it("rejects voice changes from model tools before resolving provider voices", async () => {
-  const dependencies = deps();
-  dependencies.modelChange.modelAccountOnly = true;
-  const voices = vi.fn();
-  expect(
-    await prepareOwnBotSettings(dependencies, scope, bot, { readAloud: true }, voices),
-  ).toHaveProperty("error");
-  expect(
-    await prepareOwnBotSettings(dependencies, scope, bot, { voice: "fixture" }, voices),
-  ).toHaveProperty("error");
-  expect(voices).not.toHaveBeenCalled();
-});

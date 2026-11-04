@@ -822,10 +822,6 @@ msgstr "Encabezado de clave de API"
 msgid "API keys"
 msgstr "Claves de API"
 
-#: src/components/ModelAccount.tsx
-msgid "API protocol"
-msgstr "Protocolo de API"
-
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Apariencia"
@@ -938,10 +934,6 @@ msgstr "Error de autenticación."
 msgid "Authorization code"
 msgstr "Código de autorización"
 
-#: src/components/ModelAccount.tsx
-msgid "Authorization incomplete."
-msgstr "Autorización incompleta."
-
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
 msgstr "Parámetros de autorización (opcional)"
@@ -957,18 +949,6 @@ msgstr "Se agotó el tiempo de autorización. Inténtalo de nuevo."
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "Autorizar"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize again"
-msgstr "Volver a autorizar"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize and continue"
-msgstr "Autorizar y continuar"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize the model account to continue."
-msgstr "Autoriza la cuenta de modelos para continuar."
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1024,10 +1004,6 @@ msgstr "Atrás"
 #: src/pages/Auth.tsx
 msgid "Back to sign in"
 msgstr "Volver a iniciar sesión"
-
-#: src/components/ModelAccount.tsx
-msgid "Balance unavailable"
-msgstr "Saldo no disponible"
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1183,7 +1159,6 @@ msgstr "No puede leer imágenes"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/markdown-link-prompt.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/ModelCredits.tsx
 #: src/components/PasskeySettings.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -1531,10 +1506,6 @@ msgstr "Compacta"
 msgid "Complete"
 msgstr "Completado"
 
-#: src/components/ModelAccount.tsx
-msgid "Complete authorization in the opened window."
-msgstr "Completa la autorización en la ventana abierta."
-
 #: src/components/SubagentCard.tsx
 msgid "Completed"
 msgstr "Completado"
@@ -1684,10 +1655,6 @@ msgstr "Conectado"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "Se conectó {0}."
-
-#: src/components/ModelAccount.tsx
-msgid "Connected to TokenONE"
-msgstr "Conectado a TokenONE"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -1855,10 +1822,6 @@ msgstr "No se pudo completar OAuth"
 #: src/components/DesktopUpdates.tsx
 msgid "Could not complete the update. Try again."
 msgstr "No se pudo completar la actualización. Vuelve a intentarlo."
-
-#: src/components/ModelAccount.tsx
-msgid "Could not confirm authorization. Try again."
-msgstr "No se pudo confirmar la autorización. Inténtalo de nuevo."
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2669,10 +2632,6 @@ msgstr "{disconnectName} desconectado."
 msgid "Disconnecting…"
 msgstr "Desconectando…"
 
-#: src/components/ModelAccount.tsx
-msgid "Disconnection pending confirmation."
-msgstr "Desconexión pendiente de confirmación."
-
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
 #: src/components/PasskeyOffer.tsx
@@ -3238,10 +3197,6 @@ msgstr "Mantén pulsado para hablar"
 #: src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk, release to send"
 msgstr "Mantén para hablar, suelta para enviar"
-
-#: src/components/ModelAccount.tsx
-msgid "Home"
-msgstr "Inicio"
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3878,15 +3833,6 @@ msgstr "Modelo"
 #: src/lib/model-connection-preflight.ts
 msgid "Model \"{modelId}\" was not listed."
 msgstr "El modelo \"{modelId}\" no aparece en la lista."
-
-#: src/components/ModelAccount.tsx
-#: src/pages/Onboarding.tsx
-msgid "Model account"
-msgstr "Cuenta de modelos"
-
-#: src/components/ModelAccount.tsx
-msgid "Model account unavailable"
-msgstr "Cuenta de modelos no disponible"
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4726,10 +4672,6 @@ msgstr ""
 msgid "Recent"
 msgstr "Recientes"
 
-#: src/components/ModelAccount.tsx
-msgid "Recharge"
-msgstr "Recargar"
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
 msgstr "Recomendadas"
@@ -4818,17 +4760,9 @@ msgstr "URI de redirección"
 msgid "Refresh"
 msgstr "Actualizar"
 
-#: src/components/ModelAccount.tsx
-msgid "Refresh balance"
-msgstr "Actualizar saldo"
-
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
 msgstr "Actualizar créditos"
-
-#: src/components/ModelAccount.tsx
-msgid "Refresh models"
-msgstr "Actualizar modelos"
 
 #: src/components/teach/TeachComputerOverlay.tsx
 msgid "Refresh view"
@@ -5075,7 +5009,6 @@ msgstr "Restaurando tu espacio de trabajo"
 #: src/components/AccountAccess.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/integrations/skills-dialog.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/AdminAccessPage.tsx
 #: src/pages/Auth.tsx
@@ -5085,10 +5018,6 @@ msgstr "Restaurando tu espacio de trabajo"
 #: src/pages/SpaceSettingOverrides.tsx
 msgid "Retry"
 msgstr "Reintentar"
-
-#: src/components/ModelAccount.tsx
-msgid "Retry disconnect"
-msgstr "Reintentar desconexión"
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5552,10 +5481,6 @@ msgstr "Inicia sesión en tu cuenta existente para vincular SSO"
 #: src/components/PasskeySignIn.tsx
 msgid "Sign in with passkey"
 msgstr "Iniciar sesión con llave de acceso"
-
-#: src/components/ModelAccount.tsx
-msgid "Sign in with SSO to use the model account."
-msgstr "Inicia sesión con SSO para usar la cuenta de modelos."
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6405,10 +6330,6 @@ msgstr "Usar predeterminados en {label}"
 #: src/components/integrations/plugin-marketplace.tsx
 msgid "Use in this bot"
 msgstr "Usar en este bot"
-
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
-msgstr "Usar cuenta de modelos"
 
 #: src/components/ModelCredits.tsx
 msgid "Use my subscription or API key"

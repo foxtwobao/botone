@@ -2,6 +2,7 @@ import { createHash, createHmac, generateKeyPairSync, sign } from "node:crypto";
 import type * as Db from "@rakazo/db";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readExternalAccountIdentity } from "./external-account-identity.js";
 import type { Auth, AuthEnv } from "./index.js";
 import { createAuth } from "./index.js";
 import { isCurrentOidcAccount, oidcAccountSubject } from "./oidc.js";
@@ -1381,6 +1382,18 @@ it("counts only stored OIDC subjects bound to the current issuer", async () => {
 
 it("reads only the requested user's unambiguous current external account", async () => {
   setup();
+  const identity = async (userId: string) =>
+    readExternalAccountIdentity(
+      {
+        account: {
+          findMany: async () => state.db.account!.filter((account) => account.userId === userId),
+        },
+      } as unknown as Db.PrismaClient,
+      userId,
+      issuer,
+      (await auth.$context).secretConfig,
+    );
+
   state.db.account = [
     {
       id: "account-1",
@@ -1390,13 +1403,13 @@ it("reads only the requested user's unambiguous current external account", async
       idToken: await sealIdToken(secret, jwt({ sub: "subject-1" })),
     },
   ];
-  expect(await auth.externalAccountIdentity("user-1")).toEqual({
+  expect(await identity("user-1")).toEqual({
     accountId: "account-1",
     binding: oidcAccountSubject(issuer, "subject-1"),
     issuer,
     subject: "subject-1",
   });
-  expect(await auth.externalAccountIdentity("other-user")).toBeNull();
+  expect(await identity("other-user")).toBeNull();
   state.db.account.push({
     id: "account-2",
     userId: "user-1",
@@ -1404,7 +1417,7 @@ it("reads only the requested user's unambiguous current external account", async
     accountId: oidcAccountSubject(issuer, "subject-2"),
     idToken: jwt({ sub: "subject-2" }),
   });
-  expect(await auth.externalAccountIdentity("user-1")).toBeNull();
+  expect(await identity("user-1")).toBeNull();
   state.db.account = [];
-  expect(await auth.externalAccountIdentity("user-1")).toBeNull();
+  expect(await identity("user-1")).toBeNull();
 });

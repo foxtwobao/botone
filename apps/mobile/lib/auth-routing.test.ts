@@ -5,29 +5,13 @@ vi.mock("expo-router", () => ({
 }));
 
 import { router } from "expo-router";
-import {
-  explicitSignInRoute,
-  initialAuthMode,
-  replaceWithSignIn,
-  signedInRoute,
-} from "./auth-routing.js";
+import { explicitSignInRoute, initialAuthMode, replaceWithSignIn } from "./auth-routing.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("mobile authentication routing", () => {
-  it("guides a signed-in account without a model through existing model settings", () => {
-    expect(signedInRoute({ needsSignupSurvey: false, needsModel: true })).toBe("/models");
-    expect(signedInRoute({ needsSignupSurvey: true, needsModel: true })).toEqual({
-      pathname: "/signup-survey",
-      params: { next: "models" },
-    });
-    expect(signedInRoute({ needsSignupSurvey: false, needsModel: false })).toBe("/");
-    expect(signedInRoute({ needsSignupSurvey: true, needsModel: false })).toBe("/signup-survey");
-    expect(signedInRoute(null)).toBe("/");
-  });
-
   it("defaults ordinary logged-out visitors to sign-up", () => {
     expect(initialAuthMode()).toBe("up");
   });

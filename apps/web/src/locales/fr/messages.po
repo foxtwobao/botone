@@ -822,10 +822,6 @@ msgstr "En-tête de clé API"
 msgid "API keys"
 msgstr "Clés API"
 
-#: src/components/ModelAccount.tsx
-msgid "API protocol"
-msgstr ""
-
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Appearance"
 msgstr "Apparence"
@@ -938,10 +934,6 @@ msgstr "Échec de l'authentification."
 msgid "Authorization code"
 msgstr "Code d'autorisation"
 
-#: src/components/ModelAccount.tsx
-msgid "Authorization incomplete."
-msgstr ""
-
 #: src/pages/McpServersOverlay.tsx
 msgid "Authorization parameters (optional)"
 msgstr "Paramètres d'autorisation (optionnel)"
@@ -957,18 +949,6 @@ msgstr "L'autorisation a expiré. Veuillez réessayer."
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize"
 msgstr "Autoriser"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize again"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize and continue"
-msgstr "Autoriser et continuer"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize the model account to continue."
-msgstr ""
 
 #: src/pages/shell/message-cards.tsx
 msgid "Authorize this server so agents can use its tools. A popup opens."
@@ -1024,10 +1004,6 @@ msgstr "Retour"
 #: src/pages/Auth.tsx
 msgid "Back to sign in"
 msgstr "Retour à la connexion"
-
-#: src/components/ModelAccount.tsx
-msgid "Balance unavailable"
-msgstr ""
 
 #: src/pages/memory-providers/ConnectionModeFields.tsx
 msgid "Base URL"
@@ -1183,7 +1159,6 @@ msgstr "Ne peut pas lire les images"
 #: src/components/ComputerMaintenanceActions.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/markdown-link-prompt.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/ModelCredits.tsx
 #: src/components/PasskeySettings.tsx
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -1531,10 +1506,6 @@ msgstr ""
 msgid "Complete"
 msgstr "Terminé"
 
-#: src/components/ModelAccount.tsx
-msgid "Complete authorization in the opened window."
-msgstr ""
-
 #: src/components/SubagentCard.tsx
 msgid "Completed"
 msgstr "Terminé"
@@ -1684,10 +1655,6 @@ msgstr "Connecté"
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Connected {0}."
 msgstr "Connecté à {0}."
-
-#: src/components/ModelAccount.tsx
-msgid "Connected to TokenONE"
-msgstr "Connecté à TokenONE"
 
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/pages/McpServersOverlay.tsx
@@ -1855,10 +1822,6 @@ msgstr "Impossible de terminer OAuth"
 #: src/components/DesktopUpdates.tsx
 msgid "Could not complete the update. Try again."
 msgstr "Impossible de terminer la mise à jour. Réessayez."
-
-#: src/components/ModelAccount.tsx
-msgid "Could not confirm authorization. Try again."
-msgstr ""
 
 #: src/components/integrations/IntegrationSetup.tsx
 #: src/pages/PluginsOverlay.tsx
@@ -2669,10 +2632,6 @@ msgstr "{disconnectName} déconnecté."
 msgid "Disconnecting…"
 msgstr "Déconnexion en cours…"
 
-#: src/components/ModelAccount.tsx
-msgid "Disconnection pending confirmation."
-msgstr ""
-
 #: src/components/AskCard.tsx
 #: src/components/ComputerUpdateProgress.tsx
 #: src/components/PasskeyOffer.tsx
@@ -3238,10 +3197,6 @@ msgstr "Maintenir pour parler"
 #: src/components/composer/HoldToTalk.tsx
 msgid "Hold to talk, release to send"
 msgstr "Maintenir pour parler, relâcher pour envoyer"
-
-#: src/components/ModelAccount.tsx
-msgid "Home"
-msgstr ""
 
 #: src/lib/cron.ts
 msgid "hour"
@@ -3878,15 +3833,6 @@ msgstr "Modèle"
 #: src/lib/model-connection-preflight.ts
 msgid "Model \"{modelId}\" was not listed."
 msgstr "Le modèle \"{modelId}\" n'est pas dans la liste."
-
-#: src/components/ModelAccount.tsx
-#: src/pages/Onboarding.tsx
-msgid "Model account"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Model account unavailable"
-msgstr ""
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
@@ -4726,10 +4672,6 @@ msgstr ""
 msgid "Recent"
 msgstr "Récent"
 
-#: src/components/ModelAccount.tsx
-msgid "Recharge"
-msgstr ""
-
 #: src/pages/PluginsOverlay.tsx
 msgid "Recommended"
 msgstr ""
@@ -4818,16 +4760,8 @@ msgstr "URI de redirection"
 msgid "Refresh"
 msgstr "Actualiser"
 
-#: src/components/ModelAccount.tsx
-msgid "Refresh balance"
-msgstr ""
-
 #: src/components/ModelCredits.tsx
 msgid "Refresh credits"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Refresh models"
 msgstr ""
 
 #: src/components/teach/TeachComputerOverlay.tsx
@@ -5075,7 +5009,6 @@ msgstr "Restauration de votre espace de travail"
 #: src/components/AccountAccess.tsx
 #: src/components/integrations/plugin-marketplace.tsx
 #: src/components/integrations/skills-dialog.tsx
-#: src/components/ModelAccount.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/AdminAccessPage.tsx
 #: src/pages/Auth.tsx
@@ -5085,10 +5018,6 @@ msgstr "Restauration de votre espace de travail"
 #: src/pages/SpaceSettingOverrides.tsx
 msgid "Retry"
 msgstr "Réessayer"
-
-#: src/components/ModelAccount.tsx
-msgid "Retry disconnect"
-msgstr ""
 
 #: src/App.tsx
 #: src/pages/PeerMessagesOverlay.tsx
@@ -5552,10 +5481,6 @@ msgstr "Connectez-vous à votre compte existant pour associer SSO"
 #: src/components/PasskeySignIn.tsx
 msgid "Sign in with passkey"
 msgstr "Se connecter avec une clé d’accès"
-
-#: src/components/ModelAccount.tsx
-msgid "Sign in with SSO to use the model account."
-msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "Sign in with the subscription, or test the API key instead."
@@ -6404,10 +6329,6 @@ msgstr "Utiliser vos paramètres par défaut pour {label}"
 
 #: src/components/integrations/plugin-marketplace.tsx
 msgid "Use in this bot"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
 msgstr ""
 
 #: src/components/ModelCredits.tsx

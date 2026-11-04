@@ -10,7 +10,6 @@ x-app-environment: &app-environment
   REALTIME_DATABASE_URL:
   DB_POOL_MAX:
   DATA_DIR: /data
-  MODEL_ACCOUNT_CONNECTION:
   ENCRYPTION_KEY:
   ENCRYPTION_MASTER_KEYS:
   MASTER_KEY_PROVIDER:
@@ -454,9 +453,6 @@ services:
       start_period: 2m
     environment:
       <<: *app-environment
-      # Needed only for configured external model accounts to read existing OIDC bindings.
-      BETTER_AUTH_SECRET:
-      OIDC_ISSUER: ${OIDC_ISSUER:-}
       GRAPHILE_WORKER_CONCURRENCY:
     volumes:
       - ../../data:/data

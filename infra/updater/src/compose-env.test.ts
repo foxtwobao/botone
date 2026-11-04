@@ -71,13 +71,13 @@ const NOT_PASSED: Record<string, string> = {
 };
 
 /**
- * Shared-package reads a process must not receive. The worker reads existing encrypted OIDC
- * bindings for external model accounts, but never receives the OIDC client secret. Only the migrate container
+ * Shared-package reads a process must not receive. Only the API signs sessions and talks to
+ * the identity provider, so the worker resolves no auth secret. Only the migrate container
  * gets the owner database login, so neither process holds one that bypasses row-level security.
  */
 const DENIED = {
   api: ["DATABASE_MIGRATION_URL"],
-  worker: ["DATABASE_MIGRATION_URL"],
+  worker: ["BETTER_AUTH_SECRET", "DATABASE_MIGRATION_URL"],
 } as const;
 
 /** Reads a source scan cannot see: names held in constants or read by third-party SDKs. */
@@ -183,10 +183,10 @@ function loadServices(file: string): Record<string, ComposeService> {
 
 /** Each deployable stack: a base file plus any overlay layered on it. */
 const STACKS = [
-  ["docker-compose.images.yml"],
-  ["docker-compose.prod.yml"],
-  ["docker-compose.prod.yml", "docker-compose.prod.docker.yml"],
-  ["docker-compose.yml"],
+  ["docker-compose.images.yml", "docker-compose.model-account.yml"],
+  ["docker-compose.prod.yml", "docker-compose.model-account.yml"],
+  ["docker-compose.prod.yml", "docker-compose.prod.docker.yml", "docker-compose.model-account.yml"],
+  ["docker-compose.yml", "docker-compose.model-account.yml"],
 ];
 
 function stackEnvironment(files: string[], service: string): Record<string, unknown> {
@@ -201,12 +201,10 @@ describe("api and worker environment allowlists", () => {
       expect(api).toContain(key);
       expect(worker).toContain(key);
     }
-    for (const key of ["OIDC_CLIENT_SECRET", "SCREEN_PROXY_SECRET"]) {
+    for (const key of ["BETTER_AUTH_SECRET", "OIDC_CLIENT_SECRET", "SCREEN_PROXY_SECRET"]) {
       expect(api).toContain(key);
       expect(worker).not.toContain(key);
     }
-    expect(api).toContain("BETTER_AUTH_SECRET");
-    expect(worker).toContain("BETTER_AUTH_SECRET");
     expect(api).toContain("OPENAI_API_KEY");
     expect(worker).toContain("AWS_BEARER_TOKEN_BEDROCK");
     expect(worker).toContain("GRAPHILE_WORKER_CONCURRENCY");
@@ -231,10 +229,11 @@ describe("api and worker environment allowlists", () => {
   );
 
   it.each(STACKS.map((files) => [files.join(" + "), files] as const))(
-    "%s keeps identity-provider, billing and database owner secrets out of the worker and API",
+    "%s keeps auth and database owner secrets out of the worker and API",
     (_name, files) => {
       const worker = stackEnvironment(files, "worker");
       for (const key of [
+        "BETTER_AUTH_SECRET",
         "OIDC_CLIENT_SECRET",
         "SCREEN_PROXY_SECRET",
         "RAKAZO_UPDATER_TOKEN",

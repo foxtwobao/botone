@@ -90,7 +90,6 @@ describe("mobile speech", () => {
       },
     });
     vi.mocked(rpc).mockImplementation(async (proc) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       vi.mocked(currentApiBase).mockReturnValue("https://finance.example");
       return { ready: true, utterances: ["First", "Second"] } as never;
@@ -228,7 +227,6 @@ describe("hosted voice playback controls", () => {
       headers: { authorization: "Bearer support-token", "x-rakazo-space-id": "space-support" },
     });
     vi.mocked(rpc).mockImplementation(async (proc) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       return { ready: true, utterances: ["First", "Second"] } as never;
     });
@@ -408,7 +406,6 @@ describe("hosted voice playback controls", () => {
     // One utterance per call (instead of the shared beforeEach's fixed two),
     // so each queue item maps to exactly one ControllableAudio instance below.
     vi.mocked(rpc).mockImplementation(async (proc, body) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       const text = (body as { text?: string } | undefined)?.text ?? "";
       return { ready: true, utterances: [text] } as never;
@@ -436,7 +433,6 @@ describe("hosted voice playback controls", () => {
   it("reports that nothing was spoken, and stops, when the voice is not ready", async () => {
     vi.mocked(rpc).mockClear();
     vi.mocked(rpc).mockImplementation(async (proc) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       return { ready: false, utterances: [] } as never;
     });
@@ -454,7 +450,6 @@ describe("hosted voice playback controls", () => {
   it("shows Stop while the first clip is still preparing, and idle if Stop cancels it", async () => {
     let releasePrepare: (() => void) | undefined;
     vi.mocked(rpc).mockImplementation(async (proc) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       await new Promise<void>((resolve) => {
         releasePrepare = resolve;
@@ -482,7 +477,6 @@ describe("hosted voice playback controls", () => {
 
   it("clears the dock when voice prepare rejects", async () => {
     vi.mocked(rpc).mockImplementation(async (proc) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       throw new Error("prepare failed");
     });
@@ -564,7 +558,6 @@ describe("hosted voice playback controls", () => {
 
   it("drops a queue that is already running when a new queue starts", async () => {
     vi.mocked(rpc).mockImplementation(async (proc, body) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       const text = (body as { text?: string } | undefined)?.text ?? "";
       return { ready: true, utterances: [text] } as never;
@@ -606,7 +599,6 @@ describe("hosted voice playback controls", () => {
     let releasePrepare: (() => void) | undefined;
     let prepareCalls = 0;
     vi.mocked(rpc).mockImplementation(async (proc, body) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       prepareCalls += 1;
       if (prepareCalls === 2) {
@@ -667,7 +659,6 @@ describe("hosted voice playback controls", () => {
 
   it("does not stop or clear a queue that replaced the owner's speech", async () => {
     vi.mocked(rpc).mockImplementation(async (proc, body) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       const text = (body as { text?: string } | undefined)?.text ?? "";
       return { ready: true, utterances: [text] } as never;
@@ -706,7 +697,6 @@ describe("hosted voice playback controls", () => {
   it("cancels its own speech while it is still preparing", async () => {
     const gates: Array<() => void> = [];
     vi.mocked(rpc).mockImplementation(async (proc) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       await new Promise<void>((resolve) => {
         gates.push(resolve);
@@ -730,7 +720,6 @@ describe("hosted voice playback controls", () => {
   it("does not let a stale owner stop a newer unrelated preparation", async () => {
     const gates: Array<() => void> = [];
     vi.mocked(rpc).mockImplementation(async (proc, body) => {
-      if (proc === "me") return { modelAccountOnly: false } as never;
       if (proc === "aiConsent/status") return { version: "2026-09-14", recipients: [] } as never;
       await new Promise<void>((resolve) => {
         gates.push(resolve);
@@ -848,9 +837,7 @@ describe("on-device speech", () => {
     vi.mocked(Speech.pause).mockReset();
     vi.mocked(Speech.resume).mockReset();
     vi.mocked(Speech.getAvailableVoicesAsync).mockReset().mockResolvedValue([]);
-    vi.mocked(rpc)
-      .mockReset()
-      .mockResolvedValue({ modelAccountOnly: false } as never);
+    vi.mocked(rpc).mockReset();
     Platform.OS = "ios";
     vi.stubGlobal(
       "fetch",
@@ -905,7 +892,7 @@ describe("on-device speech", () => {
       expect(Speech.getAvailableVoicesAsync).not.toHaveBeenCalled();
       expect(calls[0]?.voice).toBeUndefined();
       expect(calls[0]?.language).toBeUndefined();
-      expect(vi.mocked(rpc).mock.calls.every(([proc]) => proc === "me")).toBe(true);
+      expect(rpc).not.toHaveBeenCalled();
       expect(fetch).not.toHaveBeenCalled();
       vi.mocked(Speech.speak).mockReset();
     }
@@ -1016,7 +1003,7 @@ describe("on-device speech", () => {
 
     expect(Speech.stop).toHaveBeenCalledOnce();
     expect(Speech.speak).toHaveBeenCalledWith("Read this", expect.any(Object));
-    expect(vi.mocked(rpc).mock.calls.every(([proc]) => proc === "me")).toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -1027,7 +1014,7 @@ describe("on-device speech", () => {
     await expect(speakText("Read this")).resolves.toBe(true);
 
     expect(Speech.speak).toHaveBeenCalledWith("Read this", expect.any(Object));
-    expect(vi.mocked(rpc).mock.calls.every(([proc]) => proc === "me")).toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -1049,7 +1036,7 @@ describe("on-device speech", () => {
     Object.defineProperty(Speech, "speak", { configurable: true, value: undefined });
     try {
       await expect(speakWithDeviceVoice("Hello")).rejects.toThrow("Could not play that clip.");
-      expect(vi.mocked(rpc).mock.calls.every(([proc]) => proc === "me")).toBe(true);
+      expect(rpc).not.toHaveBeenCalled();
       expect(fetch).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(Speech, "speak", { configurable: true, value: originalSpeak });

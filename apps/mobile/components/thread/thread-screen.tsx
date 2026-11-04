@@ -154,7 +154,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
     maxUploadSizeBytes?: number;
     maxAttachmentsPerMessage?: number;
   }>();
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [needsModel, setNeedsModel] = useState<boolean>();
   // Re-read on focus so returning from Models settings updates unsent missing-model messages.
   useFocusEffect(
@@ -165,7 +164,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
           if (cancelled) return;
           setUploadConfig(me);
           setNeedsModel(me.needsModel);
-          setVoiceEnabled(!me.modelAccountOnly);
         })
         .catch(() => undefined);
       return () => {
@@ -425,9 +423,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
 
   // Event actions read the latest committed screen state without invalidating settled rows.
   const rowActions = useLatestRowActions({
-    refresh: async () => {
-      await refresh();
-    },
     helperToggle: scroll.helperToggle,
     reply: (message) => {
       setReplyTarget(message);
@@ -481,7 +476,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
     inGroup,
     readOnly,
     onCall,
-    voiceEnabled,
     displayName,
     mentionBots,
     currentBot,
@@ -632,7 +626,6 @@ export function Thread({ sessionEpoch, userId }: { sessionEpoch: number; userId:
               )}
               botId={botId}
               onCall={onCall}
-              voiceEnabled={voiceEnabled}
               working={working}
               sending={composer.sending || attachments.shareImporting}
               styles={styles}

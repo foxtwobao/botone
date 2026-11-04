@@ -26,9 +26,7 @@ import { ArrowDown } from "lucide-react";
 import type { CSSProperties, RefObject } from "react";
 import {
   Fragment,
-  lazy,
   memo,
-  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -47,10 +45,6 @@ import { TimeSeparator, UnreadDivider } from "./chat-context";
 import type { ImportSetupTarget } from "./import-setup-card";
 import { MessageView } from "./message-view";
 import { QuoteSelectionButton } from "./quote-selection-button";
-
-const TaskModelAccount = lazy(() =>
-  import("../../components/ModelAccount").then((module) => ({ default: module.ModelAccount })),
-);
 
 /** Bubbles stop at a readable line length instead of stretching with wide windows. */
 export function bubbleFrameWidth(role: ThreadMessage["role"]) {
@@ -71,7 +65,6 @@ export const Transcript = memo(function Transcript({
   unreadAfterSeq,
   loadingOlder,
   answerableAskIds,
-  modelAuthorizationIds,
   dismissableAskIds,
   running,
   workingBots,
@@ -111,7 +104,6 @@ export const Transcript = memo(function Transcript({
   unreadAfterSeq: number | null;
   loadingOlder: boolean;
   answerableAskIds: Set<string>;
-  modelAuthorizationIds?: ReadonlySet<string>;
   dismissableAskIds: Set<string>;
   running: boolean;
   workingBots: GroupAvatarMember[];
@@ -597,11 +589,6 @@ export const Transcript = memo(function Transcript({
                       onMarkUnread={onMarkUnread}
                       onReact={onReact}
                     />
-                    {modelAuthorizationIds?.has(message.id) ? (
-                      <Suspense fallback={null}>
-                        <TaskModelAccount resumeTask onChanged={onRefresh} />
-                      </Suspense>
-                    ) : null}
                   </div>
                 </div>
                 {!peerReceipt && messageReactions ? (

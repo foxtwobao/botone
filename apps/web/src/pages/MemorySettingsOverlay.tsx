@@ -63,7 +63,6 @@ export function MemorySettingsOverlay({
   config,
   onConfigChange,
   embedded = false,
-  modelAccountOnly = false,
   onBusyChange,
 }: {
   onClose: () => void;
@@ -71,7 +70,6 @@ export function MemorySettingsOverlay({
   onConfigChange: (config: SpaceMemoryConfig | null) => void;
   /** Render panel body only for the shared Settings shell. */
   embedded?: boolean;
-  modelAccountOnly?: boolean;
   onBusyChange?: (busy: boolean) => void;
 }) {
   const rpc = useSpaceRpc();
@@ -184,7 +182,7 @@ export function MemorySettingsOverlay({
 
           <SpaceMemorySection />
 
-          {modelAccountOnly ? null : config === undefined ? (
+          {config === undefined ? (
             <p className="text-[13px] text-muted-foreground">
               <Spinner aria-label={t`Loading memory settings…`} />
             </p>

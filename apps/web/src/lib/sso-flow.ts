@@ -43,10 +43,10 @@ export function completeSsoCallback(): boolean {
 export async function runSsoFlow(
   begin: (disableRedirect: boolean, callbackURL: (url: string) => string) => Promise<SsoResult>,
   callbackURLs: readonly string[],
-  options: { popup?: boolean; navigate?: boolean; signal?: AbortSignal } = {},
+  options: { navigate?: boolean; signal?: AbortSignal } = {},
 ): Promise<SsoResult> {
   if (options.signal?.aborted) return { data: null, error: null };
-  if (!desktopBridge() && !options.popup) return begin(false, (url) => url);
+  if (!desktopBridge()) return begin(false, (url) => url);
   const nonce = crypto.randomUUID();
   const callbacks = callbackURLs.map((url) => new URL(url, window.location.href));
   const callbackURL = (url: string) => {

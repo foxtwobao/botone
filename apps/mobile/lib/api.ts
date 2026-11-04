@@ -1162,7 +1162,6 @@ export type MobileMe = Pick<
   | "hostCredentialProvider"
   | "hostCredentialSource"
   | "needsModel"
-  | "modelAccountOnly"
   | "isDeploymentOwner"
   | "needsSignupSurvey"
   | "billingEnabled"
@@ -1197,8 +1196,7 @@ export type MobileSpace = Space;
 export type MobileSpaceNavigation = SpaceNavigation;
 
 /** A run as live events report it, before a refresh brings the full record. */
-type MobileRun = Pick<Run, "id"> &
-  Partial<Pick<Run, "botId" | "userId" | "modelAuthorizationRequired">> & { status: string };
+type MobileRun = Pick<Run, "id"> & Partial<Pick<Run, "botId" | "userId">> & { status: string };
 
 /**
  * A thread as the screen holds it: live events patch it between refreshes, and a saved chat
@@ -1592,8 +1590,6 @@ export function applyMobileThreadEvent(
   }
   if (event.type === "run.waiting_input" || event.type === "computer.takeover.requested") {
     const status = event.type === "run.waiting_input" ? "waiting_input" : "waiting_takeover";
-    const modelAuthorizationRequired =
-      event.type === "run.waiting_input" && event.payload?.modelAuthorizationRequired === true;
     const progressId = progressMessageId(event);
     // Waiting pauses drop live progress server-side; clear a leftover bubble so
     // the waiting footer is not hidden behind a stale "Working…" row.
@@ -1614,18 +1610,14 @@ export function applyMobileThreadEvent(
     const runChanged = Boolean(
       knownInRun &&
         prev.run &&
-        (prev.run.status !== status ||
-          Boolean(prev.run.modelAuthorizationRequired) !== modelAuthorizationRequired ||
-          (userId !== undefined && prev.run.userId !== userId)),
+        (prev.run.status !== status || (userId !== undefined && prev.run.userId !== userId)),
     );
     const activeRunChanged = Boolean(
       knownInActive &&
         prev.activeRuns?.some(
           (candidate) =>
             candidate.id === runId &&
-            (candidate.status !== status ||
-              Boolean(candidate.modelAuthorizationRequired) !== modelAuthorizationRequired ||
-              (userId !== undefined && candidate.userId !== userId)),
+            (candidate.status !== status || (userId !== undefined && candidate.userId !== userId)),
         ),
     );
     const computer =
@@ -1647,7 +1639,6 @@ export function applyMobileThreadEvent(
     }
     if (needsInsert && runId) {
       const waitingRun = {
-        ...(modelAuthorizationRequired ? { modelAuthorizationRequired: true } : {}),
         id: runId,
         status,
         ...(event.botId ? { botId: event.botId } : {}),
@@ -1670,22 +1661,12 @@ export function applyMobileThreadEvent(
     }
     const run =
       runChanged && prev.run
-        ? {
-            ...prev.run,
-            status,
-            modelAuthorizationRequired: modelAuthorizationRequired || undefined,
-            ...(userId !== undefined ? { userId } : {}),
-          }
+        ? { ...prev.run, status, ...(userId !== undefined ? { userId } : {}) }
         : prev.run;
     const activeRuns = activeRunChanged
       ? prev.activeRuns?.map((candidate) =>
           candidate.id === runId
-            ? {
-                ...candidate,
-                status,
-                modelAuthorizationRequired: modelAuthorizationRequired || undefined,
-                ...(userId !== undefined ? { userId } : {}),
-              }
+            ? { ...candidate, status, ...(userId !== undefined ? { userId } : {}) }
             : candidate,
         )
       : prev.activeRuns;

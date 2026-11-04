@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createScanner, ScriptTarget } from "typescript";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MODEL_ACCOUNT_MESSAGES } from "./model-account-messages";
 
 vi.mock("expo-localization", () => ({
   getLocales: vi.fn(() => [{ languageTag: "en-US" }]),
@@ -124,13 +125,13 @@ describe("mobile i18n", () => {
     const { JA_MESSAGES } = await import("./locales/ja");
     const { ES_MESSAGES } = await import("./locales/es");
     for (const messages of [
-      ZH_MESSAGES,
-      ZH_TW_MESSAGES,
-      RU_MESSAGES,
-      DE_MESSAGES,
-      NL_MESSAGES,
-      JA_MESSAGES,
-      ES_MESSAGES,
+      { ...ZH_MESSAGES, ...MODEL_ACCOUNT_MESSAGES["zh-CN"] },
+      { ...ZH_TW_MESSAGES, ...MODEL_ACCOUNT_MESSAGES["zh-TW"] },
+      { ...RU_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.ru },
+      { ...DE_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.de },
+      { ...NL_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.nl },
+      { ...JA_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.ja },
+      { ...ES_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.es },
     ]) {
       const empty = Object.entries(messages).filter(([, value]) => !value.trim());
       const interpolationMismatches = Object.entries(messages).filter(([id, value]) => {
@@ -208,13 +209,13 @@ describe("mobile i18n", () => {
       for (const id of translationIds(source)) ids.add(id);
     }
     for (const messages of [
-      ZH_MESSAGES,
-      ZH_TW_MESSAGES,
-      RU_MESSAGES,
-      DE_MESSAGES,
-      NL_MESSAGES,
-      JA_MESSAGES,
-      ES_MESSAGES,
+      { ...ZH_MESSAGES, ...MODEL_ACCOUNT_MESSAGES["zh-CN"] },
+      { ...ZH_TW_MESSAGES, ...MODEL_ACCOUNT_MESSAGES["zh-TW"] },
+      { ...RU_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.ru },
+      { ...DE_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.de },
+      { ...NL_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.nl },
+      { ...JA_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.ja },
+      { ...ES_MESSAGES, ...MODEL_ACCOUNT_MESSAGES.es },
     ]) {
       const missing = [...ids].filter((id) => !messages[id]?.trim()).sort();
       expect(missing).toEqual([]);

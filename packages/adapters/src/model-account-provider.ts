@@ -28,7 +28,6 @@ export class ExternalModelAccountError extends Error {
   constructor(
     readonly reason: "authorization_required" | "rejected" | "unavailable",
     readonly retryable = false,
-    readonly reference?: ExternalModelAccountReference,
   ) {
     super(
       reason === "authorization_required"
@@ -37,32 +36,4 @@ export class ExternalModelAccountError extends Error {
     );
     this.name = "ExternalModelAccountError";
   }
-}
-
-/** Reference to an existing account binding; contains no copied identity claims. */
-export interface ExternalModelAccountReference {
-  accountId: string;
-  binding: string;
-}
-
-/** Resolves a key for one user's pinned account and trusted model endpoint. */
-export type ExternalModelKeyResolver = (
-  userId: string,
-  reference: ExternalModelAccountReference,
-  baseUrl: string,
-  signal?: AbortSignal,
-) => Promise<string>;
-
-const authorizationCheckpointPrefix = "model_account_authorization_v1:";
-
-export function modelAccountAuthorizationCheckpoint(
-  reference: ExternalModelAccountReference,
-): string {
-  return `${authorizationCheckpointPrefix}${JSON.stringify([reference.accountId, reference.binding])}`;
-}
-
-export function isModelAccountAuthorizationCheckpoint(
-  checkpoint: string | null | undefined,
-): boolean {
-  return checkpoint?.startsWith(authorizationCheckpointPrefix) ?? false;
 }

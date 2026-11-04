@@ -1,26 +1,16 @@
 import { createHash } from "node:crypto";
-import type { JobPublisher } from "@rakazo/adapter-kit";
-import {
-  ExternalModelAccountError,
-  modelAccountAuthorizationCheckpoint,
-} from "@rakazo/adapter-kit";
 import {
   configuredModelAccount,
-  createExternalModelKeyResolver,
   EncryptedSecretStore,
+  ExternalModelAccountError,
   parseModelSecret,
-  pauseModelAccountRun,
 } from "@rakazo/adapters";
 import type { Auth } from "@rakazo/auth";
-import { readExternalAccountIdentity } from "@rakazo/auth";
 import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb, createThreadEvents } from "@rakazo/db";
+import { asSystem, createDb } from "@rakazo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveModelKey } from "../../../packages/adapters/src/run-model.js";
 import { modelAccountRoutes } from "./model-account.js";
-import { removeOrdinaryModelConnections } from "./model-account-cleanup.js";
-import type { ThreadTarget } from "./thread-target.js";
-import { threadSnapshot } from "./thread-target.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const postgres = process.env.VERIFY_DATABASE && databaseUrl ? describe.sequential : describe.skip;
@@ -46,8 +36,7 @@ postgres("external model account isolated PostgreSQL", () => {
   let db: ReturnType<typeof createDb>;
   let prisma: PrismaClient;
   let app: ReturnType<typeof modelAccountRoutes>;
-  const enqueue = vi.fn<JobPublisher["enqueue"]>(async () => undefined);
-  const jobs: JobPublisher = { enqueue, cancel: vi.fn(), close: async () => undefined };
+  let routeOptions: Parameters<typeof modelAccountRoutes>[0];
   const secrets = new EncryptedSecretStore("fixture-encryption-key");
   const connection = configuredModelAccount(JSON.stringify(config))!;
   const modelFetch = vi.fn<typeof fetch>(async () =>
@@ -165,7 +154,7 @@ postgres("external model account isolated PostgreSQL", () => {
       data: { id: "model-account-thread", userId, spaceId, botId: "model-account-bot" },
     });
     const auth = {
-      externalAccountIdentity: (id: string) => readExternalAccountIdentity(prisma, id, issuer, key),
+      $context: Promise.resolve({ secretConfig: key }),
       api: {
         getSession: async ({ headers }: { headers: Headers }) => {
           if (headers.get("authorization") !== "Bearer fixture-session") return null;
@@ -174,8 +163,8 @@ postgres("external model account isolated PostgreSQL", () => {
         },
       },
     } as unknown as Auth;
-    app = modelAccountRoutes({
-      jobs,
+    routeOptions = {
+      issuer,
       modelFetch,
       navigationFetch,
       connection,
@@ -184,11 +173,13 @@ postgres("external model account isolated PostgreSQL", () => {
       secrets,
       webOrigin: origin,
       authUrl: "https://api.example.test",
-    });
+    };
+    app = modelAccountRoutes(routeOptions);
   });
   beforeEach(async () => {
+    routeOptions.defaultModel = undefined;
+    app = modelAccountRoutes(routeOptions);
     authorized = false;
-    enqueue.mockClear();
     await prisma.task.deleteMany({ where: { userId } });
     complete.mockClear();
     ensure.mockClear();
@@ -209,186 +200,7 @@ postgres("external model account isolated PostgreSQL", () => {
     await db.pool.end();
   });
 
-  it("removes unsupported AI connections without deleting account access, local memory or identity", async () => {
-    const flow = await begin();
-    expect((await request(flow.callback, { headers: { cookie: flow.cookie } })).status).toBe(302);
-    const managedId = `external-${accountId}`;
-    await prisma.secret.createMany({
-      data: [
-        { id: "old-model-secret", userId, kind: "model", ciphertext: "unused-fixture" },
-        { id: "shared-voice-secret", userId, kind: "model", ciphertext: "unused-shared-fixture" },
-      ],
-    });
-    await prisma.userModelCredential.createMany({
-      data: [
-        {
-          id: "old-model",
-          userId,
-          provider: "openrouter",
-          label: "Old",
-          secretId: "old-model-secret",
-        },
-        {
-          id: "shared-model",
-          userId,
-          provider: "openai-compatible",
-          label: "Shared",
-          secretId: "shared-voice-secret",
-        },
-      ],
-    });
-    await prisma.userVoiceCredential.create({
-      data: {
-        id: "old-voice",
-        userId,
-        provider: "openai",
-        secretId: "shared-voice-secret",
-      },
-    });
-    await prisma.secret.create({
-      data: {
-        id: "old-memory-secret",
-        userId,
-        spaceId,
-        kind: "memory",
-        ciphertext: "unused-fixture",
-      },
-    });
-    await prisma.spaceMemoryConfig.create({
-      data: { spaceId, userId, provider: "fixture", settings: {}, secretId: "old-memory-secret" },
-    });
-    await prisma.memoryDocument.create({
-      data: {
-        id: "local-memory",
-        userId,
-        spaceId,
-        scope: "user",
-        path: "MEMORY.md",
-        content: "Keep this memory",
-      },
-    });
-    await prisma.userModelPreference.create({
-      data: { userId, credentialId: "old-model", modelId: "old-model" },
-    });
-    await prisma.spaceSettingOverride.create({ data: { spaceId, userId, setting: "models" } });
-    await prisma.spaceModelRoleChoice.create({
-      data: {
-        spaceId,
-        userId,
-        role: "main",
-        position: 0,
-        provider: "openrouter",
-        modelId: "old-model",
-        credentialId: "old-model",
-      },
-    });
-    await prisma.userModelRoleChoice.createMany({
-      data: [
-        {
-          userId,
-          role: "main",
-          position: 0,
-          provider: "openai-compatible",
-          modelId: "example-model",
-          credentialId: managedId,
-        },
-        {
-          userId,
-          role: "main",
-          position: 1,
-          provider: "openrouter",
-          modelId: "old-model",
-          credentialId: "old-model",
-        },
-        {
-          userId,
-          role: "approval",
-          position: 0,
-          provider: "openrouter",
-          modelId: "deployment-model",
-        },
-      ],
-    });
-    await prisma.bot.update({
-      where: { id: "model-account-bot" },
-      data: { modelProvider: "openai-compatible", modelId: "example-model" },
-    });
-    await prisma.bot.create({
-      data: {
-        id: "ordinary-model-bot",
-        userId,
-        spaceId,
-        name: "Old",
-        color: "test",
-        modelProvider: "openrouter",
-        modelId: "old-model",
-      },
-    });
-    await prisma.routine.create({
-      data: {
-        id: "ordinary-model-routine",
-        userId,
-        spaceId,
-        botId: "model-account-bot",
-        name: "Fixture",
-        prompt: "Fixture",
-        crons: [],
-        modelProvider: "openai-compatible",
-        modelId: "unlisted-model",
-      },
-    });
-    await prisma.modelOAuthSession.create({
-      data: {
-        id: "old-model-oauth",
-        userId,
-        spaceId,
-        provider: "openai-codex",
-        scope: "fixture",
-        ciphertext: "unused-fixture",
-      },
-    });
-    const removed = await Promise.all([
-      removeOrdinaryModelConnections(prisma, secrets),
-      removeOrdinaryModelConnections(prisma, secrets),
-    ]);
-    expect(removed.map((row) => row.removed).sort()).toEqual([0, 2]);
-    expect(
-      (await prisma.userModelCredential.findMany({ where: { userId } })).map((row) => row.id),
-    ).toEqual([managedId]);
-    expect(await prisma.secret.findUnique({ where: { id: "old-model-secret" } })).toBeNull();
-    expect(await prisma.secret.findUnique({ where: { id: "shared-voice-secret" } })).toBeNull();
-    expect(await prisma.userVoiceCredential.count()).toBe(0);
-    expect(await prisma.spaceMemoryConfig.count()).toBe(0);
-    expect(await prisma.secret.findUnique({ where: { id: "old-memory-secret" } })).toBeNull();
-    expect(
-      await prisma.memoryDocument.findUnique({ where: { id: "local-memory" } }),
-    ).not.toBeNull();
-    expect(await prisma.userModelPreference.count({ where: { credentialId: "old-model" } })).toBe(
-      0,
-    );
-    expect(await prisma.userModelRoleChoice.findMany({ where: { userId } })).toMatchObject([
-      { credentialId: managedId, modelId: "example-model" },
-    ]);
-    expect(
-      await prisma.modelOAuthSession.findUnique({ where: { id: "old-model-oauth" } }),
-    ).toBeNull();
-    expect(await prisma.bot.findUnique({ where: { id: "model-account-bot" } })).toMatchObject({
-      modelProvider: "openai-compatible",
-      modelId: "example-model",
-    });
-    expect(await prisma.bot.findUnique({ where: { id: "ordinary-model-bot" } })).toMatchObject({
-      modelProvider: null,
-      modelId: null,
-    });
-    expect(
-      await prisma.routine.findUnique({ where: { id: "ordinary-model-routine" } }),
-    ).toMatchObject({ modelProvider: null, modelId: null });
-    expect(await prisma.account.findUnique({ where: { id: accountId } })).toMatchObject({
-      idToken,
-    });
-  });
-
-  it("authorizes, saves only an account reference, and resolves runtime keys without local billing", async () => {
+  it("authorizes, stores an encrypted ordinary key for runtime calls without local billing", async () => {
     const flow = await begin();
     const callback = await request(flow.callback, { headers: { cookie: flow.cookie } });
     expect(callback.status).toBe(302);
@@ -398,16 +210,17 @@ postgres("external model account isolated PostgreSQL", () => {
     });
     const stored = await prisma.secret.findUniqueOrThrow({ where: { id: credential.secretId } });
     const plaintext = await secrets.load(stored.ciphertext, stored.id);
-    expect(plaintext).not.toContain("fake-model-key");
+    expect(stored.ciphertext).not.toContain("fake-model-key");
+    expect(parseModelSecret(plaintext)).toMatchObject({
+      apiKey: "fake-model-key",
+      baseUrl: "https://models.example.test/v1",
+    });
     expect(plaintext).not.toContain("subject");
-    expect(parseModelSecret(plaintext)).toMatchObject({ externalAccount: { accountId, binding } });
-    const externalModelKey = createExternalModelKeyResolver(
-      connection.provider,
-      connection.model.baseUrl,
-      (id) => readExternalAccountIdentity(prisma, id, issuer, key),
-    );
+    expect(JSON.parse(plaintext)).toMatchObject({ externalAccount: { accountId, binding } });
+    ensure.mockClear();
+    ensure.mockRejectedValueOnce(new Error("account service offline"));
     const resolved = await resolveModelKey(
-      { prisma, secretStore: secrets, externalModelKey, billingEnabled: false } as never,
+      { prisma, secretStore: secrets, billingEnabled: false } as never,
       userId,
       spaceId,
       credential,
@@ -415,6 +228,11 @@ postgres("external model account isolated PostgreSQL", () => {
       "example-model",
     );
     expect(resolved.apiKey).toBe("fake-model-key");
+    expect(ensure).not.toHaveBeenCalled();
+    ensure.mockReset().mockImplementation(async () => {
+      if (!authorized) throw new ExternalModelAccountError("authorization_required");
+      return { apiKey: "fake-model-key" };
+    });
     expect(resolved.callObserver).toBeUndefined();
     expect(await prisma.billingAuditEvent.count()).toBe(0);
     expect((await request(flow.callback, { headers: { cookie: flow.cookie } })).status).toBe(400);
@@ -427,7 +245,7 @@ postgres("external model account isolated PostgreSQL", () => {
     expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(0);
     await expect(
       resolveModelKey(
-        { prisma, secretStore: secrets, externalModelKey, billingEnabled: false } as never,
+        { prisma, secretStore: secrets, billingEnabled: false } as never,
         userId,
         spaceId,
         credential,
@@ -435,6 +253,49 @@ postgres("external model account isolated PostgreSQL", () => {
         "example-model",
       ),
     ).rejects.toThrow();
+  });
+
+  it("reconnects legacy reference-only credentials without replacing their ids or protocol", async () => {
+    authorized = true;
+    await request("/connect", { method: "POST", body: "{}" });
+    const credential = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: `external-${accountId}` },
+    });
+    const legacy = await secrets.put(
+      JSON.stringify({
+        kind: "openai_compatible",
+        baseUrl: connection.model.baseUrl,
+        apiProtocol: "responses",
+        enabledModelIds: ["example-model"],
+        externalAccount: { accountId, binding },
+      }),
+      {
+        userId,
+        spaceId,
+        operationId: "fixture",
+        traceId: "fixture",
+        signal: AbortSignal.timeout(10_000),
+      },
+      { recordId: credential.secretId },
+    );
+    await prisma.secret.update({
+      where: { id: credential.secretId },
+      data: { ciphertext: legacy.ciphertext },
+    });
+    expect(await (await request("/status")).json()).toMatchObject({
+      connected: false,
+      recovery: "authorization_required",
+    });
+    expect((await request("/connect", { method: "POST", body: "{}" })).status).toBe(200);
+    const reconnected = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: credential.id },
+    });
+    const row = await prisma.secret.findUniqueOrThrow({ where: { id: reconnected.secretId } });
+    expect(parseModelSecret(await secrets.load(row.ciphertext, row.id))).toMatchObject({
+      apiKey: "fake-model-key",
+      apiProtocol: "responses",
+    });
+    expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(1);
   });
 
   it("rejects a missing browser proof, expired original session and changed account", async () => {
@@ -548,7 +409,7 @@ postgres("external model account isolated PostgreSQL", () => {
     });
     const response = await request(flow.callback, { headers: { cookie: flow.cookie } });
     expect(response.status).toBe(302);
-    expect(new URL(response.headers.get("location")!).searchParams.get("error")).toBe(
+    expect(new URL(response.headers.get("location")!).searchParams.get("modelAccountError")).toBe(
       "result_unknown",
     );
     expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(0);
@@ -576,156 +437,6 @@ postgres("external model account isolated PostgreSQL", () => {
     }
   });
 
-  it("restores only authorization-paused runs with their original ids", async () => {
-    authorized = true;
-    await request("/connect", { method: "POST", body: "{}" });
-    authorized = false;
-    const threadId = "model-account-thread";
-    const botId = "model-account-bot";
-    const task = await prisma.task.create({
-      data: { userId, spaceId, threadId, botId, prompt: "Original work", status: "running" },
-    });
-    const run = await prisma.run.create({
-      data: {
-        userId,
-        spaceId,
-        threadId,
-        botId,
-        taskId: task.id,
-        status: "running",
-        trigger: "user",
-        leaseOwner: "fixture-worker",
-        leaseFence: 1,
-        leaseExpiresAt: new Date(Date.now() + 60_000),
-      },
-    });
-    const attempt = await prisma.attempt.create({
-      data: { runId: run.id, status: "running", fence: 1 },
-    });
-    const checkpoint = modelAccountAuthorizationCheckpoint({ accountId, binding });
-    const events = createThreadEvents(prisma);
-    await pauseModelAccountRun(
-      { prisma, events, jobs, secretStore: secrets },
-      run,
-      { attemptId: attempt.id, workerId: "fixture-worker", fence: 1 },
-      { accountId, binding },
-      null,
-    );
-    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe(
-      "waiting_input",
-    );
-    expect(
-      (await prisma.event.findFirstOrThrow({ where: { runId: run.id, type: "run.waiting_input" } }))
-        .payload,
-    ).toMatchObject({
-      userId,
-      modelAuthorizationRequired: true,
-    });
-    const target = { kind: "bot", botId, threadId, bot: { computer: null } } as ThreadTarget;
-    const pausedSnapshot = await threadSnapshot({ prisma }, target);
-    expect(pausedSnapshot.run).toMatchObject({ id: run.id, modelAuthorizationRequired: true });
-    expect(JSON.stringify(pausedSnapshot)).not.toContain(binding);
-    expect(await (await request("/status")).json()).toMatchObject({
-      connected: true,
-      recovery: "authorization_required",
-    });
-    const other = await prisma.run.create({
-      data: {
-        userId,
-        spaceId,
-        threadId,
-        botId,
-        taskId: task.id,
-        status: "waiting_input",
-        trigger: "user",
-        checkpoint: "approval-checkpoint",
-      },
-    });
-    const completed = await prisma.run.create({
-      data: {
-        userId,
-        spaceId,
-        threadId,
-        botId,
-        taskId: task.id,
-        status: "completed",
-        trigger: "user",
-        checkpoint,
-      },
-    });
-    authorized = true;
-    expect((await request("/connect", { method: "POST", body: "{}" })).status).toBe(200);
-    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe("queued");
-    expect(
-      (await threadSnapshot({ prisma }, target)).run?.modelAuthorizationRequired,
-    ).toBeUndefined();
-    expect((await prisma.run.findUniqueOrThrow({ where: { id: other.id } })).status).toBe(
-      "waiting_input",
-    );
-    expect((await prisma.run.findUniqueOrThrow({ where: { id: completed.id } })).status).toBe(
-      "completed",
-    );
-    expect(await prisma.run.count({ where: { taskId: task.id } })).toBe(3);
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    await request("/connect", { method: "POST", body: "{}" });
-    expect(enqueue).toHaveBeenCalledTimes(1);
-  });
-
-  it("recovers authorization that completed immediately before the run paused", async () => {
-    authorized = true;
-    await request("/connect", { method: "POST", body: "{}" });
-    enqueue.mockClear();
-    const credential = await prisma.userModelCredential.findUniqueOrThrow({
-      where: { id: `external-${accountId}` },
-    });
-    const task = await prisma.task.create({
-      data: {
-        userId,
-        spaceId,
-        threadId: "model-account-thread",
-        botId: "model-account-bot",
-        prompt: "Original work",
-        status: "running",
-      },
-    });
-    const run = await prisma.run.create({
-      data: {
-        userId,
-        spaceId,
-        threadId: task.threadId,
-        botId: task.botId,
-        taskId: task.id,
-        status: "running",
-        trigger: "user",
-        leaseOwner: "fixture-worker",
-        leaseFence: 1,
-      },
-    });
-    const attempt = await prisma.attempt.create({
-      data: { runId: run.id, status: "running", fence: 1 },
-    });
-    await pauseModelAccountRun(
-      {
-        prisma,
-        events: createThreadEvents(prisma),
-        jobs,
-        secretStore: secrets,
-        externalModelKey: createExternalModelKeyResolver(
-          connection.provider,
-          connection.model.baseUrl,
-          (id) => readExternalAccountIdentity(prisma, id, issuer, key),
-        ),
-      },
-      run,
-      { attemptId: attempt.id, workerId: "fixture-worker", fence: 1 },
-      { accountId, binding },
-      credential,
-    );
-    expect((await prisma.run.findUniqueOrThrow({ where: { id: run.id } })).status).toBe("queued");
-    expect(enqueue).toHaveBeenCalledTimes(1);
-    expect(await prisma.run.count({ where: { taskId: task.id } })).toBe(1);
-  });
-
   it("keeps a failed revocation visible and retries it idempotently", async () => {
     authorized = true;
     await request("/connect", { method: "POST", body: "{}" });
@@ -749,7 +460,7 @@ postgres("external model account isolated PostgreSQL", () => {
     });
     ensure.mockRejectedValueOnce(new ExternalModelAccountError("unavailable"));
     const reply = await request(flow.callback, { headers: { cookie: flow.cookie } });
-    expect(new URL(reply.headers.get("location")!).searchParams.get("error")).toBe(
+    expect(new URL(reply.headers.get("location")!).searchParams.get("modelAccountError")).toBe(
       "result_unknown",
     );
     expect(await (await request("/status")).json()).toMatchObject({
@@ -803,7 +514,24 @@ postgres("external model account isolated PostgreSQL", () => {
     });
     expect((await request("/recover", { method: "POST" })).status).toBe(503);
     expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(0);
-    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("initializes the configured main model using the authorized key without replacing a later choice", async () => {
+    routeOptions.defaultModel = "example-model";
+    app = modelAccountRoutes(routeOptions);
+    const flow = await begin();
+    expect((await request(flow.callback, { headers: { cookie: flow.cookie } })).status).toBe(302);
+    const where = { userId_role_position: { userId, role: "main", position: 0 } };
+    expect(await prisma.userModelRoleChoice.findUnique({ where })).toMatchObject({
+      provider: "openai-compatible",
+      modelId: "example-model",
+      credentialId: `external-${accountId}`,
+    });
+    await prisma.userModelRoleChoice.update({ where, data: { modelId: "second-model" } });
+    await request("/connect", { method: "POST", body: "{}" });
+    expect(await prisma.userModelRoleChoice.findUnique({ where })).toMatchObject({
+      modelId: "second-model",
+    });
   });
 
   it("discovers models without selecting a main model and preserves user choices on reauthorization", async () => {
@@ -895,7 +623,10 @@ postgres("external model account isolated PostgreSQL", () => {
 
   it("keeps the account enabled when the optional portal policy is unavailable", async () => {
     navigationFetch.mockRejectedValueOnce(new Error("offline"));
-    expect(await (await request("/config")).json()).toEqual({ enabled: true });
+    expect(await (await request("/config")).json()).toMatchObject({
+      enabled: true,
+      serviceName: connection.serviceName,
+    });
   });
 
   it("does not overwrite a newer protocol choice with an in-flight catalog refresh", async () => {
@@ -933,6 +664,14 @@ postgres("external model account isolated PostgreSQL", () => {
     expect((await request("/models", { method: "POST" })).status).toBe(200);
     expect(await (await request("/status")).json()).toMatchObject({ apiProtocol: "responses" });
     expect(await prisma.secret.count({ where: { userId, kind: "model" } })).toBe(initialSecrets);
+  });
+
+  it("returns same-tab authorization to the exact conversation and settings URL", async () => {
+    const target = `${origin}/app/fixture-bot?settings=models&m=fixture-message#draft`;
+    const flow = await begin(target);
+    const response = await request(flow.callback, { headers: { cookie: flow.cookie } });
+    expect(response.headers.get("location")).toBe(target);
+    expect(await (await request("/status")).json()).toMatchObject({ connected: true });
   });
 
   it("returns onboarding authorization through the existing popup callback", async () => {
