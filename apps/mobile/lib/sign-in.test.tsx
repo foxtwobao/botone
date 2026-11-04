@@ -46,6 +46,7 @@ vi.mock("react-native", () => {
       <div role="progressbar" aria-label={accessibilityLabel} />
     ),
     View: Container,
+    Image: () => null,
     ScrollView: Container,
     Text: ({ children }: { children: ReactNode }) => <span>{children}</span>,
     TextInput: ({
