@@ -982,7 +982,7 @@ describe("Pi connector tool dispatch", () => {
     );
   });
 
-  it("passes spawn_bot's public description and private instructions to the executor", async () => {
+  it.each([undefined, "team", "dedicated"] as const)("spawns a bot (%s)", async (mode) => {
     const spawnBotTool = builtinAgentTools.find((tool) => tool.name === "spawn_bot");
     if (!spawnBotTool) throw new Error("missing spawn_bot");
     fakeAgentState.invoke = {
@@ -993,7 +993,7 @@ describe("Pi connector tool dispatch", () => {
           name: "Scout",
           description: "Finds venues.",
           instructions: "Ask before booking anything.",
-          computer_mode: "team",
+          ...(mode ? { computer_mode: mode } : {}),
         },
       },
     };
@@ -1029,6 +1029,7 @@ describe("Pi connector tool dispatch", () => {
         name: "Scout",
         description: "Finds venues.",
         instructions: "Ask before booking anything.",
+        ...(mode ? { computer_mode: mode } : {}),
       }),
       JSON.stringify(["pi-tool", "main", "call-1"]),
       undefined,
