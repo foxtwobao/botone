@@ -127,11 +127,14 @@ export function oidcDiscovery(config: OidcConfig) {
           }
           // Better Auth's state read/delete is not atomic. Consume a separate
           // server-side marker before code exchange, including concurrent callbacks.
-          await ctx.internalAdapter.createVerificationValue({
-            identifier: `oidc-callback-${data.state}`,
-            value: data.idTokenNonce!,
-            expiresAt: new Date(Date.now() + 10 * 60_000),
-          });
+          // Native authorization-origin probes have no nonce and issue no callback.
+          if (data.idTokenNonce) {
+            await ctx.internalAdapter.createVerificationValue({
+              identifier: `oidc-callback-${data.state}`,
+              value: data.idTokenNonce,
+              expiresAt: new Date(Date.now() + 10 * 60_000),
+            });
+          }
           return url;
         },
         validateAuthorizationCode: async (data) => {

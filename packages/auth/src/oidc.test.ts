@@ -612,11 +612,21 @@ describe("OIDC callbacks", () => {
   });
   it("hands the native browser callback to Expo with a valid bearer session", async () => {
     setup();
+    const context = await auth.$context;
+    const createVerification = context.internalAdapter.createVerificationValue.bind(
+      context.internalAdapter,
+    );
+    vi.spyOn(context.internalAdapter, "createVerificationValue").mockImplementation((data) => {
+      // Match the required string column that the memory adapter does not validate.
+      if (typeof data.value !== "string") throw new TypeError("Verification value is required");
+      return createVerification(data);
+    });
     const callback = await start(undefined, false, "rakazo://sign-in");
     const authorize = `${issuer}/authorize?state=${new URL(`${origin}${callback}`).searchParams.get("state")}`;
     const proxy = await request(
       `/expo-authorization-proxy?${new URLSearchParams({ authorizationURL: authorize })}`,
     );
+    expect(proxy.status).toBe(302);
     expect(proxy.headers.get("location")).toBe(authorize);
     const returned = await request(callback);
     const destination = new URL(returned.headers.get("location")!);
