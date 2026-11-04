@@ -16,6 +16,7 @@ import {
   toPlainText,
 } from "react-email";
 import { DE_MESSAGES } from "./locales/de.js";
+import { EN_MESSAGES } from "./locales/en.js";
 import { ES_MESSAGES } from "./locales/es.js";
 import { FR_MESSAGES } from "./locales/fr.js";
 import { HE_MESSAGES } from "./locales/he.js";
@@ -71,7 +72,7 @@ export type EmailLocaleOf = (
 
 /** Translates email copy into `locale`, filling `{name}` placeholders. */
 export function emailText(locale: string) {
-  const catalog = CATALOGS[locale];
+  const catalog = CATALOGS[locale] ?? EN_MESSAGES;
   return (text: string, values?: Record<string, string | number>) =>
     translate(catalog, text, values);
 }
@@ -128,7 +129,7 @@ export async function message(
                 letterSpacing: "-0.5px",
               }}
             >
-              rakazo
+              BotONE
             </Text>
             {content}
             {unsubscribeUrl ? (

@@ -560,10 +560,7 @@ export function AuthFrame({
       </div>
       <div className="flex flex-1 items-center justify-center px-6 pb-16">
         <form onSubmit={onSubmit} className="flex w-full max-w-[460px] flex-col items-center">
-          <div className="flex h-[74px] w-[74px] items-center justify-center gap-[11px] rounded-full bg-muted">
-            <span className="h-5 w-[9px] rounded-full bg-primary" />
-            <span className="h-5 w-[9px] rounded-full bg-primary" />
-          </div>
+          <img src="/favicon.png" alt="" width={74} height={74} className="size-[74px]" />
           <h1 aria-live="polite" className="mb-9 mt-7 text-4xl font-medium tracking-tight">
             {title}
           </h1>

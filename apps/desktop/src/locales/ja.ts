@@ -1,9 +1,11 @@
 export const JA_MESSAGES: Record<string, string> = {
+  Rakazo: "BotONE",
+  "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "{name}について",
   "Check for Updates…": "アップデートを確認…",
   "Computer Access…": "コンピュータへのアクセス…",
   "Revoke Local Computer Access": "ローカルコンピュータへのアクセスを取り消す",
-  "Change Rakazo Server…": "Rakazoサーバを変更…",
+  "Change Rakazo Server…": "BotONEサーバを変更…",
   "Stop Local Stack": "ローカルスタックを停止",
   "Hide {name}": "{name}を非表示",
   "Hide Others": "ほかを非表示",
@@ -35,12 +37,12 @@ export const JA_MESSAGES: Record<string, string> = {
   Close: "閉じる",
   "Close Window": "ウインドウを閉じる",
   "Bring All to Front": "すべてを手前に移動",
-  "Rakazo {version} is ready to install.": "Rakazo {version}をインストールする準備ができました。",
+  "Rakazo {version} is ready to install.": "BotONE {version}をインストールする準備ができました。",
   Restart: "再起動",
   Later: "あとで",
   "Could not install the update.": "アップデートをインストールできませんでした。",
   "Could not check for updates.": "アップデートを確認できませんでした。",
-  "Rakazo is up to date.": "Rakazoは最新です。",
+  "Rakazo is up to date.": "BotONEは最新です。",
   "Version {version}": "バージョン{version}",
   "Automatic updates are turned off for this install.":
     "このインストールでは自動アップデートがオフになっています。",
@@ -49,11 +51,11 @@ export const JA_MESSAGES: Record<string, string> = {
   "No desktop releases are published for this build yet.":
     "このビルド向けのデスクトップ版はまだ公開されていません。",
   "Move Rakazo to Applications to install updates.":
-    "アップデートをインストールするには、Rakazoを「アプリケーション」に移動してください。",
+    "アップデートをインストールするには、BotONEを「アプリケーション」に移動してください。",
   "Free up disk space to install updates.":
     "アップデートをインストールするには、ディスクの空き容量を増やしてください。",
   "This update could not be verified. Reinstall Rakazo from a trusted download.":
-    "このアップデートを検証できませんでした。信頼できるダウンロード元からRakazoを再インストールしてください。",
+    "このアップデートを検証できませんでした。信頼できるダウンロード元からBotONEを再インストールしてください。",
   "The update could not be completed. Try again later.":
     "アップデートを完了できませんでした。しばらくしてからもう一度お試しください。",
   "Could not reach the update server.": "アップデートサーバに接続できませんでした。",
@@ -73,11 +75,11 @@ export const JA_MESSAGES: Record<string, string> = {
   "Could not open browser sign-in. Close other sign-in attempts and retry.":
     "ブラウザでのサインインを開けませんでした。ほかのサインインを閉じてからもう一度お試しください。",
   "Sign-in callback rejected. Return to Rakazo to retry.":
-    "サインインの応答が拒否されました。Rakazoに戻ってもう一度お試しください。",
-  "You can close this tab and return to Rakazo.": "このタブを閉じてRakazoに戻ってください。",
-  "Set up Rakazo": "Rakazoを設定",
-  "Quit Rakazo": "Rakazoを終了",
-  "Welcome to Rakazo": "Rakazoへようこそ",
+    "サインインの応答が拒否されました。BotONEに戻ってもう一度お試しください。",
+  "You can close this tab and return to Rakazo.": "このタブを閉じてBotONEに戻ってください。",
+  "Set up Rakazo": "BotONEを設定",
+  "Quit Rakazo": "BotONEを終了",
+  "Welcome to Rakazo": "BotONEへようこそ",
   "Choose which server this app should use.": "このアプリで使うサーバを選んでください。",
   Instance: "インスタンス",
   "This computer": "このコンピュータ",
@@ -92,14 +94,14 @@ export const JA_MESSAGES: Record<string, string> = {
   "Check again": "もう一度確認",
   Retry: "再試行",
   "Getting ready…": "準備しています…",
-  "Downloading Rakazo…": "Rakazoをダウンロードしています…",
-  "Starting Rakazo…": "Rakazoを起動しています…",
+  "Downloading Rakazo…": "BotONEをダウンロードしています…",
+  "Starting Rakazo…": "BotONEを起動しています…",
   "Almost ready…": "まもなく完了…",
-  "Rakazo is ready.": "Rakazoの準備ができました。",
+  "Rakazo is ready.": "BotONEの準備ができました。",
   "{size} downloaded": "{size}ダウンロード済み",
   "Connecting…": "接続しています…",
   "Checking…": "確認しています…",
-  "Rakazo answered at {url}.": "Rakazoが{url}で応答しました。",
+  "Rakazo answered at {url}.": "BotONEが{url}で応答しました。",
   "Enter a server address first.": "先にサーバのアドレスを入力してください。",
   "Could not save that address.": "そのアドレスを保存できませんでした。",
   "Could not save that address. Try again.":
@@ -112,7 +114,7 @@ export const JA_MESSAGES: Record<string, string> = {
     "接続を確認できませんでした。もう一度お試しください。",
   "Setup bridge unavailable.": "設定用のブリッジを利用できません。",
   "Setup could not start. Quit Rakazo and try again.":
-    "設定を開始できませんでした。Rakazoを終了してからもう一度お試しください。",
+    "設定を開始できませんでした。BotONEを終了してからもう一度お試しください。",
   "Enter a server address.": "サーバのアドレスを入力してください。",
   "Enter a valid http:// or https:// address.":
     "有効なhttp://またはhttps://のアドレスを入力してください。",
@@ -120,9 +122,9 @@ export const JA_MESSAGES: Record<string, string> = {
     "有効なサーバのアドレスを入力してください。公開サーバにはHTTPSが必要です。新しいローカルインスタンスにはlocalhostを使ってください。",
   "Invalid custom headers": "カスタムヘッダーが無効です",
   "That address redirects elsewhere. Enter the final Rakazo server address.":
-    "そのアドレスは別の場所にリダイレクトされます。最終的なRakazoサーバのアドレスを入力してください。",
+    "そのアドレスは別の場所にリダイレクトされます。最終的なBotONEサーバのアドレスを入力してください。",
   "That address did not respond like a Rakazo server.":
-    "そのアドレスはRakazoサーバとして応答しませんでした。",
+    "そのアドレスはBotONEサーバとして応答しませんでした。",
   "The server answered with HTTP {status}.": "サーバがHTTP {status}で応答しました。",
   "Timed out reaching that address.": "そのアドレスへの接続がタイムアウトしました。",
   "Nothing is listening at that address yet.": "そのアドレスではまだ何も待ち受けていません。",
@@ -148,7 +150,7 @@ export const JA_MESSAGES: Record<string, string> = {
   "Connected, but could not save setup for the next launch. Try Continue again.":
     "接続しましたが、次回の起動用に設定を保存できませんでした。もう一度「続ける」をクリックしてください。",
   "The app-managed Rakazo services are not ready. Retry setup.":
-    "アプリが管理するRakazoサービスの準備ができていません。設定をやり直してください。",
+    "アプリが管理するBotONEサービスの準備ができていません。設定をやり直してください。",
   "Docker is not installed on this computer.":
     "このコンピュータにはDockerがインストールされていません。",
   "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
@@ -174,9 +176,9 @@ export const JA_MESSAGES: Record<string, string> = {
   "Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin, then retry.":
     "Docker Composeがありません。Docker Desktopまたはdocker-compose-pluginをインストールしてから再試行してください。",
   "Downloading Rakazo images failed. Check the output below, then retry.":
-    "Rakazoのイメージをダウンロードできませんでした。下の出力を確認してから再試行してください。",
+    "BotONEのイメージをダウンロードできませんでした。下の出力を確認してから再試行してください。",
   "Rakazo services did not start. Check the output below, then retry.":
-    "Rakazoのサービスが起動しませんでした。下の出力を確認してから再試行してください。",
+    "BotONEのサービスが起動しませんでした。下の出力を確認してから再試行してください。",
   "The stack started but the web app did not answer. Retry, and check the output below.":
     "スタックは起動しましたが、Webアプリが応答しませんでした。再試行して、下の出力を確認してください。",
   "Could not prepare the local stack. Retry.":

@@ -1,9 +1,11 @@
 export const FR_MESSAGES: Record<string, string> = {
+  Rakazo: "BotONE",
+  "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "À propos de {name}",
   "Check for Updates…": "Rechercher des mises à jour…",
   "Computer Access…": "Accès à l’ordinateur…",
   "Revoke Local Computer Access": "Révoquer l’accès à l’ordinateur local",
-  "Change Rakazo Server…": "Changer de serveur Rakazo…",
+  "Change Rakazo Server…": "Changer de serveur BotONE…",
   "Stop Local Stack": "Arrêter la stack locale",
   "Hide {name}": "Masquer {name}",
   "Hide Others": "Masquer les autres",
@@ -35,12 +37,12 @@ export const FR_MESSAGES: Record<string, string> = {
   Close: "Fermer",
   "Close Window": "Fermer la fenêtre",
   "Bring All to Front": "Tout ramener au premier plan",
-  "Rakazo {version} is ready to install.": "Rakazo {version} est prêt à être installé.",
+  "Rakazo {version} is ready to install.": "BotONE {version} est prêt à être installé.",
   Restart: "Redémarrer",
   Later: "Plus tard",
   "Could not install the update.": "Impossible d’installer la mise à jour.",
   "Could not check for updates.": "Impossible de rechercher des mises à jour.",
-  "Rakazo is up to date.": "Rakazo est à jour.",
+  "Rakazo is up to date.": "BotONE est à jour.",
   "Version {version}": "Version {version}",
   "Automatic updates are turned off for this install.":
     "Les mises à jour automatiques sont désactivées pour cette installation.",
@@ -49,11 +51,11 @@ export const FR_MESSAGES: Record<string, string> = {
   "No desktop releases are published for this build yet.":
     "Aucune version de bureau n’est encore publiée pour cette build.",
   "Move Rakazo to Applications to install updates.":
-    "Déplacez Rakazo dans Applications pour installer les mises à jour.",
+    "Déplacez BotONE dans Applications pour installer les mises à jour.",
   "Free up disk space to install updates.":
     "Libérez de l’espace disque pour installer les mises à jour.",
   "This update could not be verified. Reinstall Rakazo from a trusted download.":
-    "Impossible de vérifier cette mise à jour. Réinstallez Rakazo depuis un téléchargement fiable.",
+    "Impossible de vérifier cette mise à jour. Réinstallez BotONE depuis un téléchargement fiable.",
   "The update could not be completed. Try again later.":
     "Impossible de terminer la mise à jour. Réessayez plus tard.",
   "Could not reach the update server.": "Impossible de joindre le serveur de mises à jour.",
@@ -73,12 +75,12 @@ export const FR_MESSAGES: Record<string, string> = {
   "Could not open browser sign-in. Close other sign-in attempts and retry.":
     "Impossible d’ouvrir la connexion dans le navigateur. Fermez les autres tentatives de connexion et réessayez.",
   "Sign-in callback rejected. Return to Rakazo to retry.":
-    "La réponse de connexion a été refusée. Revenez à Rakazo pour réessayer.",
+    "La réponse de connexion a été refusée. Revenez à BotONE pour réessayer.",
   "You can close this tab and return to Rakazo.":
-    "Vous pouvez fermer cet onglet et revenir à Rakazo.",
-  "Set up Rakazo": "Configurer Rakazo",
-  "Quit Rakazo": "Quitter Rakazo",
-  "Welcome to Rakazo": "Bienvenue dans Rakazo",
+    "Vous pouvez fermer cet onglet et revenir à BotONE.",
+  "Set up Rakazo": "Configurer BotONE",
+  "Quit Rakazo": "Quitter BotONE",
+  "Welcome to Rakazo": "Bienvenue dans BotONE",
   "Choose which server this app should use.": "Choisissez le serveur que cette app doit utiliser.",
   Instance: "Instance",
   "This computer": "Cet ordinateur",
@@ -93,14 +95,14 @@ export const FR_MESSAGES: Record<string, string> = {
   "Check again": "Vérifier à nouveau",
   Retry: "Réessayer",
   "Getting ready…": "Préparation…",
-  "Downloading Rakazo…": "Téléchargement de Rakazo…",
-  "Starting Rakazo…": "Démarrage de Rakazo…",
+  "Downloading Rakazo…": "Téléchargement de BotONE…",
+  "Starting Rakazo…": "Démarrage de BotONE…",
   "Almost ready…": "Presque prêt…",
-  "Rakazo is ready.": "Rakazo est prêt.",
+  "Rakazo is ready.": "BotONE est prêt.",
   "{size} downloaded": "{size} téléchargés",
   "Connecting…": "Connexion…",
   "Checking…": "Vérification…",
-  "Rakazo answered at {url}.": "Rakazo a répondu à {url}.",
+  "Rakazo answered at {url}.": "BotONE a répondu à {url}.",
   "Enter a server address first.": "Saisissez d’abord une adresse de serveur.",
   "Could not save that address.": "Impossible d’enregistrer cette adresse.",
   "Could not save that address. Try again.": "Impossible d’enregistrer cette adresse. Réessayez.",
@@ -111,16 +113,16 @@ export const FR_MESSAGES: Record<string, string> = {
   "Could not run the connection check. Try again.": "Impossible de tester la connexion. Réessayez.",
   "Setup bridge unavailable.": "Le pont de configuration n’est pas disponible.",
   "Setup could not start. Quit Rakazo and try again.":
-    "Impossible de lancer la configuration. Quittez Rakazo et réessayez.",
+    "Impossible de lancer la configuration. Quittez BotONE et réessayez.",
   "Enter a server address.": "Saisissez une adresse de serveur.",
   "Enter a valid http:// or https:// address.": "Saisissez une adresse http:// ou https:// valide.",
   "Enter a valid server address. Public servers require HTTPS; a new local instance must use localhost.":
     "Saisissez une adresse de serveur valide. Les serveurs publics exigent HTTPS ; une nouvelle instance locale doit utiliser localhost.",
   "Invalid custom headers": "En-têtes personnalisés non valides",
   "That address redirects elsewhere. Enter the final Rakazo server address.":
-    "Cette adresse redirige ailleurs. Saisissez l’adresse finale du serveur Rakazo.",
+    "Cette adresse redirige ailleurs. Saisissez l’adresse finale du serveur BotONE.",
   "That address did not respond like a Rakazo server.":
-    "Cette adresse n’a pas répondu comme un serveur Rakazo.",
+    "Cette adresse n’a pas répondu comme un serveur BotONE.",
   "The server answered with HTTP {status}.": "Le serveur a répondu avec HTTP {status}.",
   "Timed out reaching that address.": "Délai dépassé pour joindre cette adresse.",
   "Nothing is listening at that address yet.": "Rien n’écoute encore à cette adresse.",
@@ -146,7 +148,7 @@ export const FR_MESSAGES: Record<string, string> = {
   "Connected, but could not save setup for the next launch. Try Continue again.":
     "Connecté, mais impossible d’enregistrer la configuration pour le prochain lancement. Cliquez à nouveau sur Continuer.",
   "The app-managed Rakazo services are not ready. Retry setup.":
-    "Les services Rakazo gérés par l’app ne sont pas prêts. Relancez la configuration.",
+    "Les services BotONE gérés par l’app ne sont pas prêts. Relancez la configuration.",
   "Docker is not installed on this computer.": "Docker n’est pas installé sur cet ordinateur.",
   "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
     "Docker est installé, mais Docker Compose est absent. Installez Docker Desktop ou le docker-compose-plugin.",
@@ -171,9 +173,9 @@ export const FR_MESSAGES: Record<string, string> = {
   "Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin, then retry.":
     "Docker Compose est absent. Installez Docker Desktop ou le docker-compose-plugin, puis réessayez.",
   "Downloading Rakazo images failed. Check the output below, then retry.":
-    "Le téléchargement des images Rakazo a échoué. Consultez la sortie ci-dessous, puis réessayez.",
+    "Le téléchargement des images BotONE a échoué. Consultez la sortie ci-dessous, puis réessayez.",
   "Rakazo services did not start. Check the output below, then retry.":
-    "Les services Rakazo n’ont pas démarré. Consultez la sortie ci-dessous, puis réessayez.",
+    "Les services BotONE n’ont pas démarré. Consultez la sortie ci-dessous, puis réessayez.",
   "The stack started but the web app did not answer. Retry, and check the output below.":
     "La stack a démarré, mais l’app web n’a pas répondu. Réessayez et consultez la sortie ci-dessous.",
   "Could not prepare the local stack. Retry.": "Impossible de préparer la stack locale. Réessayez.",

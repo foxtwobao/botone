@@ -720,7 +720,7 @@ msgstr "允許一次"
 
 #: src/lib/dictation.ts
 msgid "Allow Rakazo to use Speech Recognition and the microphone in System Settings."
-msgstr ""
+msgstr "Allow BotONE to use Speech Recognition and the microphone in System Settings."
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
@@ -768,7 +768,7 @@ msgstr "此供應商儲存的是 API 金鑰，不是訂閱登入。"
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "An existing Honcho peer to read from. Rakazo never writes to it."
-msgstr "用於讀取資料的現有 Honcho peer。Rakazo 絕不會向其寫入資料。"
+msgstr "用於讀取資料的現有 Honcho peer。BotONE 絕不會向其寫入資料。"
 
 #: src/lib/agent-import-errors.ts
 msgid "An imported API key could not be checked. Try again."
@@ -1406,7 +1406,7 @@ msgstr "選擇資料夾"
 #: src/components/ModelCredits.tsx
 #: src/components/SubscriptionGate.tsx
 msgid "Choose how to use Rakazo"
-msgstr "選擇 Rakazo 的使用方式"
+msgstr "選擇 BotONE 的使用方式"
 
 #: src/components/vault/VaultItemEditor.tsx
 msgid "City"
@@ -1723,7 +1723,7 @@ msgstr "請先連結此模型的供應商。"
 #. js-lingui-explicit-id
 #: src/lib/run-error.ts
 msgid "Connect your own API key in Models or choose Rakazo credits in Billing."
-msgstr "請在「模型」中連接你自己的 API 金鑰，或在「帳務」中選擇 Rakazo 點數。"
+msgstr "請在「模型」中連接你自己的 API 金鑰，或在「帳務」中選擇 BotONE 點數。"
 
 #: src/components/ComputerDeviceSettings.tsx
 #: src/components/integrations/IntegrationSetup.tsx
@@ -2483,7 +2483,7 @@ msgstr "建立空間"
 
 #: src/pages/Auth.tsx
 msgid "Create your Rakazo"
-msgstr "建立你的 Rakazo"
+msgstr "建立你的 BotONE"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -2946,7 +2946,7 @@ msgstr "於 {day} 結束"
 
 #: src/components/GitHubStarPrompt.tsx
 msgid "Enjoying Rakazo?"
-msgstr ""
+msgstr "Enjoying BotONE?"
 
 #: src/lib/user-error.ts
 msgid "Enter a password"
@@ -3438,7 +3438,7 @@ msgstr "如何檢查"
 
 #: src/components/SignupSurvey.tsx
 msgid "How will you use Rakazo?"
-msgstr "你會如何使用 Rakazo？"
+msgstr "你會如何使用 BotONE？"
 
 #: src/pages/shell/computer-release-actions.tsx
 msgid "I’m done"
@@ -4464,7 +4464,7 @@ msgstr "未匯入"
 
 #: src/pages/shell/import-status.ts
 msgid "Not in Rakazo's catalog"
-msgstr "不在 Rakazo 目錄中"
+msgstr "不在 BotONE 目錄中"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Not in the plugin catalog"
@@ -4478,11 +4478,11 @@ msgstr "暫不"
 #: src/pages/shell/agent-import.tsx
 #: src/pages/shell/import-status.ts
 msgid "Not supported in Rakazo"
-msgstr "Rakazo 不支援"
+msgstr "BotONE 不支援"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Not used by Rakazo"
-msgstr "Rakazo 不使用"
+msgstr "BotONE 不使用"
 
 #: src/components/McpServerHealthLine.tsx
 msgid "Not working"
@@ -4627,7 +4627,7 @@ msgstr "開啟導覽"
 #: src/components/pages/PublicPageShell.tsx
 #: src/pages/SharedPage.tsx
 msgid "Open Rakazo"
-msgstr "開啟 Rakazo"
+msgstr "開啟 BotONE"
 
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
@@ -4804,7 +4804,7 @@ msgstr "貼上替換金鑰"
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "貼上伺服器的 OpenAI 相容地址。需要時 Rakazo 會補上 /v1。"
+msgstr "貼上伺服器的 OpenAI 相容地址。需要時 BotONE 會補上 /v1。"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Paste the reply"
@@ -4993,16 +4993,16 @@ msgstr "排隊中"
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Rakazo"
-msgstr "Rakazo"
+msgstr "BotONE"
 
 #: src/components/ModelCredits.tsx
 #: src/pages/Onboarding.tsx
 msgid "Rakazo credits"
-msgstr "Rakazo 額度"
+msgstr "BotONE 額度"
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "rakazo-shared and IDs starting with bot- are reserved for Rakazo."
-msgstr "rakazo-shared 與以 bot- 開頭的 ID 保留給 Rakazo 使用。"
+msgstr "rakazo-shared 與以 bot- 開頭的 ID 保留給 BotONE 使用。"
 
 #: src/pages/shell/message-hover-actions.tsx
 msgid "React"
@@ -5423,7 +5423,7 @@ msgstr "返回與 {0} 的通話"
 #: src/pages/McpOAuthCallback.tsx
 #: src/pages/SlackInstallCallback.tsx
 msgid "Return to Rakazo"
-msgstr "返回 Rakazo"
+msgstr "返回 BotONE"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
@@ -5896,7 +5896,7 @@ msgstr "在 <0>{0}</0> 登入，然後將代碼貼到這裡。"
 
 #: src/pages/Auth.tsx
 msgid "Sign in to Rakazo"
-msgstr "登入 Rakazo"
+msgstr "登入 BotONE"
 
 #: src/lib/user-error.ts
 msgid "Sign in to your existing account to link SSO"
@@ -6177,7 +6177,7 @@ msgstr "以每月 {price} 訂閱"
 
 #: src/components/ModelCredits.tsx
 msgid "Subscribe to Rakazo credits"
-msgstr "訂閱 Rakazo 額度"
+msgstr "訂閱 BotONE 額度"
 
 #: src/components/ModelCredits.tsx
 msgid "Subscribe with your own AI"
@@ -6526,7 +6526,7 @@ msgstr ""
 
 #: src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "此訂閱登入在 Rakazo 中尚不可用。請使用部署憑證或選擇其他供應商。"
+msgstr "此訂閱登入在 BotONE 中尚不可用。請使用部署憑證或選擇其他供應商。"
 
 #: src/pages/Artifacts.tsx
 msgid "This week"
@@ -6827,7 +6827,7 @@ msgstr "輸入密碼時，請使用受保護的輸入。"
 
 #: src/components/ModelCredits.tsx
 msgid "Use Rakazo credits"
-msgstr "使用 Rakazo 額度"
+msgstr "使用 BotONE 額度"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Use space default"
@@ -6975,7 +6975,7 @@ msgstr "週末"
 
 #: src/components/SignupSurvey.tsx
 msgid "Welcome to Rakazo"
-msgstr "歡迎使用 Rakazo"
+msgstr "歡迎使用 BotONE"
 
 #: src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
@@ -6987,7 +6987,7 @@ msgstr ""
 
 #: src/components/SignupSurvey.tsx
 msgid "What do you most want Rakazo to help with?"
-msgstr "你最希望 Rakazo 幫你做什麼？"
+msgstr "你最希望 BotONE 幫你做什麼？"
 
 #: src/pages/shell/message-cards.tsx
 msgid "What do you want me on first?"

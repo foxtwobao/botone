@@ -16,9 +16,10 @@ const packageJson = JSON.parse(
 };
 
 describe("desktop package metadata", () => {
-  it("shares the customer-facing name between Electron and electron-builder", () => {
+  it("keeps the persisted Electron identity while branding the installer", () => {
+    // Electron initializes its profile and encryption identity before the main script.
     expect(packageJson.productName).toBe("Rakazo");
-    expect(packageJson.build?.productName).toBeUndefined();
+    expect(packageJson.build?.productName).toBe("BotONE");
   });
 
   it("ships a Spanish version of every macOS permission prompt", () => {

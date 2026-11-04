@@ -4,6 +4,7 @@ import type { IpcMainInvokeEvent } from "electron";
 import type { AppTarget } from "./app-frame.js";
 import { fromAppFrame } from "./app-frame.js";
 import { DE_MESSAGES } from "./locales/de.js";
+import { EN_MESSAGES } from "./locales/en.js";
 import { ES_MESSAGES } from "./locales/es.js";
 import { FR_MESSAGES } from "./locales/fr.js";
 import { HE_MESSAGES } from "./locales/he.js";
@@ -17,7 +18,7 @@ import { TR_MESSAGES } from "./locales/tr.js";
 import { ZH_CN_MESSAGES } from "./locales/zh-CN.js";
 import { ZH_TW_MESSAGES } from "./locales/zh-TW.js";
 
-/** Every language the app offers; English is the source text and needs no catalog. */
+/** Every language the app offers; English retains the upstream message IDs. */
 export const CATALOGS = {
   de: DE_MESSAGES,
   es: ES_MESSAGES,
@@ -51,9 +52,9 @@ export function desktopLocale(): DesktopLocale {
   return activeLocale;
 }
 
-/** The active translations, keyed by the English text; empty for English. */
+/** The active translations, keyed by the original English text. */
 export function desktopMessages(): Readonly<Record<string, string>> {
-  return activeLocale === "en" ? {} : CATALOGS[activeLocale];
+  return activeLocale === "en" ? EN_MESSAGES : CATALOGS[activeLocale];
 }
 
 export function desktopDirection(): TextDirection {

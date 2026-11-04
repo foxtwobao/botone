@@ -719,7 +719,7 @@ msgstr "Bir kez izin ver"
 
 #: src/lib/dictation.ts
 msgid "Allow Rakazo to use Speech Recognition and the microphone in System Settings."
-msgstr ""
+msgstr "Allow BotONE to use Speech Recognition and the microphone in System Settings."
 
 #: src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Allow writing"
@@ -767,7 +767,7 @@ msgstr "Bu sağlayıcı için abonelik girişi değil, bir API anahtarı saklan�
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "An existing Honcho peer to read from. Rakazo never writes to it."
-msgstr "Verilerin okunacağı mevcut bir Honcho eşi. Rakazo bu eşe asla veri yazmaz."
+msgstr "Verilerin okunacağı mevcut bir Honcho eşi. BotONE bu eşe asla veri yazmaz."
 
 #: src/lib/agent-import-errors.ts
 msgid "An imported API key could not be checked. Try again."
@@ -1405,7 +1405,7 @@ msgstr "Klasör seç"
 #: src/components/ModelCredits.tsx
 #: src/components/SubscriptionGate.tsx
 msgid "Choose how to use Rakazo"
-msgstr ""
+msgstr "Choose how to use BotONE"
 
 #: src/components/vault/VaultItemEditor.tsx
 msgid "City"
@@ -1722,7 +1722,7 @@ msgstr "Önce bu modelin sağlayıcısını bağla."
 #. js-lingui-explicit-id
 #: src/lib/run-error.ts
 msgid "Connect your own API key in Models or choose Rakazo credits in Billing."
-msgstr "Modeller bölümünde kendi API anahtarınızı bağlayın veya Faturalandırma'da Rakazo kredilerini seçin."
+msgstr "Modeller bölümünde kendi API anahtarınızı bağlayın veya Faturalandırma'da BotONE kredilerini seçin."
 
 #: src/components/ComputerDeviceSettings.tsx
 #: src/components/integrations/IntegrationSetup.tsx
@@ -2482,7 +2482,7 @@ msgstr ""
 
 #: src/pages/Auth.tsx
 msgid "Create your Rakazo"
-msgstr "Rakazo hesabını oluştur"
+msgstr "BotONE hesabını oluştur"
 
 #: src/components/AskCard.tsx
 msgid "Created"
@@ -2945,7 +2945,7 @@ msgstr ""
 
 #: src/components/GitHubStarPrompt.tsx
 msgid "Enjoying Rakazo?"
-msgstr ""
+msgstr "Enjoying BotONE?"
 
 #: src/lib/user-error.ts
 msgid "Enter a password"
@@ -3437,7 +3437,7 @@ msgstr "Nasıl kontrol edilir"
 
 #: src/components/SignupSurvey.tsx
 msgid "How will you use Rakazo?"
-msgstr ""
+msgstr "How will you use BotONE?"
 
 #: src/pages/shell/computer-release-actions.tsx
 msgid "I’m done"
@@ -4463,7 +4463,7 @@ msgstr "İçe aktarılmadı"
 
 #: src/pages/shell/import-status.ts
 msgid "Not in Rakazo's catalog"
-msgstr "Rakazo kataloğunda yok"
+msgstr "BotONE kataloğunda yok"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Not in the plugin catalog"
@@ -4477,11 +4477,11 @@ msgstr "Şimdi değil"
 #: src/pages/shell/agent-import.tsx
 #: src/pages/shell/import-status.ts
 msgid "Not supported in Rakazo"
-msgstr "Rakazo'da desteklenmiyor"
+msgstr "BotONE'da desteklenmiyor"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Not used by Rakazo"
-msgstr "Rakazo tarafından kullanılmıyor"
+msgstr "BotONE tarafından kullanılmıyor"
 
 #: src/components/McpServerHealthLine.tsx
 msgid "Not working"
@@ -4626,7 +4626,7 @@ msgstr "Gezinmeyi aç"
 #: src/components/pages/PublicPageShell.tsx
 #: src/pages/SharedPage.tsx
 msgid "Open Rakazo"
-msgstr "Rakazo'yu aç"
+msgstr "BotONE'yu aç"
 
 #: src/pages/ScratchpadSection.tsx
 msgid "Open work"
@@ -4803,7 +4803,7 @@ msgstr "Yeni bir anahtar yapıştır"
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Sunucundaki OpenAI uyumlu adresi yapıştır. Gerekirse Rakazo /v1 ekler."
+msgstr "Sunucundaki OpenAI uyumlu adresi yapıştır. Gerekirse BotONE /v1 ekler."
 
 #: src/pages/shell/agent-import.tsx
 msgid "Paste the reply"
@@ -4992,16 +4992,16 @@ msgstr "Kuyrukta"
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Rakazo"
-msgstr "Rakazo"
+msgstr "BotONE"
 
 #: src/components/ModelCredits.tsx
 #: src/pages/Onboarding.tsx
 msgid "Rakazo credits"
-msgstr ""
+msgstr "BotONE credits"
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "rakazo-shared and IDs starting with bot- are reserved for Rakazo."
-msgstr ""
+msgstr "rakazo-shared and IDs starting with bot- are reserved for BotONE."
 
 #: src/pages/shell/message-hover-actions.tsx
 msgid "React"
@@ -5422,7 +5422,7 @@ msgstr ""
 #: src/pages/McpOAuthCallback.tsx
 #: src/pages/SlackInstallCallback.tsx
 msgid "Return to Rakazo"
-msgstr "Rakazo'ya dön"
+msgstr "BotONE'ya dön"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
@@ -5895,7 +5895,7 @@ msgstr "<0>{0}</0> adresinde oturum açın, ardından kodu buraya yapıştırın
 
 #: src/pages/Auth.tsx
 msgid "Sign in to Rakazo"
-msgstr "Rakazo'da oturum aç"
+msgstr "BotONE'da oturum aç"
 
 #: src/lib/user-error.ts
 msgid "Sign in to your existing account to link SSO"
@@ -6176,7 +6176,7 @@ msgstr "Aylık {price} ile abone ol"
 
 #: src/components/ModelCredits.tsx
 msgid "Subscribe to Rakazo credits"
-msgstr "Rakazo kredilerine abone ol"
+msgstr "BotONE kredilerine abone ol"
 
 #: src/components/ModelCredits.tsx
 msgid "Subscribe with your own AI"
@@ -6525,7 +6525,7 @@ msgstr ""
 
 #: src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "Bu abonelik girişi Rakazo'da henüz kullanılamıyor. Bir dağıtım kimlik bilgisi kullan veya başka bir sağlayıcı seç."
+msgstr "Bu abonelik girişi BotONE'da henüz kullanılamıyor. Bir dağıtım kimlik bilgisi kullan veya başka bir sağlayıcı seç."
 
 #: src/pages/Artifacts.tsx
 msgid "This week"
@@ -6826,7 +6826,7 @@ msgstr ""
 
 #: src/components/ModelCredits.tsx
 msgid "Use Rakazo credits"
-msgstr ""
+msgstr "Use BotONE credits"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Use space default"
@@ -6974,7 +6974,7 @@ msgstr "Hafta sonları"
 
 #: src/components/SignupSurvey.tsx
 msgid "Welcome to Rakazo"
-msgstr ""
+msgstr "Welcome to BotONE"
 
 #: src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
@@ -6986,7 +6986,7 @@ msgstr ""
 
 #: src/components/SignupSurvey.tsx
 msgid "What do you most want Rakazo to help with?"
-msgstr ""
+msgstr "What do you most want BotONE to help with?"
 
 #: src/pages/shell/message-cards.tsx
 msgid "What do you want me on first?"
