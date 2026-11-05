@@ -1,0 +1,10 @@
+# Optional application adapters. Layer after any base compose file when enabled.
+x-app-connections: &app-connections
+  APP_CONNECTIONS:
+  APP_INTERNAL_URL: ${APP_INTERNAL_URL:-http://api:3100}
+
+services:
+  api:
+    environment: *app-connections
+  worker:
+    environment: *app-connections

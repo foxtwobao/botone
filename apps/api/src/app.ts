@@ -161,6 +161,7 @@ import {
   requestClientIp,
   withClientIp,
 } from "./client-ip.js";
+import { createConnectedApps } from "./connected-apps.js";
 import { cspReportRoutes } from "./csp-report.js";
 import { configuredEmailProvider } from "./email.js";
 import type { AppEnv } from "./env.js";
@@ -508,7 +509,9 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
         : undefined),
     pipedream,
   });
+  const connectedApps = await createConnectedApps({ prisma, artifacts, events, env }, () => auth);
   const stack = createConnectorStack(composioOverride, [
+    ...connectedApps.connectors,
     installed,
     ...integrationSettings
       .providers()
@@ -621,6 +624,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       );
     },
   });
+  connectedApps.start();
   const oauthTokenUpgrade = auth
     .encryptStoredOAuthTokens()
     .catch((error) => getLogger().error("oauth token encryption upgrade failed", error));
@@ -962,6 +966,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     await auditAuthResponse(path, ip, response);
     return response;
   });
+  connectedApps.mount(app);
   mountLocalComputerHost(app, {
     token: env.desktopStackToken,
     sandboxProvider: env.sandboxProvider,
@@ -1030,7 +1035,10 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
         },
       },
     });
-    if (matched) return c.newResponse(response.body, response);
+    if (matched) {
+      connectedApps.afterRpc(actor, c.req.raw, response);
+      return c.newResponse(response.body, response);
+    }
     await next();
   });
   mountAccountExportRoute(app, { prisma, auth, artifacts, home });
@@ -1510,6 +1518,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       await runsStopped;
       await requestsSettled;
       await email?.drain?.();
+      await connectedApps.stop();
       await jobs.close();
       await secrets.close();
       await realtime.close();

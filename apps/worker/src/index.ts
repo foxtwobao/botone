@@ -55,6 +55,7 @@ import {
   isComposioEnabled,
   isMessagingSurfaceEnabled,
   isPipedreamEnabled,
+  loadConfiguredApps,
   McpConnector,
   McpOAuthBroker,
   mcpStdioOptionsFromEnv,
@@ -225,7 +226,9 @@ async function main() {
     {},
     allowPrivateEndpoint,
   );
+  const connectedApps = await loadConfiguredApps({ env: process.env });
   const stack = createConnectorStack(undefined, [
+    ...connectedApps.connectors,
     installedConnectors,
     ...integrationSettings.providers(),
     mcp,
@@ -396,6 +399,7 @@ async function main() {
         await reconciler.stop();
         await jobHost.stop();
         await jobs.close();
+        await connectedApps.stop();
         await secrets.close();
         await realtime.close();
         await mcp.close();
