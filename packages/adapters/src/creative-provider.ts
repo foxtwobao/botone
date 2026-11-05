@@ -74,7 +74,11 @@ const codes = z.enum([
 ]);
 export class CreativeServiceError extends Error {
   constructor(
-    readonly code: z.infer<typeof codes> | "unavailable" | "invalid_response",
+    readonly code:
+      | z.infer<typeof codes>
+      | "unavailable"
+      | "invalid_response"
+      | "capabilities_too_large",
     readonly status = 503,
   ) {
     super(`Creative app: ${code}`);

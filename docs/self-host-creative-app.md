@@ -39,6 +39,8 @@ docker compose --env-file .env -f infra/compose/docker-compose.yml -f infra/comp
 
 能力目录保留可读 `name`、可选 `description`、模型级参数 JSON Schema、组合 `constraints` 及根 `submission`。型号 Schema 描述完整支持范围，预设参数是一个具体组合；二者不能混为一谈。展示使用名称，提交保留不透明 ID。滚动升级时旧目录缺少这些扩展字段，客户端仅说明已知预设，不推断型号没有其他能力。当前目录的 `presetOnly=false` 表示已开放参数覆盖；参考素材还需全局 referenceMedia=true、referenceKinds 包含相应 image/video/audio 类型，且所选型号 inputs.referenceImages/referenceVideos/referenceAudios=true。视频生成可按型号能力混用三类素材；图片模型仅接受图片，音乐仍只接受文字。旧目录标记 presetOnly=true 或缺少标记时，客户端仅提交已列预设。
 
+`creative_capabilities` 按渐进发现读取目录：先用 `kind` 按 image/video/music 查询，仅返回 ID、名称、类型、当前筛选的 `total`、默认型号 `defaults` 和分页位置 `nextOffset`；需要更多型号时传入 `offset=nextOffset`。`availableKinds` 始终统计该用户的完整目录，不能将某一页没有出现的类型视为不支持。随后用 `model` 读取指定型号的完整参数、约束、预设和 `submission` 限制；没有型号偏好时读取该类型的默认型号，不要求用户提供内部 ID。列表页按现有工具文本上限划分，不再把所有型号的 Schema 一起发送给助手；单型号详情若仍超限，返回 `capabilities_too_large`，不交付被截断的规则。此发现流程不改变服务端的模型权限和目录配置，也不改变通用工具长度上限。
+
 三个工具分别读取能力目录、提交 `{kind,model,prompt,preset?,parameters?,referenceArtifactIds?}` 和查询本地任务状态。型号、基础预设及参数规则由服务端定义；客户端可省略预设，由后端从目录解析默认预设并固定保存，未指定的参数沿用它的值，不维护供应商规则，仅接受当前目录已开放字段的参数覆盖，不在失败后切换付费账号。参数随审批请求和原操作一起保存。false、0 和目录允许的自动时长 -1 原样保留；未知参数名在外部提交前拒绝，类型、范围及组合由创作服务按其权威规则校验，拒绝时不偷偷改回默认。重放沿用已保存的参数，JSON 属性换序不改变本地操作身份。创作仍经过现有审批，并要求可验证的用户发起人。
 
 参考素材复用现有聊天图片、视频和音频附件：模型只传入用户明确选中的 `referenceArtifactIds`，顺序保持不变，不接收路径、URL、Data URI、Base64 或外部参考 ID。API 验证附件属于原用户、空间及原聊天，按目录返回的单图上限 maxReferenceImageBytes、单视频/音频上限 maxReferenceMediaBytes，以及型号输入开关和已知数量约束检查，不复制供应商规则。实际格式由创作服务对原始字节识别、校验；不在客户端压缩、改图或转码。
