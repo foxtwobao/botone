@@ -17,6 +17,7 @@ import { callRequestClientNonce } from "@rakazo/core";
 import type { PrismaClient } from "@rakazo/db";
 import { createThreadMessage } from "@rakazo/db";
 import { sessionCookieHeader } from "../index.js";
+import { disposableDatabaseEnv } from "./postgres.js";
 import { runProcess } from "./process.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -42,6 +43,8 @@ const FLOWS: { name: string; window?: { size: string; density: string } }[] = [
   { name: "keyboard-lifecycle" },
   // An unfolded foldable, about 750dp wide, where the chat list sits beside the open chat.
   { name: "split-view", window: { size: "1968x2184", density: "420" } },
+  // It creates and deletes a second organization in the shared fixture account.
+  { name: "organizations" },
   // Native modules and system UI that release-build code shrinking could break. Last,
   // because the messages, attachments, and calls it adds change what earlier flows match.
   { name: "native-features" },
@@ -322,10 +325,13 @@ function onePagePdf(text: string) {
   return body;
 }
 
-function configureEnvironment() {
+export function configureEnvironment() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required for the isolated mobile screenshot fixture");
   }
+  // The fixture owns DATABASE_URL's database: Prisma migrates DATABASE_MIGRATION_URL first and
+  // reloads `.env`, so an inherited one must be overwritten, not deleted.
+  Object.assign(process.env, disposableDatabaseEnv(process.env.DATABASE_URL));
   Object.assign(process.env, {
     NODE_ENV: "test",
     WAKEUP_DRIVER: "memory",
@@ -557,7 +563,10 @@ async function waitForHealth(url: string, timeoutMs: number) {
   throw new Error(`Mobile screenshot API did not become ready: ${lastError}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Runs as a CLI, not when a test imports the module for its environment helpers.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

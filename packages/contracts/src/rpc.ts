@@ -168,7 +168,11 @@ import {
   PageTitleSchema,
   PageVisibilitySchema,
 } from "./pages.js";
-import { PaymentWalletStatusSchema } from "./payments.js";
+import {
+  PaymentWalletStatusSchema,
+  SpendingLimitSchema,
+  SpendingStatusSchema,
+} from "./payments.js";
 import { MessageReactionSchema } from "./reactions.js";
 import { RoutineWatchSchema } from "./routine-watch.js";
 import {
@@ -257,6 +261,22 @@ const threadSendWithRoutinesInput = threadSendFields.safeExtend({
 });
 
 const spaceName = z.string().trim().min(1).max(60);
+const organizationName = spaceName;
+/** Every organization the signed-in user belongs to, and which one the current Space belongs to. */
+export const OrganizationListSchema = z.object({
+  activeOrganizationId: Id,
+  organizations: z.array(
+    z.object({
+      id: Id,
+      name: z.string(),
+      defaultSpaceId: Id,
+      spaceIds: z.array(Id),
+      /** Whether the user owns it, so can rename or delete it. */
+      canManage: z.boolean(),
+    }),
+  ),
+});
+export type OrganizationList = z.infer<typeof OrganizationListSchema>;
 
 export const appContract = {
   analytics: { screen: oc.input(AnalyticsScreenInput).output(z.object({ ok: z.literal(true) })) },
@@ -372,6 +392,18 @@ export const appContract = {
       .output(z.object({ id: Id, name: z.string() })),
     remove: oc
       .input(z.object({ spaceId: Id }))
+      .output(z.object({ ok: z.literal(true), activeSpaceId: Id })),
+  },
+  organizations: {
+    list: oc.output(OrganizationListSchema),
+    create: oc
+      .input(z.object({ name: organizationName }))
+      .output(z.object({ id: Id, name: z.string(), defaultSpaceId: Id })),
+    rename: oc
+      .input(z.object({ organizationId: Id, name: organizationName }))
+      .output(z.object({ id: Id, name: z.string() })),
+    remove: oc
+      .input(z.object({ organizationId: Id }))
       .output(z.object({ ok: z.literal(true), activeSpaceId: Id })),
   },
   bootstrap: oc.input(z.object({ botId: Id.optional() })).output(AppBootstrapSchema),
@@ -1406,6 +1438,14 @@ export const appContract = {
   },
   runs: {
     list: oc.input(z.object({ filter: z.enum(["active", "recent"]) })).output(RunsListOutputSchema),
+  },
+  /** The account's spending limit for payments its bots make. */
+  spendingLimit: {
+    get: oc.output(SpendingStatusSchema),
+    /** `null` removes the limit. */
+    set: oc
+      .input(z.object({ limit: SpendingLimitSchema.nullable() }).strict())
+      .output(SpendingStatusSchema),
   },
   /** The signed-in user's wallet; absent when the deployment offers none. */
   paymentWallet: {

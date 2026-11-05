@@ -13,25 +13,53 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "{name} options"
+msgstr "אפשרויות {name}"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Add fallback"
+msgstr "הוספת חלופה"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "לאחר האישור, האפליקציה תפעיל מודלים דרך חשבון {serviceName} שלך. עלות השימוש תנוכה מהיתרה שלך ב־{serviceName}."
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "הסכמה ומעבר לאישור"
+
 #: src/components/ModelAccount.tsx
 msgid "API protocol"
 msgstr ""
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Approval model"
-msgstr ""
+msgstr "מודל אישור"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
 msgstr ""
 
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "אישור שימוש במודלים של {serviceName}"
+
 #: src/components/ModelAccount.tsx
 msgid "Authorize again"
 msgstr ""
 
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Authorize model service"
+msgstr "אישור שימוש בשירות המודלים"
+
 #: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "מאשר…"
 
 #: src/components/ModelAccount.tsx
 msgid "Balance unavailable"
@@ -41,13 +69,21 @@ msgstr ""
 msgid "Cancel"
 msgstr "ביטול"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Change {name}"
+msgstr "שינוי {name}"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "בודק אישור…"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Choose a model"
-msgstr ""
+msgstr "בחירת מודל"
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Close model settings"
-msgstr ""
+msgstr "סגירת הגדרות המודל"
 
 #: src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
@@ -55,11 +91,27 @@ msgstr ""
 
 #: src/components/ModelAccountOnboarding.tsx
 msgid "Connect a model"
+msgstr "חיבור מודל"
+
+#: src/components/ModelAccount.tsx
+msgid "Connected"
+msgstr "מחובר"
+
+#: src/components/ModelAccount.tsx
+msgid "Continue with {name}"
 msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
 msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Could not continue"
+msgstr "לא ניתן להמשיך"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Default"
+msgstr "ברירת מחדל"
 
 #: src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
@@ -69,13 +121,16 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Loading model catalog…"
+msgstr "טוען קטלוג מודלים…"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Main model"
-msgstr ""
+msgstr "מודל ראשי"
 
 #: src/components/ModelAccount.tsx
 #: src/components/ModelAccountOnboarding.tsx
-#: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Model account"
 msgstr ""
 
@@ -83,9 +138,21 @@ msgstr ""
 msgid "Model account unavailable"
 msgstr ""
 
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "שירות המודלים"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Models"
-msgstr ""
+msgstr "מודלים"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Move down"
+msgstr "הזזה למטה"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Move up"
+msgstr "הזזה למעלה"
 
 #: src/components/ModelAccount.tsx
 msgid "Recharge"
@@ -99,7 +166,13 @@ msgstr ""
 msgid "Refresh models"
 msgstr ""
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Remove"
+msgstr "הסרה"
+
 #: src/components/ModelAccount.tsx
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: src/pages/model-account/use-model-account-onboarding.tsx
 msgid "Retry"
 msgstr "לנסות שוב"
 
@@ -111,38 +184,10 @@ msgstr ""
 msgid "Sign in with SSO to use the model account."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Checking authorization…"
-msgstr "בודק אישור…"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorizing…"
-msgstr "מאשר…"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize model service"
-msgstr "אישור שימוש בשירות המודלים"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize access to {serviceName} models"
-msgstr "אישור שימוש במודלים של {serviceName}"
-
-#: src/components/ModelAccount.tsx
-msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
-msgstr "לאחר האישור, האפליקציה תפעיל מודלים דרך חשבון {serviceName} שלך. עלות השימוש תנוכה מהיתרה שלך ב־{serviceName}."
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Thinking"
+msgstr "חשיבה"
 
 #: src/components/ModelAccount.tsx
 msgid "You will return to the app after authorization."
 msgstr "לאחר האישור תוחזרו לאפליקציה."
-
-#: src/components/ModelAccount.tsx
-msgid "Agree and authorize"
-msgstr "הסכמה ומעבר לאישור"
-
-#: src/components/ModelAccount.tsx
-msgid "model service"
-msgstr "שירות המודלים"

@@ -13,25 +13,53 @@ msgstr ""
 "Language-Team: Dutch\n"
 "Plural-Forms: \n"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "{name} options"
+msgstr "Opties voor {name}"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Add fallback"
+msgstr "Terugvalmodel toevoegen"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "Na autorisatie gebruikt deze app je {serviceName}-account voor modelaanroepen. De kosten worden van je {serviceName}-saldo afgeschreven."
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "Akkoord en autoriseren"
+
 #: src/components/ModelAccount.tsx
 msgid "API protocol"
 msgstr "API-protocol"
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Approval model"
-msgstr ""
+msgstr "Goedkeuringsmodel"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
 msgstr "Autorisatie niet voltooid."
 
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "Toegang tot {serviceName}-modellen autoriseren"
+
 #: src/components/ModelAccount.tsx
 msgid "Authorize again"
 msgstr "Opnieuw autoriseren"
 
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Authorize model service"
+msgstr "Modeldienst autoriseren"
+
 #: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr "Autoriseer het modelaccount om door te gaan."
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "Autoriseren…"
 
 #: src/components/ModelAccount.tsx
 msgid "Balance unavailable"
@@ -41,13 +69,21 @@ msgstr "Saldo niet beschikbaar"
 msgid "Cancel"
 msgstr "Annuleren"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Change {name}"
+msgstr "{name} wijzigen"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "Autorisatie controleren…"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Choose a model"
-msgstr ""
+msgstr "Kies een model"
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Close model settings"
-msgstr ""
+msgstr "Modelinstellingen sluiten"
 
 #: src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
@@ -55,11 +91,27 @@ msgstr "Voltooi de autorisatie in het geopende venster."
 
 #: src/components/ModelAccountOnboarding.tsx
 msgid "Connect a model"
+msgstr "Een model koppelen"
+
+#: src/components/ModelAccount.tsx
+msgid "Connected"
+msgstr "Gekoppeld"
+
+#: src/components/ModelAccount.tsx
+msgid "Continue with {name}"
 msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
 msgstr "Autorisatie kon niet worden bevestigd. Probeer opnieuw."
+
+#: src/components/ModelAccount.tsx
+msgid "Could not continue"
+msgstr "Doorgaan mislukt"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Default"
+msgstr "Standaard"
 
 #: src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
@@ -69,13 +121,16 @@ msgstr "Verbinding verbreken wacht op bevestiging."
 msgid "Home"
 msgstr "Startpagina"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Loading model catalog…"
+msgstr "Modelcatalogus laden…"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Main model"
-msgstr ""
+msgstr "Hoofdmodel"
 
 #: src/components/ModelAccount.tsx
 #: src/components/ModelAccountOnboarding.tsx
-#: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Model account"
 msgstr "Modelaccount"
 
@@ -83,9 +138,21 @@ msgstr "Modelaccount"
 msgid "Model account unavailable"
 msgstr "Modelaccount niet beschikbaar"
 
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "modeldienst"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Models"
-msgstr ""
+msgstr "Modellen"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Move down"
+msgstr "Omlaag"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Move up"
+msgstr "Omhoog"
 
 #: src/components/ModelAccount.tsx
 msgid "Recharge"
@@ -99,7 +166,13 @@ msgstr "Saldo vernieuwen"
 msgid "Refresh models"
 msgstr "Modellen vernieuwen"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Remove"
+msgstr "Verwijderen"
+
 #: src/components/ModelAccount.tsx
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: src/pages/model-account/use-model-account-onboarding.tsx
 msgid "Retry"
 msgstr "Opnieuw proberen"
 
@@ -111,38 +184,10 @@ msgstr "Verbinding opnieuw verbreken"
 msgid "Sign in with SSO to use the model account."
 msgstr "Meld je aan met SSO om het modelaccount te gebruiken."
 
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
-msgstr "Modelaccount gebruiken"
-
-#: src/components/ModelAccount.tsx
-msgid "Checking authorization…"
-msgstr "Autorisatie controleren…"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorizing…"
-msgstr "Autoriseren…"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize model service"
-msgstr "Modeldienst autoriseren"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize access to {serviceName} models"
-msgstr "Toegang tot {serviceName}-modellen autoriseren"
-
-#: src/components/ModelAccount.tsx
-msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
-msgstr "Na autorisatie gebruikt deze app je {serviceName}-account voor modelaanroepen. De kosten worden van je {serviceName}-saldo afgeschreven."
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Thinking"
+msgstr "Denkt"
 
 #: src/components/ModelAccount.tsx
 msgid "You will return to the app after authorization."
 msgstr "Na autorisatie keer je terug naar de app."
-
-#: src/components/ModelAccount.tsx
-msgid "Agree and authorize"
-msgstr "Akkoord en autoriseren"
-
-#: src/components/ModelAccount.tsx
-msgid "model service"
-msgstr "modeldienst"
