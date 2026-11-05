@@ -20,6 +20,8 @@ import {
   creativeConnectionSchema,
   UserCreativeProvider,
 } from "./creative-provider.js";
+import { clipToolResultContent, TOOL_RESULT_TEXT_LIMIT } from "./pi-runtime-limits.js";
+import { serializeToolResult } from "./pi-runtime-tools.js";
 import type { attachWorkspaceFileToThread } from "./thread-artifacts.js";
 
 vi.mock("./thread-artifacts.js", () => ({
@@ -132,28 +134,237 @@ describe("creative app v1 offline contract", () => {
       }).success,
     ).toBe(false);
   });
-  it("preserves readable names, complete schemas and constraints separately from fixed submission presets", async () => {
+  it("reads a selected model's complete schema, constraints, presets and submission limits", async () => {
     const f = creativeFixture();
     await f.connect();
-    const events = await tool(f, "creative_capabilities", {});
-    expect(events).toEqual([{ type: "result", data: capabilities }]);
     const video = capabilities.models.find((model) => model.kind === "video")!;
-    expect(video.parameters!.properties).toMatchObject({
-      resolution: { enum: ["720P", "1080P", "2K"] },
-    });
-    expect(video.parameters!.allOf).toEqual([
+    expect(await tool(f, "creative_capabilities", { model: video.id })).toEqual([
       {
-        if: { properties: { resolution: { const: "2K" } }, required: ["resolution"] },
-        // biome-ignore lint/suspicious/noThenProperty: JSON Schema uses then as a data keyword.
-        then: { properties: { seconds: { type: "integer", minimum: 4, maximum: 15 } } },
+        type: "result",
+        data: {
+          availableKinds: { image: 1, video: 1, music: 1 },
+          defaults: {},
+          submission: capabilities.submission,
+          models: [video],
+        },
       },
     ]);
-    expect(video.presets).toHaveLength(1);
-    expect(video.presets[0]!.parameters).toEqual({ resolution: "720P", seconds: 5 });
-    expect(capabilities.submission).toEqual({ presetOnly: true, referenceMedia: false });
-    expect(
-      creativeInputSchema.safeParse({ ...musicInput, parameters: { resolution: "2K" } }).success,
-    ).toBe(true);
+    expect(f.putCount()).toBe(0);
+  });
+  it.each(["image", "video", "music"] as const)(
+    "lists lightweight %s models with complete counts",
+    async (kind) => {
+      const f = creativeFixture();
+      await f.connect();
+      const { id, name } = capabilities.models.find((model) => model.kind === kind)!;
+      expect(await tool(f, "creative_capabilities", { kind })).toEqual([
+        {
+          type: "result",
+          data: {
+            availableKinds: { image: 1, video: 1, music: 1 },
+            defaults: kind === "music" ? capabilities.defaults : {},
+            total: 1,
+            offset: 0,
+            nextOffset: null,
+            models: [{ id, name, kind }],
+          },
+        },
+      ]);
+      expect(f.putCount()).toBe(0);
+    },
+  );
+  it.each(["current", "retrieval"] as const)(
+    "discovers a late image model and reads its full rules within the %s tool budget",
+    async (strategy) => {
+      const f = creativeFixture();
+      const image = capabilities.models.find((model) => model.kind === "image")!;
+      const video = capabilities.models.find((model) => model.kind === "video")!;
+      const music = capabilities.models.find((model) => model.kind === "music")!;
+      const catalog = {
+        ...capabilities,
+        models: [
+          music,
+          ...Array.from({ length: 10 }, (_, index) => ({
+            ...video,
+            id: `fixture-video-${index}`,
+            parameters: {
+              type: "object",
+              properties: Object.fromEntries(
+                Array.from({ length: 18 }, (_, field) => [
+                  `option_${field}`,
+                  { type: "string", enum: ["default", "alternate"] },
+                ]),
+              ),
+            },
+          })),
+          image,
+        ],
+        defaults: { image: image.id, music: music.id },
+      };
+      expect(JSON.stringify(catalog).length).toBeGreaterThan(TOOL_RESULT_TEXT_LIMIT);
+      f.setCatalog(catalog);
+      await f.connect();
+      const read = async (args: Record<string, unknown>) => {
+        const events = await tool(f, "creative_capabilities", args);
+        expect(events[0]?.type).toBe("result");
+        const data = (events[0] as { data: unknown }).data;
+        const visible = clipToolResultContent([
+          {
+            type: "text",
+            text: serializeToolResult(data, strategy, "creative_capabilities", args),
+          },
+        ])[0]!.text;
+        expect(JSON.parse(visible)).toEqual(data);
+        return JSON.parse(visible);
+      };
+      const all = await read({});
+      expect(all.availableKinds).toEqual({ image: 1, video: 10, music: 1 });
+      expect(all.total).toBe(12);
+      expect(all.nextOffset).toBeNull();
+      expect(all.models.at(-1)).toEqual({ id: image.id, name: image.name, kind: "image" });
+      expect(await read({ kind: "image" })).toEqual({
+        availableKinds: all.availableKinds,
+        defaults: { image: image.id },
+        total: 1,
+        offset: 0,
+        nextOffset: null,
+        models: [{ id: image.id, name: image.name, kind: "image" }],
+      });
+      expect(await read({ model: all.defaults.image })).toEqual({
+        availableKinds: all.availableKinds,
+        defaults: { image: image.id },
+        submission: capabilities.submission,
+        models: [image],
+      });
+      expect(f.putCount()).toBe(0);
+      expect(
+        await tool(f, "creative_submit", {
+          kind: "image",
+          model: all.defaults.image,
+          prompt: "Synthetic autumn scene",
+        }),
+      ).toMatchObject([{ type: "result", data: { status: "queued" } }]);
+      expect(f.putCount()).toBe(1);
+      expect(f.effects[0]!.request).toMatchObject({
+        input: { kind: "image", model: image.id, preset: image.defaultPreset },
+      });
+    },
+  );
+  it.each(["current", "retrieval"] as const)(
+    "pages a maximum-sized lightweight directory without losing models in %s context",
+    async (strategy) => {
+      const f = creativeFixture();
+      const image = capabilities.models.find((model) => model.kind === "image")!;
+      const models = Array.from({ length: 200 }, (_, index) => ({
+        ...image,
+        id: `image-${index}-${"i".repeat(180)}`,
+        name: `图片 ${index} ${"界".repeat(180)}`,
+      }));
+      const defaults = { image: models.at(-1)!.id };
+      f.setCatalog({ ...capabilities, models, defaults });
+      await f.connect();
+      let offset: number | null = 0;
+      const received: unknown[] = [];
+      while (offset !== null) {
+        const args = { kind: "image", offset };
+        const events = await tool(f, "creative_capabilities", args);
+        expect(events[0]?.type).toBe("result");
+        const data = (events[0] as { data: unknown }).data;
+        const visible = clipToolResultContent([
+          {
+            type: "text",
+            text: serializeToolResult(data, strategy, "creative_capabilities", args),
+          },
+        ])[0]!.text;
+        expect(visible.length).toBeLessThanOrEqual(TOOL_RESULT_TEXT_LIMIT);
+        const page = JSON.parse(visible);
+        expect(page).toEqual(data);
+        expect(page).toMatchObject({
+          availableKinds: { image: 200, video: 0, music: 0 },
+          defaults,
+          total: 200,
+          offset,
+        });
+        expect(page.models.length).toBeGreaterThan(0);
+        if (offset === 0) {
+          expect(page.models).not.toContainEqual({
+            id: models.at(-1)!.id,
+            name: models.at(-1)!.name,
+            kind: "image",
+          });
+          expect(
+            await tool(f, "creative_capabilities", { model: page.defaults.image }),
+          ).toMatchObject([
+            {
+              type: "result",
+              data: { models: [models.at(-1)], submission: capabilities.submission },
+            },
+          ]);
+        }
+        received.push(...page.models);
+        if (page.nextOffset !== null) {
+          expect(page.nextOffset).toBe(offset + page.models.length);
+          expect(page.nextOffset).toBeLessThan(models.length);
+        }
+        offset = page.nextOffset;
+      }
+      expect(received).toEqual(models.map(({ id, name, kind }) => ({ id, name, kind })));
+      expect(f.putCount()).toBe(0);
+    },
+  );
+  it("reports a genuine empty image catalog without substituting another media kind", async () => {
+    const f = creativeFixture();
+    const music = capabilities.models.find((model) => model.kind === "music")!;
+    f.setCatalog({ ...capabilities, models: [music], defaults: { music: music.id } });
+    await f.connect();
+    expect(await tool(f, "creative_capabilities", { kind: "image" })).toEqual([
+      {
+        type: "result",
+        data: {
+          availableKinds: { image: 0, video: 0, music: 1 },
+          defaults: {},
+          total: 0,
+          offset: 0,
+          nextOffset: null,
+          models: [],
+        },
+      },
+    ]);
+    expect(f.putCount()).toBe(0);
+  });
+  it("refuses to return an incomplete oversized model schema", async () => {
+    const f = creativeFixture();
+    const image = capabilities.models.find((model) => model.kind === "image")!;
+    f.setCatalog({
+      ...capabilities,
+      models: [{ ...image, parameters: { description: "x".repeat(TOOL_RESULT_TEXT_LIMIT) } }],
+      defaults: { image: image.id },
+    });
+    await f.connect();
+    expect(await tool(f, "creative_capabilities", { model: image.id })).toEqual([
+      { type: "error", message: "Creative app: capabilities_too_large" },
+    ]);
+    expect(await tool(f, "creative_capabilities", { kind: "image" })).toMatchObject([
+      { type: "result", data: { availableKinds: { image: 1 }, total: 1 } },
+    ]);
+    expect(f.putCount()).toBe(0);
+  });
+  it.each([
+    [{ kind: "audio" }, "invalid_parameters"],
+    [{ model: "" }, "invalid_parameters"],
+    [{ unexpected: true }, "invalid_parameters"],
+    [{ offset: -1 }, "invalid_parameters"],
+    [{ offset: 0.5 }, "invalid_parameters"],
+    [{ offset: 4 }, "invalid_parameters"],
+    [{ model: "demo-image", offset: 0 }, "invalid_parameters"],
+    [{ model: "missing" }, "selection_unavailable"],
+    [{ kind: "image", model: "demo-video" }, "selection_unavailable"],
+  ])("rejects an invalid model query %j", async (query, code) => {
+    const f = creativeFixture();
+    await f.connect();
+    expect(await tool(f, "creative_capabilities", query as Record<string, unknown>)).toEqual([
+      { type: "error", message: `Creative app: ${code}` },
+    ]);
     expect(f.putCount()).toBe(0);
   });
   it("rejects insecure configuration and obsolete service-signing settings", () => {

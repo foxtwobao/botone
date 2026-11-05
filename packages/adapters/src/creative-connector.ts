@@ -8,25 +8,47 @@ import type {
 } from "@rakazo/adapter-kit";
 import { appConnectCard } from "@rakazo/core";
 import { recordSecurityEvent } from "@rakazo/db";
+import { z } from "zod";
 import type { UserAccessCredential } from "./configured-apps.js";
 import { scopeConnectorTools } from "./connector-accounts.js";
-import { creativeToolInputSchema } from "./creative-contracts.js";
+import type { CreativeCapabilities } from "./creative-contracts.js";
+import { creativeKindSchema, creativeToolInputSchema } from "./creative-contracts.js";
 import { CREATIVE_APP_INSTRUCTIONS } from "./creative-instructions.js";
 import type { CreativeJobsDeps } from "./creative-jobs.js";
 import { CreativeJobs } from "./creative-jobs.js";
 import type { CreativeConnectionConfig, CreativeProvider } from "./creative-provider.js";
 import { CreativeServiceError } from "./creative-provider.js";
+import { TOOL_RESULT_TEXT_LIMIT } from "./pi-runtime-limits.js";
 
 export type UserAccessCredentialReader = (userId: string) => Promise<UserAccessCredential | null>;
 const ID = "creative";
+const capabilitiesQuerySchema = z
+  .strictObject({
+    kind: creativeKindSchema.optional(),
+    model: z.string().min(1).max(200).optional(),
+    offset: z.number().int().nonnegative().optional(),
+  })
+  .refine((query) => !query.model || query.offset === undefined);
 const TOOLS: Array<ConnectorTool & { title: string }> = [
   {
     name: "creative_capabilities",
     title: "View models",
     description:
-      "Read model names, parameter schemas, combination constraints and submission limits. Distinguish full model support from default preset values. Display names; use opaque IDs only in calls. Select parameters only when submission.presetOnly is false.",
+      "Discover models progressively. Use kind (image, video, music) to list IDs, names and types, with complete availability counts and default model IDs. Continue with offset=nextOffset when non-null. Use model (exact model ID) to read that model's full parameter schema, constraints, presets and submission limits before creating media. Display names; use opaque IDs only in calls. Select parameters only when submission.presetOnly is false.",
     readOnly: true,
-    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    inputSchema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: creativeKindSchema.options },
+        model: { type: "string", minLength: 1, maxLength: 200 },
+        offset: {
+          type: "integer",
+          minimum: 0,
+          description: "Continue a model list from nextOffset; omit when querying a model.",
+        },
+      },
+      additionalProperties: false,
+    },
   },
   {
     name: "creative_submit",
@@ -355,9 +377,64 @@ export class CreativeAppConnector implements ManagedConnectorProvider {
       );
       let data: unknown;
       switch (tool.route.toolName) {
-        case "creative_capabilities":
-          data = await this.provider.capabilities(identity, context.signal);
+        case "creative_capabilities": {
+          const query = capabilitiesQuerySchema.safeParse(call.args);
+          if (!query.success) throw new CreativeServiceError("invalid_parameters", 422);
+          const catalog = await this.provider.capabilities(identity, context.signal);
+          const models = catalog.models.filter(
+            (model) =>
+              (!query.data.kind || model.kind === query.data.kind) &&
+              (!query.data.model || model.id === query.data.model),
+          );
+          if (query.data.model && !models.length)
+            throw new CreativeServiceError("selection_unavailable", 422);
+          const availability = {
+            availableKinds: Object.fromEntries(
+              creativeKindSchema.options.map((kind) => [
+                kind,
+                catalog.models.filter((model) => model.kind === kind).length,
+              ]),
+            ),
+            defaults: Object.fromEntries(
+              Object.entries(catalog.defaults).filter(([, id]) =>
+                models.some((model) => model.id === id),
+              ),
+            ),
+          };
+          if (query.data.model) {
+            data = {
+              ...availability,
+              ...(catalog.submission ? { submission: catalog.submission } : {}),
+              models,
+            };
+            if (JSON.stringify(data).length > TOOL_RESULT_TEXT_LIMIT)
+              throw new CreativeServiceError("capabilities_too_large");
+          } else {
+            const offset = query.data.offset ?? 0;
+            if (offset > models.length) throw new CreativeServiceError("invalid_parameters", 422);
+            const page = {
+              ...availability,
+              total: models.length,
+              offset,
+              nextOffset: null as number | null,
+              models: [] as Array<
+                Pick<CreativeCapabilities["models"][number], "id" | "name" | "kind">
+              >,
+            };
+            for (let index = offset; index < models.length; index++) {
+              const { id, name, kind } = models[index]!;
+              page.models.push({ id, ...(name === undefined ? {} : { name }), kind });
+              page.nextOffset = index + 1 < models.length ? index + 1 : null;
+              if (JSON.stringify(page).length > TOOL_RESULT_TEXT_LIMIT) {
+                page.models.pop();
+                page.nextOffset = index;
+                break;
+              }
+            }
+            data = page;
+          }
           break;
+        }
         case "creative_submit": {
           const parsed = creativeToolInputSchema.safeParse(call.args);
           if (!parsed.success) throw new CreativeServiceError("invalid_parameters", 422);
