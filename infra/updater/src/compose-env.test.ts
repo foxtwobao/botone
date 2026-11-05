@@ -188,7 +188,7 @@ const STACKS = [
   ["docker-compose.prod.yml", "docker-compose.model-account.yml"],
   ["docker-compose.prod.yml", "docker-compose.prod.docker.yml", "docker-compose.model-account.yml"],
   ["docker-compose.yml", "docker-compose.model-account.yml"],
-];
+].map((files) => [...files, "docker-compose.apps.yml"]);
 
 function stackEnvironment(files: string[], service: string): Record<string, unknown> {
   return Object.assign({}, ...files.map((file) => loadServices(file)[service]?.environment ?? {}));
