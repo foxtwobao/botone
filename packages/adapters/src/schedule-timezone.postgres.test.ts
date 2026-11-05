@@ -344,7 +344,8 @@ describePostgres("moving routines with the account timezone (PostgreSQL)", () =>
         await waitForBlockedOn(monitor, own[0]!.pid, "the zone save", deadline);
         await client.query('UPDATE routines SET "nextRunAt" = $2 WHERE id = $1', [
           routine.id,
-          claimed,
+          // The column stores UTC without a zone; raw pg serializes Date in the host zone.
+          claimed.toISOString(),
         ]);
         await client.query("COMMIT");
         await moving;

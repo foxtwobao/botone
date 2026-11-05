@@ -13,25 +13,53 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "{name} options"
+msgstr "{name} seçenekleri"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Add fallback"
+msgstr "Yedek ekle"
+
+#: src/components/ModelAccount.tsx
+msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
+msgstr "Yetkilendirmeden sonra bu uygulama modelleri {serviceName} hesabınız üzerinden çağırır. Kullanım ücreti {serviceName} bakiyenizden düşülür."
+
+#: src/components/ModelAccount.tsx
+msgid "Agree and authorize"
+msgstr "Kabul et ve yetkilendir"
+
 #: src/components/ModelAccount.tsx
 msgid "API protocol"
 msgstr ""
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Approval model"
-msgstr ""
+msgstr "Onay modeli"
 
 #: src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
 msgstr ""
 
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Authorize access to {serviceName} models"
+msgstr "{serviceName} modellerini yetkilendir"
+
 #: src/components/ModelAccount.tsx
 msgid "Authorize again"
 msgstr ""
 
+#: src/pages/model-account/ModelAccountSettings.tsx
+msgid "Authorize model service"
+msgstr "Model hizmetini yetkilendir"
+
 #: src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr ""
+
+#: src/components/ModelAccount.tsx
+msgid "Authorizing…"
+msgstr "Yetkilendiriliyor…"
 
 #: src/components/ModelAccount.tsx
 msgid "Balance unavailable"
@@ -41,13 +69,21 @@ msgstr ""
 msgid "Cancel"
 msgstr "İptal"
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Change {name}"
+msgstr "{name} değiştir"
+
+#: src/components/ModelAccount.tsx
+msgid "Checking authorization…"
+msgstr "Yetkilendirme kontrol ediliyor…"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Choose a model"
-msgstr ""
+msgstr "Bir model seçin"
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Close model settings"
-msgstr ""
+msgstr "Model ayarlarını kapat"
 
 #: src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
@@ -55,6 +91,14 @@ msgstr ""
 
 #: src/components/ModelAccountOnboarding.tsx
 msgid "Connect a model"
+msgstr "Model bağla"
+
+#: src/components/ModelAccount.tsx
+msgid "Connected"
+msgstr "Bağlandı"
+
+#: src/components/ModelAccount.tsx
+msgid "Continue with {name}"
 msgstr ""
 
 #: src/components/ModelAccount.tsx
@@ -62,20 +106,31 @@ msgid "Could not confirm authorization. Try again."
 msgstr ""
 
 #: src/components/ModelAccount.tsx
+msgid "Could not continue"
+msgstr "Devam edilemedi"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Default"
+msgstr "Varsayılan"
+
+#: src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
 msgstr ""
 
 #: src/components/ModelAccount.tsx
 msgid "Home"
-msgstr ""
+msgstr "Ana sayfa"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Loading model catalog…"
+msgstr "Model kataloğu yükleniyor…"
 
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Main model"
-msgstr ""
+msgstr "Ana model"
 
 #: src/components/ModelAccount.tsx
 #: src/components/ModelAccountOnboarding.tsx
-#: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Model account"
 msgstr ""
 
@@ -83,9 +138,21 @@ msgstr ""
 msgid "Model account unavailable"
 msgstr ""
 
+#: src/components/ModelAccount.tsx
+msgid "model service"
+msgstr "model hizmeti"
+
 #: src/pages/model-account/ModelAccountSettings.tsx
 msgid "Models"
-msgstr ""
+msgstr "Modeller"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Move down"
+msgstr "Aşağı taşı"
+
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Move up"
+msgstr "Yukarı taşı"
 
 #: src/components/ModelAccount.tsx
 msgid "Recharge"
@@ -99,7 +166,13 @@ msgstr ""
 msgid "Refresh models"
 msgstr ""
 
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Remove"
+msgstr "Kaldır"
+
 #: src/components/ModelAccount.tsx
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: src/pages/model-account/use-model-account-onboarding.tsx
 msgid "Retry"
 msgstr "Yeniden dene"
 
@@ -111,38 +184,10 @@ msgstr ""
 msgid "Sign in with SSO to use the model account."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
-msgid "Use model account"
-msgstr ""
-
-#: src/components/ModelAccount.tsx
-msgid "Checking authorization…"
-msgstr "Yetkilendirme kontrol ediliyor…"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorizing…"
-msgstr "Yetkilendiriliyor…"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize model service"
-msgstr "Model hizmetini yetkilendir"
-
-#: src/components/ModelAccount.tsx
-msgid "Authorize access to {serviceName} models"
-msgstr "{serviceName} modellerini yetkilendir"
-
-#: src/components/ModelAccount.tsx
-msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
-msgstr "Yetkilendirmeden sonra bu uygulama modelleri {serviceName} hesabınız üzerinden çağırır. Kullanım ücreti {serviceName} bakiyenizden düşülür."
+#: src/pages/model-account/AccountModelRoleSettings.tsx
+msgid "Thinking"
+msgstr "Düşünüyor"
 
 #: src/components/ModelAccount.tsx
 msgid "You will return to the app after authorization."
 msgstr "Yetkilendirmeden sonra uygulamaya dönersiniz."
-
-#: src/components/ModelAccount.tsx
-msgid "Agree and authorize"
-msgstr "Kabul et ve yetkilendir"
-
-#: src/components/ModelAccount.tsx
-msgid "model service"
-msgstr "model hizmeti"

@@ -13,6 +13,7 @@ const client = new QueryClient({
 const account = vi.hoisted(() => ({ load: (_me: unknown) => {} }));
 
 vi.mock("../lib/rpc", () => ({
+  selectedSpaceId: () => null,
   rpc: {
     me: vi.fn(
       () =>
