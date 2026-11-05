@@ -354,9 +354,15 @@ test("sign-in, spawn, and stop work in the shell", async ({ page }, testInfo) =>
     if (message.type() === "error") browserErrors.push(message.text());
   });
   page.on("requestfailed", (request) => {
-    failedRequests.push(
-      `${request.method()} ${request.url()} ${request.failure()?.errorText ?? ""}`,
-    );
+    const error = request.failure()?.errorText ?? "";
+    // Account settings cancel their config read on cleanup; this is not a shell failure.
+    if (
+      request.method() === "GET" &&
+      new URL(request.url()).pathname === "/api/model-account/config" &&
+      error === "net::ERR_ABORTED"
+    )
+      return;
+    failedRequests.push(`${request.method()} ${request.url()} ${error}`);
   });
   const stamp = Date.now();
   const email = `shell-${stamp}@rakazo.test`;
