@@ -120,11 +120,11 @@ function ModelAccountContent({
     return required ? (
       <div className="space-y-4">
         {config || error ? (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-body text-destructive">
             <Trans>Model account unavailable</Trans>
           </p>
         ) : (
-          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <p role="status" className="flex items-center gap-2 text-body text-muted-foreground">
             <Spinner aria-hidden />
             <Trans>Checking authorization…</Trans>
           </p>
@@ -254,7 +254,7 @@ function ModelAccountContent({
       <div className="space-y-4" aria-live="polite">
         {error ? (
           <>
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="text-body text-destructive">
               <Trans>Model account unavailable</Trans>
             </p>
             <Button className="min-h-11" onClick={() => setAttempt((value) => value + 1)}>
@@ -262,7 +262,7 @@ function ModelAccountContent({
             </Button>
           </>
         ) : (
-          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <p role="status" className="flex items-center gap-2 text-body text-muted-foreground">
             <Spinner aria-hidden />
             <Trans>Checking authorization…</Trans>
           </p>
@@ -277,20 +277,20 @@ function ModelAccountContent({
         </SectionHeading>
       ) : null}
       {status?.connected && !message ? (
-        <p role="status" className="text-sm">
+        <p role="status" className="text-body">
           <Trans>Connected</Trans>
         </p>
       ) : null}
-      {!setup && balance ? <p className="text-sm text-muted-foreground">{balance}</p> : null}
+      {!setup && balance ? <p className="text-body text-muted-foreground">{balance}</p> : null}
       {setup ? (
-        <div className="space-y-3 text-sm leading-6">
+        <div className="space-y-3 text-body leading-6">
           <p>
             <Trans>
               After authorization, this app will use your {serviceName} account to call models.
               Model usage is charged to your {serviceName} account balance.
             </Trans>
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-label text-muted-foreground">
             <Trans>You will return to the app after authorization.</Trans>
           </p>
         </div>
@@ -298,7 +298,7 @@ function ModelAccountContent({
       {message ? (
         <p
           role={error ? "alert" : "status"}
-          className={error ? "text-sm text-destructive" : "text-sm text-muted-foreground"}
+          className={error ? "text-body text-destructive" : "text-body text-muted-foreground"}
         >
           {message}
         </p>

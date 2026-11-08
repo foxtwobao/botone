@@ -92,7 +92,15 @@ class PreviewBoot(unittest.TestCase):
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
-            output = process.communicate(timeout=3)[0].decode()
+            try:
+                output = process.communicate(timeout=3)[0].decode()
+            except subprocess.TimeoutExpired:
+                # A boot child can fork while the process group is being terminated.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                output = process.communicate(timeout=3)[0].decode()
             if succeeds:
                 self.assertIn("[preview] Ready", output)
 

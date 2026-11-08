@@ -14,7 +14,7 @@ export function useModelAccountOnboarding(step: string, onReady: () => void) {
     <ModelAccountOnboarding enabled onReady={onReady} />
   ) : config.error ? (
     <div>
-      <p role="alert" className="text-sm text-destructive">
+      <p role="alert" className="text-body text-destructive">
         {errorText(config.error)}
       </p>
       <Button disabled={config.isFetching} onClick={() => void config.refetch()}>

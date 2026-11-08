@@ -69,7 +69,7 @@ function ModelAccountSettingsContent({
         <ModelAccount required onChanged={refresh} />
       ) : null}
       {failure ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-body text-destructive">
           {errorText(failure)}
         </p>
       ) : null}
@@ -128,7 +128,7 @@ function ModelAccountSettingsContent({
           <DialogTitle
             className={
               needsAuthorization
-                ? "text-base font-semibold leading-6 text-foreground"
+                ? "text-heading3 font-semibold leading-6 text-foreground"
                 : "text-heading2 font-medium text-foreground"
             }
           >

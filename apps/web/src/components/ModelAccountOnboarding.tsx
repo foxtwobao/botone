@@ -39,7 +39,7 @@ function ModelAccountOnboardingContent({
 
   return (
     <div>
-      <h1 className="text-[32px] font-medium text-foreground">
+      <h1 className="text-display font-medium text-foreground">
         <Trans>Connect a model</Trans>
       </h1>
       {enabled && !selectingModel ? (

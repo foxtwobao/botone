@@ -203,7 +203,7 @@ export function AccountModelRoleSettings({
               Boolean(primary && index === 0),
             )}
             {primary && index === 0 && choice.thinkingLevel && levels.length ? (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-body text-muted-foreground">
                 {thinkingLevelLabel(choice.thinkingLevel)}
               </span>
             ) : null}
@@ -285,7 +285,7 @@ export function AccountModelRoleSettings({
       </ol>
       {state.busy && !settings ? <Spinner aria-label={t`Loading model catalog…`} /> : null}
       {state.error ? (
-        <div role="alert" className="text-sm text-destructive">
+        <div role="alert" className="text-body text-destructive">
           {state.error}
           <Button variant="ghost" disabled={state.busy} onClick={() => void controller.load()}>
             <Trans>Retry</Trans>
