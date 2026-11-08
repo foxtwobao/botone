@@ -4,8 +4,8 @@ import type { Auth } from "@rakazo/auth";
 import type { Actor } from "@rakazo/contracts";
 import type { Hono } from "hono";
 import { userAppCredentialReader } from "./connected-app-credentials.js";
+import { providerScopeKey } from "./connection-flows.js";
 import type { AppEnv } from "./env.js";
-import { providerScopeKey } from "./routes/connections.js";
 
 /** API-only composition; authentication never becomes a worker or adapter dependency. */
 export async function createConnectedApps(

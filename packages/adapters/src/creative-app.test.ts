@@ -8,7 +8,7 @@ import {
 import type { PrismaClient } from "@rakazo/db";
 import { Prisma } from "@rakazo/db";
 import { describe, expect, it, vi } from "vitest";
-import { ConnectorRegistry } from "./composio-connector.js";
+import { ConnectorRegistry } from "./connector-registry.js";
 import { capabilities, creativeFixture, musicInput } from "./creative.test-support.js";
 import {
   creativeCapabilitiesSchema,
