@@ -115,9 +115,8 @@ jobs:
         run: node .github/scripts/app-store-review.mjs
 
   android:
-    if: github.ref == 'refs/heads/main' && vars.MOBILE_PUBLISH_ENABLED == 'true'
     name: Android APK
-    if: inputs.ios_build_id == ''
+    if: github.ref == 'refs/heads/main' && vars.MOBILE_PUBLISH_ENABLED == 'true' && inputs.ios_build_id == ''
     uses: ./.github/workflows/release-android-apk.yml
     permissions:
       contents: write
@@ -125,6 +124,6 @@ jobs:
 
   google-play:
     name: Google Play
-    if: inputs.ios_build_id == ''
+    if: github.ref == 'refs/heads/main' && vars.MOBILE_PUBLISH_ENABLED == 'true' && inputs.ios_build_id == ''
     uses: ./.github/workflows/release-google-play.yml
     secrets: inherit
