@@ -9,10 +9,10 @@ import type {
 import { resolveEncryptionKey } from "@rakazo/core";
 import { runAsTenant } from "@rakazo/db";
 import { z } from "zod";
-import { ConnectorRegistry } from "./composio-connector.js";
 import type { ApplicationServices, ConnectedApplication } from "./configured-apps.js";
 import { connectedContext } from "./connection-context.js";
 import { readBoundedText } from "./connector-http.js";
+import { ConnectorRegistry } from "./connector-registry.js";
 
 const MAX_BYTES = 1_000_000;
 const id = z.string().min(1).max(200);

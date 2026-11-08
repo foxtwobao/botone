@@ -5,6 +5,34 @@ import {
   isTransientModelError,
 } from "./model-errors.js";
 
+describe("origin response parse failures", () => {
+  const message =
+    "The origin web server sent a response that Cloudflare could not parse. This may indicate the origin returned an empty response, malformed HTTP headers, or an otherwise invalid response.";
+
+  it.each([
+    ["message without a status", message, true],
+    ["runtime error", new Error(message), true],
+    ["stored runtime error", { errorMessage: message }, true],
+    ["nested provider error", { cause: { error: { message } } }, true],
+    ["explicit server status", { status: 520, message }, true],
+    ["bad request", { status: 400, message }, false],
+    ["rejected credential", { status: 401, message }, false],
+    ["forbidden", { status: 403, message }, false],
+    ["invalid input", { status: 422, message }, false],
+    ["cancelled request", { message, cause: new Error("Request was aborted") }, false],
+    ["generic response parse error", new Error("Could not parse response"), false],
+    ["generic empty response", new Error("The origin returned an empty response"), false],
+    [
+      "invalid credential header quoting the message",
+      new TypeError(`Headers.append: "${message}" is an invalid header value.`),
+      false,
+    ],
+  ])("classifies %s", (_label, error, retryable) => {
+    expect(isRetryableProviderUnavailable(error)).toBe(retryable);
+    expect(isTransientModelError(error)).toBe(retryable);
+  });
+});
+
 describe("transient model errors", () => {
   it.each([
     [
@@ -39,6 +67,10 @@ describe("transient model errors", () => {
     ["bad gateway", new Error("502 Bad Gateway")],
     ["empty truncated stream", new Error("Stream ended without finish_reason")],
     ["dropped fetch body", new TypeError("terminated")],
+    [
+      "interrupted upstream stream",
+      new Error("Provider error (Example Model): stream interrupted"),
+    ],
     ["provider network stop", new Error("Provider finish_reason: network_error")],
     ["fetch failure", new TypeError("fetch failed")],
     ["SDK connection failure", new Error("Connection error.")],

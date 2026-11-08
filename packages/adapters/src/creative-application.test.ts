@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { ConnectorRegistry } from "./composio-connector.js";
 import { ApplicationCredentialError, loadConfiguredApps } from "./configured-apps.js";
+import { ConnectorRegistry } from "./connector-registry.js";
 import { creativeFixture, musicInput } from "./creative.test-support.js";
 import { CreativeServiceError } from "./creative-provider.js";
 

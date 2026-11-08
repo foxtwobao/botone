@@ -127,8 +127,9 @@ export function oidcDiscovery(config: OidcConfig) {
           }
           // Better Auth's state read/delete is not atomic. Consume a separate
           // server-side marker before code exchange, including concurrent callbacks.
-          // Native authorization-origin probes have no nonce and issue no callback.
-          if (data.idTokenNonce) {
+          // Better Auth's Expo plugin probes providers with a synthetic request
+          // that has no ID token nonce. Only real OIDC sign-ins need this marker.
+          if (typeof data.idTokenNonce === "string" && data.idTokenNonce.length > 0) {
             await ctx.internalAdapter.createVerificationValue({
               identifier: `oidc-callback-${data.state}`,
               value: data.idTokenNonce,

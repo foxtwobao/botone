@@ -1,8 +1,8 @@
 import type { AdapterContext, ConnectorCall } from "@rakazo/adapter-kit";
 import { afterEach, expect, it, vi } from "vitest";
 import { applicationForwardSecret } from "./application-proxy.js";
-import { ConnectorRegistry } from "./composio-connector.js";
 import { loadConfiguredApps } from "./configured-apps.js";
+import { ConnectorRegistry } from "./connector-registry.js";
 import { capabilities, creativeFixture, musicInput } from "./creative.test-support.js";
 
 afterEach(() => vi.unstubAllGlobals());

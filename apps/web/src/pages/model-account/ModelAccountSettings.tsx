@@ -16,7 +16,7 @@ import { ModelAccount } from "../../components/ModelAccount";
 import { useSpaceQueries } from "../../lib/query";
 import { useSpaceRpc } from "../../lib/space-rpc";
 import { errorText } from "../../lib/user-error";
-import { SpaceBotsModelNotice } from "../model-settings/space-bots-model";
+import { SpaceBotsModelButton } from "../model-settings/space-bots-model";
 import { AccountI18n } from "./AccountI18n";
 import { AccountModelRoleSettings as ModelRoleSettings } from "./AccountModelRoleSettings";
 import { modelAccountConfigQuery, modelAccountStatusQuery } from "./queries";
@@ -69,7 +69,7 @@ function ModelAccountSettingsContent({
         <ModelAccount required onChanged={refresh} />
       ) : null}
       {failure ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-body text-destructive">
           {errorText(failure)}
         </p>
       ) : null}
@@ -86,7 +86,7 @@ function ModelAccountSettingsContent({
             onChanged={() => void refresh()}
           />
           {me.data.needsModel ? null : (
-            <SpaceBotsModelNotice refreshKey={`${me.data.spaceId}:${me.data.defaultModel}`} />
+            <SpaceBotsModelButton mainModelKey={`${me.data.spaceId}:${me.data.defaultModel}`} />
           )}
           <ModelRoleSettings
             userId={me.data.userId}
@@ -128,7 +128,7 @@ function ModelAccountSettingsContent({
           <DialogTitle
             className={
               needsAuthorization
-                ? "text-base font-semibold leading-6 text-foreground"
+                ? "text-heading3 font-semibold leading-6 text-foreground"
                 : "text-heading2 font-medium text-foreground"
             }
           >
