@@ -1,16 +1,16 @@
+import { useLingui } from "@lingui/react/macro";
 import { Stack, useNavigation } from "expo-router";
 import { HeaderBackButton } from "expo-router/react-navigation";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { floatingHeaderOptions, glassHeaderOptions } from "../../components/glass-title";
 import { ModelAccountRoutes } from "../../components/model-account-routes";
-import { useI18n } from "../../lib/i18n";
 import { native, useMobileTokens } from "../../lib/native";
 import { registerSettingsSheet, settingsSheetCloser } from "../../lib/settings-sheet";
 
 /** Settings pages share one stack, which the root layout presents as a sheet on iOS. */
 export default function SettingsLayout() {
-  const { t } = useI18n();
+  const { t } = useLingui();
   const tokens = useMobileTokens();
   const sheet = useNavigation();
   const close = settingsSheetCloser(sheet);
@@ -37,7 +37,7 @@ export default function SettingsLayout() {
                   unstable_headerLeftItems: () => [
                     {
                       type: "button" as const,
-                      label: t("Dismiss"),
+                      label: t`Dismiss`,
                       icon: { type: "sfSymbol" as const, name: "xmark" as const },
                       onPress: close,
                     },
@@ -47,7 +47,7 @@ export default function SettingsLayout() {
                   headerBackVisible: false,
                   headerLeft: ({ tintColor }) => (
                     <HeaderBackButton
-                      accessibilityLabel={t("Back")}
+                      accessibilityLabel={t`Back`}
                       displayMode="minimal"
                       tintColor={tintColor}
                       onPress={close}
@@ -62,42 +62,42 @@ export default function SettingsLayout() {
           // The sheet's first page shows only its close button on iOS; "Account" still names it.
           // A title function returning null would fall back to showing the title text.
           options={{
-            ...glassHeaderOptions(t("Account")),
+            ...glassHeaderOptions(t`Account`),
             ...(Platform.OS === "ios" ? { headerTitle: "" } : null),
             contentStyle: { backgroundColor: native.groupedPage },
           }}
         />
-        <Stack.Screen name="ai-data-sharing" options={glassHeaderOptions(t("AI data sharing"))} />
-        <Stack.Screen name="archived-bots" options={{ title: t("Archived") }} />
-        <Stack.Screen name="change-password" options={{ title: t("Change password") }} />
-        <Stack.Screen name="signup-survey" options={glassHeaderOptions(t("Welcome to Rakazo"))} />
-        <Stack.Screen name="language" options={glassHeaderOptions(t("Language"))} />
-        <Stack.Screen name="model-picker" options={glassHeaderOptions(t("Model"))} />
-        <Stack.Screen name="model-connection" options={glassHeaderOptions(t("Model"))} />
-        <Stack.Screen name="billing" options={glassHeaderOptions(t("Billing"))} />
-        <Stack.Screen name="model-account" options={glassHeaderOptions(t("Models"))} />
-        <Stack.Screen name="models" options={glassHeaderOptions(t("Models"))} />
-        <Stack.Screen name="voice" options={glassHeaderOptions(t("Voice"))} />
-        <Stack.Screen name="wallet" options={glassHeaderOptions(t("Wallet"))} />
-        <Stack.Screen name="spending-limit" options={glassHeaderOptions(t("Spending limit"))} />
+        <Stack.Screen name="ai-data-sharing" options={glassHeaderOptions(t`AI data sharing`)} />
+        <Stack.Screen name="archived-bots" options={{ title: t`Archived` }} />
+        <Stack.Screen name="change-password" options={{ title: t`Change password` }} />
+        <Stack.Screen name="signup-survey" options={glassHeaderOptions(t`Welcome to Rakazo`)} />
+        <Stack.Screen name="language" options={glassHeaderOptions(t`Language`)} />
+        <Stack.Screen name="model-picker" options={glassHeaderOptions(t`Model`)} />
+        <Stack.Screen name="model-connection" options={glassHeaderOptions(t`Model`)} />
+        <Stack.Screen name="billing" options={glassHeaderOptions(t`Billing`)} />
+        <Stack.Screen name="model-account" options={glassHeaderOptions(t`Models`)} />
+        <Stack.Screen name="models" options={glassHeaderOptions(t`Models`)} />
+        <Stack.Screen name="voice" options={glassHeaderOptions(t`Voice`)} />
+        <Stack.Screen name="wallet" options={glassHeaderOptions(t`Wallet`)} />
+        <Stack.Screen name="spending-limit" options={glassHeaderOptions(t`Spending limit`)} />
         <Stack.Screen
           name="approvals"
           options={{
-            ...glassHeaderOptions(t("Rules")),
+            ...glassHeaderOptions(t`Rules`),
             contentStyle: { backgroundColor: native.groupedPage },
           }}
         />
         <Stack.Screen
           name="approval-rule-add"
           options={{
-            ...glassHeaderOptions(t("Add rule")),
+            ...glassHeaderOptions(t`Add rule`),
             contentStyle: { backgroundColor: native.groupedPage },
           }}
         />
         <Stack.Screen
           name="vault"
           options={{
-            ...glassHeaderOptions(t("Vault")),
+            ...glassHeaderOptions(t`Vault`),
             contentStyle: { backgroundColor: native.groupedPage },
           }}
         />
@@ -106,7 +106,7 @@ export default function SettingsLayout() {
           // Named after the Space it opened from.
           options={({ route }) => ({
             ...glassHeaderOptions(
-              (route.params as { name?: string } | undefined)?.name ?? t("Space"),
+              (route.params as { name?: string } | undefined)?.name ?? t`Space`,
             ),
             contentStyle: { backgroundColor: native.groupedPage },
           })}
@@ -114,15 +114,15 @@ export default function SettingsLayout() {
         <Stack.Screen
           name="organization"
           options={{
-            ...glassHeaderOptions(t("Organization")),
+            ...glassHeaderOptions(t`Organization`),
             contentStyle: { backgroundColor: native.groupedPage },
           }}
         />
-        <Stack.Screen name="messaging" options={glassHeaderOptions(t("Messaging"))} />
+        <Stack.Screen name="messaging" options={glassHeaderOptions(t`Messaging`)} />
         <Stack.Screen name="team-conversation" />
-        <Stack.Screen name="integrations" options={glassHeaderOptions(t("Integrations"))} />
-        <Stack.Screen name="skills" options={glassHeaderOptions(t("Skills"))} />
-        <Stack.Screen name="bot-templates" options={glassHeaderOptions(t("Bot templates"))} />
+        <Stack.Screen name="integrations" options={glassHeaderOptions(t`Integrations`)} />
+        <Stack.Screen name="skills" options={glassHeaderOptions(t`Skills`)} />
+        <Stack.Screen name="bot-templates" options={glassHeaderOptions(t`Bot templates`)} />
         {/* The template's name heads the page itself. */}
         <Stack.Screen
           name="bot-template"
@@ -136,7 +136,7 @@ export default function SettingsLayout() {
         <Stack.Screen
           name="memory"
           options={{
-            ...glassHeaderOptions(t("Memory")),
+            ...glassHeaderOptions(t`Memory`),
             contentStyle: { backgroundColor: native.groupedPage },
           }}
         />
@@ -151,7 +151,7 @@ export default function SettingsLayout() {
         />
         <Stack.Screen
           name="integration-setup"
-          options={glassHeaderOptions(t("Server integrations"))}
+          options={glassHeaderOptions(t`Server integrations`)}
         />
       </Stack>
     </ModelAccountRoutes>

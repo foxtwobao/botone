@@ -13,181 +13,181 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "{name} options"
 msgstr "{name} 옵션"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Add fallback"
 msgstr "대체 모델 추가"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
 msgstr "승인 후 이 앱은 사용자의 {serviceName} 계정으로 모델을 호출합니다. 사용 요금은 {serviceName} 계정 잔액에서 차감됩니다."
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Agree and authorize"
 msgstr "동의하고 승인하기"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "API protocol"
 msgstr ""
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Approval model"
 msgstr "승인 모델"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
 msgstr ""
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Authorize access to {serviceName} models"
 msgstr "{serviceName} 모델 사용 승인"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorize again"
 msgstr ""
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Authorize model service"
 msgstr "모델 서비스 사용 승인"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorizing…"
 msgstr "승인 중…"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Balance unavailable"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Cancel"
 msgstr "취소"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Change {name}"
 msgstr "{name} 변경"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Checking authorization…"
 msgstr "승인 확인 중…"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Choose a model"
 msgstr "모델 선택"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Close model settings"
 msgstr "AI 모델 설정 닫기"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
 msgstr ""
 
-#: src/components/ModelAccountOnboarding.tsx
+#: apps/web/src/components/ModelAccountOnboarding.tsx
 msgid "Connect a model"
 msgstr "AI 모델 연결"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Connected"
 msgstr "연결됨"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Continue with {name}"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Could not continue"
 msgstr "계속 진행하지 못했습니다."
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Default"
 msgstr "기본값"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Home"
 msgstr ""
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Loading model catalog…"
 msgstr "모델 목록을 불러오는 중…"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Main model"
 msgstr "기본 모델"
 
-#: src/components/ModelAccount.tsx
-#: src/components/ModelAccountOnboarding.tsx
+#: apps/web/src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccountOnboarding.tsx
 msgid "Model account"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Model account unavailable"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "model service"
 msgstr "모델 서비스"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Models"
 msgstr "AI 모델"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Move down"
 msgstr "아래로 이동"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Move up"
 msgstr "위로 이동"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Recharge"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Refresh balance"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Refresh models"
 msgstr ""
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Remove"
 msgstr "삭제"
 
-#: src/components/ModelAccount.tsx
-#: src/pages/model-account/AccountModelRoleSettings.tsx
-#: src/pages/model-account/use-model-account-onboarding.tsx
+#: apps/web/src/components/ModelAccount.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/use-model-account-onboarding.tsx
 msgid "Retry"
 msgstr "다시 시도"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Retry disconnect"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Sign in with SSO to use the model account."
 msgstr ""
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Thinking"
 msgstr "생각 깊이"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "You will return to the app after authorization."
 msgstr "승인이 완료되면 앱으로 돌아옵니다."

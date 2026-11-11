@@ -37,13 +37,26 @@ kind 为 image/video/music。模型与预设 ID 是不透明字符串，原样�
 音乐样例：
 
 ```json
-{"models":[{"id":"demo-music","kind":"music","presets":[{"id":"demo-song","parameters":{"mode":"song"}},{"id":"demo-inst","parameters":{"mode":"instrumental"}}],"defaultPreset":"demo-song"}],"defaults":{"music":"demo-music"}}
+{
+  "models": [
+    {
+      "id": "demo-music",
+      "kind": "music",
+      "presets": [
+        { "id": "demo-song", "parameters": { "mode": "song" } },
+        { "id": "demo-inst", "parameters": { "mode": "instrumental" } }
+      ],
+      "defaultPreset": "demo-song"
+    }
+  ],
+  "defaults": { "music": "demo-music" }
+}
 ```
 
 提交样例：
 
 ```json
-{"kind":"music","model":"demo-music","preset":"demo-inst","prompt":"柔和的钢琴片头"}
+{ "kind": "music", "model": "demo-music", "preset": "demo-inst", "prompt": "柔和的钢琴片头" }
 ```
 
 ## 持久化与恢复
