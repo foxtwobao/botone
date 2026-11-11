@@ -13,181 +13,181 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "{name} options"
 msgstr "{name} のオプション"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Add fallback"
 msgstr "フォールバックを追加"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
 msgstr "認可後、このアプリはあなたの {serviceName} アカウントでモデルを呼び出します。利用料金は {serviceName} の残高から差し引かれます。"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Agree and authorize"
 msgstr "同意して認可へ進む"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "API protocol"
 msgstr "API プロトコル"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Approval model"
 msgstr "承認モデル"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
 msgstr "認可が完了していません。"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Authorize access to {serviceName} models"
 msgstr "{serviceName} のモデル利用を認可"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorize again"
 msgstr "再認可"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Authorize model service"
 msgstr "モデルサービスを認可"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr "続行するにはモデルアカウントを認可してください。"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorizing…"
 msgstr "認可中…"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Balance unavailable"
 msgstr "残高を取得できません"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Change {name}"
 msgstr "{name} を変更"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Checking authorization…"
 msgstr "認可を確認中…"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Choose a model"
 msgstr "モデルを選択"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Close model settings"
 msgstr "モデル設定を閉じる"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
 msgstr "開いたウィンドウで認可を完了してください。"
 
-#: src/components/ModelAccountOnboarding.tsx
+#: apps/web/src/components/ModelAccountOnboarding.tsx
 msgid "Connect a model"
 msgstr "モデルを接続"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Connected"
 msgstr "接続済み"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Continue with {name}"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
 msgstr "認可結果を確認できませんでした。再試行してください。"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Could not continue"
 msgstr "続行できませんでした"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Default"
 msgstr "デフォルト"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
 msgstr "切断の確認を待っています。"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Home"
 msgstr "ホーム"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Loading model catalog…"
 msgstr "モデルカタログを読み込み中…"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Main model"
 msgstr "メインモデル"
 
-#: src/components/ModelAccount.tsx
-#: src/components/ModelAccountOnboarding.tsx
+#: apps/web/src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccountOnboarding.tsx
 msgid "Model account"
 msgstr "モデルアカウント"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Model account unavailable"
 msgstr "モデルアカウントを利用できません"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "model service"
 msgstr "モデルサービス"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Models"
 msgstr "モデル"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Move down"
 msgstr "下へ移動"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Move up"
 msgstr "上へ移動"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Recharge"
 msgstr "チャージ"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Refresh balance"
 msgstr "残高を更新"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Refresh models"
 msgstr "モデルを更新"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Remove"
 msgstr "削除"
 
-#: src/components/ModelAccount.tsx
-#: src/pages/model-account/AccountModelRoleSettings.tsx
-#: src/pages/model-account/use-model-account-onboarding.tsx
+#: apps/web/src/components/ModelAccount.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/use-model-account-onboarding.tsx
 msgid "Retry"
 msgstr "再試行"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Retry disconnect"
 msgstr "切断を再試行"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Sign in with SSO to use the model account."
 msgstr "モデルアカウントを使用するには SSO でサインインしてください。"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Thinking"
 msgstr "思考"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "You will return to the app after authorization."
 msgstr "認可が完了するとアプリに戻ります。"

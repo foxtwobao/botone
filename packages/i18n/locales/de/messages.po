@@ -1292,7 +1292,7 @@ msgstr "Einmal erlauben"
 
 #: apps/web/src/lib/dictation.ts
 msgid "Allow Rakazo to use Speech Recognition and the microphone in System Settings."
-msgstr "Erlaube Rakazo in den Systemeinstellungen, die Spracherkennung und das Mikrofon zu verwenden."
+msgstr "Erlaube BotONE in den Systemeinstellungen, die Spracherkennung und das Mikrofon zu verwenden."
 
 #: apps/mobile/lib/composer-dictation.ts
 msgid "Allow speech recognition in Settings, or connect a voice provider that transcribes."
@@ -2311,7 +2311,7 @@ msgstr "Ordner wählen"
 #: apps/web/src/components/ModelCredits.tsx
 #: apps/web/src/components/SubscriptionGate.tsx
 msgid "Choose how to use Rakazo"
-msgstr "Wähle, wie du Rakazo nutzen möchtest"
+msgstr "Wähle, wie du BotONE nutzen möchtest"
 
 #: apps/mobile/components/vault-item-editor.tsx
 #: apps/mobile/components/vault-item-sheet.tsx
@@ -2747,7 +2747,7 @@ msgstr "Deine KI verbinden"
 #. js-lingui-explicit-id
 #: packages/i18n/src/run-error.ts
 msgid "Connect your own API key in Models or choose Rakazo credits in Billing."
-msgstr "Verbinde deinen eigenen API-Schlüssel unter Modelle oder wähle Rakazo-Guthaben unter Abrechnung."
+msgstr "Verbinde deinen eigenen API-Schlüssel unter Modelle oder wähle BotONE-Guthaben unter Abrechnung."
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/mobile/app/(settings)/integrations.tsx
@@ -4078,7 +4078,7 @@ msgstr "Space erstellen"
 
 #: apps/web/src/pages/Auth.tsx
 msgid "Create your Rakazo"
-msgstr "Dein Rakazo erstellen"
+msgstr "Dein BotONE erstellen"
 
 #: apps/mobile/components/thread/message-bubble.tsx
 #: apps/web/src/components/AskCard.tsx
@@ -4803,7 +4803,7 @@ msgstr "Endet am {day}"
 
 #: apps/web/src/components/GitHubStarPrompt.tsx
 msgid "Enjoying Rakazo?"
-msgstr "Gefällt dir Rakazo?"
+msgstr "Gefällt dir BotONE?"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -5563,7 +5563,7 @@ msgstr "So wird geprüft"
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/web/src/components/SignupSurvey.tsx
 msgid "How will you use Rakazo?"
-msgstr "Wie wirst du Rakazo nutzen?"
+msgstr "Wie wirst du BotONE nutzen?"
 
 #: apps/mobile/components/compatible-endpoint-form.tsx
 msgid "http://127.0.0.1:8000/v1"
@@ -7042,7 +7042,7 @@ msgstr "Nicht importiert"
 
 #: apps/web/src/pages/shell/import-status.ts
 msgid "Not in Rakazo's catalog"
-msgstr "Nicht im Katalog von Rakazo"
+msgstr "Nicht im Katalog von BotONE"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/pages/plugins/plugin-browse.tsx
@@ -7082,11 +7082,11 @@ msgstr "Nicht gesendet. Zum Wiederholen tippen"
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 #: apps/web/src/pages/shell/import-status.ts
 msgid "Not supported in Rakazo"
-msgstr "In Rakazo nicht unterstützt"
+msgstr "In BotONE nicht unterstützt"
 
 #: apps/web/src/pages/shell/agent-import-plan.tsx
 msgid "Not used by Rakazo"
-msgstr "Wird von Rakazo nicht verwendet"
+msgstr "Wird von BotONE nicht verwendet"
 
 #: apps/mobile/app/(settings)/integrations.tsx
 #: apps/web/src/components/McpServerHealthLine.tsx
@@ -7310,7 +7310,7 @@ msgstr "Navigation öffnen"
 #: apps/web/src/pages/Invite.tsx
 #: apps/web/src/pages/SharedPage.tsx
 msgid "Open Rakazo"
-msgstr "Rakazo öffnen"
+msgstr "BotONE öffnen"
 
 #: apps/mobile/lib/composer-dictation.ts
 #: apps/mobile/lib/thread-voice.ts
@@ -7554,7 +7554,7 @@ msgstr "Ersatzschlüssel einfügen"
 #: apps/mobile/components/compatible-endpoint-form.tsx
 #: apps/web/src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
-msgstr "Füge die OpenAI-kompatible Adresse deines Servers ein. Rakazo ergänzt /v1 bei Bedarf."
+msgstr "Füge die OpenAI-kompatible Adresse deines Servers ein. BotONE ergänzt /v1 bei Bedarf."
 
 #: apps/web/src/pages/shell/agent-import.tsx
 msgid "Paste the reply"
@@ -7848,16 +7848,16 @@ msgstr "Zitieren"
 #: apps/web/src/pages/AccountSettingsOverlay.tsx
 #: apps/web/src/pages/shell/avatar-studio-popover.tsx
 msgid "Rakazo"
-msgstr "Rakazo"
+msgstr "BotONE"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/pages/onboarding/use-onboarding-model.ts
 msgid "Rakazo credits"
-msgstr "Rakazo-Guthaben"
+msgstr "BotONE-Guthaben"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "rakazo-shared and IDs starting with bot- are reserved for Rakazo."
-msgstr "rakazo-shared und IDs, die mit bot- beginnen, sind für Rakazo reserviert."
+msgstr "rakazo-shared und IDs, die mit bot- beginnen, sind für BotONE reserviert."
 
 #: apps/mobile/components/thread/message-row.tsx
 #: apps/web/src/pages/shell/message-hover-actions.tsx
@@ -7898,7 +7898,7 @@ msgstr "Abrufen und schreiben"
 
 #: apps/web/src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "Recall from this peer; save to Rakazo’s own peers."
-msgstr "Aus diesem Peer abrufen; in Rakazos eigenen Peers speichern."
+msgstr "Aus diesem Peer abrufen; in BotONEs eigenen Peers speichern."
 
 #: apps/web/src/pages/memory-providers/SerenitySettingsForm.tsx
 msgid "Recall only"
@@ -8479,7 +8479,7 @@ msgstr "Zurück zur Übersicht"
 #: apps/web/src/pages/McpOAuthCallback.tsx
 #: apps/web/src/pages/SlackInstallCallback.tsx
 msgid "Return to Rakazo"
-msgstr "Zurück zu Rakazo"
+msgstr "Zurück zu BotONE"
 
 #: apps/web/src/lib/model-connection-preflight.ts
 msgid "Review provider settings and test again."
@@ -9201,7 +9201,7 @@ msgstr "Melde dich bei <0>{0}</0> an und füge dann den Code hier ein."
 #: apps/mobile/app/sign-in.tsx
 #: apps/web/src/pages/Auth.tsx
 msgid "Sign in to Rakazo"
-msgstr "Bei Rakazo anmelden"
+msgstr "Bei BotONE anmelden"
 
 #: apps/mobile/lib/user-error.ts
 #: apps/web/src/lib/user-error.ts
@@ -9233,7 +9233,7 @@ msgstr "Registrieren"
 
 #: apps/mobile/app/sign-in.tsx
 msgid "Sign up for Rakazo"
-msgstr "Bei Rakazo registrieren"
+msgstr "Bei BotONE registrieren"
 
 #: apps/web/src/components/integrations/plugin-marketplace.tsx
 msgid "Sign-in cancelled. Try again."
@@ -9516,7 +9516,7 @@ msgstr "Aufnahme starten"
 
 #: apps/mobile/app/paywall.tsx
 msgid "Start using Rakazo"
-msgstr "Mit Rakazo loslegen"
+msgstr "Mit BotONE loslegen"
 
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/components/ModelCredits.tsx
@@ -9828,7 +9828,7 @@ msgstr "Das sieht nicht nach einer URL aus"
 
 #: apps/mobile/lib/endpoint.ts
 msgid "That URL did not look like a Rakazo server"
-msgstr "Diese URL sieht nicht nach einem Rakazo-Server aus"
+msgstr "Diese URL sieht nicht nach einem BotONE-Server aus"
 
 #: apps/mobile/lib/endpoint.ts
 msgid "That URL is missing a host"
@@ -10223,7 +10223,7 @@ msgstr "Das Tool-Ergebnis dieses Servers passt nicht in das Modell. Schalte „T
 #: apps/mobile/app/(settings)/model-connection.tsx
 #: apps/web/src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
-msgstr "Diese Abonnementanmeldung ist in Rakazo noch nicht verfügbar. Verwende Zugangsdaten der Bereitstellung oder wähle einen anderen Anbieter."
+msgstr "Diese Abonnementanmeldung ist in BotONE noch nicht verfügbar. Verwende Zugangsdaten der Bereitstellung oder wähle einen anderen Anbieter."
 
 #: apps/mobile/app/(settings)/bot-template.tsx
 #: apps/web/src/components/bot-templates/bot-templates-dialog.tsx
@@ -10744,7 +10744,7 @@ msgstr "Verwende „Geschützte Eingabe“ für Passwörter."
 #: apps/mobile/app/(settings)/billing.tsx
 #: apps/web/src/components/ModelCredits.tsx
 msgid "Use Rakazo credits"
-msgstr "Rakazo-Guthaben verwenden"
+msgstr "BotONE-Guthaben verwenden"
 
 #: apps/mobile/components/space-bots-model.tsx
 msgid "Use space default"
@@ -10959,7 +10959,7 @@ msgstr "Wöchentlich"
 #: apps/mobile/app/(settings)/_layout.tsx
 #: apps/web/src/components/SignupSurvey.tsx
 msgid "Welcome to Rakazo"
-msgstr "Willkommen bei Rakazo"
+msgstr "Willkommen bei BotONE"
 
 #: apps/web/src/pages/shell/dialogs.tsx
 msgid "What about its memories?"
@@ -10972,7 +10972,7 @@ msgstr "Was darf dieser Space nutzen?"
 #: apps/mobile/app/(settings)/signup-survey.tsx
 #: apps/web/src/components/SignupSurvey.tsx
 msgid "What do you most want Rakazo to help with?"
-msgstr "Wobei soll Rakazo dir am meisten helfen?"
+msgstr "Wobei soll BotONE dir am meisten helfen?"
 
 #: apps/web/src/pages/shell/message-cards.tsx
 msgid "What do you want me on first?"

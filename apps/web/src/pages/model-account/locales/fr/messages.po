@@ -13,181 +13,181 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "{name} options"
 msgstr "Options de {name}"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Add fallback"
 msgstr "Ajouter un modèle de secours"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "After authorization, this app will use your {serviceName} account to call models. Model usage is charged to your {serviceName} account balance."
 msgstr "Après autorisation, cette application utilisera votre compte {serviceName} pour appeler les modèles. Les frais seront déduits de votre solde {serviceName}."
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Agree and authorize"
 msgstr "Accepter et autoriser"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "API protocol"
 msgstr ""
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Approval model"
 msgstr "Modèle d’approbation"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorization incomplete."
 msgstr ""
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Authorize access to {serviceName} models"
 msgstr "Autoriser les modèles {serviceName}"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorize again"
 msgstr ""
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Authorize model service"
 msgstr "Autoriser le service de modèles"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorize the model account to continue."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Authorizing…"
 msgstr "Autorisation en cours…"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Balance unavailable"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Change {name}"
 msgstr "Changer {name}"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Checking authorization…"
 msgstr "Vérification de l’autorisation…"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Choose a model"
 msgstr "Choisir un modèle"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Close model settings"
 msgstr "Fermer les paramètres de modèle"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Complete authorization in the opened window."
 msgstr ""
 
-#: src/components/ModelAccountOnboarding.tsx
+#: apps/web/src/components/ModelAccountOnboarding.tsx
 msgid "Connect a model"
 msgstr "Connecter un modèle"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Connected"
 msgstr "Connecté"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Continue with {name}"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Could not confirm authorization. Try again."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Could not continue"
 msgstr "Impossible de continuer"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Default"
 msgstr "Par défaut"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Disconnection pending confirmation."
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Home"
 msgstr ""
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Loading model catalog…"
 msgstr "Chargement du catalogue de modèles…"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Main model"
 msgstr "Modèle principal"
 
-#: src/components/ModelAccount.tsx
-#: src/components/ModelAccountOnboarding.tsx
+#: apps/web/src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccountOnboarding.tsx
 msgid "Model account"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Model account unavailable"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "model service"
 msgstr "service de modèles"
 
-#: src/pages/model-account/ModelAccountSettings.tsx
+#: apps/web/src/pages/model-account/ModelAccountSettings.tsx
 msgid "Models"
 msgstr "Modèles"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Move down"
 msgstr "Descendre"
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Move up"
 msgstr "Monter"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Recharge"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Refresh balance"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Refresh models"
 msgstr ""
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Remove"
 msgstr "Retirer"
 
-#: src/components/ModelAccount.tsx
-#: src/pages/model-account/AccountModelRoleSettings.tsx
-#: src/pages/model-account/use-model-account-onboarding.tsx
+#: apps/web/src/components/ModelAccount.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/use-model-account-onboarding.tsx
 msgid "Retry"
 msgstr "Réessayer"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Retry disconnect"
 msgstr ""
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "Sign in with SSO to use the model account."
 msgstr ""
 
-#: src/pages/model-account/AccountModelRoleSettings.tsx
+#: apps/web/src/pages/model-account/AccountModelRoleSettings.tsx
 msgid "Thinking"
 msgstr "Réflexion"
 
-#: src/components/ModelAccount.tsx
+#: apps/web/src/components/ModelAccount.tsx
 msgid "You will return to the app after authorization."
 msgstr "Vous reviendrez dans l’application après autorisation."

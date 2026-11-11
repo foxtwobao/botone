@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Redirect, useLocalSearchParams, useSegments } from "expo-router";
 import type { ReactNode } from "react";
 import { ActivityIndicator } from "react-native";
-import { useI18n } from "../lib/i18n";
+import { useI18n } from "../lib/model-account-i18n";
 import { modelAccountConfigQuery } from "../lib/model-account-client";
 import { modelConnectionRequest } from "../lib/model-connection-request";
 import { queryClient } from "../lib/query";
