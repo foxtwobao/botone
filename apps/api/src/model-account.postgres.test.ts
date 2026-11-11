@@ -13,7 +13,7 @@ import { resolveModelKey } from "../../../packages/adapters/src/run-model.js";
 import { modelAccountRoutes } from "./model-account.js";
 
 const databaseUrl = process.env.DATABASE_URL;
-const postgres = process.env.VERIFY_DATABASE && databaseUrl ? describe.sequential : describe.skip;
+const postgres = process.env.VERIFY_DATABASE && databaseUrl ? describe : describe.skip;
 const origin = "https://app.example.test";
 const issuer = "https://identity.example.test";
 const key = "offline-test-secret-at-least-32-characters";

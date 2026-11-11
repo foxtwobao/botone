@@ -172,7 +172,7 @@ export function ModelRoleSettings({
                   title: t("Thinking"),
                   subactions: [null, ...levels].map((level) => ({
                     id: `thinking:${level ?? ""}`,
-                    title: level ? thinkingLevelLabel(level, t) : t("Default"),
+                    title: level ? thinkingLevelLabel(level) : t("Default"),
                     state:
                       level === (choice.thinkingLevel ?? null) ? ("on" as const) : ("off" as const),
                   })),
@@ -204,7 +204,7 @@ export function ModelRoleSettings({
               title={name(choice)}
               detail={
                 primary && index === 0 && choice.thinkingLevel
-                  ? thinkingLevelLabel(choice.thinkingLevel, t)
+                  ? thinkingLevelLabel(choice.thinkingLevel)
                   : undefined
               }
               disabled={busy}
