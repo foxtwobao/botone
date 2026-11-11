@@ -417,7 +417,7 @@ describe("setup", () => {
       submitForm();
       ui.startResult.resolve(stackState("pulling"));
       await flush();
-      expect(element("stack-phase").textContent).toBe("Downloading Rakazo…");
+      expect(element("stack-phase").textContent).toBe("Downloading BotONE…");
 
       if (leaveAfterReady) {
         ui.resolveStackState(stackState("ready"));
