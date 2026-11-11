@@ -23,15 +23,15 @@ Set these under repository **Settings → Secrets and variables → Actions → 
 An absent variable is disabled. Enable a feature by setting its value to exactly `true` only
 after configuring the corresponding credentials. The switches do not contain credentials.
 
-| Variable | Enables | Additional configuration |
-| --- | --- | --- |
-| `GHCR_PUBLISH_ENABLED` | Multi-architecture app, updater and computer publication to GHCR on main, release tags and manual runs | Package publishing permissions; Depot configuration only if using Depot |
-| `DESKTOP_PUBLISH_ENABLED` | Tagged/manual desktop releases | Platform signing and notarization configuration as required by the release workflow |
-| `MOBILE_PUBLISH_ENABLED` | Manual iOS/Android releases and automatic compatible mobile OTA updates | Expo project/token and the applicable store credentials |
-| `SCREENSHOT_PUBLISH_ENABLED` | Public web and Android screenshot galleries | S3 access keys, bucket, endpoint/region and public report URL |
-| `NIGHTLY_VERIFICATION_ENABLED` | Scheduled extended browser verification | No hosted report service required; artifacts are retained |
-| `AUTOMATED_MAINTENANCE_ENABLED` | Scheduled dependency and model-catalog updates | Credentials required by the respective update workflow |
-| `REVIEW_BOT_ENABLED` | Comment-driven handoff between installed review bots | Install/configure the desired review applications separately |
+| Variable                        | Enables                                                                                                | Additional configuration                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `GHCR_PUBLISH_ENABLED`          | Multi-architecture app, updater and computer publication to GHCR on main, release tags and manual runs | Package publishing permissions; Depot configuration only if using Depot             |
+| `DESKTOP_PUBLISH_ENABLED`       | Tagged/manual desktop releases                                                                         | Platform signing and notarization configuration as required by the release workflow |
+| `MOBILE_PUBLISH_ENABLED`        | Manual iOS/Android releases and automatic compatible mobile OTA updates                                | Expo project/token and the applicable store credentials                             |
+| `SCREENSHOT_PUBLISH_ENABLED`    | Public web and Android screenshot galleries                                                            | S3 access keys, bucket, endpoint/region and public report URL                       |
+| `NIGHTLY_VERIFICATION_ENABLED`  | Scheduled extended browser verification                                                                | No hosted report service required; artifacts are retained                           |
+| `AUTOMATED_MAINTENANCE_ENABLED` | Scheduled dependency and model-catalog updates                                                         | Credentials required by the respective update workflow                              |
+| `REVIEW_BOT_ENABLED`            | Comment-driven handoff between installed review bots                                                   | Install/configure the desired review applications separately                        |
 
 `PRODUCTION_DEPLOY_ENABLED` remains an independent, existing opt-in. The upstream deployment
 uses GHCR images, so configure GHCR publication as well before enabling it. Docker Hub
