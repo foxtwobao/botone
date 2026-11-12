@@ -147,7 +147,7 @@ export function AdminBotsPanel() {
                   {row.slug} · v{row.version} · {row.listing.category}
                 </p>
               </div>
-              <Badge variant={row.status === "published" ? "default" : "outline"}>
+              <Badge variant={row.status === "published" ? "secondary" : "outline"}>
                 {row.status === "published" ? (
                   <Trans>Published</Trans>
                 ) : row.status === "draft" ? (
