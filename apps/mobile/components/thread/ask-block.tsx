@@ -51,7 +51,10 @@ export function AskBlock({
   const [saved, setSaved] = useState(false);
   const [sentOnce, setSentOnce] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const answered = saved || dismissed || ask.status === "answered";
+  const answered = ask.nativeRequestId
+    ? ask.nativeDelivery === "delivered"
+    : saved || dismissed || ask.status === "answered";
+  canAnswer = canAnswer && (!ask.nativeRequestId || ask.nativeDelivery === "pending");
   const secretInput = isSecretAskBlock(ask);
   const loginInput = secretInput && ask.credential?.auth.type === "login";
   const itemType = secretInput ? ask.credential?.auth.type : undefined;
@@ -325,7 +328,11 @@ export function AskBlock({
         </>
       ) : (
         <Text style={{ color: tokens.mutedForeground, ...typeScale.caption }}>
-          {t`Waiting for this bot’s response.`}
+          {ask.nativeRequestId
+            ? ask.nativeDelivery === "submitted"
+              ? t`Sending…`
+              : t`No longer active`
+            : t`Waiting for this bot’s response.`}
         </Text>
       )}
       {error ? (

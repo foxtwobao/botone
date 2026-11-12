@@ -490,6 +490,11 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         // integration and computer setup must not occupy a queue dispatch slot.
         onRunStarted?.();
         dispatchHandedOff = Boolean(onRunStarted);
+        const { continueNativeRun } = await import("./native-harness/run.js");
+        if (
+          await continueNativeRun(deps, run, { id: attempt.id, workerId, fence }, () => lease.valid)
+        )
+          return;
         // A saved computer turn owns both identities. Resolve them before consulting
         // today's main selection, whose connection may have changed while paused.
         let turnCheckpoint: string | undefined;

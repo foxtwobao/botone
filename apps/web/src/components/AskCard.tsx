@@ -145,7 +145,10 @@ function PromptAskCard({ block, canAnswer, onAnswer, rpc = selectedSpaceRpc }: A
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const submitting = pendingAction !== null;
-  const answered = block.status === "answered" || acceptedAnswer !== undefined;
+  const answered = block.nativeRequestId
+    ? block.nativeDelivery === "delivered"
+    : block.status === "answered" || acceptedAnswer !== undefined;
+  canAnswer = canAnswer && (!block.nativeRequestId || block.nativeDelivery === "pending");
   const displayedAnswer = block.status === "answered" ? block.answer : acceptedAnswer;
   const approvalActions = isApprovalAskBlock(block) ? block.actions : undefined;
   const askActions = block.actions;
@@ -175,7 +178,7 @@ function PromptAskCard({ block, canAnswer, onAnswer, rpc = selectedSpaceRpc }: A
     setError(null);
     try {
       await onAnswer(submitValue);
-      setAcceptedAnswer(submitValue);
+      if (!block.nativeRequestId) setAcceptedAnswer(submitValue);
     } catch (err) {
       setError(errorText(err, t`Could not submit this answer`));
     } finally {
@@ -323,7 +326,11 @@ function PromptAskCard({ block, canAnswer, onAnswer, rpc = selectedSpaceRpc }: A
         </div>
       ) : !canAnswer ? (
         <div className="mt-3.5 text-body font-medium text-muted-foreground">
-          <Trans>No longer active</Trans>
+          {block.nativeDelivery === "submitted" ? (
+            <Trans>Sending…</Trans>
+          ) : (
+            <Trans>No longer active</Trans>
+          )}
         </div>
       ) : displayActions?.length ? (
         <div className="mt-3.5 flex flex-wrap gap-2">

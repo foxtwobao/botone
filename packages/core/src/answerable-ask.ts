@@ -4,7 +4,14 @@ type AskSnapshot = {
   messages: readonly {
     id: string;
     runId?: string | null;
-    blocks: readonly { kind: string; status?: string; input?: string; approvalEffectId?: string }[];
+    blocks: readonly {
+      kind: string;
+      status?: string;
+      input?: string;
+      approvalEffectId?: string;
+      nativeRequestId?: string;
+      nativeDelivery?: string;
+    }[];
   }[];
   run?: { id: string; status: string; userId?: string } | null;
   activeRuns?: readonly { id: string; status: string; userId?: string }[];
@@ -19,6 +26,19 @@ export function answerableAskMessageIds(snapshot: AskSnapshot | null): Set<strin
       .map((run) => run.id),
   );
   for (const message of snapshot.messages) {
+    if (
+      message.runId &&
+      (snapshot.activeRuns ?? (snapshot.run ? [snapshot.run] : [])).some(
+        (run) => run.id === message.runId && run.status === "running",
+      ) &&
+      message.blocks.some(
+        (block) =>
+          block.kind === "ask" && block.nativeRequestId && block.nativeDelivery === "pending",
+      )
+    ) {
+      answerable.add(message.id);
+      continue;
+    }
     if (!message.runId || !waitingRunIds.has(message.runId)) continue;
     if (message.blocks.some((block) => block.kind === "ask" && block.status !== "answered")) {
       answerable.add(message.id);

@@ -719,6 +719,10 @@ model SpaceMember {
   modelRoleChoices SpaceModelRoleChoice[]
   settingOverrides SpaceSettingOverride[]
   threadReads      ThreadRead[]
+  executionConnections  ExecutionConnection[]
+  botExecutions         BotExecution[]
+  nativeExecutions      NativeExecution[]
+  nativeInteractions    NativeInteraction[]
 
   @@unique([spaceId, userId])
   @@index([organizationId, userId])
@@ -1018,6 +1022,7 @@ model Bot {
   externalConversations ExternalConversation[]
   emailAddress      BotEmailAddress?
   emailMessages     BotEmailMessage[]
+  executionConfiguration BotExecution?
 
   @@unique([spaceId, spawnKey])
   @@index([spaceId, userId, archivedAt, pinned, updatedAt])
@@ -1172,6 +1177,7 @@ model Message {
   sourceRuns            Run[]             @relation("RunSourceMessage")
   externalTranscriptFor  ExternalMessage?
   steeringMessages SteeringMessage[]
+  nativeInteraction NativeInteraction?
   createdAt        DateTime  @default(now())
 
   @@unique([threadId, seq])
@@ -1271,6 +1277,8 @@ model Run {
   effects              ExternalEffect[]
   steeringMessages     SteeringMessage[]
   externalMessage      ExternalMessage?
+  nativeExecution      NativeExecution?
+  nativeInteractions   NativeInteraction[]
 
   @@unique([spaceId, clientNonce])
   @@index([status, wakeAt])
@@ -1851,6 +1859,7 @@ model Computer {
   maintenanceId           String?
   updates                 ComputerUpdate[]
   homeDeletionNotice      HomeDeletionNotice?
+  executionConnections    ExecutionConnection[]
 
   @@index([spaceId, scope])
   @@map("computers")
@@ -2750,4 +2759,76 @@ model CapabilityInstallSpace {
   @@id([installId, spaceId])
   @@index([spaceId, userId])
   @@map("capability_install_spaces")
+}
+
+// External execution is optional. Configuration and snapshots never contain CLI credentials.
+model ExecutionConnection {
+  id String @id @default(cuid())
+  spaceId String
+  userId String
+  member SpaceMember @relation(fields: [spaceId, userId], references: [spaceId, userId], onDelete: Cascade)
+  computerId String
+  computer Computer @relation(fields: [computerId], references: [id], onDelete: Cascade)
+  label String
+  secretRef String
+  identity String
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  configurations BotExecution[]
+  executions NativeExecution[]
+  @@index([spaceId, userId])
+  @@map("execution_connections")
+}
+
+model BotExecution {
+  botId String @id
+  bot Bot @relation(fields: [botId], references: [id], onDelete: Cascade)
+  spaceId String
+  userId String
+  member SpaceMember @relation(fields: [spaceId, userId], references: [spaceId, userId], onDelete: Cascade)
+  connectionId String
+  connection ExecutionConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  profileId String
+  revision Int
+  model String?
+  updatedAt DateTime @updatedAt
+  @@index([spaceId, userId])
+  @@map("bot_executions")
+}
+
+model NativeExecution {
+  runId String @id
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+  spaceId String
+  userId String
+  member SpaceMember @relation(fields: [spaceId, userId], references: [spaceId, userId], onDelete: Cascade)
+  connectionId String
+  connection ExecutionConnection @relation(fields: [connectionId], references: [id], onDelete: Restrict)
+  requestRef String
+  bindingKey String
+  generation String?
+  lastSequence Int @default(0)
+  sessionId String?
+  engineVersion String?
+  completed Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@index([spaceId, userId, bindingKey, createdAt])
+  @@map("native_executions")
+}
+
+model NativeInteraction {
+  id String @id
+  spaceId String
+  userId String
+  member SpaceMember @relation(fields: [spaceId, userId], references: [spaceId, userId], onDelete: Cascade)
+  runId String
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+  requestId String
+  generation String
+  messageId String @unique
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  status String @default("pending")
+  @@unique([runId, requestId])
+  @@index([spaceId, userId, runId, status])
+  @@map("native_interactions")
 }

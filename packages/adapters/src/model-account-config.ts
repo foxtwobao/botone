@@ -26,6 +26,14 @@ const schema = z.object({
   authorizationOrigins: z.array(origin).min(1).optional(),
   navigationOrigin: origin.default("https://home.agentone.work"),
   baseUrl: link.optional(),
+  defaults: z
+    .object({
+      responses: z.string().min(1).max(256).optional(),
+      "chat-completions": z.string().min(1).max(256).optional(),
+      "anthropic-messages": z.string().min(1).max(256).optional(),
+    })
+    .strict()
+    .default({}),
   // Accept the old connection envelope during upgrades; new deployments only need baseUrl.
   model: z.record(z.string(), z.unknown()).optional(),
 });
@@ -52,6 +60,7 @@ export function configuredModelAccount(value: string | undefined) {
       provider: new ResellerModelAccountProvider(config),
       credentialVersion: createHash("sha256").update(config.credential).digest("hex"),
       model,
+      defaults: config.defaults,
       navigationOrigin: config.navigationOrigin,
       serviceName: "TokenONE",
     };

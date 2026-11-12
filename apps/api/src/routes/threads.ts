@@ -26,6 +26,9 @@ import {
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
 import { releaseComputerControl } from "../computer-control.js";
+import { answerExecutionInput } from "../execution-answer.js";
+import { botsCanRunWithoutDefaultModel } from "../execution-model.js";
+import { stopThreadExecutionRuns } from "../execution-stop.js";
 import type { RouterDeps } from "../router.js";
 import { createRoutineTestRun, routineTestRunNonce, routineTestTarget } from "../routines.js";
 import { assertTeachingSendAllowed } from "../taught-skills.js";
@@ -56,7 +59,6 @@ import {
 import { mapBotSecretInputError } from "./bots.js";
 import type { RouterContext } from "./context.js";
 import {
-  botsRunOwnModels,
   computerContext,
   HEARTBEAT,
   modelSetup,
@@ -118,7 +120,7 @@ export function threadsRoutes(ctx: RouterContext) {
       target.kind === "group" ? await replyParentBotId(deps.prisma, target, input) : undefined;
     const noModel =
       setup.needsModel &&
-      !(await botsRunOwnModels(deps, actor, sendTargetBotIds(target, input, replied)));
+      !(await botsCanRunWithoutDefaultModel(deps, actor, sendTargetBotIds(target, input, replied)));
     if (noModel && !isStopMessage(input)) {
       throw new ORPCError("BAD_REQUEST", { message: MODEL_REQUIRED_SEND_ERROR });
     }
@@ -282,7 +284,7 @@ export function threadsRoutes(ctx: RouterContext) {
         // Without a model or while teaching, the reaction is still saved; it just starts no turn.
         const mayStartTurn =
           (!(await modelSetup(deps, context.actor)).needsModel ||
-            (await botsRunOwnModels(deps, context.actor, [
+            (await botsCanRunWithoutDefaultModel(deps, context.actor, [
               await reactedBotId(target, input.messageId),
             ]))) &&
           (target.kind !== "bot" ||
@@ -306,7 +308,7 @@ export function threadsRoutes(ctx: RouterContext) {
       }),
       stop: authed.threads.stop.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
-        await stopThreadRuns(deps, context.actor, target);
+        await stopThreadExecutionRuns(deps, context.actor, target);
         return { ok: true as const };
       }),
       stopHelper: authed.threads.stopHelper.handler(async ({ context, input }) => {
@@ -623,6 +625,8 @@ export function threadsRoutes(ctx: RouterContext) {
       }),
       answer: authed.threads.answer.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);
+        const native = await answerExecutionInput(deps, context.actor, target.threadId, input);
+        if (native) return native;
         const answered = await deps.events
           .answerRunInput({
             spaceId: context.actor.spaceId,

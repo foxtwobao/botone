@@ -86,6 +86,10 @@ export function computerRoutes(ctx: RouterContext) {
         if (!bot.computer) throw new IsolationError();
         if (bot.computer.state === "running" && bot.computer.providerRef) {
           try {
+            await deps.sandbox.prepare(
+              toComputerRef(bot.computer),
+              computerContext(context.actor, bot.id, "boot"),
+            );
             await ensureComputerWorkspaceLayout(
               deps.sandbox,
               toComputerRef(bot.computer),

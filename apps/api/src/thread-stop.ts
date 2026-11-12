@@ -65,6 +65,8 @@ export function cancelThreadRuns(
     | { kind: "group"; memberBotIds: string[]; threadId: string },
   note?: { botId: string },
   helperMessageId?: string,
+  /** Limit configuration changes to this bot, including in shared group threads. */
+  onlyBotId?: string,
 ) {
   // Background helpers this chat started work in threads of their own.
   const helpers = {
@@ -79,6 +81,7 @@ export function cancelThreadRuns(
           ? { ...helpers, sourceMessageId: helperMessageId }
           : { OR: [{ threadId: target.threadId }, helpers] }),
         status: { in: [...ACTIVE_RUN_STATUSES] },
+        ...(onlyBotId ? { botId: onlyBotId } : {}),
       },
       data: { status: "cancelled", completedAt: new Date() },
       select: {

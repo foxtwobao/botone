@@ -5,12 +5,14 @@ import type { AppEnv } from "./env.js";
 import { modelAccountRoutes } from "./model-account.js";
 import type { ModelAccountEnv } from "./model-account-env.js";
 
-type AccountEnv = ModelAccountEnv &
-  Pick<
+type AccountEnv = ModelAccountEnv & { encryptionKey?: string } & Pick<
     AppEnv,
     "oidc" | "stripeSecretKey" | "stripeWebhookSecret" | "agentRuntime" | "webOrigin" | "authUrl"
   >;
-type Runtime = Pick<Parameters<typeof modelAccountRoutes>[0], "prisma" | "auth" | "secrets">;
+type Runtime = Pick<
+  Parameters<typeof modelAccountRoutes>[0],
+  "prisma" | "auth" | "secrets" | "sandbox"
+>;
 
 /** Validate before billing starts, then mount once the app's runtime dependencies exist. */
 export function createModelAccountFeature(env: AccountEnv, billingOverride?: BillingProvider) {
@@ -32,6 +34,7 @@ export function createModelAccountFeature(env: AccountEnv, billingOverride?: Bil
           issuer: env.oidc?.issuer,
           webOrigin: env.webOrigin,
           authUrl: env.authUrl,
+          initializationKey: env.encryptionKey,
         }),
       );
     },

@@ -26,6 +26,7 @@ import { BotAvatar } from "../components/bot-avatar";
 import { BotContextCards } from "../components/bot-context-cards";
 import { BotLookPicker } from "../components/bot-look-picker";
 import { ComputerModePicker } from "../components/computer-mode-picker";
+import { ExecutionSettings } from "../components/execution-settings";
 import { glassHeaderOptions } from "../components/glass-title";
 import { GrowingTextInput } from "../components/growing-text-input";
 import type { MenuPickerChoice } from "../components/menu-picker";
@@ -607,7 +608,7 @@ export default function BotSettingsScreen() {
                 scrollRef.current?.scrollTo({ y: modelY.current, animated: true });
             }}
           >
-            <SettingsGroup label={t`Model`} footer={modelMetaError ?? undefined}>
+            <ExecutionSettings botId={botId!} label={t`Model`} footer={modelMetaError ?? undefined}>
               <MenuPicker
                 choices={modelChoices}
                 label={t`Model`}
@@ -632,7 +633,7 @@ export default function BotSettingsScreen() {
                   value={thinkingLevel}
                 />
               ) : null}
-            </SettingsGroup>
+            </ExecutionSettings>
             <SettingsGroup label={t`Computer`}>
               <View style={styles.cardContent}>
                 <ComputerModePicker plain value={computerMode} onChange={setComputerMode} />

@@ -35,13 +35,13 @@ import {
   ComputerGroup,
   DescriptionGroup,
   ExportAndClear,
-  ModelSection,
   NotificationsSection,
   PermissionsGroup,
   RepliesGroup,
   ToolsGroup,
   VoiceGroup,
 } from "./bot-settings-sections";
+import { ExecutionModelSection as ModelSection } from "./execution-model-section";
 
 const ScratchpadSection = lazyComponent(() =>
   import("../ScratchpadSection").then((module) => module.ScratchpadSection),
@@ -573,6 +573,7 @@ export function BotSettings({
           </ErrorBoundary>
           <div className="space-y-6 pt-6">
             <ModelSection
+              botId={bot.id}
               ids={ids}
               containerRef={modelRef}
               onOpenConnections={onOpenConnections}

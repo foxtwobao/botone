@@ -131,6 +131,9 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     kind: z.literal("ask"),
     text: z.string(),
     approvalEffectId: Id.optional(),
+    nativeRequestId: z.string().optional(),
+    nativeKind: z.enum(["permission", "question"]).optional(),
+    nativeDelivery: z.enum(["pending", "submitted", "delivered", "expired"]).optional(),
     instructionUpdate: z
       .object({
         botId: Id,
