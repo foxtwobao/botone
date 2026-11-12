@@ -21,13 +21,13 @@ export function validateComputerTarget(
 ) {
   const labels = computer.Config.Labels;
   const user = /^(\d+):(\d+)$/.exec(computer.Config.User);
-  const env = Object.fromEntries(
+  const computerEnvironment = Object.fromEntries(
     computer.Config.Env.map((entry) => {
       const index = entry.indexOf("=");
       return [entry.slice(0, index), entry.slice(index + 1)];
     }),
   );
-  const home = env.HOME;
+  const home = computerEnvironment.HOME;
   const mount = computer.Mounts.find((mount) => mount.Destination === home && mount.RW);
   if (
     labels["rakazo.managed"] !== "true" ||
@@ -45,7 +45,13 @@ export function validateComputerTarget(
     computer.HostConfig.PidMode === "host"
   )
     throw new Error("computer_execution_not_authorized");
-  return { uid: Number(user[1]), gid: Number(user[2]), home, source: mount.Source, env };
+  return {
+    uid: Number(user[1]),
+    gid: Number(user[2]),
+    home,
+    source: mount.Source,
+    env: computerEnvironment,
+  };
 }
 
 export async function resolveComputerTarget(
@@ -97,6 +103,7 @@ export async function resolveComputerTarget(
   const env = Object.fromEntries(
     Object.entries(account.env).filter(([key]) => allowed.has(key) || key.startsWith("XDG_")),
   );
+  const { PATH: computerPath } = account.env;
   return {
     ...account,
     source,
@@ -105,7 +112,7 @@ export async function resolveComputerTarget(
     env: {
       ...env,
       HOME: account.home,
-      PATH: `${account.home}/.local/bin:${account.env.PATH || "/usr/local/bin:/usr/bin:/bin"}`,
+      PATH: `${account.home}/.local/bin:${computerPath || "/usr/local/bin:/usr/bin:/bin"}`,
     },
   };
 }

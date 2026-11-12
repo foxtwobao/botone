@@ -3,13 +3,14 @@ export const computerInitializationProgram = String.raw`
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
+const computerEnvironment=process.env;
 const marker='# managed-computer-model-connection-v1';
-const root=path.join(process.env.HOME,'.local/share/computer-model-connection');
-const bin=path.join(process.env.HOME,'.local/bin');
+const root=path.join(computerEnvironment.HOME,'.local/share/computer-model-connection');
+const bin=path.join(computerEnvironment.HOME,'.local/bin');
 async function directory(dir){
-  const relative=path.relative(process.env.HOME,dir);
+  const relative=path.relative(computerEnvironment.HOME,dir);
   if(relative.startsWith('..')||path.isAbsolute(relative))throw Error('unsafe_path');
-  let current=process.env.HOME;
+  let current=computerEnvironment.HOME;
   for(const part of relative.split(path.sep).filter(Boolean)){
     current=path.join(current,part);
     try{await fs.mkdir(current,{mode:0o700})}catch(e){if(e.code!=='EEXIST')throw e}
@@ -40,8 +41,8 @@ async function connection(grant){
   return value;
 }
 async function main(){
-  if(process.env.COMPUTER_MODEL_INITIALIZATION){
-    const grant=JSON.parse(process.env.COMPUTER_MODEL_INITIALIZATION);
+  if(computerEnvironment.COMPUTER_MODEL_INITIALIZATION){
+    const grant=JSON.parse(computerEnvironment.COMPUTER_MODEL_INITIALIZATION);
     await directory(root);await directory(bin);
     await fs.chmod(root,0o700);
     // User launchers are never replaced. Other engines can still be initialized.
@@ -57,7 +58,7 @@ async function main(){
       managed.push(entry);
     }
     await write(path.join(root,'grant.json'),JSON.stringify(grant));
-    await write(script,process.env.COMPUTER_MODEL_PROGRAM);
+    await write(script,computerEnvironment.COMPUTER_MODEL_PROGRAM);
     for(const entry of managed)await write(entry.file,entry.content,0o700);
     return;
   }
@@ -67,7 +68,7 @@ async function main(){
   // Local inspection and help do not need a model account or network.
   const inspect=args.some(arg=>['--help','--version','-V','-h'].includes(arg))||
     ['login','logout','auth'].includes(args[0]);
-  let launch=args,env={...process.env},overlay;
+  let launch=args,childEnvironment={...computerEnvironment},overlay;
   if(!inspect){
     const grant=JSON.parse(await fs.readFile(path.join(root,'grant.json'),'utf8'));
     const config=await connection(grant),defaults=config.defaults;
@@ -78,14 +79,14 @@ async function main(){
       launch=['-c','model_provider="managed"','-c',
         'model_providers.managed={name="Model connection",base_url='+JSON.stringify(config.baseUrl)+',wire_api="responses",env_key="OPENAI_API_KEY"}',
         ...(model?['-c','model='+JSON.stringify(model)]:[]),...args];
-      env.OPENAI_API_KEY=config.apiKey;
+      childEnvironment.OPENAI_API_KEY=config.apiKey;
     }else if(engine==='claude'){
-      env.ANTHROPIC_BASE_URL=config.baseUrl.replace(/\/v1\/?$/,'');
-      env.ANTHROPIC_AUTH_TOKEN=config.apiKey;
-      delete env.ANTHROPIC_API_KEY;
-      for(const key of ['CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY'])delete env[key];
+      childEnvironment.ANTHROPIC_BASE_URL=config.baseUrl.replace(/\/v1\/?$/,'');
+      childEnvironment.ANTHROPIC_AUTH_TOKEN=config.apiKey;
+      delete childEnvironment.ANTHROPIC_API_KEY;
+      for(const key of ['CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY'])delete childEnvironment[key];
       const model=defaults['anthropic-messages'];
-      if(model){env.ANTHROPIC_MODEL=model;for(const tier of ['HAIKU','SONNET','OPUS'])env['ANTHROPIC_DEFAULT_'+tier+'_MODEL']=model}
+      if(model){childEnvironment.ANTHROPIC_MODEL=model;for(const tier of ['HAIKU','SONNET','OPUS'])childEnvironment['ANTHROPIC_DEFAULT_'+tier+'_MODEL']=model}
     }else{
       const model=defaults['chat-completions'];
       if(!model)throw Error('model_unavailable');
@@ -94,11 +95,11 @@ async function main(){
       // Each process owns its overlay; concurrent launches cannot change a running profile.
       overlay=path.join(root,'overlay-'+process.pid+'.json');
       await write(overlay,JSON.stringify(patch));
-      launch=['--patch',overlay,...args];env.OPENAI_API_KEY=config.apiKey;
+      launch=['--patch',overlay,...args];childEnvironment.OPENAI_API_KEY=config.apiKey;
     }
   }
   try{
-    const child=spawn(executable,launch,{env,stdio:'inherit'});
+    const child=spawn(executable,launch,{env:childEnvironment,stdio:'inherit'});
     for(const signal of ['SIGINT','SIGTERM','SIGHUP'])process.on(signal,()=>child.kill(signal));
     process.exitCode=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',(code,signal)=>resolve(code??(signal?128:1)))});
   }finally{if(overlay)await fs.rm(overlay,{force:true})}
