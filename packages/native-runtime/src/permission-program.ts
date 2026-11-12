@@ -1,3 +1,5 @@
+/** Stdio MCP proxy, delivered with the protocol adapter into the computer. */
+export const permissionProgram = String.raw`
 // Adapted from OpenMausBot server/permission-proxy.ts (Apache-2.0). See NOTICE.md.
 // Stdio is exclusively MCP. This proxy has no application credentials.
 import { randomUUID } from "node:crypto";
@@ -7,7 +9,7 @@ import { createInterface } from "node:readline";
 const socketPath = process.argv[2];
 const mode = process.argv[3] ?? "permissions";
 const definitions = mode === "tools" ? JSON.parse(process.argv[4]) : null;
-const send = (frame) => process.stdout.write(`${JSON.stringify(frame)}\n`);
+const send = (frame) => process.stdout.write(JSON.stringify(frame) + "\n");
 const broker = (tool, input) =>
   new Promise((resolve) => {
     const id = randomUUID();
@@ -24,7 +26,7 @@ const broker = (tool, input) =>
       socket.destroy();
       resolve(answer);
     };
-    socket.once("connect", () => socket.write(`${JSON.stringify({ id, tool, input, mode })}\n`));
+    socket.once("connect", () => socket.write(JSON.stringify({ id, tool, input, mode }) + "\n"));
     reader.on("line", (line) => {
       try {
         const message = JSON.parse(line);
@@ -88,3 +90,4 @@ reader.on("line", (line) => {
       });
   })().catch(() => process.exit(1));
 });
+`;

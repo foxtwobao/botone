@@ -1,4 +1,5 @@
 import type { NativeExecutionScope, NativeExecutionStart } from "@rakazo/adapter-kit";
+import { computerMcpServer } from "./bridge-tools.js";
 import type { HarnessProcess } from "./driver.js";
 
 export const scope: NativeExecutionScope = {
@@ -24,6 +25,8 @@ export function startRequest(overrides: Partial<NativeExecutionStart> = {}): Nat
 }
 
 export class FakeHarnessProcess implements HarnessProcess {
+  readonly workspace = "/workspace";
+  readonly mcpServer = computerMcpServer("/tmp/fixture.sock");
   readonly sent: Record<string, unknown>[] = [];
   stopped = false;
   private line: (line: string) => void = () => {};

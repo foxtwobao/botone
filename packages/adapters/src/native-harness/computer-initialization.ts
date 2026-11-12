@@ -1,9 +1,9 @@
 import type { SandboxProvider } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { computerInitializationProgram } from "@rakazo/native-runtime/initialization-program";
 import { personalComputerWhere } from "./computer-access.js";
 import { computerInitializationGrant } from "./initialization-auth.js";
-import { computerInitializationProgram } from "./initialization-program.js";
 
 export interface ComputerInitializationConnection {
   url: string;

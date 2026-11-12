@@ -15,6 +15,7 @@ import type {
   WorkspaceDirectoryRequest,
   WorkspaceExportLimits,
 } from "@rakazo/adapter-kit";
+import { supportsComputerExecution } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { runAsSystem } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
@@ -164,6 +165,13 @@ export class HostAwareSandbox implements SandboxProvider {
 
   private route(computer: Pick<ComputerRef, "kind">) {
     return computer.kind === "desktop" ? this.host : this.isolated;
+  }
+
+  async execution(computer: ComputerRef, context: AdapterContext, identity?: string) {
+    const provider = this.route(computer);
+    return supportsComputerExecution(provider)
+      ? provider.execution(computer, context, identity)
+      : undefined;
   }
 
   async provisionKind() {

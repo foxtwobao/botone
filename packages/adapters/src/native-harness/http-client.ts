@@ -4,9 +4,9 @@ import type {
   NativeExecutionStart,
 } from "@rakazo/adapter-kit";
 import { ExecutionModelsSchema } from "@rakazo/contracts";
+import { executionSnapshotSchema } from "@rakazo/native-runtime/wire";
 import { z } from "zod";
-import { fetchSafeHttpRequest, readBodyCapped } from "../web-ssrf.js";
-import { executionSnapshotSchema } from "./wire.js";
+import { readBodyCapped } from "../web-ssrf.js";
 
 export const executionServiceDescriptionSchema = z.object({
   id: z.string().uuid(),
@@ -48,7 +48,8 @@ export class HttpNativeExecutionProvider implements NativeExecutionProvider {
       token: string;
       identity?: string;
       scope?: { spaceId: string; userId: string; computerId: string };
-      allowPrivateEndpoint?: boolean;
+      path: string;
+      headers?: Record<string, string>;
     },
   ) {
     this.baseUrl = new URL(connection.url);
@@ -60,16 +61,14 @@ export class HttpNativeExecutionProvider implements NativeExecutionProvider {
       this.baseUrl.pathname !== "/"
     )
       throw new Error("Invalid execution service address");
-    if (
-      this.baseUrl.protocol !== "https:" &&
-      !(connection.allowPrivateEndpoint && this.baseUrl.protocol === "http:")
-    )
-      throw new Error("Execution service requires HTTPS");
+    if (this.baseUrl.protocol !== "https:" && this.baseUrl.protocol !== "http:")
+      throw new Error("Invalid execution service protocol");
   }
 
   private async call(route: string, body?: unknown, signal?: AbortSignal) {
-    const url = new URL(route, this.baseUrl).href;
+    const url = new URL(`${this.connection.path}${route}`, this.baseUrl).href;
     const headers = {
+      ...this.connection.headers,
       authorization: `Bearer ${this.connection.token}`,
       "content-type": "application/json",
       "x-execution-service-id": this.connection.identity ?? "",
@@ -82,41 +81,31 @@ export class HttpNativeExecutionProvider implements NativeExecutionProvider {
         : {}),
     };
     const deadline = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(15_000)]);
-    if (this.connection.allowPrivateEndpoint) {
-      const result = await fetch(url, {
-        method: body === undefined ? "GET" : "POST",
-        headers,
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        redirect: "error",
-        signal: deadline,
-      });
-      if (!result.ok) {
-        await result.body?.cancel();
-        throw new Error("execution_service_rejected");
-      }
-      return JSON.parse(
-        Buffer.from(await readBodyCapped(result, 5 * 1024 * 1024, deadline)).toString("utf8"),
-      );
+    // The computer provider supplies this trusted Supervisor endpoint.
+    const result = await fetch(url, {
+      method: body === undefined ? "GET" : "POST",
+      headers,
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      redirect: "error",
+      signal: deadline,
+    });
+    if (!result.ok) {
+      await result.body?.cancel();
+      throw new Error("execution_service_rejected");
     }
-    const result = await fetchSafeHttpRequest(
-      url,
-      {
-        method: body === undefined ? "GET" : "POST",
-        headers,
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      },
-      {
-        maxBytes: 5 * 1024 * 1024,
-        signal: deadline,
-        allowedPorts: [Number(this.baseUrl.port || 443)],
-      },
+    return JSON.parse(
+      Buffer.from(await readBodyCapped(result, 5 * 1024 * 1024, deadline)).toString("utf8"),
     );
-    if (result.status !== 200 || result.truncated) throw new Error("execution_service_rejected");
-    return JSON.parse(Buffer.from(result.body).toString("utf8"));
   }
 
   async describe(signal?: AbortSignal) {
-    return executionServiceDescriptionSchema.parse(await this.call("/describe", undefined, signal));
+    const description = executionServiceDescriptionSchema.parse(
+      await this.call("/describe", undefined, signal),
+    );
+    if (this.connection.identity && description.id !== this.connection.identity)
+      throw new Error("execution_identity_changed");
+    this.connection.identity ??= description.id;
+    return description;
   }
   async toolResult(
     request: NativeExecutionControl & { requestId: string; result: string },

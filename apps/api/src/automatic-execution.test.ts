@@ -1,4 +1,3 @@
-import { createServer } from "node:http";
 import { EncryptedSecretStore } from "@rakazo/adapters";
 import type { Actor } from "@rakazo/contracts";
 import type { ExecutionConnection } from "@rakazo/db";
@@ -23,22 +22,6 @@ it("automatically binds an ordinary user's computer once, keeps revocation and s
     owned = true,
     available = true;
   const rows = new Map<string, ExecutionConnection>();
-  const server = createServer((request, response) => {
-    expect(request.url).toBe("/describe");
-    expect(request.headers.authorization).toBe(`Bearer ${"a".repeat(64)}`);
-    expect(
-      JSON.parse(Buffer.from(String(request.headers["x-execution-scope"]), "base64url").toString()),
-    ).toEqual({ spaceId: actor.spaceId, userId: actor.userId, computerId: "fixture-computer" });
-    if (!available) {
-      response.writeHead(503).end();
-      return;
-    }
-    response.end(JSON.stringify({ id: installation, profiles: [] }));
-  });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  cleanups.push(() => new Promise<void>((resolve) => server.close(() => resolve())));
-  const address = server.address();
-  if (!address || typeof address === "string") throw new Error("test_server");
   const secrets = new EncryptedSecretStore("fake-encryption-key");
   const put = vi.spyOn(secrets, "put");
   const upsert = vi.fn(async ({ where, create }) => {
@@ -51,15 +34,22 @@ it("automatically binds an ordinary user's computer once, keeps revocation and s
   });
   const deps = {
     secrets,
-    env: {
-      executionConnection: JSON.stringify({
-        url: `http://127.0.0.1:${address.port}`,
-        token: "a".repeat(64),
-        allowPrivateEndpoint: true,
+    sandbox: {
+      execution: async () => ({
+        describe: async () => {
+          if (!available) throw new Error("offline");
+          return { id: installation, profiles: [] };
+        },
       }),
     },
     prisma: {
-      computer: { findFirst: vi.fn(async () => (owned ? { id: "fixture-computer" } : null)) },
+      computer: {
+        findFirst: vi.fn(async () =>
+          owned
+            ? { id: "fixture-computer", providerRef: "container", kind: "docker", homeKey: "home" }
+            : null,
+        ),
+      },
       executionConnection: {
         findUnique: vi.fn(async ({ where }) => rows.get(where.id)),
         upsert,
@@ -67,6 +57,15 @@ it("automatically binds an ordinary user's computer once, keeps revocation and s
       },
     },
   } as unknown as RouterDeps;
+  vi.mocked(deps.prisma.computer.findFirst).mockResolvedValueOnce({
+    id: "fixture-computer",
+    providerRef: null,
+  } as never);
+  expect(await ensureAutomaticExecution(deps, actor, "fixture-computer")).toMatchObject({
+    online: false,
+    profiles: [],
+  });
+  expect(rows.size).toBe(0);
   available = false;
   expect(await ensureAutomaticExecution(deps, actor, "fixture-computer")).toMatchObject({
     online: false,
@@ -87,7 +86,7 @@ it("automatically binds an ordinary user's computer once, keeps revocation and s
     computerId: "fixture-computer",
   });
   const stored = JSON.parse(await secrets.load(row.secretRef, row.id));
-  expect(stored.scope).toEqual({
+  expect(stored).toEqual({
     spaceId: actor.spaceId,
     userId: actor.userId,
     computerId: "fixture-computer",

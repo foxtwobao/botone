@@ -14,6 +14,7 @@ import type {
   WorkspaceDirectoryRequest,
   WorkspaceExportLimits,
 } from "@rakazo/adapter-kit";
+import { supportsComputerExecution } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { runAsSystem } from "@rakazo/db";
 import { cancelComputerRunWork, probeBackgroundWork, providerKeepsHome } from "./computer-idle.js";
@@ -330,6 +331,13 @@ export class ConfiguredSandbox implements SandboxProvider {
     return (
       this.selection.provider !== "default" && this.selected ? this.selected : this.primary
     ).describe();
+  }
+
+  async execution(computer: ComputerRef, context: AdapterContext, identity?: string) {
+    const provider = await this.route(computer);
+    return supportsComputerExecution(provider)
+      ? provider.execution(computer, context, identity)
+      : undefined;
   }
 
   async provisionKind(homeKey?: string): Promise<ComputerRef["kind"]> {

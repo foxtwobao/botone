@@ -1,19 +1,13 @@
 import type { NativeExecutionStart } from "@rakazo/adapter-kit";
-import { platformMcpServer } from "./bridge-tools.js";
-import type { ComputerTarget } from "./computer-target.js";
-
-export interface ComputerExecutionProfile {
-  engine: "codex" | "claude" | "deepseek";
-  computer: ComputerTarget;
-  modelConnection?: { url: string; apiKey: string; model: string };
-  initialization?: { url: string; token: string };
-}
+import { computerMcpServer } from "./bridge-tools.js";
 
 export function nativeLaunchArguments(
-  profile: ComputerExecutionProfile,
+  engine: "codex" | "claude" | "deepseek",
   request: NativeExecutionStart,
+  socket: string,
 ) {
-  switch (profile.engine) {
+  const platformMcpServer = computerMcpServer(socket);
+  switch (engine) {
     case "codex":
       return [
         "codex",
@@ -25,16 +19,6 @@ export function nativeLaunchArguments(
         "remote_plugin",
         "-c",
         `mcp_servers={platform={command=${JSON.stringify(platformMcpServer.command)},args=${JSON.stringify(platformMcpServer.args)}}}`,
-        ...(profile.modelConnection
-          ? [
-              "-c",
-              'model_provider="granted"',
-              "-c",
-              `model_providers.granted={name="Granted connection",base_url=${JSON.stringify(profile.modelConnection.url)},wire_api="responses",env_key="OPENAI_API_KEY"}`,
-              "-c",
-              `model=${JSON.stringify(profile.modelConnection.model)}`,
-            ]
-          : []),
         "app-server",
       ];
     case "deepseek":
@@ -44,8 +28,8 @@ export function nativeLaunchArguments(
         mcpServers: {
           platform: { command: platformMcpServer.command, args: platformMcpServer.args },
           permissions: {
-            command: "/usr/bin/node",
-            args: ["/run/harness/permission-proxy.mjs", "/run/harness/broker/permissions.sock"],
+            command: computerMcpServer(socket, "permissions").command,
+            args: computerMcpServer(socket, "permissions").args,
           },
         },
       });
@@ -70,9 +54,7 @@ export function nativeLaunchArguments(
         "--setting-sources",
         "",
         ...(request.session ? ["--resume", request.session.id] : []),
-        ...(request.model || profile.modelConnection
-          ? ["--model", request.model ?? profile.modelConnection!.model]
-          : []),
+        ...(request.model ? ["--model", request.model] : []),
       ];
     }
   }

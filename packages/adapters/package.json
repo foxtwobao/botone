@@ -51,6 +51,7 @@
     "@rakazo/core": "workspace:*",
     "@rakazo/db": "workspace:*",
     "@rakazo/logging": "workspace:*",
+    "@rakazo/native-runtime": "workspace:*",
     "@rakazo/page-kit": "workspace:*",
     "@stripe/link-sdk": "0.15.0",
     "chat": "4.44.0",

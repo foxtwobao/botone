@@ -1,9 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { ORPCError } from "@orpc/server";
-import { createAdapterContext } from "@rakazo/adapter-kit";
-import { executionConnectionClient, HttpNativeExecutionProvider } from "@rakazo/adapters";
+import { executionConnectionClient } from "@rakazo/adapters";
 import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
-import { isAdmin } from "../admins.js";
 import { ensureAutomaticExecution } from "../automatic-execution.js";
 import { stopBotExecutionRuns } from "../execution-stop.js";
 import type { RouterContext } from "./context.js";
@@ -41,7 +38,12 @@ export function executionRoutes({ deps, authed }: RouterContext) {
               label: connection.label,
             };
             try {
-              const client = await executionConnectionClient(deps.secrets, connection);
+              const client = await executionConnectionClient(
+                deps.secrets,
+                connection,
+                deps.sandbox,
+                deps.prisma,
+              );
               const description = await client.describe();
               if (description.id !== connection.identity)
                 throw new Error("execution_identity_changed");
@@ -63,57 +65,6 @@ export function executionRoutes({ deps, authed }: RouterContext) {
         return pending && !views.some((view) => view.id === pending.id)
           ? [...views, pending]
           : views;
-      }),
-      connect: authed.executions.connect.handler(async ({ context: { actor }, input }) => {
-        if (!(await isAdmin(deps, actor.userId))) throw new ORPCError("FORBIDDEN");
-        const bot = await ownedBot(actor, input.botId);
-        const computer = await deps.prisma.computer.findFirst({
-          where: { id: bot.computerId ?? "", spaceId: actor.spaceId },
-        });
-        if (!computer) throw new ORPCError("NOT_FOUND");
-        const client = new HttpNativeExecutionProvider({
-          url: input.url,
-          token: input.token,
-          allowPrivateEndpoint: input.privateEndpoint,
-        });
-        const description = await client.describe().catch(() => {
-          throw new ORPCError("BAD_REQUEST", { message: "Execution service is unavailable" });
-        });
-        if (
-          !description.profiles.some(
-            (p) =>
-              p.spaceId === actor.spaceId &&
-              p.computerId === computer.id &&
-              p.userIds.includes(actor.userId),
-          )
-        )
-          throw new ORPCError("FORBIDDEN");
-        const id = randomUUID();
-        const secret = await deps.secrets.put(
-          JSON.stringify({
-            url: input.url,
-            token: input.token,
-            allowPrivateEndpoint: input.privateEndpoint,
-          }),
-          createAdapterContext(actor, "", id),
-          { recordId: id },
-        );
-        try {
-          await deps.prisma.executionConnection.create({
-            data: {
-              id,
-              ...owner(actor),
-              computerId: computer.id,
-              label: input.label,
-              secretRef: secret.ref,
-              identity: description.id,
-            },
-          });
-        } catch (error) {
-          await deps.secrets.delete(secret.ref, id);
-          throw error;
-        }
-        return { id };
       }),
       revoke: authed.executions.revoke.handler(async ({ context: { actor }, input }) => {
         const changed = await deps.prisma.executionConnection.updateMany({
@@ -155,7 +106,7 @@ export function executionRoutes({ deps, authed }: RouterContext) {
           });
           if (!connection) throw new ORPCError("NOT_FOUND");
           const description = await (
-            await executionConnectionClient(deps.secrets, connection)
+            await executionConnectionClient(deps.secrets, connection, deps.sandbox, deps.prisma)
           ).describe();
           if (
             description.id !== connection.identity ||

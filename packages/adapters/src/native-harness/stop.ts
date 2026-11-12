@@ -1,14 +1,19 @@
-import type { SecretStore } from "@rakazo/adapter-kit";
+import type { SandboxProvider, SecretStore } from "@rakazo/adapter-kit";
 import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { runAsSystem } from "@rakazo/db";
+import { executionStartSchema } from "@rakazo/native-runtime/wire";
 import { updateNativeInteraction } from "./answers.js";
 import { executionConnectionClient } from "./connection.js";
-import { executionStartSchema } from "./wire.js";
 
 /** The caller has authorized Stop on this thread. No private connection data is returned. */
 export async function stopNativeThreadRuns(
-  deps: { prisma: PrismaClient; secrets: SecretStore; events: ThreadEvents },
+  deps: {
+    prisma: PrismaClient;
+    secrets: SecretStore;
+    events: ThreadEvents;
+    sandbox?: SandboxProvider;
+  },
   spaceId: string,
   threadId: string,
   onlyBotId?: string,
@@ -37,10 +42,15 @@ export async function stopNativeThreadRuns(
           },
         });
         // A revoked connection remains usable only to terminate its own processes.
-        const client = await executionConnectionClient(deps.secrets, {
-          ...connection,
-          revokedAt: null,
-        });
+        const client = await executionConnectionClient(
+          deps.secrets,
+          {
+            ...connection,
+            revokedAt: null,
+          },
+          deps.sandbox,
+          deps.prisma,
+        );
         const scope = saved
           ? executionStartSchema.parse(
               JSON.parse(await deps.secrets.load(saved.requestRef, run.id)),

@@ -5,6 +5,8 @@ WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .pnpmfile.cjs ./
 COPY patches patches
 COPY packages/contracts packages/contracts
+COPY packages/adapter-kit packages/adapter-kit
+COPY packages/native-runtime packages/native-runtime
 COPY packages/core packages/core
 COPY packages/ui-tokens packages/ui-tokens
 COPY packages/logging packages/logging

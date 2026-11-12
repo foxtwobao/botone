@@ -9,8 +9,11 @@ import { NativeHarnessExecutionService } from "./service.js";
 
 const cleanup: Array<() => void | Promise<void>> = [];
 it("records stop before dispatch and never launches the stopped run", async () => {
-  const { service, processes } = fixture();
+  const { service, processes, profiles } = fixture();
+  const admitted = [...profiles];
+  service.replaceComputerProfiles(scope.computerId, []);
   await service.stop({ runId: "run-a", scope, fence: 1 });
+  service.replaceComputerProfiles(scope.computerId, admitted);
   await expect(service.start(startRequest())).rejects.toThrow("execution_conflict");
   expect(processes).toHaveLength(0);
 });
@@ -249,4 +252,46 @@ describe("native execution lifecycle", () => {
     });
     expect(f.processes[0]?.stopped).toBe(true);
   });
+});
+
+it("contains cleanup rejection and leaves explicit stop unconfirmed", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "native-cleanup-test-"));
+  cleanup.push(() => rmSync(root, { recursive: true, force: true }));
+  const process = new FakeHarnessProcess();
+  process.stop = async () => {
+    throw new Error("computer_stop_unconfirmed");
+  };
+  const service = new NativeHarnessExecutionService(root, [
+    {
+      id: scope.profileId,
+      revision: 1,
+      spaceId: scope.spaceId,
+      userIds: [scope.userId],
+      computerId: scope.computerId,
+      engineVersion: "test",
+      launch: async () => process,
+      driver: (_process, _version, emit) => ({
+        capabilities: {
+          images: false,
+          resume: false,
+          steer: false,
+          permissions: false,
+          questions: false,
+          tools: false,
+        },
+        start: async () => {
+          emit({ type: "failed", code: "process_lost" });
+        },
+        cancel: async () => {},
+        respond: async () => false,
+        steer: async () => false,
+      }),
+    },
+  ]);
+  await service.start(startRequest());
+  await tick();
+  await expect(service.stop({ runId: "run-a", scope, fence: 1 })).rejects.toThrow(
+    "computer_stop_unconfirmed",
+  );
+  await expect(service.close()).rejects.toThrow("computer_stop_unconfirmed");
 });

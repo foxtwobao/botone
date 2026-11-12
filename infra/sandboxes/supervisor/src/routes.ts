@@ -65,6 +65,7 @@ import {
   managedContainer,
 } from "./identity.js";
 import { withBotLifecycleLock, withComputerScreenLock, withSpaceComputerLock } from "./locks.js";
+import { registerNativeExecution } from "./native-execution.js";
 import {
   computerNetworkName,
   ensureBotNetwork,
@@ -143,6 +144,8 @@ app.use("/computers/*", async (c, next) => {
 });
 app.use("/computers", limitSupervisorRequestBody);
 app.use("/computers/*", limitSupervisorRequestBody);
+
+export const closeNativeExecution = registerNativeExecution(app);
 
 app.post("/computers", async (c) => {
   const headers = identityHeaders(c);

@@ -193,6 +193,7 @@ export const createCodexDriver: HarnessDriverFactory = (process, version, emit) 
       await rpc.notify("initialized", {});
       const params = {
         developerInstructions: request.instructions,
+        cwd: process.workspace,
         approvalPolicy: "never",
         sandbox: "workspace-write",
         ...(request.model ? { model: request.model } : {}),
@@ -215,7 +216,7 @@ export const createCodexDriver: HarnessDriverFactory = (process, version, emit) 
           // Reapply on every turn, including sessions created with an older approval policy.
           approvalPolicy: "never",
           sandboxPolicy: {
-            // launchComputerHarness already isolates filesystem, processes, and network.
+            // The selected computer already isolates filesystem, processes, and network.
             type: "externalSandbox",
             networkAccess: "enabled",
           },

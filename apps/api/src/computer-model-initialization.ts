@@ -1,12 +1,8 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import type { SandboxProvider, SecretStore } from "@rakazo/adapter-kit";
 import { createAdapterContext } from "@rakazo/adapter-kit";
 import type { configuredModelAccount, ExternalAccountIdentity } from "@rakazo/adapters";
 import {
-  computerInitializationGrant,
-  configuredExecutionConnection,
   discoverModelAccountModels,
-  executionOwnerSchema,
   personalComputerWhere,
   readComputerInitializationGrant,
   toComputerRef,
@@ -47,7 +43,6 @@ export function mountComputerModelInitialization(
   app: Hono,
   deps: {
     key?: string;
-    executionConnection?: string;
     authUrl?: string;
     connection: ReturnType<typeof configuredModelAccount>;
     prisma: PrismaClient;
@@ -57,70 +52,6 @@ export function mountComputerModelInitialization(
     fetch?: typeof fetch;
   },
 ) {
-  const execution = configuredExecutionConnection(deps.executionConnection);
-  // Only the trusted execution service can discover computer grants. Never expose this to browsers.
-  app.post("/environment", async (c) => {
-    if (!execution || !deps.key || !deps.connection || !deps.authUrl)
-      return c.json({ error: "disabled" }, 404);
-    const expected = Buffer.from(`Bearer ${execution.token}`);
-    const supplied = Buffer.from(c.req.header("authorization") ?? "");
-    if (
-      c.req.header("origin") ||
-      expected.length !== supplied.length ||
-      !timingSafeEqual(expected, supplied)
-    )
-      throw new HTTPException(401, { message: "invalid_grant" });
-    const scope = executionOwnerSchema.parse(await c.req.json());
-    if (await accountDeactivated(deps.prisma, scope.userId))
-      throw new HTTPException(403, { message: "authorization_required" });
-    await requireMembership(deps.prisma, scope.userId, scope.spaceId);
-    const computer = await deps.prisma.computer.findFirst({
-      where: { id: scope.computerId, ...personalComputerWhere(scope) },
-    });
-    if (!computer) throw new HTTPException(403, { message: "computer_unavailable" });
-    const identity = await deps.identity(scope.userId);
-    const credential = await deps.prisma.userModelCredential.findFirst({
-      where: { id: `external-${identity.accountId}`, userId: scope.userId },
-    });
-    const stored =
-      credential &&
-      (await deps.prisma.secret.findFirst({
-        where: { id: credential.secretId, userId: scope.userId },
-      }));
-    if (!credential || !stored) throw new HTTPException(401, { message: "authorization_required" });
-    const parsed = parseModelAccountSecret(await deps.secrets.load(stored.ciphertext, stored.id));
-    if (
-      parsed.binding?.accountId !== identity.accountId ||
-      parsed.binding.binding !== identity.binding ||
-      parsed.secret.kind !== "openai_compatible" ||
-      !parsed.secret.apiKey ||
-      parsed.secret.baseUrl !== deps.connection.model.baseUrl
-    )
-      throw new HTTPException(401, { message: "authorization_required" });
-    const createdAt = credential.createdAt.toISOString();
-    return c.json({
-      ...scope,
-      homeKey: computer.homeKey,
-      state: computer.state,
-      credentialId: credential.id,
-      credentialCreatedAt: createdAt,
-      connectionRevision: createHash("sha256")
-        .update(JSON.stringify([deps.connection.model.baseUrl, identity.binding]))
-        .digest("hex"),
-      models: parsed.secret.enabledModelIds ?? [],
-      defaults: deps.connection.defaults,
-      initialization: {
-        url: new URL("/api/model-account/computer", deps.authUrl).href,
-        token: computerInitializationGrant(deps.key, {
-          userId: scope.userId,
-          spaceId: scope.spaceId,
-          homeKey: computer.homeKey,
-          credentialId: credential.id,
-          credentialCreatedAt: createdAt,
-        }),
-      },
-    });
-  });
   app.post("/computer", async (c) => {
     if (!deps.key || !deps.connection) return c.json({ error: "disabled" }, 404);
     const grant = readComputerInitializationGrant(

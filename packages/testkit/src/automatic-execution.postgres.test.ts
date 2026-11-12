@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { DockerSandboxProvider } from "@rakazo/adapters";
 import type { createApp } from "@rakazo/api/app";
 import { afterAll, describe, expect, it } from "vitest";
 import { asSystem } from "./system-db.js";
@@ -13,7 +14,7 @@ integration("automatic execution application composition", () => {
   let root: string | undefined;
   const scopes: unknown[] = [];
   const server = createServer((request, response) => {
-    expect(request.url).toBe("/describe");
+    expect(request.url).toBe("/computers/fixture-container/execution/describe");
     expect(request.headers.authorization).toBe(`Bearer ${"a".repeat(64)}`);
     scopes.push(
       JSON.parse(Buffer.from(String(request.headers["x-execution-scope"]), "base64url").toString()),
@@ -26,7 +27,7 @@ integration("automatic execution application composition", () => {
     if (root) await rm(root, { recursive: true, force: true });
   });
 
-  it("passes the deployment connection through startup into ordinary-user discovery", async () => {
+  it("uses the computer provider connection for ordinary-user discovery without execution configuration", async () => {
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address();
     if (!address || typeof address === "string") throw new Error("test_server");
@@ -57,12 +58,9 @@ integration("automatic execution application composition", () => {
         credential: "fake-app-key",
         baseUrl: "https://models.example.test/v1",
       }),
-      executionConnection: JSON.stringify({
-        url: `http://127.0.0.1:${address.port}`,
-        token: "a".repeat(64),
-        allowPrivateEndpoint: true,
-      }),
     });
+    const provider = new DockerSandboxProvider(`http://127.0.0.1:${address.port}`, "a".repeat(64));
+    Object.assign(app.sandbox, { execution: provider.execution.bind(provider) });
     const signup = await app.app.request("/api/auth/sign-up/email", {
       method: "POST",
       headers: { "content-type": "application/json", origin: "http://127.0.0.1:5173" },
@@ -100,6 +98,7 @@ integration("automatic execution application composition", () => {
         kind: "docker",
         scope: "dedicated",
         state: "stopped",
+        providerRef: "fixture-container",
       },
     });
     const bot = await db.bot.create({

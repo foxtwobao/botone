@@ -5,6 +5,8 @@ import type {
 } from "@rakazo/adapter-kit";
 
 export interface HarnessProcess {
+  workspace: string;
+  mcpServer: { name: string; type: string; command: string; args: string[]; env: string[] };
   onTool?(
     listener: (request: { name: string; input: Record<string, unknown> }) => Promise<unknown>,
   ): void;

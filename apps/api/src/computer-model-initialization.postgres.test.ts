@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { createServer } from "node:http";
 import {
   computerInitializationGrant,
   configuredModelAccount,
@@ -143,10 +142,6 @@ integration("computer initialization with persisted authorization", () => {
       secrets: store,
       connection,
       initializationKey: signingKey,
-      executionConnection: JSON.stringify({
-        url: "https://execution.example.test",
-        token: "a".repeat(64),
-      }),
       issuer,
       modelFetch,
       webOrigin: "https://app.example.test",
@@ -231,39 +226,10 @@ integration("computer initialization with persisted authorization", () => {
   });
 
   it("discovers only the granted computer and checks readiness without disclosing its model key", async () => {
-    const discover = (
-      token = "a".repeat(64),
-      computerId = "computer-init-computer",
-      origin?: string,
-    ) =>
-      app.request("/environment", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-          ...(origin ? { origin } : {}),
-        },
-        body: JSON.stringify({ userId, spaceId, computerId }),
-      });
-    expect((await discover("b".repeat(64))).status).toBe(401);
-    expect(
-      (await discover("a".repeat(64), "computer-init-computer", "https://app.example.test")).status,
-    ).toBe(401);
-    expect((await discover("a".repeat(64), "other-computer")).status).toBe(403);
-    const response = await discover();
-    expect(response.status).toBe(200);
-    const environment = await response.json();
-    expect(JSON.stringify(environment)).not.toContain("fake-original-key");
-    expect(environment).toMatchObject({
-      userId,
-      spaceId,
-      homeKey,
-      defaults: { responses: "fixture-model" },
-    });
     const checked = await app.request("/computer", {
       method: "POST",
       headers: {
-        authorization: `Bearer ${environment.initialization.token}`,
+        authorization: `Bearer ${await grant()}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({ checkOnly: true }),
@@ -280,52 +246,39 @@ integration("computer initialization with persisted authorization", () => {
       where: { id: "computer-init-computer" },
       data: { scope: "team" },
     });
-    const server = createServer((_request, response) =>
-      response.end(JSON.stringify({ id: "00000000-0000-4000-8000-000000000001", profiles: [] })),
-    );
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const address = server.address();
-    if (!address || typeof address === "string") throw new Error("test_server");
-    try {
-      const deps = {
-        prisma: db.prisma,
-        secrets: store,
-        env: {
-          executionConnection: JSON.stringify({
-            url: `http://127.0.0.1:${address.port}`,
-            token: "a".repeat(64),
-            allowPrivateEndpoint: true,
-          }),
-        },
-      } as unknown as RouterDeps;
-      const actor = {
-        userId,
-        spaceId,
-        email: "computer-init@fixture.test",
-        isDeploymentOwner: false,
-      };
-      await runAsTenant(actor, () =>
-        Promise.all([
-          ensureAutomaticExecution(deps, actor, "computer-init-computer"),
-          ensureAutomaticExecution(deps, actor, "computer-init-computer"),
-        ]),
-      );
-      const rows = await prisma.executionConnection.findMany({ where: { userId, spaceId } });
-      expect(rows).toHaveLength(1);
-      expect(rows[0]!.secretRef).not.toContain("a".repeat(64));
-      await prisma.executionConnection.update({
-        where: { id: rows[0]!.id },
-        data: { revokedAt: new Date() },
-      });
-      await runAsTenant(actor, () =>
+    const deps = {
+      prisma: db.prisma,
+      secrets: store,
+      sandbox: {
+        prepare: async () => {},
+        execution: async () => ({
+          describe: async () => ({ id: "00000000-0000-4000-8000-000000000001", profiles: [] }),
+        }),
+      },
+    } as unknown as RouterDeps;
+    const actor = {
+      userId,
+      spaceId,
+      email: "computer-init@fixture.test",
+      isDeploymentOwner: false,
+    };
+    await runAsTenant(actor, () =>
+      Promise.all([
         ensureAutomaticExecution(deps, actor, "computer-init-computer"),
-      );
-      expect(
-        await prisma.executionConnection.count({ where: { userId, spaceId, revokedAt: null } }),
-      ).toBe(0);
-    } finally {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
+        ensureAutomaticExecution(deps, actor, "computer-init-computer"),
+      ]),
+    );
+    const rows = await prisma.executionConnection.findMany({ where: { userId, spaceId } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.secretRef).not.toContain("a".repeat(64));
+    await prisma.executionConnection.update({
+      where: { id: rows[0]!.id },
+      data: { revokedAt: new Date() },
+    });
+    await runAsTenant(actor, () => ensureAutomaticExecution(deps, actor, "computer-init-computer"));
+    expect(
+      await prisma.executionConnection.count({ where: { userId, spaceId, revokedAt: null } }),
+    ).toBe(0);
   });
 
   it("does not overwrite a newer authorization while recovering an old key", async () => {
