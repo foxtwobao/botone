@@ -43,6 +43,19 @@ import {
 import { BotAvatarSetSchema } from "./bot-avatar.js";
 import { BotEmailAddressesSchema, BotEmailAddressSchema, BotEmailNameSchema } from "./bot-email.js";
 import {
+  MarketplaceBotAdminCreateInput,
+  MarketplaceBotAdminListInput,
+  MarketplaceBotAdminRowSchema,
+  MarketplaceBotAdminSetStatusInput,
+  MarketplaceBotAdminUpdateInput,
+  MarketplaceBotCatalogInput,
+  MarketplaceBotCatalogSchema,
+  MarketplaceBotGetInput,
+  MarketplaceBotInstallInput,
+  MarketplaceBotInstallOutput,
+  MarketplaceBotListingSchema,
+} from "./bot-marketplace.js";
+import {
   BotSecretMetadata,
   BotSecretPutInput,
   LOGIN_FIELD_LIMIT,
@@ -1088,6 +1101,18 @@ export const appContract = {
       .output(z.array(PluginSubmissionSchema)),
     /** Admins only. */
     review: oc.input(PluginSubmissionReviewSchema).output(PluginSubmissionSchema),
+  },
+  botMarketplace: {
+    catalog: oc.input(MarketplaceBotCatalogInput).output(MarketplaceBotCatalogSchema),
+    get: oc.input(MarketplaceBotGetInput).output(MarketplaceBotListingSchema),
+    install: oc.input(MarketplaceBotInstallInput).output(MarketplaceBotInstallOutput),
+    /** Admins only: the ops console maintains the catalog here. */
+    admin: {
+      list: oc.input(MarketplaceBotAdminListInput).output(z.array(MarketplaceBotAdminRowSchema)),
+      create: oc.input(MarketplaceBotAdminCreateInput).output(MarketplaceBotAdminRowSchema),
+      update: oc.input(MarketplaceBotAdminUpdateInput).output(MarketplaceBotAdminRowSchema),
+      setStatus: oc.input(MarketplaceBotAdminSetStatusInput).output(MarketplaceBotAdminRowSchema),
+    },
   },
   capabilities: {
     list: oc.output(z.array(CapabilityInstallSchema)),

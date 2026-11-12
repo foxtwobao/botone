@@ -349,6 +349,7 @@ sequenceDiagram
 | apps/api/src/bot-templates.ts | 把 `createBotFromTemplate` 的请求构建核心提取为导出函数（接受模板对象 + importKey + source + changedReason），原函数包一层 `findBotTemplate`；行为不变 |
 | apps/api/src/agent-import.ts | `ImportedBotRequest` 加可选 `checklist?: MessageBlock[]`，缺省仍写 `import_setup`（PR2 才用） |
 | packages/contracts/src/agent-import.ts | `AgentImportSourceSchema` 加 `"marketplace"`；importKey 前缀预留校验加 `marketplace:` |
+| packages/core/src/agent-import/index.ts | 文件导入来源的 `Exclude<AgentImportSource, …>` 同步排除 `"marketplace"`（市场商品不是文件导入，两处类型收窄） |
 | packages/contracts/src/rpc.ts | 挂 `botMarketplace` 命名空间 |
 | apps/api/src/router.ts | 注册新 routes 模块 |
 | apps/web/src/App.tsx | `/admin/bots` 路由（照 `/admin/plugins`） |

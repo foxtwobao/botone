@@ -10,6 +10,7 @@ export * from "./billing.js";
 export * from "./board.js";
 export * from "./bot-avatar.js";
 export * from "./bot-email.js";
+export * from "./bot-marketplace.js";
 export * from "./bot-memory.js";
 export * from "./bot-secrets.js";
 export * from "./bot-settings-layout.js";
