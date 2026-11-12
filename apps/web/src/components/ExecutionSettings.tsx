@@ -1,16 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { BotExecutionConfiguration, ExecutionConnectionView } from "@rakazo/contracts";
 import type { ChatModelChoice } from "@rakazo/core";
-import {
-  Button,
-  Checkbox,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Input,
-  NativeSelect,
-  NativeSelectOption,
-} from "@rakazo/ui-web";
+import { Button, NativeSelect, NativeSelectOption } from "@rakazo/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useId, useState } from "react";
@@ -39,8 +30,6 @@ export function ExecutionSettings({
   const queries = useSpaceQueries();
   const list = useQuery(queries.executions.list.queryOptions({ input: { botId } }));
   const saved = useQuery(queries.executions.get.queryOptions({ input: { botId } }));
-  const me = useQuery(queries.me.queryOptions({ input: {} }));
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState<{ configuration: BotExecutionConfiguration | null }>();
@@ -49,19 +38,15 @@ export function ExecutionSettings({
       !connection.online || connection.profiles.some((profile) => profile.status !== "ready"),
   );
   const profileStatus = (status: ExecutionConnectionView["profiles"][number]["status"]) =>
-    status === "ready"
-      ? t`Ready`
-      : status === "missing"
-        ? t`Not installed`
-        : status === "unsupported"
-          ? t`Unsupported version`
-          : status === "unauthenticated"
-            ? t`Sign in required`
-            : status === "stopped"
-              ? t`Computer stopped`
-              : status === "unavailable"
-                ? t`Model unavailable`
-                : t`Verification required`;
+    status === "missing"
+      ? t`Not installed`
+      : status === "unsupported"
+        ? t`Unsupported version`
+        : status === "unauthenticated"
+          ? t`Sign in required`
+          : status === "stopped"
+            ? t`Computer stopped`
+            : t`Model unavailable`;
   const options = (list.data ?? []).flatMap((connection) =>
     connection.profiles
       .filter((profile) => profile.status === "ready")
@@ -107,7 +92,7 @@ export function ExecutionSettings({
   }
   return (
     <>
-      {list.data?.length || saved.data || me.data?.isAdmin ? (
+      {list.data?.length || saved.data ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-label font-medium text-muted-foreground" htmlFor={ids}>
@@ -122,11 +107,6 @@ export function ExecutionSettings({
                   onClick={() => void list.refetch()}
                 >
                   <Trans>Retry</Trans>
-                </Button>
-              ) : null}
-              {me.data?.isAdmin ? (
-                <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-                  <Trans>Connection</Trans>
                 </Button>
               ) : null}
             </div>
@@ -218,107 +198,6 @@ export function ExecutionSettings({
             if (pending) void save(pending.configuration, true);
           }}
         />
-      ) : null}
-      {open ? (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent>
-            <DialogTitle>
-              <Trans>Connection</Trans>
-            </DialogTitle>
-            {(list.data ?? []).map((connection) => (
-              <div key={connection.id} className="flex items-center justify-between gap-3">
-                <div>
-                  <span>
-                    {connection.label}
-                    {connection.online ? "" : t` · Offline`}
-                  </span>
-                  {connection.profiles.map((profile) => (
-                    <p key={profile.id} className="text-body-sm text-muted-foreground">
-                      {profile.label} · {profileStatus(profile.status)}
-                    </p>
-                  ))}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await rpc.executions.revoke({ id: connection.id });
-                      await list.refetch();
-                    } catch (error) {
-                      setError(errorText(error));
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  <Trans>Revoke</Trans>
-                </Button>
-              </div>
-            ))}
-            <form
-              className="space-y-3"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                const fields = new FormData(event.currentTarget);
-                setBusy(true);
-                setError(undefined);
-                try {
-                  await rpc.executions.connect({
-                    botId,
-                    label: String(fields.get("label")),
-                    url: String(fields.get("url")),
-                    token: String(fields.get("token")),
-                    privateEndpoint: fields.get("privateEndpoint") === "on",
-                  });
-                  await list.refetch();
-                  setOpen(false);
-                } catch (error) {
-                  setError(errorText(error));
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <Input
-                name="label"
-                aria-label={t`Name`}
-                placeholder={t`Name`}
-                required
-                maxLength={100}
-              />
-              <Input
-                name="url"
-                type="url"
-                aria-label={t`Service address`}
-                placeholder="https://execution.example.com"
-                required
-              />
-              <Input
-                name="token"
-                type="password"
-                autoComplete="off"
-                aria-label={t`Access token`}
-                placeholder={t`Access token`}
-                required
-              />
-              <label htmlFor={`${ids}-private`} className="flex items-center gap-2 text-body-sm">
-                <Checkbox id={`${ids}-private`} name="privateEndpoint" />
-                <Trans>Private network</Trans>
-              </label>
-              {error ? (
-                <p role="alert" className="text-destructive">
-                  {error}
-                </p>
-              ) : null}
-              <Button disabled={busy} type="submit">
-                <Trans>Connect</Trans>
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
       ) : null}
     </>
   );

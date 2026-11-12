@@ -17,7 +17,7 @@ test("native permission submission waits for delivery and expiry never shows app
   await captureScreenshot(page, testInfo, "native-permission-expired");
 });
 
-test("execution connections disclose readiness and private network settings", async ({
+test("agent settings disclose readiness without manual service configuration", async ({
   page,
 }, testInfo) => {
   await page.goto("/e2e/fixtures/native-execution.html?screen=settings");
@@ -26,12 +26,9 @@ test("execution connections disclose readiness and private network settings", as
   await expect(
     page.getByRole("option", { name: "Additional account · Sign in required" }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Connection", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(
-    page.getByRole("dialog").getByText("Additional account · Sign in required", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: "Private network" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Connection", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Service address" })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Access token" })).toHaveCount(0);
   await captureScreenshot(page, testInfo, "native-execution-connections");
 });
 

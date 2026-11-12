@@ -15,6 +15,7 @@ import {
   assertRunCanWriteHistory,
   RunHistoryWriteError,
 } from "@rakazo/db";
+import { executionStartSchema } from "@rakazo/native-runtime/wire";
 import { returnBotMessageOutcome } from "../bot-messages.js";
 import { provisionComputer } from "../computer-lifecycle.js";
 import type { ExecutorDeps } from "../executor-deps.js";
@@ -24,7 +25,6 @@ import { attachWorkspaceFileToThread } from "../thread-artifacts.js";
 import { updateNativeInteraction } from "./answers.js";
 import { executeNativeBridgeTool } from "./bridge.js";
 import { executionConnectionClient } from "./connection.js";
-import { executionStartSchema } from "./wire.js";
 
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const leaseExpiry = () => new Date(Date.now() + 240_000).toISOString();
@@ -56,7 +56,12 @@ export async function continueNativeRun(
     await fail("The selected execution is unavailable for this account.");
     return true;
   }
-  const client = await executionConnectionClient(deps.secretStore, connection);
+  let client = await executionConnectionClient(
+    deps.secretStore,
+    connection,
+    deps.sandbox,
+    deps.prisma,
+  );
   let request: NativeExecutionStart;
   if (saved) {
     // The encrypted dispatch remains immutable through retries, settings edits, and worker takeover.
@@ -98,6 +103,12 @@ export async function continueNativeRun(
       return true;
     }
     await provisionComputer(deps, scope.computerId, createAdapterContext(run, run.botId, run.id));
+    client = await executionConnectionClient(
+      deps.secretStore,
+      connection,
+      deps.sandbox,
+      deps.prisma,
+    );
     const description = await client.describe().catch(() => null);
     if (
       !description ||

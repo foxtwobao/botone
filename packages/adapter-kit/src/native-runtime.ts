@@ -1,3 +1,25 @@
+import type { AdapterContext, ComputerRef } from "./types.js";
+
+/** Optional capability using the computer provider's existing trusted connection. */
+export interface ComputerExecutionCapability {
+  execution(
+    computer: ComputerRef,
+    context: AdapterContext,
+    identity?: string,
+  ): Promise<ComputerExecutionProvider | undefined>;
+}
+
+export function supportsComputerExecution(
+  provider: unknown,
+): provider is ComputerExecutionCapability {
+  return (
+    typeof provider === "object" &&
+    provider !== null &&
+    "execution" in provider &&
+    typeof provider.execution === "function"
+  );
+}
+
 /** An execution service owns processes; the application owns authorization and durable runs. */
 export interface NativeExecutionScope {
   spaceId: string;
@@ -113,4 +135,32 @@ export interface NativeExecutionProvider {
     request: NativeExecutionControl & { id: string; text: string },
     signal?: AbortSignal,
   ): Promise<"accepted" | "unsupported">;
+}
+
+/** A computer provider owns the trusted connection; no service credentials leave the adapter. */
+export interface ComputerExecutionProvider extends NativeExecutionProvider {
+  stop: NonNullable<NativeExecutionProvider["stop"]>;
+  toolResult: NonNullable<NativeExecutionProvider["toolResult"]>;
+  describe(signal?: AbortSignal): Promise<{
+    id: string;
+    profiles: Array<{
+      id: string;
+      revision: number;
+      label: string;
+      spaceId: string;
+      userIds: string[];
+      computerId: string;
+      engineVersion: string;
+      defaultModel?: string;
+      models?: Array<{ id: string; label: string }>;
+      status:
+        | "missing"
+        | "unsupported"
+        | "unauthenticated"
+        | "unverified"
+        | "unavailable"
+        | "stopped"
+        | "ready";
+    }>;
+  }>;
 }

@@ -242,6 +242,8 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
       await entry.process?.stop();
       this.append(entry, code ? { type: "failed", code } : { type: "cancelled" });
     })();
+    // Observe background cleanup failures without claiming the process stopped.
+    void entry.stopping.catch(() => {});
     return entry.stopping;
   }
 
@@ -386,6 +388,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
               await entry.process?.stop();
               this.append(entry, event);
             })();
+            void entry.stopping.catch(() => {});
           } else this.append(entry, event);
         });
         entry.capabilities = entry.driver.capabilities;
@@ -397,7 +400,9 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
         // A live native session stays reserved through completion, not only through startup.
         if (sessionKey && entry.state !== "running") this.sessions.delete(sessionKey);
       }
-    })();
+    })().catch(() => {
+      // Cleanup remains unconfirmed; explicit stop/close callers retain its rejection.
+    });
     return this.snapshot(entry);
   }
 
@@ -443,7 +448,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
       await this.stopEntry(this.control({ ...request, generation: existing.generation }));
       return;
     }
-    this.profile(request.scope);
+    // The transport authorizes owner scope. Cancelling undispatched work needs no ready engine.
     const entry: Entry = {
       ...request,
       fingerprint: "cancelled-before-start",

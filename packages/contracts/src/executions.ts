@@ -40,17 +40,6 @@ export type BotExecutionConfiguration = z.infer<typeof BotExecutionSchema>;
 export type ExecutionConnectionView = z.infer<typeof ExecutionConnectionSchema>;
 export const executionContract = {
   list: oc.input(z.object({ botId: Id.optional() })).output(z.array(ExecutionConnectionSchema)),
-  connect: oc
-    .input(
-      z.object({
-        botId: Id,
-        label: z.string().trim().min(1).max(100),
-        url: z.string().url().max(2048),
-        token: z.string().regex(/^[a-f0-9]{64}$/),
-        privateEndpoint: z.boolean().default(false),
-      }),
-    )
-    .output(z.object({ id: Id })),
   revoke: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
   get: oc.input(z.object({ botId: Id })).output(BotExecutionSchema.nullable()),
   configure: oc

@@ -16,13 +16,13 @@ import path from "node:path";
 import { promisify } from "node:util";
 import type { SandboxProvider } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
+import { computerInitializationProgram } from "@rakazo/native-runtime/initialization-program";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { withComputerModelInitialization } from "./computer-initialization.js";
 import {
   computerInitializationGrant,
   readComputerInitializationGrant,
 } from "./initialization-auth.js";
-import { computerInitializationProgram } from "./initialization-program.js";
 
 const execute = promisify(execFile);
 const scope = { userId: "user-fixture", spaceId: "space-fixture", homeKey: "home-fixture" };

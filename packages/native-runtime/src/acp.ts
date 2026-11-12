@@ -1,7 +1,6 @@
 // Adapted from OpenMausBot's ACP core, host and turn-state. See NOTICE.md.
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { acpModelOption } from "./acp-config.js";
-import { platformMcpServer } from "./bridge-tools.js";
 import type { HarnessDriverFactory } from "./driver.js";
 import { initialPrompt, record, text } from "./driver.js";
 import { HarnessInteractions, permissionActions } from "./interactions.js";
@@ -119,8 +118,8 @@ export function acpDriver(options: {
           await rpc.request(
             request.session ? options.resumeMethod : "session/new",
             {
-              cwd: "/workspace",
-              mcpServers: [platformMcpServer],
+              cwd: process.workspace,
+              mcpServers: [process.mcpServer],
               ...(request.session ? { sessionId: request.session.id } : {}),
             },
             60_000,

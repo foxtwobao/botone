@@ -62,7 +62,6 @@ export function modelAccountRoutes(deps: {
   webOrigin: string;
   authUrl: string;
   initializationKey?: string;
-  executionConnection?: string;
   sandbox?: SandboxProvider;
 }) {
   const { connection, prisma, auth, secrets } = deps;
@@ -213,7 +212,6 @@ export function modelAccountRoutes(deps: {
   };
   mountComputerModelInitialization(app, {
     key: deps.initializationKey,
-    executionConnection: deps.executionConnection,
     authUrl: deps.authUrl,
     connection,
     prisma,

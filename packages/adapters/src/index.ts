@@ -1,3 +1,4 @@
+export { executionOwnerSchema } from "@rakazo/native-runtime/managed-configuration";
 export * from "./advisory-lock.js";
 export * from "./agent-connections.js";
 export * from "./agent-environment.js";
@@ -151,10 +152,6 @@ export { personalComputerWhere } from "./native-harness/computer-access.js";
 export { executionConnectionClient } from "./native-harness/connection.js";
 export { HttpNativeExecutionProvider } from "./native-harness/http-client.js";
 export * from "./native-harness/initialization-auth.js";
-export {
-  configuredExecutionConnection,
-  executionOwnerSchema,
-} from "./native-harness/managed-configuration.js";
 export { createInitializedRunSandbox } from "./native-harness/sandbox.js";
 export { stopNativeThreadRuns } from "./native-harness/stop.js";
 export * from "./none-sandbox.js";

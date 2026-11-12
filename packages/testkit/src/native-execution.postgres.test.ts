@@ -2,13 +2,17 @@ import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { NativeExecutionEvent, NativeExecutionStart } from "@rakazo/adapter-kit";
+import type {
+  ComputerExecutionCapability,
+  NativeExecutionEvent,
+  NativeExecutionStart,
+} from "@rakazo/adapter-kit";
+import { createAdapterContext } from "@rakazo/adapter-kit";
 import type { createApp } from "@rakazo/api/app";
 import { runAsSystem, runAsTenant } from "@rakazo/db";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { startNativeExecutionServer } from "../../adapters/src/native-harness/http-server.js";
-import { FakeHarnessProcess } from "../../adapters/src/native-harness/protocol.test-support.js";
-import { NativeHarnessExecutionService } from "../../adapters/src/native-harness/service.js";
+import { FakeHarnessProcess } from "../../native-runtime/src/protocol.test-support.js";
+import { NativeHarnessExecutionService } from "../../native-runtime/src/service.js";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
 import { asSystem } from "./system-db.js";
 
@@ -17,7 +21,6 @@ integration("native execution with real authorization, history and leases", () =
   let app: Awaited<ReturnType<typeof createApp>>;
   let db: Awaited<ReturnType<typeof createApp>>["prisma"];
   let service: NativeHarnessExecutionService;
-  let server: Awaited<ReturnType<typeof startNativeExecutionServer>>;
   let cookie: string;
   let actor: { spaceId: string; userId: string };
   let botId: string;
@@ -137,21 +140,36 @@ integration("native execution with real authorization, history and leases", () =
         }),
       },
     ]);
-    server = await startNativeExecutionServer({
-      root: path.join(root, "service"),
-      token: "a".repeat(64),
-      provider: service,
-      profiles: [profile],
+    const computer = await db.computer.findUniqueOrThrow({ where: { id: row.computerId! } });
+    const reference = await app.sandbox.provision(
+      { botId: computer.homeKey, homePath: path.join(root, "computer") },
+      createAdapterContext(actor, botId, "native-fixture"),
+    );
+    await db.computer.update({
+      where: { id: row.computerId! },
+      data: {
+        kind: "docker",
+        providerRef: reference.providerRef,
+        state: "running",
+        userId: actor.userId,
+      },
     });
-    connectionId = (
-      await rpc<{ id: string }>("executions/connect", {
-        botId,
-        label: "Test connection",
-        url: `http://127.0.0.1:${server.port}`,
-        token: "a".repeat(64),
-        privateEndpoint: true,
-      })
-    ).id;
+    app.sandbox.isRunning = async () => true;
+    const identity = randomUUID();
+    Object.assign(app.sandbox, {
+      execution: async () => ({
+        describe: async () => ({ id: identity, profiles: [profile] }),
+        start: (request) => service.start(request),
+        attach: (request) => service.attach(request),
+        stop: (request) => service.stop(request),
+        cancel: (request) => service.cancel(request),
+        respond: (request) => service.respond(request),
+        steer: (request) => service.steer(request),
+        toolResult: (request) => service.toolResult(request),
+      }),
+    } satisfies ComputerExecutionCapability);
+    const listing = await rpc<Array<{ id: string }>>("executions/list", { botId });
+    connectionId = listing[0]!.id;
     await rpc("executions/configure", {
       botId,
       configuration: { connectionId, profileId: profile.id, revision: 1, model: null },
@@ -161,7 +179,6 @@ integration("native execution with real authorization, history and leases", () =
     });
   });
   afterAll(async () => {
-    await server?.close();
     await service?.close();
     await app?.stop();
     rmSync(root, { recursive: true, force: true });

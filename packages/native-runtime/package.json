@@ -1,0 +1,26 @@
+{
+  "name": "@rakazo/native-runtime",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/computer-runtime.ts",
+    "./bridge-tools": "./src/bridge-tools.ts",
+    "./initialization-program": "./src/initialization-program.ts",
+    "./managed-configuration": "./src/managed-configuration.ts",
+    "./testing": "./src/protocol.test-support.ts",
+    "./wire": "./src/wire.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --root ../.. packages/native-runtime/src"
+  },
+  "dependencies": {
+    "@rakazo/adapter-kit": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}

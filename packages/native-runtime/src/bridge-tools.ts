@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { permissionProgram } from "./permission-program.js";
 
 export const bridgeInputSchemas = {
   publish_file: z.object({ path: z.string().min(1).max(1024) }).strict(),
@@ -22,15 +23,20 @@ export const bridgeToolDefinitions = Object.entries(bridgeInputSchemas).map(([na
         : "Send a message to an authorized teammate; requires approval",
   inputSchema: z.toJSONSchema(schema),
 }));
-export const platformMcpServer = {
-  name: "platform",
-  type: "stdio",
-  command: "/usr/bin/node",
-  args: [
-    "/run/harness/permission-proxy.mjs",
-    "/run/harness/broker/permissions.sock",
-    "tools",
-    JSON.stringify(bridgeToolDefinitions),
-  ],
-  env: [],
-};
+export function computerMcpServer(socket: string, mode = "tools") {
+  return {
+    name: mode === "tools" ? "platform" : "permissions",
+    type: "stdio",
+    command: "/usr/local/bin/node",
+    args: [
+      "--input-type=module",
+      "--eval",
+      permissionProgram,
+      "bridge",
+      socket,
+      mode,
+      ...(mode === "tools" ? [JSON.stringify(bridgeToolDefinitions)] : []),
+    ],
+    env: [],
+  };
+}

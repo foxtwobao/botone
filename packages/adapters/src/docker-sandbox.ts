@@ -140,6 +140,19 @@ export class DockerSandboxProvider implements SandboxProvider {
     };
   }
 
+  async execution(computer: ComputerRef, context: AdapterContext, identity?: string) {
+    if (computer.kind !== "docker") return undefined;
+    const { HttpNativeExecutionProvider } = await import("./native-harness/http-client.js");
+    return new HttpNativeExecutionProvider({
+      url: this.supervisorUrl,
+      token: this.supervisorToken,
+      identity,
+      path: `/computers/${encodeURIComponent(computer.providerRef)}/execution`,
+      headers: this.headers(context, computer.botId),
+      scope: { spaceId: context.spaceId, userId: context.userId, computerId: computer.id },
+    });
+  }
+
   async provision(
     request: { botId: string; homePath: string; timezone?: string; language?: string },
     context: AdapterContext,

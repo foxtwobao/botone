@@ -7,7 +7,7 @@ import { computerResourceLimits } from "./computer-spec.js";
 import { computerEgressSetting, ensureComputerImage, screenNetworkMode } from "./context.js";
 import { computerEgressMode, ensureRestrictedEgressEnforced } from "./egress.js";
 import { reclaimIdleComputerNetworks } from "./networks.js";
-import { supervisorApp } from "./routes.js";
+import { closeNativeExecution, supervisorApp } from "./routes.js";
 
 export { supervisorApp };
 
@@ -42,6 +42,7 @@ async function startSupervisor() {
   const shutdown = async () => {
     if (stopping) return;
     stopping = true;
+    await closeNativeExecution();
     await closeListeningServer(server);
     await logger.flush({ timeoutMs: 2_000 });
     process.exit(0);
