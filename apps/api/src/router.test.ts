@@ -59,6 +59,10 @@ import {
 
 const withRoleDeps = (deps: RouterDeps) => {
   withModelRoles(deps.prisma);
+  Object.assign(deps.prisma, {
+    nativeInteraction: { findFirst: vi.fn(async () => null) },
+  });
+  if (deps.sandbox) deps.sandbox.prepare ??= vi.fn(async () => undefined);
   return deps;
 };
 const createRouter = (deps: RouterDeps) => createRouterWith(withRoleDeps(deps));

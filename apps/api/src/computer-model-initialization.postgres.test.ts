@@ -1,0 +1,225 @@
+import { createHash } from "node:crypto";
+import {
+  computerInitializationGrant,
+  configuredModelAccount,
+  EncryptedSecretStore,
+  parseModelSecret,
+} from "@rakazo/adapters";
+import type { Auth } from "@rakazo/auth";
+import type { PrismaClient } from "@rakazo/db";
+import { asSystem, createDb } from "@rakazo/db";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { modelAccountRoutes } from "./model-account.js";
+
+const integration = process.env.VERIFY_DATABASE === "1" ? describe : describe.skip;
+integration("computer initialization with persisted authorization", () => {
+  const userId = "computer-init-user",
+    spaceId = "computer-init-space",
+    accountId = "computer-init-account";
+  const homeKey = "computer-init-home",
+    issuer = "https://identity.example.test",
+    signingKey = "fake-computer-signing-key";
+  const binding = createHash("sha256")
+    .update(JSON.stringify([issuer, "fixture-subject"]))
+    .digest("hex");
+  let db: ReturnType<typeof createDb>,
+    prisma: PrismaClient,
+    app: ReturnType<typeof modelAccountRoutes>;
+  const store = new EncryptedSecretStore("fake-encryption-key");
+  const connection = configuredModelAccount(
+    JSON.stringify({
+      provider: "reseller",
+      origin: "https://accounts.example.test",
+      credential: "fake-app-key",
+      baseUrl: "https://models.example.test/v1",
+      defaults: { responses: "fixture-model" },
+    }),
+  )!;
+  const ensure = vi.spyOn(connection.provider, "ensure");
+  vi.spyOn(connection.provider, "revoke").mockResolvedValue();
+  let rejectOriginal = false;
+  const modelFetch = vi.fn<typeof fetch>(async (_url, init) =>
+    new Headers(init?.headers).get("authorization") === "Bearer fake-original-key" && rejectOriginal
+      ? new Response(null, { status: 401 })
+      : Response.json({ data: [{ id: "fixture-model" }] }),
+  );
+  const request = (route: string, token = "fixture-session") =>
+    app.request(`https://app.example.test${route}`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        origin: "https://app.example.test",
+        "x-rakazo-space-id": spaceId,
+      },
+    });
+  const grant = async () => {
+    const credential = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: `external-${accountId}` },
+    });
+    return computerInitializationGrant(signingKey, {
+      userId,
+      spaceId,
+      homeKey,
+      credentialId: credential.id,
+      credentialCreatedAt: credential.createdAt.toISOString(),
+    });
+  };
+  beforeAll(async () => {
+    db = createDb(process.env.DATABASE_URL!);
+    prisma = asSystem(db.prisma);
+    await prisma.user.create({
+      data: {
+        id: userId,
+        email: "computer-init@fixture.test",
+        name: "Fixture",
+        emailVerified: true,
+      },
+    });
+    await prisma.organization.create({
+      data: {
+        id: "computer-init-org",
+        name: "Fixture",
+        slug: "computer-init-org",
+        createdAt: new Date(),
+      },
+    });
+    await prisma.space.create({
+      data: { id: spaceId, organizationId: "computer-init-org", name: "Fixture", isDefault: true },
+    });
+    await prisma.member.create({
+      data: {
+        id: "computer-init-member",
+        organizationId: "computer-init-org",
+        userId,
+        role: "owner",
+        createdAt: new Date(),
+      },
+    });
+    const idToken = `header.${Buffer.from(JSON.stringify({ iss: issuer, sub: "fixture-subject" })).toString("base64url")}.signature`;
+    await prisma.account.create({
+      data: { id: accountId, userId, providerId: "oidc", accountId: binding, idToken },
+    });
+    await prisma.session.create({
+      data: {
+        id: "computer-init-session",
+        token: "fixture-session",
+        userId,
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+    await prisma.computer.create({
+      data: {
+        id: "computer-init-computer",
+        userId,
+        spaceId,
+        scope: "dedicated",
+        scopeKey: "computer-init-scope",
+        homeKey,
+        kind: "docker",
+        state: "running",
+        providerRef: "fake-container",
+      },
+    });
+    const auth = {
+      $context: Promise.resolve({ secretConfig: "fake-auth-secret" }),
+      api: {
+        getSession: async ({ headers }: { headers: Headers }) =>
+          headers.get("authorization") === "Bearer fixture-session"
+            ? {
+                session: await prisma.session.findUniqueOrThrow({
+                  where: { id: "computer-init-session" },
+                }),
+                user: { id: userId },
+              }
+            : null,
+      },
+    } as unknown as Auth;
+    app = modelAccountRoutes({
+      prisma,
+      auth,
+      secrets: store,
+      connection,
+      initializationKey: signingKey,
+      issuer,
+      modelFetch,
+      webOrigin: "https://app.example.test",
+      authUrl: "https://app.example.test",
+    });
+  });
+  beforeEach(async () => {
+    rejectOriginal = false;
+    ensure.mockReset().mockResolvedValue({ apiKey: "fake-original-key" });
+    modelFetch.mockClear();
+    await prisma.computer.update({
+      where: { id: "computer-init-computer" },
+      data: { scope: "dedicated" },
+    });
+    expect((await request("/connect")).status).toBe(200);
+    ensure.mockClear();
+  });
+  afterAll(async () => {
+    if (!db) return;
+    await prisma.organization.delete({ where: { id: "computer-init-org" } });
+    await prisma.user.delete({ where: { id: userId } });
+    await db.prisma.$disconnect();
+    await db.pool.end();
+  });
+
+  it("replaces an invalid encrypted key without changing its authorization record", async () => {
+    const token = await grant();
+    const before = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: `external-${accountId}` },
+    });
+    rejectOriginal = true;
+    ensure.mockResolvedValueOnce({ apiKey: "fake-recovered-key" });
+    const response = await request("/computer", token);
+    expect(response.status).toBe(200);
+    expect((await response.json()).apiKey).toBe("fake-recovered-key");
+    expect(ensure).toHaveBeenCalledOnce();
+    const after = await prisma.userModelCredential.findUniqueOrThrow({ where: { id: before.id } });
+    expect(after.createdAt).toEqual(before.createdAt);
+    expect(after.secretId).not.toBe(before.secretId);
+    const stored = await prisma.secret.findUniqueOrThrow({ where: { id: after.secretId } });
+    expect(stored.ciphertext).not.toContain("fake-recovered-key");
+    expect(parseModelSecret(await store.load(stored.ciphertext, stored.id))).toMatchObject({
+      apiKey: "fake-recovered-key",
+    });
+  });
+
+  it("rejects a copied capability after disconnect and after a new authorization", async () => {
+    const token = await grant();
+    expect((await request("/revoke")).status).toBe(200);
+    expect((await request("/computer", token)).status).toBe(401);
+    expect((await request("/connect")).status).toBe(200);
+    expect((await request("/computer", token)).status).toBe(401);
+    expect((await request("/computer", await grant())).status).toBe(200);
+  });
+
+  it("refuses personal credentials when the computer becomes shared", async () => {
+    const token = await grant();
+    await prisma.computer.update({
+      where: { id: "computer-init-computer" },
+      data: { scope: "team" },
+    });
+    expect((await request("/computer", token)).status).toBe(403);
+    expect(ensure).not.toHaveBeenCalled();
+  });
+
+  it("does not overwrite a newer authorization while recovering an old key", async () => {
+    const token = await grant();
+    rejectOriginal = true;
+    ensure.mockImplementationOnce(async () => {
+      ensure.mockResolvedValueOnce({ apiKey: "fake-newer-authorization-key" });
+      expect((await request("/connect")).status).toBe(200);
+      return { apiKey: "fake-obsolete-recovered-key" };
+    });
+    expect((await request("/computer", token)).status).toBe(409);
+    const credential = await prisma.userModelCredential.findUniqueOrThrow({
+      where: { id: `external-${accountId}` },
+    });
+    const stored = await prisma.secret.findUniqueOrThrow({ where: { id: credential.secretId } });
+    expect(parseModelSecret(await store.load(stored.ciphertext, stored.id))).toMatchObject({
+      apiKey: "fake-newer-authorization-key",
+    });
+  });
+});

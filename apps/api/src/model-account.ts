@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import type { SecretStore } from "@rakazo/adapter-kit";
+import type { SandboxProvider, SecretStore } from "@rakazo/adapter-kit";
 import type { configuredModelAccount } from "@rakazo/adapters";
 import {
   discoverModelAccountModels,
@@ -23,7 +23,10 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
-
+import {
+  initializeRunningModelComputers,
+  mountComputerModelInitialization,
+} from "./computer-model-initialization.js";
 import { parseModelAccountSecret, serializeModelAccountSecret } from "./model-account-secret.js";
 
 type Connection = NonNullable<ReturnType<typeof configuredModelAccount>>;
@@ -58,6 +61,8 @@ export function modelAccountRoutes(deps: {
   navigationFetch?: typeof fetch;
   webOrigin: string;
   authUrl: string;
+  initializationKey?: string;
+  sandbox?: SandboxProvider;
 }) {
   const { connection, prisma, auth, secrets } = deps;
   const app = new Hono();
@@ -91,6 +96,7 @@ export function modelAccountRoutes(deps: {
     apiKey: string,
     transaction?: { id: string; ciphertext: string },
     requireCatalog = false,
+    expectedSecretId?: string,
   ) => {
     if (!connection) throw new Error("Disabled");
     const current = await identity(owner.userId);
@@ -100,6 +106,8 @@ export function modelAccountRoutes(deps: {
     const priorCredential = await prisma.userModelCredential.findFirst({
       where: { id: `external-${current.accountId}`, userId: owner.userId },
     });
+    if (expectedSecretId && priorCredential?.secretId !== expectedSecretId)
+      throw new HTTPException(409, { message: "unavailable" });
     if (requireCatalog && !priorCredential)
       throw new HTTPException(403, { message: "authorization_required" });
     const previousRow =
@@ -200,7 +208,18 @@ export function modelAccountRoutes(deps: {
           secretId: previous.secretId,
         });
     });
+    await initializeRunningModelComputers(prisma, deps.sandbox, owner);
   };
+  mountComputerModelInitialization(app, {
+    key: deps.initializationKey,
+    connection,
+    prisma,
+    secrets,
+    identity,
+    save: (owner, current, apiKey, expectedSecretId) =>
+      save(owner, current, apiKey, undefined, true, expectedSecretId),
+    fetch: deps.modelFetch,
+  });
   app.get("/oidc", async (c) => {
     if (!connection) return c.text("Not available", 404);
     const headers = new Headers(c.req.raw.headers);

@@ -12,6 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../lib/rpc", () => {
   const rpc = {
+    executions: {
+      list: vi.fn(async () => []),
+      get: vi.fn(async () => null),
+    },
     bots: {
       get: vi.fn(),
       update: vi.fn(),

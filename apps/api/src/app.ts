@@ -35,12 +35,12 @@ import {
   createArtifactStore,
   createCloudAgentConnection,
   createConnectorRuntime,
+  createInitializedRunSandbox,
   createMediaGenerationProvider,
   createPaymentWalletProvider,
   createProductAnalytics,
   createRunReconciler,
   createRunRuntime,
-  createRunSandbox,
   createRunSecretWriter,
   createSecretStore,
   createTicketChangeNotifier,
@@ -372,7 +372,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
   });
   const sandbox: SandboxProvider =
     sandboxOverride ??
-    (await createRunSandbox(env.sandboxProvider, {
+    (await createInitializedRunSandbox(env.sandboxProvider, {
       ...sandboxProviderOptionsFromEnv(),
       supervisorUrl: env.sandboxSupervisorUrl,
       supervisorToken: env.sandboxSupervisorToken,
@@ -387,6 +387,9 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       dataDir: env.dataDir,
       prisma,
       secrets,
+      initialization: env.modelAccountConnection
+        ? { url: env.authUrl, signingKey: env.encryptionKey }
+        : undefined,
     }));
   const memoryProviders = new SpaceMemoryProviderResolver(prisma, secrets);
   const oauthLogins = new PiOAuthLogins(undefined, { prisma, secrets });
@@ -832,7 +835,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       crispWebsiteId: billing ? (env.crispWebsiteId ?? null) : null,
     } satisfies AuthCapabilities);
   });
-  modelAccount.mount(app, { prisma, auth, secrets });
+  modelAccount.mount(app, { prisma, auth, secrets, sandbox });
   mountAppAssociation(app, env);
   if (localEmailEmulator && env.nodeEnv === "development") {
     app.get(

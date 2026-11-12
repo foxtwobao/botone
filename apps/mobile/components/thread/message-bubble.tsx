@@ -452,7 +452,11 @@ const MessageBubbleContent = memo(function MessageBubbleContent({
                   {askBlock.detail}
                 </Text>
               ) : null}
-              {askBlock.status === "answered" ? (
+              {(
+                askBlock.nativeRequestId
+                  ? askBlock.nativeDelivery === "delivered"
+                  : askBlock.status === "answered"
+              ) ? (
                 <Text
                   {...actionProps}
                   style={{
@@ -472,7 +476,8 @@ const MessageBubbleContent = memo(function MessageBubbleContent({
                         isApprovalAskBlock(askBlock),
                       )}
                 </Text>
-              ) : canAnswer && onAnswer ? (
+              ) : canAnswer &&
+                (!askBlock.nativeRequestId || askBlock.nativeDelivery === "pending") ? (
                 <AskActions
                   actions={askBlock.actions}
                   site={askBlock.site}
@@ -487,7 +492,7 @@ const MessageBubbleContent = memo(function MessageBubbleContent({
                   {...actionProps}
                   style={{ color: tokens.mutedForeground, marginTop: 12, ...typeScale.caption }}
                 >
-                  {t`No longer active`}
+                  {askBlock.nativeDelivery === "submitted" ? t`Sending…` : t`No longer active`}
                 </Text>
               )}
             </>

@@ -294,7 +294,11 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
       if (deps.shutdownSignal?.aborted) return;
       const run = await deps.prisma.run.findUnique({
         where: { id: runId },
-        include: { routine: { select: { name: true } } },
+        include: {
+          routine: { select: { name: true } },
+          nativeExecution: true,
+          bot: { select: { executionConfiguration: true } },
+        },
       });
       if (!run) return;
       // Logs and security events raised by this run's tools name its account and space.
@@ -490,6 +494,16 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         // integration and computer setup must not occupy a queue dispatch slot.
         onRunStarted?.();
         dispatchHandedOff = Boolean(onRunStarted);
+        if (run.nativeExecution || run.bot?.executionConfiguration) {
+          const { continueNativeRun } = await import("./native-harness/run.js");
+          await continueNativeRun(
+            deps,
+            run,
+            { id: attempt.id, workerId, fence },
+            () => lease.valid,
+          );
+          return;
+        }
         // A saved computer turn owns both identities. Resolve them before consulting
         // today's main selection, whose connection may have changed while paused.
         let turnCheckpoint: string | undefined;

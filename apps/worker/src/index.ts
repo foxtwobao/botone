@@ -22,6 +22,7 @@ import {
   createCloudAgentConnection,
   createConnectorRuntime,
   createDeadJobPruner,
+  createInitializedRunSandbox,
   createMediaGenerationProvider,
   createPaymentWalletProvider,
   createPostgresReconciliationLeadership,
@@ -30,7 +31,6 @@ import {
   createRoutineRetryNoticeReconciler,
   createRunReconciler,
   createRunRuntime,
-  createRunSandbox,
   createRunSecretWriter,
   createTicketChangeNotifier,
   databaseCapacityBackoffMs,
@@ -139,13 +139,17 @@ async function main() {
       ? new ScriptedAgentRuntime()
       : new PiAgentRuntime({ sessionRoot: resolvePiSessionRoot(env.dataDir) });
   const sandboxProvider = resolveSandboxProvider(process.env);
-  const sandbox = await createRunSandbox(sandboxProvider, {
+  const sandbox = await createInitializedRunSandbox(sandboxProvider, {
     ...sandboxProviderOptionsFromEnv(process.env),
     supervisorUrl: process.env.SANDBOX_SUPERVISOR_URL ?? "http://127.0.0.1:7091",
     supervisorToken: sandboxProvider === "docker" ? resolveSupervisorToken(process.env) : undefined,
     dataDir: env.dataDir,
     prisma,
     secrets,
+    initialization:
+      process.env.BETTER_AUTH_URL && process.env.ENCRYPTION_KEY
+        ? { url: process.env.BETTER_AUTH_URL, signingKey: process.env.ENCRYPTION_KEY }
+        : undefined,
   });
   const connectedApps = await loadConfiguredApps({ env: process.env });
   const connectors = createConnectorRuntime(
