@@ -152,7 +152,6 @@ export async function launchComputerHarness(
         ...(profile.initialization && !inspection
           ? {
               COMPUTER_MODEL_INITIALIZATION: JSON.stringify(profile.initialization),
-              COMPUTER_MODEL_PROGRAM: computerInitializationProgram,
               COMPUTER_MODEL_LAUNCH: "1",
             }
           : {}),

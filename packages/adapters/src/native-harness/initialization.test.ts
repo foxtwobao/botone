@@ -115,7 +115,6 @@ patch:process.argv.includes('--patch')?JSON.parse(fs.readFileSync(process.argv[p
             url: `http://127.0.0.1:${address.port}`,
             token: "fake-computer-grant",
           }),
-          COMPUTER_MODEL_PROGRAM: program,
         },
       }),
     run: (engine: string, args: string[] = []) =>
@@ -170,6 +169,7 @@ describe("computer model initialization", () => {
 
   it("initializes and launches a managed protocol directly while preserving custom user launchers", async () => {
     const f = await fixture();
+    await f.install();
     await mkdir(path.join(f.home, ".local/bin"), { recursive: true });
     await writeFile(path.join(f.home, ".local/bin/codex"), "custom-launcher");
     const result = JSON.parse((await f.managedRun("codex", ["app-server"])).stdout);
@@ -183,6 +183,22 @@ describe("computer model initialization", () => {
     );
     for (const file of await readdir(f.root))
       expect(await readFile(path.join(f.root, file), "utf8")).not.toContain("fake-key-next");
+  });
+
+  it("keeps a managed dispatch independent of a concurrently refreshed terminal grant", async () => {
+    const f = await fixture();
+    await f.install();
+    const file = path.join(f.root, "grant.json");
+    const terminalGrant = JSON.stringify({
+      ...JSON.parse(await readFile(file, "utf8")),
+      token: "fake-other-authorization",
+    });
+    await writeFile(file, terminalGrant);
+    expect(JSON.parse((await f.managedRun("codex", ["app-server"])).stdout).key).toBe(
+      "fake-key-one",
+    );
+    expect(await readFile(file, "utf8")).toBe(terminalGrant);
+    expect(f.calls()).toBe(1);
   });
 
   it("does not launch or replay a CLI after authentication failure, while local help works", async () => {
