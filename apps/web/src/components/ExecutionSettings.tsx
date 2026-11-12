@@ -151,130 +151,134 @@ export function ExecutionSettings({
             : null,
         )}
       </fieldset>
-      <ConfirmDialog
-        open={pending !== undefined}
-        title={t`Stop current tasks?`}
-        description={t`Unfinished tasks will stop before the new agent settings are applied.`}
-        confirmLabel={t`Stop and switch`}
-        variant="default"
-        busy={busy}
-        error={error}
-        onCancel={() => {
-          setPending(undefined);
-          setError(undefined);
-        }}
-        onConfirm={() => {
-          if (pending) void save(pending.configuration, true);
-        }}
-      />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogTitle>
-            <Trans>Connection</Trans>
-          </DialogTitle>
-          {(list.data ?? []).map((connection) => (
-            <div key={connection.id} className="flex items-center justify-between gap-3">
-              <div>
-                <span>
-                  {connection.label}
-                  {connection.online ? "" : t` · Offline`}
-                </span>
-                {connection.profiles.map((profile) => (
-                  <p key={profile.id} className="text-body-sm text-muted-foreground">
-                    {profile.label} ·{" "}
-                    {profile.status === "ready"
-                      ? t`Ready`
-                      : profile.status === "missing"
-                        ? t`Not installed`
-                        : profile.status === "unsupported"
-                          ? t`Unsupported version`
-                          : profile.status === "unauthenticated"
-                            ? t`Sign in required`
-                            : t`Verification required`}
-                  </p>
-                ))}
+      {pending !== undefined ? (
+        <ConfirmDialog
+          open={pending !== undefined}
+          title={t`Stop current tasks?`}
+          description={t`Unfinished tasks will stop before the new agent settings are applied.`}
+          confirmLabel={t`Stop and switch`}
+          variant="default"
+          busy={busy}
+          error={error}
+          onCancel={() => {
+            setPending(undefined);
+            setError(undefined);
+          }}
+          onConfirm={() => {
+            if (pending) void save(pending.configuration, true);
+          }}
+        />
+      ) : null}
+      {open ? (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent>
+            <DialogTitle>
+              <Trans>Connection</Trans>
+            </DialogTitle>
+            {(list.data ?? []).map((connection) => (
+              <div key={connection.id} className="flex items-center justify-between gap-3">
+                <div>
+                  <span>
+                    {connection.label}
+                    {connection.online ? "" : t` · Offline`}
+                  </span>
+                  {connection.profiles.map((profile) => (
+                    <p key={profile.id} className="text-body-sm text-muted-foreground">
+                      {profile.label} ·{" "}
+                      {profile.status === "ready"
+                        ? t`Ready`
+                        : profile.status === "missing"
+                          ? t`Not installed`
+                          : profile.status === "unsupported"
+                            ? t`Unsupported version`
+                            : profile.status === "unauthenticated"
+                              ? t`Sign in required`
+                              : t`Verification required`}
+                    </p>
+                  ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await rpc.executions.revoke({ id: connection.id });
+                      await list.refetch();
+                    } catch (error) {
+                      setError(errorText(error));
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  <Trans>Revoke</Trans>
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await rpc.executions.revoke({ id: connection.id });
-                    await list.refetch();
-                  } catch (error) {
-                    setError(errorText(error));
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                <Trans>Revoke</Trans>
+            ))}
+            <form
+              className="space-y-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const fields = new FormData(event.currentTarget);
+                setBusy(true);
+                setError(undefined);
+                try {
+                  await rpc.executions.connect({
+                    botId,
+                    label: String(fields.get("label")),
+                    url: String(fields.get("url")),
+                    token: String(fields.get("token")),
+                    privateEndpoint: fields.get("privateEndpoint") === "on",
+                  });
+                  await list.refetch();
+                  setOpen(false);
+                } catch (error) {
+                  setError(errorText(error));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <Input
+                name="label"
+                aria-label={t`Name`}
+                placeholder={t`Name`}
+                required
+                maxLength={100}
+              />
+              <Input
+                name="url"
+                type="url"
+                aria-label={t`Service address`}
+                placeholder="https://execution.example.com"
+                required
+              />
+              <Input
+                name="token"
+                type="password"
+                autoComplete="off"
+                aria-label={t`Access token`}
+                placeholder={t`Access token`}
+                required
+              />
+              <label htmlFor={`${ids}-private`} className="flex items-center gap-2 text-body-sm">
+                <Checkbox id={`${ids}-private`} name="privateEndpoint" />
+                <Trans>Private network</Trans>
+              </label>
+              {error ? (
+                <p role="alert" className="text-destructive">
+                  {error}
+                </p>
+              ) : null}
+              <Button disabled={busy} type="submit">
+                <Trans>Connect</Trans>
               </Button>
-            </div>
-          ))}
-          <form
-            className="space-y-3"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const fields = new FormData(event.currentTarget);
-              setBusy(true);
-              setError(undefined);
-              try {
-                await rpc.executions.connect({
-                  botId,
-                  label: String(fields.get("label")),
-                  url: String(fields.get("url")),
-                  token: String(fields.get("token")),
-                  privateEndpoint: fields.get("privateEndpoint") === "on",
-                });
-                await list.refetch();
-                setOpen(false);
-              } catch (error) {
-                setError(errorText(error));
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <Input
-              name="label"
-              aria-label={t`Name`}
-              placeholder={t`Name`}
-              required
-              maxLength={100}
-            />
-            <Input
-              name="url"
-              type="url"
-              aria-label={t`Service address`}
-              placeholder="https://execution.example.com"
-              required
-            />
-            <Input
-              name="token"
-              type="password"
-              autoComplete="off"
-              aria-label={t`Access token`}
-              placeholder={t`Access token`}
-              required
-            />
-            <label htmlFor={`${ids}-private`} className="flex items-center gap-2 text-body-sm">
-              <Checkbox id={`${ids}-private`} name="privateEndpoint" />
-              <Trans>Private network</Trans>
-            </label>
-            {error ? (
-              <p role="alert" className="text-destructive">
-                {error}
-              </p>
-            ) : null}
-            <Button disabled={busy} type="submit">
-              <Trans>Connect</Trans>
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+            </form>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </>
   );
 }

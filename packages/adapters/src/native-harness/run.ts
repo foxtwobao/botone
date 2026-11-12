@@ -9,7 +9,7 @@ import type {
 import { createAdapterContext } from "@rakazo/adapter-kit";
 import type { MessageBlock } from "@rakazo/contracts";
 import { BACKGROUND_HELPER_TRIGGER, messageBlockForArtifact, redactSecrets } from "@rakazo/core";
-import type { Run } from "@rakazo/db";
+import type { BotExecution, NativeExecution, Run } from "@rakazo/db";
 import {
   appendEventInTransaction,
   assertRunCanWriteHistory,
@@ -32,12 +32,15 @@ const leaseExpiry = () => new Date(Date.now() + 240_000).toISOString();
 /** Entered before any built-in model or checkpoint resolution. Every trigger uses this route. */
 export async function continueNativeRun(
   deps: ExecutorDeps,
-  run: Run,
+  run: Run & {
+    nativeExecution: NativeExecution | null;
+    bot: { executionConfiguration: BotExecution | null };
+  },
   attempt: { id: string; workerId: string; fence: number },
   valid: () => boolean,
 ): Promise<boolean> {
-  let saved = await deps.prisma.nativeExecution.findUnique({ where: { runId: run.id } });
-  const configuration = await deps.prisma.botExecution.findUnique({ where: { botId: run.botId } });
+  let saved = run.nativeExecution;
+  const configuration = run.bot.executionConfiguration;
   if (!saved && !configuration) return false;
   const bot = await deps.prisma.bot.findUniqueOrThrow({ where: { id: run.botId } });
   const fail = (message: string) =>

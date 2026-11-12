@@ -6,12 +6,17 @@ import type { RouterDeps } from "./router.js";
 const actor = { spaceId: "space", userId: "owner" } as Actor;
 
 function fixture(nativeIds: string[]) {
-  const findNative = vi.fn(async () => nativeIds.map((botId) => ({ botId })));
+  const findNative = vi.fn(async (_input: unknown) => nativeIds.map((id) => ({ id })));
   const findBots = vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
     where.id.in.map(() => ({ modelProvider: null, modelId: null, thinkingLevel: null })),
   );
   const deps = {
-    prisma: { botExecution: { findMany: findNative }, bot: { findMany: findBots } },
+    prisma: {
+      bot: {
+        findMany: (input: Parameters<typeof findBots>[0]) =>
+          "executionConfiguration" in input.where ? findNative(input) : findBots(input),
+      },
+    },
   } as unknown as RouterDeps;
   return { deps, findNative, findBots };
 }
@@ -22,12 +27,15 @@ describe("execution model preflight", () => {
     expect(await botsCanRunWithoutDefaultModel(deps, actor, ["native"])).toBe(true);
     expect(findNative).toHaveBeenCalledWith({
       where: {
-        botId: { in: ["native"] },
+        id: { in: ["native"] },
         spaceId: actor.spaceId,
-        userId: actor.userId,
-        connection: { revokedAt: null },
+        executionConfiguration: {
+          spaceId: actor.spaceId,
+          userId: actor.userId,
+          connection: { revokedAt: null },
+        },
       },
-      select: { botId: true },
+      select: { id: true },
     });
   });
 

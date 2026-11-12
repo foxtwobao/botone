@@ -8,16 +8,19 @@ export async function botsCanRunWithoutDefaultModel(
   actor: Actor,
   botIds: string[],
 ) {
-  const native = await deps.prisma.botExecution.findMany({
+  const native = await deps.prisma.bot.findMany({
     where: {
-      botId: { in: botIds },
+      id: { in: botIds },
       spaceId: actor.spaceId,
-      userId: actor.userId,
-      connection: { revokedAt: null },
+      executionConfiguration: {
+        spaceId: actor.spaceId,
+        userId: actor.userId,
+        connection: { revokedAt: null },
+      },
     },
-    select: { botId: true },
+    select: { id: true },
   });
-  const nativeIds = new Set(native.map((configuration) => configuration.botId));
+  const nativeIds = new Set(native.map((bot) => bot.id));
   return botsRunOwnModels(
     deps,
     actor,

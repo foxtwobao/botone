@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import type { BotExecutionConfiguration, ExecutionConnectionView } from "@rakazo/contracts";
+import { BotExecutionSchema, ExecutionConnectionSchema } from "@rakazo/contracts";
 import type { ComponentProps } from "react";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
@@ -26,10 +27,12 @@ export function ExecutionSettings({
         rpc("executions/list", { botId }, { requestContext: context }),
         rpc("executions/get", { botId }, { requestContext: context }),
       ]);
+      const parsedConnections = ExecutionConnectionSchema.array().parse(list);
+      const parsedConfiguration = BotExecutionSchema.nullable().parse(current);
       if (active) {
         setRequestContext(context);
-        setConnections(list);
-        setConfiguration(current);
+        setConnections(parsedConnections);
+        setConfiguration(parsedConfiguration);
       }
     })().catch(() => {});
     return () => {
