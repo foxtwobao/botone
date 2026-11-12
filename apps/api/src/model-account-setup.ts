@@ -1,5 +1,5 @@
 import type { BillingProvider } from "@rakazo/adapter-kit";
-import { configuredModelAccount } from "@rakazo/adapters";
+import { configuredExecutionConnection, configuredModelAccount } from "@rakazo/adapters";
 import type { Hono } from "hono";
 import type { AppEnv } from "./env.js";
 import { modelAccountRoutes } from "./model-account.js";
@@ -16,7 +16,12 @@ type Runtime = Pick<
 
 /** Validate before billing starts, then mount once the app's runtime dependencies exist. */
 export function createModelAccountFeature(env: AccountEnv, billingOverride?: BillingProvider) {
+  const execution = configuredExecutionConnection(env.executionConnection);
   const connection = configuredModelAccount(env.modelAccountConnection);
+  if (execution && (!connection || !env.encryptionKey || !env.authUrl))
+    throw new Error(
+      "Automatic execution requires a model account connection and computer initialization",
+    );
   if (
     connection &&
     (!env.oidc || env.stripeSecretKey || env.stripeWebhookSecret || billingOverride)
@@ -35,6 +40,7 @@ export function createModelAccountFeature(env: AccountEnv, billingOverride?: Bil
           webOrigin: env.webOrigin,
           authUrl: env.authUrl,
           initializationKey: env.encryptionKey,
+          executionConnection: env.executionConnection,
         }),
       );
     },

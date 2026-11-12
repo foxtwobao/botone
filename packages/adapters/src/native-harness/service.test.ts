@@ -144,7 +144,7 @@ describe("native execution lifecycle", () => {
         after: 0,
         leaseExpiresAt: request.leaseExpiresAt,
       }),
-    ).rejects.toThrow("execution_not_authorized");
+    ).rejects.toThrow("execution_not_found");
   });
 
   it("takes over the same execution with a new fence and refuses old approvals", async () => {

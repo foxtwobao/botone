@@ -6,6 +6,7 @@ export interface ComputerExecutionProfile {
   engine: "codex" | "claude" | "deepseek";
   computer: ComputerTarget;
   modelConnection?: { url: string; apiKey: string; model: string };
+  initialization?: { url: string; token: string };
 }
 
 export function nativeLaunchArguments(

@@ -41,9 +41,9 @@ async function connection(grant){
   return value;
 }
 async function main(){
-  if(computerEnvironment.COMPUTER_MODEL_INITIALIZATION){
+  if(computerEnvironment.COMPUTER_MODEL_INITIALIZATION&&!computerEnvironment.COMPUTER_MODEL_LAUNCH){
     const grant=JSON.parse(computerEnvironment.COMPUTER_MODEL_INITIALIZATION);
-    await directory(root);await directory(bin);
+    await directory(root);await directory(bin);await directory(path.join(computerEnvironment.HOME,'shared'));
     await fs.chmod(root,0o700);
     // User launchers are never replaced. Other engines can still be initialized.
     const script=path.join(root,'run.mjs');
@@ -62,15 +62,18 @@ async function main(){
     for(const entry of managed)await write(entry.file,entry.content,0o700);
     return;
   }
-  const [engine,...args]=process.argv.slice(2);
+  const [engine,...args]=process.argv.slice(computerEnvironment.COMPUTER_MODEL_LAUNCH?1:2);
   if(!['codex','claude','dsh'].includes(engine))throw Error('invalid_engine');
   const executable='/usr/local/bin/'+engine;
   // Local inspection and help do not need a model account or network.
   const inspect=args.some(arg=>['--help','--version','-V','-h'].includes(arg))||
     ['login','logout','auth'].includes(args[0]);
   let launch=args,childEnvironment={...computerEnvironment},overlay;
+  for(const key of ['COMPUTER_MODEL_INITIALIZATION','COMPUTER_MODEL_PROGRAM','COMPUTER_MODEL_LAUNCH'])delete childEnvironment[key];
   if(!inspect){
-    const grant=JSON.parse(await fs.readFile(path.join(root,'grant.json'),'utf8'));
+    // A managed dispatch keeps its own authorization if another launcher refreshes the shared file.
+    const grant=JSON.parse(computerEnvironment.COMPUTER_MODEL_LAUNCH?
+      computerEnvironment.COMPUTER_MODEL_INITIALIZATION:await fs.readFile(path.join(root,'grant.json'),'utf8'));
     const config=await connection(grant),defaults=config.defaults;
     const selected=defaults[engine==='codex'?'responses':engine==='claude'?'anthropic-messages':'chat-completions'];
     if(typeof selected!=='string'||!config.modelIds.includes(selected))throw Error('model_unavailable');

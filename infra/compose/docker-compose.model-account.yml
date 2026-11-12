@@ -3,6 +3,7 @@ services:
   api:
     environment:
       MODEL_ACCOUNT_CONNECTION:
+      EXECUTION_CONNECTION:
   worker:
     environment:
       BETTER_AUTH_URL:

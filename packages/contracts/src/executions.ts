@@ -13,7 +13,15 @@ export const ExecutionProfileSchema = z.object({
   engineVersion: z.string(),
   defaultModel: z.string().optional(),
   models: ExecutionModelsSchema.optional(),
-  status: z.enum(["missing", "unsupported", "unauthenticated", "unverified", "ready"]),
+  status: z.enum([
+    "missing",
+    "unsupported",
+    "unauthenticated",
+    "unverified",
+    "unavailable",
+    "stopped",
+    "ready",
+  ]),
 });
 export const ExecutionConnectionSchema = z.object({
   id: Id,

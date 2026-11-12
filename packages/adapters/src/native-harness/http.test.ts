@@ -93,4 +93,18 @@ it("authenticates the service, binds its installation identity, and keeps work a
       answer: "allow",
     }),
   ).rejects.toThrow("execution_service_rejected");
+  service.replaceComputerProfiles(scope.computerId, []);
+  await expect(connected.start({ ...startRequest(), runId: "revoked-dispatch" })).rejects.toThrow(
+    "execution_service_rejected",
+  );
+  await connected.stop({ runId: "run-a", scope, fence: 3 });
+  const stopped = await reconnected.attach({
+    runId: "run-a",
+    scope,
+    generation: started.generation,
+    fence: 3,
+    after: 1,
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  expect(stopped.frames.at(-1)?.event.type).toBe("cancelled");
 });

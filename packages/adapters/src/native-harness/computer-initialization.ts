@@ -1,6 +1,7 @@
 import type { SandboxProvider } from "@rakazo/adapter-kit";
 import type { PrismaClient } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { personalComputerWhere } from "./computer-access.js";
 import { computerInitializationGrant } from "./initialization-auth.js";
 import { computerInitializationProgram } from "./initialization-program.js";
 
@@ -40,9 +41,7 @@ export function withComputerModelInitialization(
         const owned = await prisma.computer.findFirst({
           where: {
             homeKey: computer.botId,
-            spaceId: context.spaceId,
-            userId: context.userId,
-            scope: "dedicated",
+            ...personalComputerWhere(context),
           },
         });
         if (!owned) return;
