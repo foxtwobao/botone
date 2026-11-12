@@ -1,0 +1,12 @@
+# Optional Linux host service. Its credential belongs only to the API, never to computers.
+services:
+  api:
+    environment:
+      EXECUTION_CONNECTION: ${EXECUTION_CONNECTION:?Configure the trusted execution connection}
+      MODEL_ACCOUNT_CONNECTION: ${MODEL_ACCOUNT_CONNECTION:?Configure protocol defaults}
+  worker:
+    environment:
+      BETTER_AUTH_URL:
+  supervisor:
+    environment:
+      RAKAZO_COMPUTER_IMAGE: ${RAKAZO_COMPUTER_IMAGE:?Select the pinned native computer image}

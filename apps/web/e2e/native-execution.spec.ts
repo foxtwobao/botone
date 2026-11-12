@@ -23,14 +23,34 @@ test("execution connections disclose readiness and private network settings", as
   await page.goto("/e2e/fixtures/native-execution.html?screen=settings");
   await expect(page.getByRole("combobox", { name: "Agent", exact: true })).toBeVisible();
   await expect(page.getByRole("option", { name: "Personal account" })).toHaveCount(1);
-  await expect(page.getByRole("option", { name: "Additional account" })).toHaveCount(0);
+  await expect(
+    page.getByRole("option", { name: "Additional account · Sign in required" }),
+  ).toBeDisabled();
   await page.getByRole("button", { name: "Connection", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
-    page.getByText("Additional account · Sign in required", { exact: true }),
+    page.getByRole("dialog").getByText("Additional account · Sign in required", { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "Private network" })).toBeVisible();
   await captureScreenshot(page, testInfo, "native-execution-connections");
+});
+
+test("ordinary users discover unprepared environments and retry without an administrator", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/e2e/fixtures/native-execution.html?screen=settings&state=unprepared");
+  const execution = page.getByRole("combobox", { name: "Agent", exact: true });
+  await expect(execution).toBeVisible();
+  await expect(page.getByRole("button", { name: "Connection", exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("option", { name: "Personal account · Sign in required", exact: true }),
+  ).toBeDisabled();
+  await captureScreenshot(page, testInfo, "native-ordinary-user-unprepared");
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(page.getByRole("option", { name: "Personal account", exact: true })).toBeEnabled();
+  await execution.selectOption(JSON.stringify(["connection", "account", 1]));
+  await expect(page.getByRole("combobox", { name: "Model", exact: true })).toBeVisible();
+  await captureScreenshot(page, testInfo, "native-ordinary-user-ready");
 });
 
 test("execution switches stop only after confirmation and offer available models", async ({

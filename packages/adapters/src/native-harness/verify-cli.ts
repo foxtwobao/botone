@@ -13,13 +13,20 @@ import { nativeHarnessDriver } from "./catalog.js";
 import { launchComputerHarness } from "./computer-process.js";
 import { resolveComputerTarget } from "./computer-target.js";
 import { engineVersions, readDaemonConfiguration } from "./configuration.js";
+import { verifyComputerIsolation } from "./inspection.js";
+import { managedComputerProfiles } from "./managed-profiles.js";
 import { NativeHarnessExecutionService } from "./service.js";
 import { verificationBinding, verificationChecks } from "./verification.js";
 
 /** Opt-in real account verification. Assertions concern effects and protocol, never prose quality. */
 export async function verifyNativeCli(file: string, profileId: string) {
   const configuration = await readDaemonConfiguration(file);
-  const profile = configuration.profiles.find((profile) => profile.id === profileId);
+  const managed = configuration.managed?.verification;
+  const profile = managed
+    ? (await managedComputerProfiles(configuration, managed)).find(
+        (profile) => profile.engine === profileId,
+      )
+    : configuration.profiles.find((profile) => profile.id === profileId);
   if (!profile) throw new Error("unknown_profile");
   const version = engineVersions[profile.engine];
   const nonce = randomUUID();
@@ -41,39 +48,12 @@ export async function verifyNativeCli(file: string, profileId: string) {
     instructions:
       "This is an explicit opt-in execution verification. Use only the specified verification files. Do not access accounts or other files.",
     session,
-    model: profile.modelConnection?.model,
+    model: profile.defaultModel ?? profile.modelConnection?.model,
   });
   const computer = await resolveComputerTarget(profile.computer, request("inspection").scope);
   const workspace = computer.workspace;
   const home = computer.source;
-  const probe = await launchComputerHarness(profile, request("isolation"), root, "isolation");
-  const output = await new Promise<string>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error("isolation_timeout")), 10_000);
-    probe.onLine((line) => {
-      clearTimeout(timeout);
-      resolve(line);
-    });
-    probe.onExit(() => {
-      clearTimeout(timeout);
-      reject(new Error("isolation_probe_failed"));
-    });
-  }).finally(() => probe.stop());
-  const report = JSON.parse(output) as {
-    privatePaths: boolean[];
-    deploymentEnvironment: boolean;
-    pid: number;
-    uid: number;
-    groups: number[];
-    cgroup: string;
-    pidNamespace?: number;
-  };
-  assert(report.privatePaths.every((visible) => !visible));
-  assert.equal(report.deploymentEnvironment, false);
-  assert.equal(report.uid, computer.uid);
-  assert(report.groups.every((group) => group === computer.gid));
-  assert.equal(report.cgroup, "0::/");
-  assert.notEqual(report.pidNamespace, (await stat("/proc/self/ns/pid")).ino);
-  assert.notEqual(report.pidNamespace, (await stat(`/proc/${computer.pid}/ns/pid`)).ino);
+  await verifyComputerIsolation(profile, request("isolation"), root);
   const service = new NativeHarnessExecutionService(root, [
     {
       ...profile,
@@ -193,6 +173,17 @@ export async function verifyNativeCli(file: string, profileId: string) {
     const before = await readFile(path.join(workspace, counter), "utf8");
     await delay(500);
     assert.equal(await readFile(path.join(workspace, counter), "utf8"), before);
+    if (managed && configuration.managed)
+      await writeFile(
+        path.join(configuration.root, `runtime-${profile.engine}.json`),
+        JSON.stringify({
+          runtimeRevision: configuration.managed.runtimeRevision,
+          version,
+          managed: true,
+          checks: verificationChecks,
+        }),
+        { mode: 0o600 },
+      );
     await writeFile(
       path.join(configuration.root, `verified-${profile.id}.json`),
       JSON.stringify({
@@ -215,6 +206,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     );
   await verifyNativeCli(process.argv[2] ?? "", process.argv[3] ?? "");
   process.stdout.write(
-    "Execution verification passed. Restart the execution service to enable this profile.\n",
+    "Execution verification passed. Managed environments refresh automatically.\n",
   );
 }

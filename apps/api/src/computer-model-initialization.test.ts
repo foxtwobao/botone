@@ -143,7 +143,11 @@ describe("computer model credentials", () => {
       where: {
         ...scope,
         kind: "docker",
-        scope: "dedicated",
+        scope: { in: ["team", "dedicated"] },
+        space: {
+          deletingAt: null,
+          memberships: { some: { userId: scope.userId }, none: { userId: { not: scope.userId } } },
+        },
         state: { in: ["running", "booting"] },
       },
     });

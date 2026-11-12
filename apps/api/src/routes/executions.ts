@@ -4,6 +4,7 @@ import { createAdapterContext } from "@rakazo/adapter-kit";
 import { executionConnectionClient, HttpNativeExecutionProvider } from "@rakazo/adapters";
 import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
 import { isAdmin } from "../admins.js";
+import { ensureAutomaticExecution } from "../automatic-execution.js";
 import { stopBotExecutionRuns } from "../execution-stop.js";
 import type { RouterContext } from "./context.js";
 
@@ -22,6 +23,9 @@ export function executionRoutes({ deps, authed }: RouterContext) {
     executions: {
       list: authed.executions.list.handler(async ({ context: { actor }, input }) => {
         const bot = input.botId ? await ownedBot(actor, input.botId) : null;
+        const pending = bot
+          ? await ensureAutomaticExecution(deps, actor, bot.computerId)
+          : undefined;
         const connections = await deps.prisma.executionConnection.findMany({
           where: {
             ...owner(actor),
@@ -29,7 +33,7 @@ export function executionRoutes({ deps, authed }: RouterContext) {
             ...(bot ? { computerId: bot.computerId ?? "" } : {}),
           },
         });
-        return Promise.all(
+        const views = await Promise.all(
           connections.map(async (connection) => {
             const base = {
               id: connection.id,
@@ -56,6 +60,9 @@ export function executionRoutes({ deps, authed }: RouterContext) {
             }
           }),
         );
+        return pending && !views.some((view) => view.id === pending.id)
+          ? [...views, pending]
+          : views;
       }),
       connect: authed.executions.connect.handler(async ({ context: { actor }, input }) => {
         if (!(await isAdmin(deps, actor.userId))) throw new ORPCError("FORBIDDEN");

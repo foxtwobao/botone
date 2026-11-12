@@ -22,11 +22,22 @@ export const executionServiceDescriptionSchema = z.object({
         engineVersion: z.string().min(1).max(100),
         defaultModel: z.string().min(1).max(256).optional(),
         models: ExecutionModelsSchema.optional(),
-        status: z.enum(["missing", "unsupported", "unauthenticated", "unverified", "ready"]),
+        status: z.enum([
+          "missing",
+          "unsupported",
+          "unauthenticated",
+          "unverified",
+          "unavailable",
+          "stopped",
+          "ready",
+        ]),
       }),
     )
     .max(1000),
 });
+export type ExecutionServiceProfile = z.infer<
+  typeof executionServiceDescriptionSchema
+>["profiles"][number];
 
 export class HttpNativeExecutionProvider implements NativeExecutionProvider {
   private readonly baseUrl: URL;
@@ -36,6 +47,7 @@ export class HttpNativeExecutionProvider implements NativeExecutionProvider {
       url: string;
       token: string;
       identity?: string;
+      scope?: { spaceId: string; userId: string; computerId: string };
       allowPrivateEndpoint?: boolean;
     },
   ) {
@@ -61,6 +73,13 @@ export class HttpNativeExecutionProvider implements NativeExecutionProvider {
       authorization: `Bearer ${this.connection.token}`,
       "content-type": "application/json",
       "x-execution-service-id": this.connection.identity ?? "",
+      ...(this.connection.scope
+        ? {
+            "x-execution-scope": Buffer.from(JSON.stringify(this.connection.scope)).toString(
+              "base64url",
+            ),
+          }
+        : {}),
     };
     const deadline = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(15_000)]);
     if (this.connection.allowPrivateEndpoint) {

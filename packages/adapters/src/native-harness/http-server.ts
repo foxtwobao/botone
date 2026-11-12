@@ -2,7 +2,9 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
-import type { NativeExecutionProvider } from "@rakazo/adapter-kit";
+import type { NativeExecutionProvider, NativeExecutionStart } from "@rakazo/adapter-kit";
+import type { ExecutionServiceProfile } from "./http-client.js";
+import { executionOwnerSchema } from "./managed-configuration.js";
 import {
   executionAttachSchema,
   executionControlSchema,
@@ -20,18 +22,13 @@ export async function startNativeExecutionServer(options: {
   root: string;
   token: string;
   provider: NativeExecutionProvider;
-  profiles: Array<{
-    id: string;
-    revision: number;
+  profiles: ExecutionServiceProfile[];
+  describe?(scope?: {
     spaceId: string;
-    userIds: string[];
+    userId: string;
     computerId: string;
-    label: string;
-    engineVersion: string;
-    defaultModel?: string;
-    models?: Array<{ id: string; label: string }>;
-    status: "missing" | "unsupported" | "unauthenticated" | "unverified" | "ready";
-  }>;
+  }): Promise<ExecutionServiceProfile[]>;
+  beforeStart?(request: NativeExecutionStart): Promise<void>;
   port?: number;
   hostname?: string;
 }) {
@@ -54,8 +51,20 @@ export async function startNativeExecutionServer(options: {
       return;
     }
     if (request.method === "GET" && request.url === "/describe") {
-      response.setHeader("content-type", "application/json");
-      response.end(JSON.stringify({ id: identity, profiles: options.profiles }));
+      try {
+        const header = request.headers["x-execution-scope"];
+        const scope =
+          typeof header === "string"
+            ? executionOwnerSchema.parse(
+                JSON.parse(Buffer.from(header, "base64url").toString("utf8")),
+              )
+            : undefined;
+        const profiles = options.describe ? await options.describe(scope) : options.profiles;
+        response.setHeader("content-type", "application/json");
+        response.end(JSON.stringify({ id: identity, profiles }));
+      } catch {
+        response.writeHead(503).end();
+      }
       return;
     }
     // Losing the private journal produces a new service identity. Old dispatches cannot run there.
@@ -91,7 +100,11 @@ export async function startNativeExecutionServer(options: {
           result = await options.provider.toolResult(executionToolResultSchema.parse(input));
           break;
         case "/start":
-          result = await options.provider.start(executionStartSchema.parse(input));
+          {
+            const start = executionStartSchema.parse(input);
+            await options.beforeStart?.(start);
+            result = await options.provider.start(start);
+          }
           break;
         case "/attach":
           result = await options.provider.attach(executionAttachSchema.parse(input));

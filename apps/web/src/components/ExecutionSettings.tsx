@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { BotExecutionConfiguration } from "@rakazo/contracts";
+import type { BotExecutionConfiguration, ExecutionConnectionView } from "@rakazo/contracts";
 import type { ChatModelChoice } from "@rakazo/core";
 import {
   Button,
@@ -44,6 +44,24 @@ export function ExecutionSettings({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState<{ configuration: BotExecutionConfiguration | null }>();
+  const needsRetry = (list.data ?? []).some(
+    (connection) =>
+      !connection.online || connection.profiles.some((profile) => profile.status !== "ready"),
+  );
+  const profileStatus = (status: ExecutionConnectionView["profiles"][number]["status"]) =>
+    status === "ready"
+      ? t`Ready`
+      : status === "missing"
+        ? t`Not installed`
+        : status === "unsupported"
+          ? t`Unsupported version`
+          : status === "unauthenticated"
+            ? t`Sign in required`
+            : status === "stopped"
+              ? t`Computer stopped`
+              : status === "unavailable"
+                ? t`Model unavailable`
+                : t`Verification required`;
   const options = (list.data ?? []).flatMap((connection) =>
     connection.profiles
       .filter((profile) => profile.status === "ready")
@@ -89,17 +107,29 @@ export function ExecutionSettings({
   }
   return (
     <>
-      {options.length || saved.data || me.data?.isAdmin ? (
+      {list.data?.length || saved.data || me.data?.isAdmin ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-label font-medium text-muted-foreground" htmlFor={ids}>
               <Trans>Agent</Trans>
             </label>
-            {me.data?.isAdmin ? (
-              <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-                <Trans>Connection</Trans>
-              </Button>
-            ) : null}
+            <div className="flex items-center gap-1">
+              {needsRetry ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={list.isFetching}
+                  onClick={() => void list.refetch()}
+                >
+                  <Trans>Retry</Trans>
+                </Button>
+              ) : null}
+              {me.data?.isAdmin ? (
+                <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+                  <Trans>Connection</Trans>
+                </Button>
+              ) : null}
+            </div>
           </div>
           <NativeSelect
             className="w-full"
@@ -124,6 +154,26 @@ export function ExecutionSettings({
                 {option.label}
               </NativeSelectOption>
             ))}
+            {(list.data ?? []).flatMap((connection) =>
+              connection.profiles
+                .filter((profile) => profile.status !== "ready")
+                .map((profile) => (
+                  <NativeSelectOption
+                    key={`${connection.id}:${profile.id}`}
+                    value={`pending:${connection.id}:${profile.id}`}
+                    disabled
+                  >
+                    {profile.label} · {profileStatus(profile.status)}
+                  </NativeSelectOption>
+                )),
+            )}
+            {(list.data ?? [])
+              .filter((connection) => !connection.online)
+              .map((connection) => (
+                <NativeSelectOption key={connection.id} value={`offline:${connection.id}`} disabled>
+                  {connection.label} · <Trans>Offline</Trans>
+                </NativeSelectOption>
+              ))}
           </NativeSelect>
           {error && !pending ? (
             <p role="alert" className="text-body-sm text-destructive">
@@ -184,16 +234,7 @@ export function ExecutionSettings({
                   </span>
                   {connection.profiles.map((profile) => (
                     <p key={profile.id} className="text-body-sm text-muted-foreground">
-                      {profile.label} ·{" "}
-                      {profile.status === "ready"
-                        ? t`Ready`
-                        : profile.status === "missing"
-                          ? t`Not installed`
-                          : profile.status === "unsupported"
-                            ? t`Unsupported version`
-                            : profile.status === "unauthenticated"
-                              ? t`Sign in required`
-                              : t`Verification required`}
+                      {profile.label} · {profileStatus(profile.status)}
                     </p>
                   ))}
                 </div>

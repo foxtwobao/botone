@@ -12,10 +12,12 @@ import "../../src/styles.css";
 const parameters = new URLSearchParams(location.search);
 const originalFetch = window.fetch.bind(window);
 let configuration: BotExecutionConfiguration | null = null;
+let listings = 0;
 let active = ["running", "stop-failed"].includes(parameters.get("state") ?? "");
 window.fetch = async (input, init) => {
   const url = new URL(input instanceof Request ? input.url : String(input), location.origin);
   if (url.pathname.startsWith("/rpc/")) {
+    if (url.pathname === "/rpc/executions/list") listings++;
     if (url.pathname === "/rpc/executions/configure") {
       const request = (
         input instanceof Request ? await input.clone().json() : JSON.parse(String(init?.body))
@@ -49,7 +51,7 @@ window.fetch = async (input, init) => {
       return Response.json({ json: { ok: true } });
     }
     const values: Record<string, unknown> = {
-      "/rpc/me": { isAdmin: true },
+      "/rpc/me": { isAdmin: parameters.get("state") !== "unprepared" },
       "/rpc/executions/get": configuration,
       "/rpc/executions/list": [
         {
@@ -68,7 +70,10 @@ window.fetch = async (input, init) => {
                 { id: "provider/model-a", label: "Model A" },
                 { id: "provider/model-b", label: "Model B" },
               ],
-              status: "ready",
+              status:
+                parameters.get("state") === "unprepared" && listings === 1
+                  ? "unauthenticated"
+                  : "ready",
             },
             {
               id: "pending",

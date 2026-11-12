@@ -17,10 +17,13 @@ export function ExecutionSettings({
   const [connections, setConnections] = useState<ExecutionConnectionView[]>([]);
   const [configuration, setConfiguration] = useState<BotExecutionConfiguration | null>(null);
   const [busy, setBusy] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const [requestContext, setRequestContext] =
     useState<Awaited<ReturnType<typeof captureApiRequestContext>>>();
   useEffect(() => {
     let active = true;
+    setRefreshing(true);
     void (async () => {
       const context = await captureApiRequestContext();
       const [list, current] = await Promise.all([
@@ -34,11 +37,15 @@ export function ExecutionSettings({
         setConnections(parsedConnections);
         setConfiguration(parsedConfiguration);
       }
-    })().catch(() => {});
+    })()
+      .catch(() => {})
+      .finally(() => {
+        if (active) setRefreshing(false);
+      });
     return () => {
       active = false;
     };
-  }, [botId]);
+  }, [botId, retry]);
   const options = connections.flatMap((c) =>
     c.profiles
       .filter((profile) => profile.status === "ready")
@@ -133,12 +140,27 @@ export function ExecutionSettings({
                             ? t`Unsupported version`
                             : profile.status === "unauthenticated"
                               ? t`Sign in required`
-                              : t`Verification required`
+                              : profile.status === "stopped"
+                                ? t`Computer stopped`
+                                : profile.status === "unavailable"
+                                  ? t`Model unavailable`
+                                  : t`Verification required`
                       }
                     />
                   ))
               : [<SettingsRow key={connection.id} title={connection.label} value={t`Offline`} />],
           )}
+          {connections.some(
+            (connection) =>
+              !connection.online ||
+              connection.profiles.some((profile) => profile.status !== "ready"),
+          ) ? (
+            <SettingsRow
+              title={t`Retry`}
+              disabled={busy || refreshing}
+              onPress={() => setRetry((value) => value + 1)}
+            />
+          ) : null}
         </SettingsGroup>
       ) : null}
       <SettingsGroup {...groupProps}>

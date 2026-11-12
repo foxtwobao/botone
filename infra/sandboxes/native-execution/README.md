@@ -2,6 +2,71 @@
 
 This composition root runs the first three external engine adapters. The built-in runtime stays the default. An external profile is selectable only after its pinned CLI version and the opt-in account verification pass. Installing a CLI alone does not enable it.
 
+## Automatic personal environments
+
+For ordinary users, deploy the optional service once and use automatic discovery instead of manually binding accounts. Both a personal space's Team Computer (shared by its bots) and a dedicated computer are eligible. The computer must belong to the user and the space must have no other members. Adding another member prevents further personal credential issuance and new managed dispatches, including copied launch capabilities. Existing CLI processes are not replayed or automatically restarted; already-issued credentials cannot be recalled from a running process. A shared space requires a separately administered shared account and explicit profiles.
+
+The image workflow publishes two immutable artifacts beside the application image: `computer-sha-<commit>` and `execution-sha-<commit>`. Pull both from the same release. The computer image contains the CLIs; the execution image is an artifact extracted onto the Linux host, **not** a privileged Docker service. Local equivalents are:
+
+```sh
+docker build -t rakazo/computer infra/sandboxes/computer
+docker build -t rakazo/computer:native-execution infra/sandboxes/native-execution
+docker build --build-arg GIT_SHA="$(git rev-parse HEAD)" -f infra/sandboxes/native-execution/control.Dockerfile -t rakazo/execution .
+```
+
+Create a root-owned mode-0600 service configuration. The revision must match the artifact's real source commit. These values are placeholders:
+
+```json
+{
+  "root": "/var/lib/rakazo/execution",
+  "token": "REPLACE_WITH_64_RANDOM_HEXADECIMAL_CHARACTERS",
+  "port": 9081,
+  "managed": {
+    "apiUrl": "https://app.example.com",
+    "runtimeRevision": "REPLACE_WITH_THE_40_CHARACTER_RELEASE_COMMIT",
+    "verification": {
+      "spaceId": "example-space",
+      "userId": "example-user",
+      "computerId": "example-test-computer"
+    }
+  }
+}
+```
+
+`verification` designates an authorized personal test computer for release acceptance only; normal users are discovered dynamically. Set the API's generic `EXECUTION_CONNECTION` to a private server-only JSON envelope:
+
+```json
+{
+  "url": "http://execution.internal.example:9081",
+  "token": "REPLACE_WITH_THE_SAME_RANDOM_SERVICE_TOKEN",
+  "allowPrivateEndpoint": true
+}
+```
+
+The daemon listens only on host loopback. For a containerized API, reach it through a restricted host-side reverse proxy with TLS, or an explicitly trusted private network endpoint. Private addresses require `allowPrivateEndpoint: true` even with TLS. Never expose the control endpoint to browsers, computers or the public network. The reverse proxy must also reject browser Origins; the daemon does so independently. The daemon calls only the authenticated environment endpoint on the API and receives scoped launch capabilities, not model keys or database credentials.
+
+Include `infra/compose/docker-compose.execution.yml` after the existing Compose files, retain the existing `MODEL_ACCOUNT_CONNECTION` protocol defaults, and set `RAKAZO_COMPUTER_IMAGE` to the pinned prepared image. This overlay uses the existing supervisor; it does not grant host privileges to computers. Recreate the API/worker/supervisor through the normal rolling deployment, then update existing computers with **Update computer** to preserve their homes. Keep the old image and application release for rollback.
+
+Install the host artifact with the actual supervisor home-storage directory:
+
+```sh
+sudo bash infra/sandboxes/native-execution/install-control.sh rakazo/execution /etc/rakazo/execution/configuration.json /var/lib/rakazo/homes
+```
+
+The installer checks the artifact revision, cgroup v2 and host utilities. It starts a new installation; upgrading installs the new unit without restarting an active service. Wait for its tasks to finish before restarting. Retain the old release, unit and private configuration for rollback. A restart marks unfinished native work lost and never replays prompts.
+
+Before enabling an engine in each release, run the full opt-in verifier against the designated test computer. This makes real model calls and may incur charges. Use the installed release's Node binary and verifier:
+
+```sh
+sudo /opt/execution-releases/RELEASE/bin/node /opt/execution-releases/RELEASE/app/packages/adapters/dist/native-harness/verify-cli.js /etc/rakazo/execution/configuration.json codex --allow-workspace-test
+sudo /opt/execution-releases/RELEASE/bin/node /opt/execution-releases/RELEASE/app/packages/adapters/dist/native-harness/verify-cli.js /etc/rakazo/execution/configuration.json claude --allow-workspace-test
+sudo /opt/execution-releases/RELEASE/bin/node /opt/execution-releases/RELEASE/app/packages/adapters/dist/native-harness/verify-cli.js /etc/rakazo/execution/configuration.json deepseek --allow-workspace-test
+```
+
+A passing managed verifier writes a private runtime receipt for that exact release and CLI version. Every user's discovery and new dispatch still checks current ownership, membership, authorization, the live model catalog, actual CLI version and namespace isolation. It does not run the paid model suite for every user. Missing receipts keep the engine unverified. Restarting the daemon is not necessary after a managed receipt is written.
+
+Opening a bot's advanced settings creates its computer connection idempotently, without starting a stopped computer or changing its selected agent. Ordinary users can select ready engines and retry unavailable environments on web, desktop and mobile. No administrator email list, user-by-user profile file or service token entry is required. Account disconnect/recreation, model-default changes and runtime upgrades fence old managed sessions; a normal key refresh preserves the authorization generation. Explicitly revoked execution connections are never silently recreated. Previously configured explicit connections continue to use the manual mode below.
+
 ## Install
 
 Build the desktop image with its optional native-engine layer:
@@ -19,7 +84,7 @@ Login through the selected computer. Its existing writable filesystem, user home
 
 ### Initialize from an authorized model account
 
-An existing external model-account connection can initialize a user's **private** Docker computer. Add protocol defaults to its existing `MODEL_ACCOUNT_CONNECTION` configuration; these are exact model IDs from that account's catalog, not engine names:
+An existing external model-account connection can initialize a user's personally owned Docker computer, including the Team Computer in a space used only by that person. Add protocol defaults to its existing `MODEL_ACCOUNT_CONNECTION` configuration; these are exact model IDs from that account's catalog, not engine names:
 
 ```json
 {
@@ -35,7 +100,7 @@ An existing external model-account connection can initialize a user's **private*
 }
 ```
 
-The worker needs only the existing public `BETTER_AUTH_URL` and shared `ENCRYPTION_KEY`, not the account application's credentials. The URL must be reachable from the computer through its existing egress policy. Initialization does not open network access. Authorization prepares already-running private computers in that space; normal computer preparation handles new, resumed and replaced computers, including worker-started runs. Team computers and another person's computer never receive personal credentials automatically.
+The worker needs only the existing public `BETTER_AUTH_URL` and shared `ENCRYPTION_KEY`, not the account application's credentials. The URL must be reachable from the computer through its existing egress policy. Initialization does not open network access. Authorization prepares already-running eligible computers in that space; normal computer preparation handles new, resumed and replaced computers, including worker-started runs. Computers in spaces shared with another person, and another person's computer, never receive personal credentials automatically.
 
 Preparation installs managed launchers in `~/.local/bin` without contacting a model service. They use the image's `/usr/local/bin` executables. Existing custom launchers are preserved. Native configuration, accounts, sessions and CC Switch files are not edited. The launchers store a mode-0600 capability bound to this computer, user, space and authorization record; the user model key is fetched only for a CLI process and is not written into the image or a new credential file. Disconnecting or deleting and recreating the authorization invalidates the old capability. Model-account authorization, computer ownership, membership and account status are checked on each launch.
 

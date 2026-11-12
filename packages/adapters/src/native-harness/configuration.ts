@@ -1,6 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { ExecutionModelsSchema } from "@rakazo/contracts";
 import { z } from "zod";
+import { executionOwnerSchema } from "./managed-configuration.js";
 
 export const engineVersions = {
   codex: "0.167.0",
@@ -13,6 +14,28 @@ export const daemonConfigurationSchema = z
     token: z.string().regex(/^[a-f0-9]{64}$/),
     hostname: z.literal("127.0.0.1").default("127.0.0.1"),
     port: z.number().int().min(1024).max(65535),
+    managed: z
+      .object({
+        apiUrl: z
+          .string()
+          .url()
+          .refine((value) => {
+            const url = new URL(value);
+            return (
+              !url.username &&
+              !url.password &&
+              !url.search &&
+              !url.hash &&
+              url.pathname === "/" &&
+              (url.protocol === "https:" ||
+                (url.protocol === "http:" && url.hostname === "127.0.0.1"))
+            );
+          }),
+        runtimeRevision: z.string().regex(/^[a-f0-9]{40}$/),
+        verification: executionOwnerSchema.optional(),
+      })
+      .strict()
+      .optional(),
     profiles: z
       .array(
         z
@@ -25,6 +48,12 @@ export const daemonConfigurationSchema = z
             userIds: z.array(z.string().min(1)).min(1),
             computerId: z.string().min(1),
             engine: z.enum(["codex", "claude", "deepseek"]),
+            availability: z.literal("stopped").optional(),
+            defaultModel: z.string().min(1).max(256).optional(),
+            initialization: z
+              .object({ url: z.string().url(), token: z.string().min(1) })
+              .strict()
+              .optional(),
             computer: z
               .object({
                 homeKey: z.string().min(1),
@@ -42,9 +71,14 @@ export const daemonConfigurationSchema = z
           })
           .strict(),
       )
-      .max(1000),
+      .max(1000)
+      .default([]),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) => !value.managed || value.profiles.length === 0,
+    "Managed discovery replaces static profiles",
+  );
 
 export async function readDaemonConfiguration(configurationFile: string) {
   const info = await stat(configurationFile);

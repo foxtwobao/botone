@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { createServer } from "node:http";
 import {
   computerInitializationGrant,
   configuredModelAccount,
@@ -7,9 +8,11 @@ import {
 } from "@rakazo/adapters";
 import type { Auth } from "@rakazo/auth";
 import type { PrismaClient } from "@rakazo/db";
-import { asSystem, createDb } from "@rakazo/db";
+import { asSystem, createDb, runAsTenant } from "@rakazo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { ensureAutomaticExecution } from "./automatic-execution.js";
 import { modelAccountRoutes } from "./model-account.js";
+import type { RouterDeps } from "./router.js";
 
 const integration = process.env.VERIFY_DATABASE === "1" ? describe : describe.skip;
 integration("computer initialization with persisted authorization", () => {
@@ -140,6 +143,10 @@ integration("computer initialization with persisted authorization", () => {
       secrets: store,
       connection,
       initializationKey: signingKey,
+      executionConnection: JSON.stringify({
+        url: "https://execution.example.test",
+        token: "a".repeat(64),
+      }),
       issuer,
       modelFetch,
       webOrigin: "https://app.example.test",
@@ -195,14 +202,130 @@ integration("computer initialization with persisted authorization", () => {
     expect((await request("/computer", await grant())).status).toBe(200);
   });
 
-  it("refuses personal credentials when the computer becomes shared", async () => {
+  it("initializes a personal team computer and revokes the grant when another member joins", async () => {
     const token = await grant();
     await prisma.computer.update({
       where: { id: "computer-init-computer" },
       data: { scope: "team" },
     });
-    expect((await request("/computer", token)).status).toBe(403);
+    expect((await request("/computer", token)).status).toBe(200);
+    const other = "computer-init-other";
+    await prisma.user.create({ data: { id: other, email: "other@fixture.test", name: "Other" } });
+    try {
+      await prisma.member.create({
+        data: {
+          id: other,
+          userId: other,
+          organizationId: "computer-init-org",
+          role: "member",
+          createdAt: new Date(),
+        },
+      });
+      modelFetch.mockClear();
+      expect((await request("/computer", token)).status).toBe(403);
+      expect(modelFetch).not.toHaveBeenCalled();
+    } finally {
+      await prisma.user.delete({ where: { id: other } });
+    }
     expect(ensure).not.toHaveBeenCalled();
+  });
+
+  it("discovers only the granted computer and checks readiness without disclosing its model key", async () => {
+    const discover = (
+      token = "a".repeat(64),
+      computerId = "computer-init-computer",
+      origin?: string,
+    ) =>
+      app.request("/environment", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+          ...(origin ? { origin } : {}),
+        },
+        body: JSON.stringify({ userId, spaceId, computerId }),
+      });
+    expect((await discover("b".repeat(64))).status).toBe(401);
+    expect(
+      (await discover("a".repeat(64), "computer-init-computer", "https://app.example.test")).status,
+    ).toBe(401);
+    expect((await discover("a".repeat(64), "other-computer")).status).toBe(403);
+    const response = await discover();
+    expect(response.status).toBe(200);
+    const environment = await response.json();
+    expect(JSON.stringify(environment)).not.toContain("fake-original-key");
+    expect(environment).toMatchObject({
+      userId,
+      spaceId,
+      homeKey,
+      defaults: { responses: "fixture-model" },
+    });
+    const checked = await app.request("/computer", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${environment.initialization.token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ checkOnly: true }),
+    });
+    expect(checked.status).toBe(200);
+    const body = await checked.json();
+    expect(body.modelIds).toEqual(["fixture-model"]);
+    expect(body).not.toHaveProperty("apiKey");
+    expect(ensure).not.toHaveBeenCalled();
+  });
+
+  it("creates one automatic connection concurrently for an ordinary owner of a team computer", async () => {
+    await prisma.computer.update({
+      where: { id: "computer-init-computer" },
+      data: { scope: "team" },
+    });
+    const server = createServer((_request, response) =>
+      response.end(JSON.stringify({ id: "00000000-0000-4000-8000-000000000001", profiles: [] })),
+    );
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("test_server");
+    try {
+      const deps = {
+        prisma: db.prisma,
+        secrets: store,
+        env: {
+          executionConnection: JSON.stringify({
+            url: `http://127.0.0.1:${address.port}`,
+            token: "a".repeat(64),
+            allowPrivateEndpoint: true,
+          }),
+        },
+      } as unknown as RouterDeps;
+      const actor = {
+        userId,
+        spaceId,
+        email: "computer-init@fixture.test",
+        isDeploymentOwner: false,
+      };
+      await runAsTenant(actor, () =>
+        Promise.all([
+          ensureAutomaticExecution(deps, actor, "computer-init-computer"),
+          ensureAutomaticExecution(deps, actor, "computer-init-computer"),
+        ]),
+      );
+      const rows = await prisma.executionConnection.findMany({ where: { userId, spaceId } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.secretRef).not.toContain("a".repeat(64));
+      await prisma.executionConnection.update({
+        where: { id: rows[0]!.id },
+        data: { revokedAt: new Date() },
+      });
+      await runAsTenant(actor, () =>
+        ensureAutomaticExecution(deps, actor, "computer-init-computer"),
+      );
+      expect(
+        await prisma.executionConnection.count({ where: { userId, spaceId, revokedAt: null } }),
+      ).toBe(0);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
 
   it("does not overwrite a newer authorization while recovering an old key", async () => {

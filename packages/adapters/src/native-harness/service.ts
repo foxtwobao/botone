@@ -176,7 +176,6 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
   }
 
   private control(request: NativeExecutionControl) {
-    this.profile(request.scope);
     const entry = this.entries.get(request.runId);
     if (!entry || !sameScope(entry.scope, request.scope) || entry.generation !== request.generation)
       throw new Error("execution_not_found");
@@ -187,6 +186,13 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     }
     entry.fence = request.fence;
     return entry;
+  }
+
+  /** New dispatches use current admissions; existing entries retain their process and scope. */
+  replaceComputerProfiles(computerId: string, profiles: ExecutionProfileAdmission[]) {
+    for (let index = this.profiles.length - 1; index >= 0; index--)
+      if (this.profiles[index]!.computerId === computerId) this.profiles.splice(index, 1);
+    this.profiles.push(...profiles);
   }
 
   private arm(entry: Entry) {
@@ -432,12 +438,12 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
 
   /** A durable cancellation intent also fences a start whose HTTP response was lost. */
   async stop(request: { runId: string; scope: NativeExecutionScope; fence: number }) {
-    this.profile(request.scope);
     const existing = this.entries.get(request.runId);
     if (existing) {
       await this.stopEntry(this.control({ ...request, generation: existing.generation }));
       return;
     }
+    this.profile(request.scope);
     const entry: Entry = {
       ...request,
       fingerprint: "cancelled-before-start",

@@ -10,6 +10,7 @@ import type { NativeExecutionStart } from "@rakazo/adapter-kit";
 import { resolveComputerTarget } from "./computer-target.js";
 import type { HarnessProcess } from "./driver.js";
 import { record, text } from "./driver.js";
+import { computerInitializationProgram } from "./initialization-program.js";
 import type { ComputerExecutionProfile } from "./launch-arguments.js";
 import { nativeLaunchArguments } from "./launch-arguments.js";
 
@@ -78,7 +79,7 @@ export async function launchComputerHarness(
   await brokerDirectory.chown(account.uid, account.gid);
   const runner = await open(fileURLToPath(new URL("./computer-runner.mjs", import.meta.url)), "r");
   const node = "/usr/bin/node";
-  const command =
+  let command =
     inspection === "version"
       ? [profile.engine === "deepseek" ? "dsh" : profile.engine, "--version"]
       : inspection === "authentication"
@@ -94,6 +95,19 @@ export async function launchComputerHarness(
               `const fs=require('node:fs');console.log(JSON.stringify({privatePaths:${JSON.stringify([controlRoot, account.source])}.map(p=>fs.existsSync(p)),deploymentEnvironment:['DATABASE_URL','ENCRYPTION_KEY','EXECUTION_TOKEN'].some(k=>k in process.env),uid:process.getuid(),groups:process.getgroups(),cgroup:fs.readFileSync('/proc/self/cgroup','utf8').trim(),pid:process.pid,pidNamespace:fs.statSync('/proc/self/ns/pid').ino}));`,
             ]
           : nativeLaunchArguments(profile, request);
+  if (profile.initialization) {
+    if (inspection === "version")
+      command[0] = `/usr/local/bin/${profile.engine === "deepseek" ? "dsh" : profile.engine}`;
+    else if (!inspection)
+      command = [
+        "/usr/local/bin/node",
+        "--input-type=module",
+        "--eval",
+        computerInitializationProgram,
+        profile.engine === "deepseek" ? "dsh" : profile.engine,
+        ...command.slice(1),
+      ];
+  }
   // The selected computer supplies its filesystem, installed software, home, and network.
   // A private PID namespace makes stopping one run terminate all its descendants.
   const child = spawn(
@@ -135,6 +149,13 @@ export async function launchComputerHarness(
       gid: account.gid,
       env: {
         ...account.env,
+        ...(profile.initialization && !inspection
+          ? {
+              COMPUTER_MODEL_INITIALIZATION: JSON.stringify(profile.initialization),
+              COMPUTER_MODEL_PROGRAM: computerInitializationProgram,
+              COMPUTER_MODEL_LAUNCH: "1",
+            }
+          : {}),
         ...(profile.modelConnection
           ? profile.engine === "claude"
             ? {

@@ -72,6 +72,7 @@ async function fixture() {
       `#!${process.execPath}\nconst fs=require('fs');
 console.log(JSON.stringify({args:process.argv.slice(2),key:process.env.OPENAI_API_KEY??process.env.ANTHROPIC_AUTH_TOKEN,
 base:process.env.ANTHROPIC_BASE_URL,model:process.env.ANTHROPIC_MODEL,
+controlEnvironment:['COMPUTER_MODEL_INITIALIZATION','COMPUTER_MODEL_PROGRAM','COMPUTER_MODEL_LAUNCH'].some(key=>key in process.env),
 patch:process.argv.includes('--patch')?JSON.parse(fs.readFileSync(process.argv[process.argv.indexOf('--patch')+1],'utf8')):null}));`,
     );
     await chmod(path.join(binaries, engine), 0o700);
@@ -105,6 +106,18 @@ patch:process.argv.includes('--patch')?JSON.parse(fs.readFileSync(process.argv[p
       status = value;
     },
     calls: () => calls,
+    managedRun: (engine: string, args: string[] = []) =>
+      execute(process.execPath, ["--input-type=module", "--eval", program, engine, ...args], {
+        env: {
+          ...env,
+          COMPUTER_MODEL_LAUNCH: "1",
+          COMPUTER_MODEL_INITIALIZATION: JSON.stringify({
+            url: `http://127.0.0.1:${address.port}`,
+            token: "fake-computer-grant",
+          }),
+          COMPUTER_MODEL_PROGRAM: program,
+        },
+      }),
     run: (engine: string, args: string[] = []) =>
       execute(process.execPath, [path.join(root, "run.mjs"), engine, ...args], { env }),
   };
@@ -155,6 +168,23 @@ describe("computer model initialization", () => {
       expect(await readFile(path.join(f.root, file), "utf8")).not.toContain("fake-key-two");
   });
 
+  it("initializes and launches a managed protocol directly while preserving custom user launchers", async () => {
+    const f = await fixture();
+    await mkdir(path.join(f.home, ".local/bin"), { recursive: true });
+    await writeFile(path.join(f.home, ".local/bin/codex"), "custom-launcher");
+    const result = JSON.parse((await f.managedRun("codex", ["app-server"])).stdout);
+    expect(result.key).toBe("fake-key-one");
+    expect(result.controlEnvironment).toBe(false);
+    expect(result.args.at(-1)).toBe("app-server");
+    expect(await readFile(path.join(f.home, ".local/bin/codex"), "utf8")).toBe("custom-launcher");
+    f.setKey("fake-key-next");
+    expect(JSON.parse((await f.managedRun("claude", ["-p", "test"])).stdout).key).toBe(
+      "fake-key-next",
+    );
+    for (const file of await readdir(f.root))
+      expect(await readFile(path.join(f.root, file), "utf8")).not.toContain("fake-key-next");
+  });
+
   it("does not launch or replay a CLI after authentication failure, while local help works", async () => {
     const f = await fixture();
     await f.install();
@@ -182,7 +212,7 @@ describe("computer model initialization", () => {
     await expect(f.install()).rejects.toMatchObject({ code: 1 });
   });
 
-  it("never installs a personal grant into a team computer or another owner's computer", async () => {
+  it("never installs a personal grant into a shared home or another owner's computer", async () => {
     const prepare = vi.fn(async () => {}),
       execute = vi.fn();
     const prisma = { computer: { findFirst: vi.fn(async () => null) } };
@@ -198,7 +228,13 @@ describe("computer model initialization", () => {
     expect(prepare).toHaveBeenCalledOnce();
     expect(execute).not.toHaveBeenCalled();
     expect(prisma.computer.findFirst).toHaveBeenCalledWith({
-      where: { ...scope, scope: "dedicated" },
+      where: expect.objectContaining({
+        ...scope,
+        scope: { in: ["team", "dedicated"] },
+        space: expect.objectContaining({
+          memberships: { some: { userId: scope.userId }, none: { userId: { not: scope.userId } } },
+        }),
+      }),
     });
   });
 });

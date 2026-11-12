@@ -1,0 +1,67 @@
+name: Publish optional execution images
+
+on:
+  pull_request:
+    paths:
+      - packages/adapters/src/native-harness/**
+      - infra/sandboxes/native-execution/**
+      - infra/sandboxes/computer/**
+      - pnpm-lock.yaml
+      - .github/workflows/publish-execution.yml
+  push:
+    branches: [main]
+    paths:
+      - packages/adapters/src/native-harness/**
+      - infra/sandboxes/native-execution/**
+      - infra/sandboxes/computer/**
+      - pnpm-lock.yaml
+      - .github/workflows/publish-execution.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: execution-images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        artifact: [computer, execution]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Build immutable artifact
+        env:
+          ARTIFACT: ${{ matrix.artifact }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$ARTIFACT" == computer ]]; then
+            docker build -t local/computer-base infra/sandboxes/computer
+            docker build --build-arg COMPUTER_IMAGE=local/computer-base -t "local/$ARTIFACT:$SOURCE_SHA" infra/sandboxes/native-execution
+          else
+            docker build --build-arg "GIT_SHA=$SOURCE_SHA" -f infra/sandboxes/native-execution/control.Dockerfile -t "local/$ARTIFACT:$SOURCE_SHA" .
+            docker run --rm --entrypoint node "local/$ARTIFACT:$SOURCE_SHA" --input-type=module --eval "await import('./packages/adapters/dist/native-harness/daemon.js'); await import('./packages/adapters/dist/native-harness/verify-cli.js')"
+          fi
+          if [[ "$ARTIFACT" == execution ]]; then bash infra/compose/check-image.sh "local/$ARTIFACT:$SOURCE_SHA"; fi
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        if: github.ref == 'refs/heads/main'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Publish artifact
+        if: github.ref == 'refs/heads/main'
+        env:
+          IMAGE: ${{ vars.DOCKERHUB_IMAGE || format('{0}/{1}', secrets.DOCKERHUB_USERNAME, github.event.repository.name) }}
+          ARTIFACT: ${{ matrix.artifact }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker tag "local/$ARTIFACT:$SOURCE_SHA" "$IMAGE:$ARTIFACT-sha-$SOURCE_SHA"
+          docker push "$IMAGE:$ARTIFACT-sha-$SOURCE_SHA"
