@@ -6,7 +6,7 @@ This composition root runs the first three external engine adapters. The built-i
 
 For ordinary users, deploy the optional service once and use automatic discovery instead of manually binding accounts. Both a personal space's Team Computer (shared by its bots) and a dedicated computer are eligible. The computer must belong to the user and the space must have no other members. Adding another member prevents further personal credential issuance and new managed dispatches, including copied launch capabilities. Existing CLI processes are not replayed or automatically restarted; already-issued credentials cannot be recalled from a running process. A shared space requires a separately administered shared account and explicit profiles.
 
-The image workflow publishes two immutable artifacts beside the application image: `computer-sha-<commit>` and `execution-sha-<commit>`. Pull both from the same release. The computer image contains the CLIs; the execution image is an artifact extracted onto the Linux host, **not** a privileged Docker service. Local equivalents are:
+The image workflow publishes the prepared computer to `<application-repository>_computer:sha-<commit>`, with `latest` tracking the latest published main build. The host artifact stays at `<application-repository>:execution-sha-<commit>`. Pull both from the same release, using the fixed commit tags for rollback. The computer image contains the CLIs; the execution image is an artifact extracted onto the Linux host, **not** a privileged Docker service. Local equivalents are:
 
 ```sh
 docker build -t rakazo/computer infra/sandboxes/computer

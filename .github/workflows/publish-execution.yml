@@ -66,5 +66,13 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          docker tag "local/$ARTIFACT:$SOURCE_SHA" "$IMAGE:$ARTIFACT-sha-$SOURCE_SHA"
-          docker push "$IMAGE:$ARTIFACT-sha-$SOURCE_SHA"
+          if [[ "$ARTIFACT" == computer ]]; then
+            IMAGE="${IMAGE}_computer"
+            tags=("sha-$SOURCE_SHA" latest)
+          else
+            tags=("$ARTIFACT-sha-$SOURCE_SHA")
+          fi
+          for tag in "${tags[@]}"; do
+            docker tag "local/$ARTIFACT:$SOURCE_SHA" "$IMAGE:$tag"
+            docker push "$IMAGE:$tag"
+          done
