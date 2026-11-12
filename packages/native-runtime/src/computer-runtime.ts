@@ -106,7 +106,6 @@ export function createComputerExecutionRuntime(options: {
   const service = new NativeHarnessExecutionService(options.root, []);
   async function discover(owner: z.infer<typeof executionOwnerSchema>, homeKey: string) {
     const computer = await options.resolve(owner.computerId, homeKey, owner.spaceId);
-    const profiles: ExecutionServiceProfile[] = [];
     const admissions: ExecutionProfileAdmission[] = [];
     let account: z.infer<typeof accountSchema> | undefined;
     if (computer.running) {
@@ -131,9 +130,13 @@ export function createComputerExecutionRuntime(options: {
         /* Return only sanitized readiness. No CLI stderr or grants reach clients. */
       }
     }
-    await Promise.all(
+    const profiles = await Promise.all(
       engines.map(async ({ engine, label, protocol }) => {
-        const model = account?.defaults[protocol];
+        const configuredModel = account?.defaults[protocol];
+        const model =
+          configuredModel && account?.modelIds.includes(configuredModel)
+            ? configuredModel
+            : undefined;
         const modelId = engine === "deepseek" && model ? `granted/${model}` : model;
         const generation = createHash("sha256")
           .update(
@@ -144,7 +147,6 @@ export function createComputerExecutionRuntime(options: {
               engine,
               account?.initialization,
               account?.baseUrl,
-              model,
             ]),
           )
           .digest("hex")
@@ -157,15 +159,15 @@ export function createComputerExecutionRuntime(options: {
           label,
           engineVersion: engineVersions[engine],
           defaultModel: modelId,
-          models:
-            model && modelId && account?.modelIds.includes(model)
-              ? [{ id: modelId, label: model }]
-              : [],
+          models: (account?.modelIds ?? []).map((id) => ({
+            id: engine === "deepseek" ? `granted/${id}` : id,
+            label: id,
+          })),
           status: !computer.running
             ? "stopped"
             : !account
               ? "unauthenticated"
-              : !model || !account.modelIds.includes(model)
+              : !account.modelIds.length
                 ? "unavailable"
                 : "missing",
         };
@@ -200,6 +202,10 @@ export function createComputerExecutionRuntime(options: {
                       ...computer.env,
                       COMPUTER_MODEL_INITIALIZATION: JSON.stringify(initialization),
                       COMPUTER_MODEL_LAUNCH: "1",
+                      COMPUTER_MODEL_SELECTION:
+                        engine === "deepseek"
+                          ? (request.model ?? profile.defaultModel ?? "").replace(/^granted\//, "")
+                          : (request.model ?? profile.defaultModel ?? ""),
                     },
                     command: (socket) => [
                       "/usr/local/bin/node",
@@ -233,7 +239,7 @@ export function createComputerExecutionRuntime(options: {
             /* Missing or unstartable engines remain unavailable. */
           }
         }
-        profiles.push(profile);
+        return profile;
       }),
     );
     service.replaceComputerProfiles(owner.computerId, admissions);

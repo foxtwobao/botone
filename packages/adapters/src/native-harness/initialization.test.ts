@@ -37,7 +37,13 @@ afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup();
 });
 
-async function fixture() {
+async function fixture(
+  defaults: Record<string, string> = {
+    responses: "model-r",
+    "anthropic-messages": "model-a",
+    "chat-completions": "model-c",
+  },
+) {
   const home = await mkdtemp(path.join(tmpdir(), "computer-init-"));
   cleanups.push(() => rm(home, { recursive: true, force: true }));
   let status = 200,
@@ -51,11 +57,7 @@ async function fixture() {
       JSON.stringify({
         baseUrl: "https://models.example.test/v1",
         apiKey: currentKey,
-        defaults: {
-          responses: "model-r",
-          "anthropic-messages": "model-a",
-          "chat-completions": "model-c",
-        },
+        defaults,
         modelIds: ["model-r", "model-a", "model-c"],
       }),
     );
@@ -72,7 +74,7 @@ async function fixture() {
       `#!${process.execPath}\nconst fs=require('fs');
 console.log(JSON.stringify({args:process.argv.slice(2),key:process.env.OPENAI_API_KEY??process.env.ANTHROPIC_AUTH_TOKEN,
 base:process.env.ANTHROPIC_BASE_URL,model:process.env.ANTHROPIC_MODEL,
-controlEnvironment:['COMPUTER_MODEL_INITIALIZATION','COMPUTER_MODEL_PROGRAM','COMPUTER_MODEL_LAUNCH'].some(key=>key in process.env),
+controlEnvironment:['COMPUTER_MODEL_INITIALIZATION','COMPUTER_MODEL_PROGRAM','COMPUTER_MODEL_LAUNCH','COMPUTER_MODEL_SELECTION'].some(key=>key in process.env),
 patch:process.argv.includes('--patch')?JSON.parse(fs.readFileSync(process.argv[process.argv.indexOf('--patch')+1],'utf8')):null}));`,
     );
     await chmod(path.join(binaries, engine), 0o700);
@@ -106,11 +108,12 @@ patch:process.argv.includes('--patch')?JSON.parse(fs.readFileSync(process.argv[p
       status = value;
     },
     calls: () => calls,
-    managedRun: (engine: string, args: string[] = []) =>
+    managedRun: (engine: string, args: string[] = [], model?: string) =>
       execute(process.execPath, ["--input-type=module", "--eval", program, engine, ...args], {
         env: {
           ...env,
           COMPUTER_MODEL_LAUNCH: "1",
+          ...(model ? { COMPUTER_MODEL_SELECTION: model } : {}),
           COMPUTER_MODEL_INITIALIZATION: JSON.stringify({
             url: `http://127.0.0.1:${address.port}`,
             token: "fake-computer-grant",
@@ -252,5 +255,31 @@ describe("computer model initialization", () => {
         }),
       }),
     });
+  });
+});
+
+describe("explicit managed model selection", () => {
+  it.each<Record<string, string>>([
+    {},
+    { responses: "removed", "anthropic-messages": "removed", "chat-completions": "removed" },
+    { responses: "model-r", "anthropic-messages": "model-a", "chat-completions": "model-c" },
+  ])("uses the selected model even with defaults %o", async (defaults) => {
+    const f = await fixture(defaults);
+    await f.install();
+    const codex = JSON.parse((await f.managedRun("codex", ["app-server"], "model-c")).stdout);
+    expect(codex.args).toContain('model="model-c"');
+    const claude = JSON.parse((await f.managedRun("claude", [], "model-r")).stdout);
+    expect(claude.model).toBe("model-r");
+    const dsh = JSON.parse((await f.managedRun("dsh", [], "model-a")).stdout);
+    expect(dsh.patch[1].config).toEqual({ provider: "granted", model: "model-a" });
+    for (const result of [codex, claude, dsh]) expect(result.controlEnvironment).toBe(false);
+  });
+  it("rejects an unauthorized explicit model instead of falling back", async () => {
+    const f = await fixture();
+    for (const engine of ["codex", "claude", "dsh"]) {
+      await expect(f.managedRun(engine, [], "unauthorized")).rejects.toMatchObject({
+        stderr: "Model connection initialization failed.\n",
+      });
+    }
   });
 });
