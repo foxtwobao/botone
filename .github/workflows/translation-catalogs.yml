@@ -13,6 +13,7 @@ on:
       - apps/mobile/lib/**
       - packages/i18n/src/**
       - lingui.config.ts
+      - .github/workflows/translation-catalogs.yml
   workflow_dispatch:
 
 # Extraction installs and runs dependency code, so it gets no repository-write credentials. Only
@@ -85,6 +86,11 @@ jobs:
           PATCH_DIR: ${{ runner.temp }}/translation-catalogs
         run: |
           set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::Catalog PR publishing is not configured; set GH_DEPENDENCY_UPDATES_PAT to enable it."
+            echo "Catalog PR publishing was skipped because GH_DEPENDENCY_UPDATES_PAT is not configured. Extracted changes remain in the translation-catalogs artifact when present." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           pr="$(gh pr list --state open --head "$BRANCH" --json number,isCrossRepository \
             --jq '.[] | select(.isCrossRepository == false) | .number')"
           remote="$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)"
