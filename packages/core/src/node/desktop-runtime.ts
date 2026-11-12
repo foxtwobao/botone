@@ -218,8 +218,10 @@ function screenClaimGtkLines(display: string, log: string) {
     "  screen_gtk_pid=$!",
     "  screen_gtk_ready=0",
     "  for i in $(seq 1 50); do",
-    '    screen_live "$screen_gtk_pid" xdg-desktop-portal-gtk || break',
-    "    if dbus-send --session --print-reply --dest=org.freedesktop.DBus \\",
+    // The forked child may still be in nohup before it execs the portal.
+    '    kill -0 "$screen_gtk_pid" 2>/dev/null || break',
+    '    if screen_live "$screen_gtk_pid" xdg-desktop-portal-gtk &&',
+    "        dbus-send --session --print-reply --dest=org.freedesktop.DBus \\",
     "        /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner \\",
     "        string:org.freedesktop.impl.portal.desktop.gtk 2>/dev/null | grep -q 'boolean true'; then",
     "      screen_gtk_ready=1",

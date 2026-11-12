@@ -1576,9 +1576,10 @@ describe("shared Linux desktop lifecycle", () => {
   );
 
   it.skipIf(process.platform !== "linux")(
-    "restarts only a dead screen portal",
+    "waits for portal launchers and restarts only a dead screen portal",
     async () => {
       const {
+        bin,
         runtime,
         screenEnv,
         run,
@@ -1589,6 +1590,10 @@ describe("shared Linux desktop lifecycle", () => {
         portalLog,
         cleanup,
       } = await portalScreenFixture();
+      // Keep the child in its launcher long enough to exercise the fork/exec boundary.
+      const launcher = path.join(bin, "nohup");
+      writeFileSync(launcher, '#!/bin/bash\nsleep 0.2\nexec "$@"\n');
+      chmodSync(launcher, 0o755);
       const command = relocate(ensureScreenCommand(1, "extra", "viewtok", screenEnv));
       const dbusPid = path.join(runtime, `dbus-pid-${extraDisplay}`);
       const portalPid = path.join(runtime, `portal-pid-${extraDisplay}`);
