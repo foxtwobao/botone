@@ -69,16 +69,16 @@ async function main(){
   const inspect=args.some(arg=>['--help','--version','-V','-h'].includes(arg))||
     ['login','logout','auth'].includes(args[0]);
   let launch=args,childEnvironment={...computerEnvironment},overlay;
-  for(const key of ['COMPUTER_MODEL_INITIALIZATION','COMPUTER_MODEL_PROGRAM','COMPUTER_MODEL_LAUNCH'])delete childEnvironment[key];
+  for(const key of ['COMPUTER_MODEL_INITIALIZATION','COMPUTER_MODEL_PROGRAM','COMPUTER_MODEL_LAUNCH','COMPUTER_MODEL_SELECTION'])delete childEnvironment[key];
   if(!inspect){
     // A managed dispatch keeps its own authorization if another launcher refreshes the shared file.
     const grant=JSON.parse(computerEnvironment.COMPUTER_MODEL_LAUNCH?
       computerEnvironment.COMPUTER_MODEL_INITIALIZATION:await fs.readFile(path.join(root,'grant.json'),'utf8'));
     const config=await connection(grant),defaults=config.defaults;
-    const selected=defaults[engine==='codex'?'responses':engine==='claude'?'anthropic-messages':'chat-completions'];
+    const selected=computerEnvironment.COMPUTER_MODEL_SELECTION||defaults[engine==='codex'?'responses':engine==='claude'?'anthropic-messages':'chat-completions'];
     if(typeof selected!=='string'||!config.modelIds.includes(selected))throw Error('model_unavailable');
     if(engine==='codex'){
-      const model=defaults.responses;
+      const model=selected;
       launch=['-c','model_provider="managed"','-c',
         'model_providers.managed={name="Model connection",base_url='+JSON.stringify(config.baseUrl)+',wire_api="responses",env_key="OPENAI_API_KEY"}',
         ...(model?['-c','model='+JSON.stringify(model)]:[]),...args];
@@ -88,10 +88,10 @@ async function main(){
       childEnvironment.ANTHROPIC_AUTH_TOKEN=config.apiKey;
       delete childEnvironment.ANTHROPIC_API_KEY;
       for(const key of ['CLAUDE_CODE_USE_BEDROCK','CLAUDE_CODE_USE_VERTEX','CLAUDE_CODE_USE_FOUNDRY'])delete childEnvironment[key];
-      const model=defaults['anthropic-messages'];
+      const model=selected;
       if(model){childEnvironment.ANTHROPIC_MODEL=model;for(const tier of ['HAIKU','SONNET','OPUS'])childEnvironment['ANTHROPIC_DEFAULT_'+tier+'_MODEL']=model}
     }else{
-      const model=defaults['chat-completions'];
+      const model=selected;
       if(!model)throw Error('model_unavailable');
       const patch=[{id:'llm-pi-ai',config:{providers:{granted:{apiKeyEnv:'OPENAI_API_KEY',api:'openai-completions',
         baseURL:config.baseUrl,models:[{id:model}]}}}},{id:'agent-default-model',config:{provider:'granted',model}}];

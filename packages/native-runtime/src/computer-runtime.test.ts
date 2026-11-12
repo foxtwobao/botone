@@ -14,7 +14,13 @@ afterEach(async () => {
 });
 const owner = { spaceId: scope.spaceId, userId: scope.userId, computerId: scope.computerId };
 async function fixture(
-  options: { running?: boolean; authorized?: boolean; supported?: boolean } = {},
+  options: {
+    running?: boolean;
+    authorized?: boolean;
+    supported?: boolean;
+    defaults?: Record<string, string>;
+    modelIds?: string[];
+  } = {},
 ) {
   const root = await mkdtemp(path.join(tmpdir(), "computer-runtime-"));
   cleanup.push(() => rm(root, { recursive: true, force: true }));
@@ -49,8 +55,11 @@ async function fixture(
                     token: "fixture-grant",
                   },
                   baseUrl: "https://models.example.test/v1",
-                  defaults: { responses: "response-model", "chat-completions": "chat-model" },
-                  modelIds: ["response-model", "chat-model"],
+                  defaults: options.defaults ?? {
+                    responses: "response-model",
+                    "chat-completions": "chat-model",
+                  },
+                  modelIds: options.modelIds ?? ["response-model", "chat-model"],
                 });
               }
               for (const message of [
@@ -88,7 +97,7 @@ async function fixture(
   return { runtime, commands };
 }
 
-it("discovers installed protocol engines without a receipt and isolates missing protocol defaults", async () => {
+it("discovers installed protocol engines and exposes authorized models independently of protocol defaults", async () => {
   const { runtime, commands } = await fixture();
   const result = await runtime.handle("describe", undefined, owner, "home");
   expect(result).toMatchObject({
@@ -99,10 +108,17 @@ it("discovers installed protocol engines without a receipt and isolates missing 
         status: "ready",
         defaultModel: "granted/chat-model",
       }),
-      expect.objectContaining({ label: "Claude Code", status: "unavailable", models: [] }),
+      expect.objectContaining({
+        label: "Claude Code",
+        status: "ready",
+        models: [
+          { id: "response-model", label: "response-model" },
+          { id: "chat-model", label: "chat-model" },
+        ],
+      }),
     ]),
   });
-  expect(commands).toHaveLength(3);
+  expect(commands).toHaveLength(4);
   const repeated = await runtime.handle("describe", undefined, owner, "home");
   expect(repeated).toEqual(result);
 });
@@ -110,7 +126,7 @@ it("discovers installed protocol engines without a receipt and isolates missing 
 it.each([
   [{ running: false }, "stopped", 0],
   [{ authorized: false }, "unauthenticated", 1],
-  [{ supported: false }, "unsupported", 3],
+  [{ supported: false }, "unsupported", 4],
 ] as const)("reports live readiness for %o", async (options, status, probes) => {
   const { runtime, commands } = await fixture(options);
   const result = await runtime.handle("describe", undefined, owner, "home");
@@ -150,4 +166,28 @@ it("rejects discovery and dispatch after closing", async () => {
     "execution_service_stopped",
   );
   expect(commands).toHaveLength(0);
+});
+
+it.each<Record<string, string>>([{}, { responses: "removed-model" }])(
+  "keeps model selection available with defaults %o",
+  async (defaults) => {
+    const { runtime } = await fixture({ defaults });
+    const result = (await runtime.handle("describe", undefined, owner, "home")) as {
+      profiles: Array<{ status: string; defaultModel?: string; models: Array<{ id: string }> }>;
+    };
+    expect(result.profiles).toHaveLength(3);
+    for (const profile of result.profiles) {
+      expect(profile.status).toBe("ready");
+      expect(profile.defaultModel).toBeUndefined();
+      expect(profile.models).toHaveLength(2);
+    }
+  },
+);
+it("keeps an empty authorized catalog unavailable", async () => {
+  const { runtime } = await fixture({ modelIds: [] });
+  const result = (await runtime.handle("describe", undefined, owner, "home")) as {
+    profiles: Array<{ status: string; models: unknown[] }>;
+  };
+  for (const profile of result.profiles)
+    expect(profile).toMatchObject({ status: "unavailable", models: [] });
 });
