@@ -56,19 +56,21 @@ Create a private configuration file (mode 0600). The following identifiers and v
   "root": "/var/lib/execution/control",
   "token": "REPLACE_WITH_64_RANDOM_HEXADECIMAL_CHARACTERS",
   "port": 9081,
-  "profiles": [{
-    "id": "personal-account",
-    "revision": 1,
-    "label": "Personal account",
-    "spaceId": "example-space",
-    "userIds": ["example-user"],
-    "computerId": "example-computer",
-    "engine": "codex",
-    "computer": {
-      "homeKey": "example-computer-home",
-      "workspace": "/home/user/shared"
+  "profiles": [
+    {
+      "id": "personal-account",
+      "revision": 1,
+      "label": "Personal account",
+      "spaceId": "example-space",
+      "userIds": ["example-user"],
+      "computerId": "example-computer",
+      "engine": "codex",
+      "computer": {
+        "homeKey": "example-computer-home",
+        "workspace": "/home/user/shared"
+      }
     }
-  }]
+  ]
 }
 ```
 
