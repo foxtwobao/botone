@@ -87,6 +87,7 @@ test("model settings cleanup frames", { tag: "@nightly" }, async ({ page }, test
   const search = page.getByRole("combobox", { name: "Search models" });
   await expect(search).toBeFocused();
   await search.fill("gpt");
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
   const firstModel = await options.getByRole("option").first().locator("span").first().innerText();
   await search.press("Home");
   await search.press("Enter");
@@ -106,6 +107,7 @@ test("model settings cleanup frames", { tag: "@nightly" }, async ({ page }, test
   await expect(options).toBeVisible();
   await captureScreenshot(page, testInfo, "model-settings-cleanup-4-backup-menu-open");
   const backupItem = options.getByRole("option").first();
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
   const backupLabel = (await backupItem.innerText()).trim();
   await backupItem.click();
   await expect(options).toBeHidden();

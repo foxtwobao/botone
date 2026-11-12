@@ -28,6 +28,7 @@ const isolated = include
   .flatMap((pattern) => globSync(pattern, { cwd: root }))
   .filter(
     (file) =>
+      // biome-ignore lint/suspicious/noUndeclaredEnvVars: set by the testkit harness so each database test runs on its own copy.
       process.env.COPY_TEST_DATABASE ||
       mutatesSharedState.test(readFileSync(path.join(root, file), "utf8")),
   );

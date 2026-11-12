@@ -24,7 +24,7 @@
         return;
       }
       if (!rpc(data)) return;
-      const fresh = active && gesture > 0 && Date.now() - gestureAt <= GESTURE_WINDOW_MS ? key + ":" + gesture : null;
+      const fresh = active && gesture > 0 && Date.now() - gestureAt <= GESTURE_WINDOW_MS ? `${key}:${gesture}` : null;
       up({ type: "rakazo-app:view", message: data, gesture: fresh });
       return;
     }

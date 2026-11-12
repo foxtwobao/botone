@@ -72,12 +72,12 @@ describe("run activity copy", () => {
     const emoji = "\u{1f600}";
     const preview = (prompt: string) => activityPreview({ trigger: "user", prompt }).promptSnippet;
     expect(preview("a".repeat(118) + emoji)).toBe("a".repeat(118) + emoji);
-    expect(preview("a".repeat(118) + emoji + "x")).toBe("a".repeat(118) + "\u2026");
-    expect(preview("a".repeat(117) + emoji + "xx")).toBe("a".repeat(117) + emoji + "\u2026");
+    expect(preview(`${"a".repeat(118) + emoji}x`)).toBe(`${"a".repeat(118)}\u2026`);
+    expect(preview(`${"a".repeat(117) + emoji}xx`)).toBe(`${"a".repeat(117) + emoji}\u2026`);
   });
 
   it("keeps structured agent message text intact at the same boundary", () => {
-    const text = "a".repeat(118) + "\u{1f600}x";
+    const text = `${"a".repeat(118)}\u{1f600}x`;
     const preview = activityPreview({
       trigger: "bot_message",
       prompt: "internal",
@@ -94,7 +94,7 @@ describe("run activity copy", () => {
     expect(preview.agentMessage).toEqual({
       fromBotName: "Peer",
       kind: "request",
-      text: "a".repeat(118) + "\u2026",
+      text: `${"a".repeat(118)}\u2026`,
     });
   });
 

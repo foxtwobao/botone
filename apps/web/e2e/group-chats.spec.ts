@@ -213,6 +213,7 @@ test("create group from + and see two bots in one transcript", async ({ page }, 
   const replyButton = firstMessage.getByRole("button", { name: "Reply" });
   await expect(replyButton).toBeVisible();
   await replyButton.click();
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
   const excerpt = await firstMessage.getByTestId("message-user-bubble").innerText();
   await expect(page.getByTestId("reply-chip")).toContainText(`You: ${excerpt.split(/\r?\n/u)[0]}`);
   await expect(

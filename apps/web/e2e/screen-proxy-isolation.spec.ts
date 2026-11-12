@@ -266,6 +266,7 @@ for (const mode of ["development", "preview"] as const) {
       const response = await page.goto(screenUrl);
       await expect(page.locator("body")).toContainText('"socket":"ok"');
       expect(assetAttempts).toBeGreaterThanOrEqual(2);
+      // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
       const result = JSON.parse(await page.locator("body").innerText());
       expect(await page.context().cookies(origin)).not.toContainEqual(
         expect.objectContaining({ name: "provider_auth" }),
@@ -377,6 +378,7 @@ for (const mode of ["development", "preview"] as const) {
       const response = await page.goto(otherPageUrl);
       await expect(page.locator("body")).toContainText('"socket":"ok"');
       expect(response?.headers()["content-encoding"]).toBe("gzip");
+      // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
       expect(JSON.parse(await page.locator("body").innerText())).toMatchObject({
         storage: "blocked",
         session: "blocked",
@@ -447,6 +449,7 @@ for (const mode of ["development", "preview"] as const) {
             () => (window as unknown as { screenReports: unknown[] }).screenReports,
           ),
         ).toEqual([{ rakazoScreen: "loading" }]);
+        // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
         expect(JSON.parse(await body.innerText())).toEqual({
           asset: "module loaded",
           socket: "ok",
