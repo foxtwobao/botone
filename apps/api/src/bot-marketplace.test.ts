@@ -376,14 +376,19 @@ describe("marketplace install semantics", () => {
     const db = transactionalDb();
     const tx = new Proxy(db as object, {
       get: (target, prop) => {
+        const base = target as {
+          agentImport: {
+            create: (args: unknown) => Promise<unknown>;
+            deleteMany: (args: unknown) => Promise<unknown>;
+          };
+        };
         if (prop === "agentImport") {
           return {
             create: async (args: { data: Record<string, unknown> }) => {
               recorded.push(args.data);
-              return (target as Record<string, never>).agentImport.create(args);
+              return base.agentImport.create(args);
             },
-            deleteMany: (args: unknown) =>
-              (target as Record<string, never>).agentImport.deleteMany(args),
+            deleteMany: (args: unknown) => base.agentImport.deleteMany(args),
           };
         }
         return (target as Record<string, unknown>)[prop as string];

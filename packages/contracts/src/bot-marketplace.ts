@@ -61,6 +61,8 @@ export const MarketplaceBotCatalogEntrySchema = z.object({
   name: z.string(),
   tagline: z.string(),
   category: MarketplaceBotSchema.shape.category,
+  /** The version a one-click install sends back. */
+  version: z.number().int().positive(),
   featured: z.boolean(),
   sortOrder: z.number().int(),
   author: MarketplaceBotSchema.shape.author,

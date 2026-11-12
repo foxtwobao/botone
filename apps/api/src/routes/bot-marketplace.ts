@@ -132,6 +132,7 @@ export function botMarketplaceRoutes(ctx: RouterContext) {
             name: listing.name,
             tagline: listing.tagline,
             category: listing.category,
+            version: row.version,
             featured: row.featured,
             sortOrder: row.sortOrder,
             author: listing.author,
