@@ -35,6 +35,11 @@ const BotTemplatesDialog = lazyOverlay(() =>
     (module) => module.BotTemplatesDialog,
   ),
 );
+const BotMarketplaceDialog = lazyOverlay(() =>
+  import("../../components/bot-marketplace/bot-marketplace-dialog").then(
+    (module) => module.BotMarketplaceDialog,
+  ),
+);
 const McpServersOverlay = lazyOverlay(() =>
   import("../McpServersOverlay").then((module) => module.McpServersOverlay),
 );
@@ -67,6 +72,7 @@ export function AppOverlays({
   onOpenBot: (bot: Bot) => void;
 }) {
   const openTemplates = () => setOverlay({ kind: "templates" });
+  const openMarket = () => setOverlay({ kind: "market" });
   return (
     <>
       {overlay?.kind === "integrations" ? (
@@ -76,6 +82,7 @@ export function AppOverlays({
           onClose={() => setOverlay(null)}
           onOpenMcp={() => setOverlay({ kind: "mcp" })}
           onOpenTemplates={openTemplates}
+          onOpenMarket={openMarket}
         />
       ) : null}
       {overlay?.kind === "skills" ? (
@@ -83,6 +90,15 @@ export function AppOverlays({
       ) : null}
       {overlay?.kind === "templates" ? (
         <BotTemplatesDialog
+          onClose={() => setOverlay(null)}
+          onOpenBot={(bot) => {
+            setOverlay(null);
+            onOpenBot(bot);
+          }}
+        />
+      ) : null}
+      {overlay?.kind === "market" ? (
+        <BotMarketplaceDialog
           onClose={() => setOverlay(null)}
           onOpenBot={(bot) => {
             setOverlay(null);

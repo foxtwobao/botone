@@ -423,7 +423,7 @@ describe("computer screen", () => {
     let token = "first";
     rpc.mockImplementation(async (method: string, ...args: unknown[]) =>
       method === "computer/screenUrl"
-        ? { url: "https://screen.example.test/novnc/session/view/1." + token + "/vnc.html" }
+        ? { url: `https://screen.example.test/novnc/session/view/1.${token}/vnc.html` }
         : original(method, ...args),
     );
     const view = await render();

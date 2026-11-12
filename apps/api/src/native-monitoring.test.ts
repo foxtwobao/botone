@@ -13,7 +13,7 @@ function envelope(event: unknown, attachment = false) {
     json,
   ];
   if (attachment) lines.push(JSON.stringify({ type: "attachment", length: 14 }), "private\nmemory");
-  return encoder.encode(lines.join("\n") + "\n");
+  return encoder.encode(`${lines.join("\n")}\n`);
 }
 
 describe("native error collector privacy boundary", () => {

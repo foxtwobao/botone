@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bot 市场 · 交互草图</title>
+<style>
+  /* 配色取自 packages/ui-tokens/src/tokens.css 的 dark 主题；bot 脸是唯一的彩色 */
+  :root {
+    --background: #0a0a0a;
+    --dialog: #161616;
+    --foreground: #f5f5f5;
+    --raised: #1c1c1c;
+    --hover: #232323;
+    --muted-foreground: #f5f5f5a8;
+    --faint: #f5f5f58a;
+    --primary: #f5f5f5;
+    --primary-foreground: #121212;
+    --secondary: #f5f5f50a;
+    --accent: #f5f5f51a;
+    --border: #f5f5f51a;
+    --border-strong: #f5f5f52e;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--background); color: var(--foreground);
+    font-family: var(--font-sans); font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; color: inherit; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+
+  /* ── 草图容器 ───────────────────────────────── */
+  .page { max-width: 1240px; margin: 0 auto; padding: 40px 32px 80px; }
+  .page h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .lede { color: var(--muted-foreground); margin: 0 0 28px; max-width: 70ch; }
+
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+  .steps button {
+    font-size: 13px; cursor: pointer; color: var(--muted-foreground);
+    background: none; border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 14px; transition: background .15s, color .15s;
+  }
+  .steps button:hover { background: var(--secondary); color: var(--foreground); }
+  .steps button[aria-current="step"] { background: var(--foreground); border-color: var(--foreground); color: var(--background); }
+
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 36px; align-items: start; }
+  @media (max-width: 960px) { .wrap { grid-template-columns: 1fr; } }
+
+  .window {
+    background: var(--dialog); border: 1px solid var(--border-strong); border-radius: 18px;
+    overflow: hidden; box-shadow: 0 32px 80px -24px #000000cc;
+  }
+  .scroller { max-height: 760px; overflow: auto; }
+
+  /* ═══ bot 脸（圆脸 + 两只药丸眼）═══ */
+  .face {
+    --c: #f59e0b; width: 28px; height: 28px; border-radius: 50%; background: var(--c);
+    display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex: 0 0 auto;
+  }
+  .face i { width: 4px; height: 10px; border-radius: 99px; background: #fff; }
+  .face.lg { width: 72px; height: 72px; gap: 5px; } .face.lg i { width: 9px; height: 24px; }
+  .face.xl { width: 88px; height: 88px; gap: 6px; } .face.xl i { width: 11px; height: 30px; }
+
+  .link { background: none; border: 0; padding: 0; font-size: 13px; color: var(--foreground); text-decoration: underline; cursor: pointer; }
+
+  /* ═══ 屏 1：市场页 ═══ */
+  .mkt { padding: 30px 36px 40px; }
+  .mkt > h2 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 18px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip {
+    font-size: 13px; padding: 8px 16px; border-radius: 999px; background: var(--raised);
+    border: 1px solid transparent; cursor: pointer;
+  }
+  .chip:hover { background: var(--hover); }
+  .chip[aria-pressed="true"] { background: var(--primary); color: var(--primary-foreground); font-weight: 500; }
+  .search { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 16px; border-radius: 999px; background: var(--raised); color: var(--faint); margin-bottom: 30px; }
+  .search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; font: inherit; font-size: 14px; color: var(--foreground); }
+  .search input::placeholder { color: var(--faint); }
+  .search:focus-within { box-shadow: 0 0 0 2px var(--border-strong); }
+
+  .band { margin-bottom: 30px; }
+  .band:last-child { margin-bottom: 0; }
+  .band h3 { font-size: 16px; font-weight: 600; margin: 0 0 12px; }
+
+  .feat { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .fcard {
+    background: var(--raised); border-radius: 16px; padding: 30px 12px 24px; text-align: center;
+    cursor: pointer; border: 0; transition: background .15s;
+  }
+  .fcard:hover { background: var(--hover); }
+  .fcard .face { margin-bottom: 14px; }
+  .fcard .fn { display: block; font-size: 15px; font-weight: 600; }
+
+  .rows2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+  .brow { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 0; }
+  .brow .open { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; background: none; border: 0; padding: 0; text-align: start; cursor: pointer; }
+  .brow .bt { min-width: 0; flex: 1; }
+  .brow .b1 { display: block; font-size: 14px; font-weight: 600; }
+  .brow .b2 {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: 13px; color: var(--muted-foreground);
+  }
+  .add {
+    flex: 0 0 auto; font-size: 13px; font-weight: 500; cursor: pointer;
+    background: var(--raised); border: 1px solid var(--border-strong); border-radius: 999px; padding: 7px 14px;
+  }
+  .add:hover { background: var(--hover); }
+  .add.done { background: none; border-color: transparent; color: var(--muted-foreground); }
+  .add.done:hover { color: var(--foreground); }
+
+  .empty { padding: 56px 0; text-align: center; color: var(--muted-foreground); }
+  .empty p { margin: 0 0 8px; }
+
+  /* ═══ 屏 2：详情 ═══ */
+  .sheet { padding: 22px 36px 0; }
+  .back { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--muted-foreground); background: none; border: 0; cursor: pointer; font-size: 20px; }
+  .back:hover { background: var(--accent); color: var(--foreground); }
+  .hero { text-align: center; padding: 4px 0 22px; }
+  .hero .face { margin-bottom: 14px; }
+  .hero h3 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 2px; }
+  .hero .hby { font-size: 13px; color: var(--faint); margin: 0 0 12px; }
+  .hero .hdesc { font-size: 14px; color: var(--muted-foreground); margin: 0 auto; max-width: 54ch; }
+
+  .facts { border: 1px solid var(--border-strong); border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+  .fact { display: flex; gap: 16px; padding: 12px 18px; border-top: 1px solid var(--border); }
+  .fact:first-child { border-top: 0; }
+  .fact .k { flex: 0 0 72px; color: var(--muted-foreground); }
+  .fact .v { flex: 1; min-width: 0; }
+  .cfg { margin-bottom: 22px; }
+  .cfg summary { cursor: pointer; list-style: none; padding: 8px 4px; font-size: 13px; color: var(--muted-foreground); }
+  .cfg summary::-webkit-details-marker { display: none; }
+  .cfg summary::after { content: " ›"; }
+  .cfg[open] summary::after { content: " ⌄"; }
+  .cfg summary:hover { color: var(--foreground); }
+  .cfg p { margin: 0; padding: 0 4px 8px; font-size: 13px; color: var(--muted-foreground); }
+
+  .slabel { font-size: 12px; font-weight: 500; letter-spacing: .05em; color: var(--faint); margin: 0 0 8px; }
+  .sample { border: 1px solid var(--border-strong); border-radius: 12px; background: var(--background); padding: 14px 16px; font-size: 13px; line-height: 1.65; margin-bottom: 8px; }
+  .demo-note { font-size: 12px; color: var(--faint); margin: 0 0 24px; }
+
+  .sheet-bar {
+    position: sticky; bottom: 0; margin: 0 -36px; padding: 14px 36px 18px;
+    background: var(--dialog); border-top: 1px solid var(--border); display: flex; justify-content: flex-end;
+  }
+  .cta { font-size: 14.5px; font-weight: 600; cursor: pointer; border: 0; background: var(--primary); color: var(--primary-foreground); border-radius: 999px; padding: 11px 26px; }
+  .cta:hover:not(:disabled) { filter: brightness(.9); }
+  .cta:disabled { opacity: .35; cursor: not-allowed; }
+
+  /* ═══ 屏 3：分享链接的网页预览 ═══ */
+  .urlbar { margin: 14px 20px 0; height: 32px; border-radius: 999px; background: var(--raised); color: var(--faint); font-size: 12.5px; display: flex; align-items: center; justify-content: center; }
+  .center { display: grid; place-items: center; padding: 36px 36px 48px; }
+  .land { width: 100%; max-width: 400px; background: var(--raised); border: 1px solid var(--border-strong); border-radius: 20px; text-align: center; padding: 40px 28px 28px; }
+  .land .face { margin-bottom: 18px; }
+  .land h3 { font-size: 21px; font-weight: 700; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .land .ld { color: var(--muted-foreground); margin: 0 0 22px; }
+  .land .legal { font-size: 12px; color: var(--faint); margin: 14px 0 0; }
+
+  /* ═══ 屏 4：添加后的聊天 ═══ */
+  .chatpage { display: flex; flex-direction: column; min-height: 620px; }
+  .chathead { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; }
+  .chatcol { flex: 1; width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 28px 24px 20px; }
+  .sysline { text-align: center; font-size: 12.5px; color: var(--faint); }
+  .bubble { background: #2c2c2e; border-radius: 22px; padding: 12px 17px; line-height: 1.65; max-width: 86%; align-self: flex-start; }
+  .qr { display: flex; gap: 8px; }
+  .qr button { font-size: 13px; padding: 7px 16px; border-radius: 999px; background: none; border: 1px solid var(--border-strong); cursor: pointer; }
+  .qr button:hover { background: var(--accent); }
+  .toolcard { border: 1px solid var(--border-strong); border-radius: 16px; background: var(--raised); padding: 18px 20px 16px; max-width: 86%; align-self: flex-start; min-width: 280px; }
+  .toolcard h4 { margin: 0 0 2px; font-size: 15px; font-weight: 600; }
+  .toolcard .tcsub { font-size: 13px; color: var(--muted-foreground); margin: 0 0 10px; }
+  .opt { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 0; background: none; border: 0; cursor: pointer; text-align: start; }
+  .opt .box { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; font-size: 13px; line-height: 1; color: var(--primary-foreground); }
+  .opt[aria-pressed="true"] .box { background: var(--primary); border-color: var(--primary); }
+  .opt[aria-pressed="true"] .box::after { content: "✓"; }
+  .tcfoot { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 10px; }
+  .tcfoot .cta { padding: 9px 22px; font-size: 13.5px; }
+  .composer { margin: 0 16px 16px; height: 46px; border-radius: 999px; background: var(--raised); border: 1px solid var(--border); padding: 0 18px; font: inherit; color: var(--foreground); }
+  .composer::placeholder { color: var(--faint); }
+
+  /* ── 右侧说明 ───────────────────────────────── */
+  .notes { position: sticky; top: 32px; }
+  .notes h2 { font-size: 12px; letter-spacing: .06em; color: var(--faint); font-weight: 500; margin: 0 0 14px; }
+  .note { display: flex; gap: 10px; margin-bottom: 16px; }
+  .note .num { flex: 0 0 auto; width: 19px; height: 19px; border-radius: 999px; display: grid; place-items: center; font-size: 11px; font-weight: 600; margin-top: 1px; background: var(--accent); color: var(--muted-foreground); }
+  .note .txt { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+  .note .nh { display: block; color: var(--foreground); font-weight: 500; margin-bottom: 2px; }
+  .note .txt b { color: var(--foreground); font-weight: 500; }
+  .screen { display: none; }
+  .screen.on { display: block; }
+  .foot { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--faint); line-height: 1.7; }
+
+  @media (max-width: 640px) {
+    .page { padding: 24px 16px 56px; }
+    .mkt, .sheet { padding-left: 20px; padding-right: 20px; }
+    .sheet-bar { margin: 0 -20px; padding-left: 20px; padding-right: 20px; }
+    .feat { grid-template-columns: 1fr 1fr; }
+    .rows2 { grid-template-columns: 1fr; }
+    .fact .k { flex-basis: 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Bot 市场 · 交互草图</h1>
+  <p class="lede">市场页 → 详情 → 分享链接预览 → 添加后的聊天。窗口里的筛选、搜索、添加都能点；Morning briefing 初始为「已添加」。</p>
+
+  <nav class="steps" aria-label="交互步骤">
+    <button data-tab="browse" aria-current="step">1 市场页</button>
+    <button data-tab="detail">2 详情</button>
+    <button data-tab="confirm">3 分享预览</button>
+    <button data-tab="after">4 添加后的聊天</button>
+  </nav>
+
+  <div class="wrap">
+    <div class="window">
+      <div class="scroller">
+        <section class="screen on" id="s-browse">
+          <div class="mkt">
+            <h2>市场</h2>
+            <div class="chips" role="group" aria-label="分类">
+              <button class="chip" data-cat="全部" aria-pressed="true">全部</button>
+              <button class="chip" data-cat="个人" aria-pressed="false">个人</button>
+              <button class="chip" data-cat="工程" aria-pressed="false">工程</button>
+              <button class="chip" data-cat="销售" aria-pressed="false">销售</button>
+              <button class="chip" data-cat="运营" aria-pressed="false">运营</button>
+            </div>
+            <label class="search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="q" type="search" placeholder="搜索 bot" aria-label="搜索 bot" autocomplete="off">
+            </label>
+            <div id="mkt-body"></div>
+          </div>
+        </section>
+
+        <section class="screen" id="s-detail"><div class="sheet" id="detail-body"></div></section>
+
+        <section class="screen" id="s-confirm">
+          <div class="urlbar">botone.example/bot/morning-briefing</div>
+          <div class="center"><div class="land" id="confirm-body"></div></div>
+        </section>
+
+        <section class="screen" id="s-after"><div class="chatpage" id="after-body"></div></section>
+      </div>
+    </div>
+
+    <aside class="notes" id="notes" aria-live="polite"></aside>
+  </div>
+
+  <div class="foot">
+    草图文件：<code>docs/bot-marketplace-sketch.html</code>。与现有管线的两个差异已拍板（2026-11-12）：bot 先开口用固定文案（listing 携带 intro/firstQuestion，运营撰写，不跑 LLM）；例行任务聊天内卡片开启（保留 Bot 设置长期入口）。详见 design.md v2 与 product-ui-review.md 草图复审更新。
+  </div>
+</div>
+
+<script>
+  const BOTS = {
+    morning: {
+      name: "Morning briefing", color: "#f59e0b", cat: "个人",
+      blurb: "每个工作日早上的日程概览，只汇报不代办",
+      desc: "每个工作日早上给你一份可扫读的简报：日程、要你回的邮件、天气和你关心的话题。没有你的确认，它不会发送或改动任何东西。",
+      routine: "工作日 8:00 早报，暂停中", apps: ["Gmail", "Google Calendar"],
+      cfg: "指令：每个工作日早上整理日程、待回邮件、天气和关注话题，只汇报不代办。技能：简报排版。不带任何作者的记忆或数据。",
+      sample: "<b>周四</b><br><br><b>日程</b><br>· 10:00 设计评审，改到 11:30<br>· 14:00 与 Dana 通话<br><br><b>需要你处理</b><br>· Alex 想在中午前拿到 Q4 数字<br>· 一份合同等你签字",
+      intro: "我每个工作日早上把日程、要你回的邮件、天气和你关心的话题拼成一份简报。没有你的确认，我不会发送邮件、接受邀请或改动任何东西。先告诉我：你在哪个城市（看天气），想追哪些话题？",
+      routineAsk: "我还准备了一个定时任务，先暂停着：工作日早上 8:00 给你发简报。要现在打开吗？",
+      routineOn: "例行任务已开启 · 工作日 8:00",
+    },
+    inbox: {
+      name: "Inbox triage", color: "#ec4899", cat: "个人",
+      blurb: "把收件箱分成要你回的和能略过的，草稿先等你点头",
+      desc: "把收件箱分成要你回的和能略过的，并为要回的邮件起草回复。草稿先等你确认，不会自动发送。",
+      routine: "每天 17:00 整理收件箱，暂停中", apps: ["Gmail"],
+      cfg: "指令：按重要程度给邮件分组并起草回复，只写草稿。技能：邮件分类。不带任何作者的记忆或数据。",
+      sample: "<b>需要回复（2）</b><br>· Alex：Q4 数字，草稿已备好<br>· 法务：合同待签字<br><br><b>可以略过（9）</b><br>· 订阅邮件、收据、系统通知",
+      intro: "我会把收件箱分成要你回的和能略过的，并为要回的邮件写好草稿。草稿先等你确认，我不会自动发送。先告诉我：哪些人的邮件要优先看？",
+      routineAsk: "我还准备了一个定时任务，先暂停着：每天 17:00 整理一次收件箱。要现在打开吗？",
+      routineOn: "例行任务已开启 · 每天 17:00",
+    },
+    pr: {
+      name: "PR reviewer", color: "#8b5cf6", cat: "工程",
+      blurb: "按你的标准先过一遍待审的 PR",
+      desc: "按你的标准先过一遍待审的 PR，指出问题并写好评论草稿。不会自动提交评审。",
+      routine: null, apps: ["GitHub"],
+      cfg: "指令：按你给的标准检查改动，只写评论草稿。技能：代码审查清单。不带任何作者的记忆或数据。",
+      sample: "<b>重构登录流程</b><br><br><b>需要关注</b><br>· auth.ts 第 42 行：未处理令牌过期<br>· 失败路径缺少测试<br><br><b>评论草稿</b><br>· 已为以上两点各写一条，等你确认后再提交",
+      intro: "我会按你的标准先过一遍待审的 PR，指出问题并写好评论草稿。我不会自动提交评审。先告诉我：你最在意哪些方面，比如测试、命名、性能？",
+    },
+    topic: {
+      name: "Topic watch", color: "#14b8a6", cat: "运营",
+      blurb: "盯着你关心的话题，有事才说，没事不打扰",
+      desc: "盯着你关心的话题，有新动静才告诉你，没事不打扰。",
+      routine: "每天 9:00 检查话题，暂停中", apps: [],
+      cfg: "指令：定期检查你关注的话题，只在有更新时汇报。技能：信息检索与摘要。不带任何作者的记忆或数据。",
+      sample: "<b>有动静（1）</b><br>· 你关注的「开源模型评测」出现新榜单<br><br><b>无更新</b><br>· 其余 2 个话题今天没有新内容",
+      intro: "我会盯着你关心的话题，有事才说，没事不打扰。先告诉我：你想追哪些话题？",
+      routineAsk: "我还准备了一个定时任务，先暂停着：每天 9:00 检查一次你的话题。要现在打开吗？",
+      routineOn: "例行任务已开启 · 每天 9:00",
+    },
+  };
+  const CATS = ["个人", "工程", "销售", "运营"];
+  const state = { cat: "全部", q: "", cur: "morning", installed: new Set(["morning"]), first: true };
+
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const face = (color, size = "") => `<span class="face ${size}" style="--c:${color}" aria-hidden="true"><i></i><i></i></span>`;
+  const $ = (sel) => document.querySelector(sel);
+
+  /* ── 渲染 ── */
+  function rowHTML(id) {
+    const b = BOTS[id], on = state.installed.has(id);
+    return `<div class="brow">
+      <button class="open" data-open="${id}">${face(b.color)}<span class="bt"><span class="b1">${b.name}</span><span class="b2">${b.blurb}</span></span></button>
+      ${on ? `<button class="add done" data-chat="${id}" aria-label="打开 ${b.name}">已添加</button>`
+           : `<button class="add" data-add="${id}" aria-label="添加 ${b.name}">添加</button>`}
+    </div>`;
+  }
+
+  function renderBrowse() {
+    const q = state.q.trim().toLowerCase();
+    const ids = Object.keys(BOTS).filter((id) => {
+      const b = BOTS[id];
+      return (state.cat === "全部" || b.cat === state.cat) && (!q || (b.name + b.blurb).toLowerCase().includes(q));
+    });
+    const filtering = state.cat !== "全部" || q;
+    let html = "";
+    if (!filtering) {
+      html += `<div class="band"><h3>精选</h3><div class="feat">${Object.keys(BOTS).map((id) =>
+        `<button class="fcard" data-open="${id}">${face(BOTS[id].color, "lg")}<span class="fn">${BOTS[id].name}</span></button>`).join("")}</div></div>`;
+    }
+    if (!ids.length) {
+      const what = q ? `「${esc(state.q.trim())}」` : `「${state.cat}」`;
+      html += `<div class="empty"><p>没有找到与${what}相关的 bot</p><button class="link" data-clear>清除筛选</button></div>`;
+    } else {
+      html += CATS.filter((c) => ids.some((id) => BOTS[id].cat === c)).map((c) =>
+        `<div class="band"><h3>${c}</h3><div class="rows2">${ids.filter((id) => BOTS[id].cat === c).map(rowHTML).join("")}</div></div>`).join("");
+    }
+    $("#mkt-body").innerHTML = html;
+  }
+
+  function renderDetail() {
+    const b = BOTS[state.cur], on = state.installed.has(state.cur);
+    $("#detail-body").innerHTML = `
+      <button class="back" data-tab="browse" aria-label="返回市场">‹</button>
+      <div class="hero">
+        ${face(b.color, "xl")}
+        <h3>${b.name}</h3>
+        <p class="hby">Rakazo Team 官方</p>
+        <p class="hdesc">${b.desc}</p>
+      </div>
+      <div class="facts">
+        <div class="fact"><span class="k">应用</span><span class="v">${b.apps.length ? b.apps.join("、") : "无需连接"}</span></div>
+        <div class="fact"><span class="k">例行任务</span><span class="v">${b.routine || "无"}</span></div>
+      </div>
+      <details class="cfg"><summary>查看配置</summary><p>${b.cfg}</p></details>
+      <p class="slabel">示例输出</p>
+      <div class="sample">${b.sample}</div>
+      <p class="demo-note">演示数据，不是你的真实内容。</p>
+      <div class="sheet-bar">
+        ${on ? `<button class="cta" data-chat="${state.cur}">打开我的 Bot</button>`
+             : `<button class="cta" data-add="${state.cur}">添加 Bot</button>`}
+      </div>`;
+  }
+
+  function renderConfirm() {
+    const b = BOTS[state.cur], on = state.installed.has(state.cur);
+    $("#confirm-body").innerHTML = `
+      ${face(b.color, "xl")}
+      <h3>${b.name}</h3>
+      <p class="ld">${b.desc}</p>
+      ${on ? `<button class="cta" data-chat="${state.cur}">在 BotONE 中打开</button>`
+           : `<button class="cta" data-add="${state.cur}">添加到 BotONE</button>`}
+      <p class="legal">Rakazo 官方创建并审核。添加后是你账户里的独立副本。</p>`;
+    $(".urlbar").textContent = "botone.example/bot/" + b.name.toLowerCase().replace(/ /g, "-");
+  }
+
+  function renderAfter() {
+    const b = BOTS[state.cur];
+    let msgs = "";
+    if (state.first) {
+      msgs += `<div class="bubble">你好，我是 ${b.name}。${b.intro}</div>`;
+      if (b.routine) {
+        msgs += `<div class="bubble" id="rt-ask">${b.routineAsk}</div>
+                 <div class="qr" id="rt-qr"><button data-rt="on">现在开启</button><button data-rt="later">稍后</button></div>`;
+      }
+      if (b.apps.length) {
+        msgs += `<div class="toolcard" id="apps-card"><h4>要现在连上哪些应用？</h4><p class="tcsub">可多选</p>
+          ${b.apps.map((a) => `<button class="opt" data-app aria-pressed="false"><span class="box"></span>${a}</button>`).join("")}
+          <div class="tcfoot"><button class="link" data-apps="later">稍后</button><button class="cta" data-apps="done" disabled>完成</button></div></div>`;
+      }
+    } else {
+      msgs = `<div class="bubble">我在。要我现在做点什么？</div>`;
+    }
+    $("#after-body").innerHTML = `
+      <div class="chathead"><button class="back" data-tab="browse" aria-label="返回市场">‹</button>${face(b.color)}${b.name}</div>
+      <div class="chatcol" id="chatcol">${msgs}</div>
+      <input class="composer" placeholder="给 ${b.name} 发消息" aria-label="消息">`;
+  }
+
+  /* ── 说明栏 ── */
+  const NOTES = {
+    browse: ["市场页", [
+      ["结构", "大标题 → 分类 → 搜索 → 精选 → 分类区块。每个 bot 只属于一个主分类，不会在多个区块重复出现。"],
+      ["筛选与搜索", "都是真的：搜索实时过滤；筛选或搜索时精选收起，只显示匹配区块。试试点「销售」看空状态，再点「清除筛选」。"],
+      ["行", "点行进详情；右侧「添加」直接创建并进聊天；「已添加」打开已有 bot，不会重复创建。描述最多两行。"],
+      ["颜色", "只有 bot 脸带色，名字和标题一律是墨色。"],
+    ]],
+    detail: ["详情", [
+      ["顺序", "一句话描述 → 应用与例行任务两个事实 → 示例输出 → 底部固定的主按钮，内容再长按钮也在。"],
+      ["配置默认折叠", "「查看配置」展开指令和技能，透明但不占首屏。"],
+      ["状态跟随", "未添加显示「添加 Bot」，已添加显示「打开我的 Bot」。可在市场页对比 Morning briefing 和 Inbox triage。"],
+    ]],
+    confirm: ["分享预览", [
+      ["是什么", "从分享链接打开的网页预览，所以是浏览器地址栏，不是应用窗口。"],
+      ["只有一个动作", "一个主按钮加一句边界说明。条款链接留到开放第三方投稿后再加。"],
+      ["应用内没有这步", "应用内点「添加 Bot」直接创建进聊天（屏 2 → 屏 4）。"],
+    ]],
+    after: ["添加后的聊天", [
+      ["bot 先开口", "一条介绍，边界由 bot 亲口说，并带上第一个要你回答的问题。已确认：固定文案（listing 的 intro/firstQuestion），不跑 LLM。"],
+      ["例行任务在聊天里问", "「现在开启 / 稍后」两个快捷回复。稍后的任务留在 Bot 设置里。"],
+      ["应用多选卡", "可多选并有选中态；选了才能「完成」，也可以「稍后」。不需要应用的 bot 不出现这张卡。"],
+      ["输入框常在", "所有问题都可以直接打字回答，不必只能点按钮。"],
+    ]],
+  };
+
+  function renderNotes(key) {
+    const [title, items] = NOTES[key];
+    $("#notes").innerHTML = `<h2>${title} · 说明</h2>` + items.map(([h, b], i) =>
+      `<div class="note"><span class="num">${i + 1}</span><span class="txt"><span class="nh">${h}</span>${b}</span></div>`).join("");
+  }
+
+  /* ── 导航 ── */
+  const RENDER = { browse: renderBrowse, detail: renderDetail, confirm: renderConfirm, after: renderAfter };
+  function show(key) {
+    RENDER[key]();
+    document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === "s-" + key));
+    document.querySelectorAll(".steps button").forEach((t) => {
+      if (t.dataset.tab === key) t.setAttribute("aria-current", "step");
+      else t.removeAttribute("aria-current");
+    });
+    renderNotes(key);
+    $(".scroller").scrollTop = 0;
+  }
+  const sys = (text) => `<div class="sysline">${text}</div>`;
+
+  document.addEventListener("click", (e) => {
+    const t = (sel) => e.target.closest(sel);
+    let el;
+    if ((el = t("[data-tab]"))) { state.first = true; return show(el.dataset.tab); }
+    if ((el = t("[data-add]"))) { state.cur = el.dataset.add; state.installed.add(state.cur); state.first = true; return show("after"); }
+    if ((el = t("[data-chat]"))) { state.cur = el.dataset.chat; state.first = false; return show("after"); }
+    if ((el = t("[data-open]"))) { state.cur = el.dataset.open; return show("detail"); }
+    if ((el = t("[data-cat]"))) {
+      state.cat = el.dataset.cat;
+      document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === el)));
+      return renderBrowse();
+    }
+    if (t("[data-clear]")) {
+      state.cat = "全部"; state.q = ""; $("#q").value = "";
+      document.querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.cat === "全部")));
+      return renderBrowse();
+    }
+    if ((el = t("[data-rt]"))) {
+      const b = BOTS[state.cur];
+      $("#rt-qr").outerHTML = sys(el.dataset.rt === "on" ? b.routineOn : "好的，之后可以在 Bot 设置里开启");
+      return;
+    }
+    if ((el = t("[data-app]"))) {
+      el.setAttribute("aria-pressed", String(el.getAttribute("aria-pressed") !== "true"));
+      $("[data-apps=done]").disabled = !document.querySelector(".opt[aria-pressed=true]");
+      return;
+    }
+    if ((el = t("[data-apps]"))) {
+      const picked = [...document.querySelectorAll(".opt[aria-pressed=true]")].map((o) => o.textContent.trim());
+      $("#apps-card").outerHTML = sys(el.dataset.apps === "done" ? `去授权 ${picked.join("、")}…` : "好的，之后可以在 Bot 设置里连接应用");
+    }
+  });
+
+  $("#q").addEventListener("input", (e) => { state.q = e.target.value; renderBrowse(); });
+
+  /* #browse / #detail / #confirm / #after 可直达某一屏，方便截图 */
+  const fromHash = () => location.hash.slice(1);
+  const go = (key) => { if (NOTES[key]) { show(key); return true; } return false; };
+  if (!go(fromHash())) show("browse");
+  addEventListener("hashchange", () => go(fromHash()));
+</script>
+</body>
+</html>

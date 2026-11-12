@@ -38,6 +38,7 @@ import type { BillingService } from "./billing.js";
 import { accountRoutes } from "./routes/account.js";
 import { availabilityRoutes } from "./routes/availability.js";
 import { boardsRoutes } from "./routes/boards.js";
+import { botMarketplaceRoutes } from "./routes/bot-marketplace.js";
 import { botsRoutes } from "./routes/bots.js";
 import { capabilitiesRoutes } from "./routes/capabilities.js";
 import { computerRoutes } from "./routes/computer.js";
@@ -174,6 +175,7 @@ export function createRouter(deps: RouterDeps) {
     ...routinesRoutes(ctx),
     ...boardsRoutes(ctx),
     ...capabilitiesRoutes(ctx),
+    ...botMarketplaceRoutes(ctx),
     ...mcpRoutes(ctx),
     ...onboardingRoutes(ctx),
     ...availabilityRoutes(ctx),
