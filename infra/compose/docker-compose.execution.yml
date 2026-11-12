@@ -1,5 +1,9 @@
 # Optional Linux host service. Its credential belongs only to the API, never to computers.
 services:
+  computer:
+    image: ${RAKAZO_COMPUTER_IMAGE:?Select the pinned native computer image}
+    build: !reset null
+    pull_policy: never
   api:
     environment:
       EXECUTION_CONNECTION: ${EXECUTION_CONNECTION:?Configure the trusted execution connection}
