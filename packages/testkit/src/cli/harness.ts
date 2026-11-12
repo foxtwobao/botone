@@ -108,6 +108,9 @@ async function main() {
     process.env.DATA_DIR = path.join(reportDir, "data");
     process.env.SIGNUPS_ENABLED = "true";
     process.env.SIGNUP_ALLOWLIST = "";
+    // A verified account at this address is a real admin, so admin surfaces can be
+    // exercised end to end instead of only through client-side mocks.
+    process.env.RAKAZO_ADMIN_EMAILS ??= "admin@rakazo.test";
     // Model and speech fixtures listen on loopback, and most test accounts are not the owner.
     process.env.MCP_ALLOW_PRIVATE_ENDPOINT = "true";
     if (!integration) {

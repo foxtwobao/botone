@@ -43,6 +43,7 @@ test("a mermaid fence is drawn as a themed, copyable diagram in place of its cod
   await expect(image).toHaveAttribute("src", /^data:image\/svg\+xml;/);
   await expect(message.locator("pre")).toHaveCount(0);
   await expect(message.getByText("graph LR")).toHaveCount(0);
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
   const text = await message.innerText();
   expect(text.indexOf("Here is the contribution flow:")).toBeLessThan(
     text.indexOf("Each step runs in CI."),

@@ -1,6 +1,7 @@
 import * as z from "zod";
 import { AgentImportStatusSchema } from "./agent-import-setup.js";
 import { BotAvatarSetSchema, BotAvatarValueSchema } from "./bot-avatar.js";
+import { BOT_MARKETPLACE_IMPORT_KEY_PREFIX } from "./bot-marketplace.js";
 import { BOT_TEMPLATE_IMPORT_KEY_PREFIX } from "./bot-template.js";
 import { ComputerModeSchema } from "./computer.js";
 import { BOT_DESCRIPTION_MAX_LENGTH, BOT_NAME_MAX_LENGTH } from "./domain.js";
@@ -46,7 +47,13 @@ export const AgentImportFilesSchema = z
     }
   });
 
-export const AgentImportSourceSchema = z.enum(["openclaw", "hermes", "document", "template"]);
+export const AgentImportSourceSchema = z.enum([
+  "openclaw",
+  "hermes",
+  "document",
+  "template",
+  "marketplace",
+]);
 export type AgentImportSource = z.infer<typeof AgentImportSourceSchema>;
 
 /**
@@ -235,7 +242,9 @@ export const AgentImportCreateInput = z.strictObject({
     .min(8)
     .max(100)
     .refine(
-      (key) => !key.startsWith(BOT_TEMPLATE_IMPORT_KEY_PREFIX),
+      (key) =>
+        !key.startsWith(BOT_TEMPLATE_IMPORT_KEY_PREFIX) &&
+        !key.startsWith(BOT_MARKETPLACE_IMPORT_KEY_PREFIX),
       "That import key is reserved.",
     )
     .optional(),

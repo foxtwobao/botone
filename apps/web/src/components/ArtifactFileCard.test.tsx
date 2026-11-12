@@ -202,18 +202,16 @@ it("keeps controls when automatic playback is rejected", async () => {
 it("translates every size unit and rolls up instead of 1,024.0 KB or 1,536.0 MB", async () => {
   await act(async () =>
     root?.render(
-      <>
-        {[512, 1024, 1048575, 1610612736, 1.5 * 1024 ** 4].map((size) => (
-          <ArtifactFileCard
-            key={size}
-            target={{ botId: "b" }}
-            artifactId={`a${size}`}
-            name={`f${size}.zip`}
-            mimeType="application/zip"
-            size={size}
-          />
-        ))}
-      </>,
+      [512, 1024, 1048575, 1610612736, 1.5 * 1024 ** 4].map((size) => (
+        <ArtifactFileCard
+          key={size}
+          target={{ botId: "b" }}
+          artifactId={`a${size}`}
+          name={`f${size}.zip`}
+          mimeType="application/zip"
+          size={size}
+        />
+      )),
     ),
   );
   const sizes = [...container.querySelectorAll("button span:last-child")].map(

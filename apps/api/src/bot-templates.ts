@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import type {
   Actor,
   AgentImportPlan,
+  AgentImportSource,
   BotTemplate,
   BotTemplateListing,
   ConnectionCatalogItem,
@@ -139,12 +140,47 @@ export async function createBotFromTemplate<PreparedKey>(
 ) {
   const template = findBotTemplate(input.templateId);
   if (!template) throw new ORPCError("NOT_FOUND", { message: "No template has that id." });
+  return createBotFromTemplateDefinition(
+    services,
+    appCatalog,
+    actor,
+    template,
+    input,
+    {
+      importKey: importKey(template.id),
+      source: "template",
+      changedReason: BOT_TEMPLATE_CHANGED,
+      digest: { templateId: template.id },
+    },
+    signal,
+  );
+}
+
+/**
+ * The same creation for any reviewed template-shaped definition, such as a marketplace
+ * listing: the caller owns the import key, the recorded source and the changed-version reason.
+ */
+export async function createBotFromTemplateDefinition<PreparedKey>(
+  services: AgentImportServices<PreparedKey>,
+  appCatalog: () => Promise<ConnectionCatalogItem[]>,
+  actor: Actor,
+  template: BotTemplate,
+  input: { version: number; name?: string },
+  options: {
+    importKey: string;
+    source: AgentImportSource;
+    changedReason: string;
+    /** What the idempotency digest covers; stable across versions of one definition. */
+    digest: unknown;
+  },
+  signal?: AbortSignal,
+) {
   // Skills the plan reuses instead of adding, checked again when the bot is written.
   let reusedRows: { id: string; name: string; content: string }[] = [];
   const request: Parameters<typeof writeImportedBot>[2] = {
-    importKey: importKey(template.id),
+    importKey: options.importKey,
     // The same for every version, so an existing bot is returned whatever changed since.
-    digest: requestDigest({ templateId: template.id }),
+    digest: requestDigest(options.digest),
     name: input.name ?? template.name,
     description: template.description,
     computerMode: "team",
@@ -161,11 +197,12 @@ export async function createBotFromTemplate<PreparedKey>(
       if (template.version !== input.version) {
         throw new ORPCError("PRECONDITION_FAILED", {
           message: "This template changed. Look at it again before creating the bot.",
-          data: { reason: BOT_TEMPLATE_CHANGED },
+          data: { reason: options.changedReason },
         });
       }
       request.cards = templateAppCards(template, template.apps.length ? await appCatalog() : []);
       const built = templatePlan(template, await savedTimeZone(services.prisma, actor));
+      built.plan.source = options.source;
       // A skill an earlier copy of this bot added, still unchanged (perhaps renamed on a clash),
       // is reused rather than added again; the routines' mentions are pointed at it.
       const kept = await services.prisma.agentSkill.findMany({
@@ -229,7 +266,7 @@ export async function createBotFromTemplate<PreparedKey>(
         where: {
           spaceId: actor.spaceId,
           userId: actor.userId,
-          importKey: importKey(template.id),
+          importKey: options.importKey,
           bot: { archivedAt: { not: null } },
         },
       });

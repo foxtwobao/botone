@@ -3,6 +3,7 @@ import { expect } from "@playwright/test";
 
 /** Scan controlled fixture screens, not arbitrary user-authored messages/code or inputs. */
 export async function expectReadableNames(region: Locator) {
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator.innerText() returns rendered text as a string, not a DOM node.
   const text = await region.innerText();
   expect(text).not.toMatch(/__[A-Za-z0-9]+__/);
   expect(text).not.toMatch(/\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b/i);

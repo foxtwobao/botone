@@ -69,6 +69,9 @@ const BoardPage = lazyComponent(() => import("./pages/Board").then((module) => m
 const AdminPluginsPage = lazyComponent(() =>
   import("./pages/AdminPluginsPage").then((module) => module.AdminPluginsPage),
 );
+const AdminBotsPage = lazyComponent(() =>
+  import("./pages/AdminBotsPage").then((module) => module.AdminBotsPage),
+);
 const AdminAccessPage = lazyComponent(() =>
   import("./pages/AdminAccessPage").then((module) => module.AdminAccessPage),
 );
@@ -256,6 +259,12 @@ function SessionApp() {
                   ) : (
                     <Navigate to="/sign-in?next=/admin/plugins" replace />
                   )
+                }
+              />
+              <Route
+                path="/admin/bots"
+                element={
+                  user ? <AdminBotsPage /> : <Navigate to="/sign-in?next=/admin/bots" replace />
                 }
               />
               <Route

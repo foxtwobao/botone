@@ -23,6 +23,7 @@ export type ShellOverlay =
   | { kind: "integrations" }
   | { kind: "skills" }
   | { kind: "templates" }
+  | { kind: "market" }
   | { kind: "mcp"; serverId?: string }
   | null;
 
@@ -32,6 +33,7 @@ const OVERLAY_KEYS = [
   "integrations",
   "skills",
   "templates",
+  "market",
   "mcp",
   "messaging",
 ] as const;
@@ -52,6 +54,7 @@ export function readShellOverlay(params: URLSearchParams): ShellOverlay {
   if (params.has("integrations")) return { kind: "integrations" };
   if (params.has("skills")) return { kind: "skills" };
   if (params.has("templates")) return { kind: "templates" };
+  if (params.has("market")) return { kind: "market" };
   if (params.has("mcp")) {
     const serverId = params.get("mcp");
     return serverId ? { kind: "mcp", serverId } : { kind: "mcp" };
