@@ -22,7 +22,9 @@
       "!**/data",
       "!**/*.astro",
       "!**/apps/www",
-      "!**/docs"
+      "!**/docs",
+      // Byte-exact copy of MCP_APP_SHELL_HTML, asserted by McpAppCard.test.ts; no rule may rewrite it.
+      "!**/apps/web/public/mcp-app-viewer.html"
     ]
   },
   "plugins": [
