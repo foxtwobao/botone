@@ -248,7 +248,7 @@
   </div>
 
   <div class="foot">
-    草图文件：<code>docs/bot-marketplace-sketch.html</code>。与现有管线的两个差异：添加后 bot 会先开口（现状 inert 不发消息）；例行任务开启改为聊天内询问（现状走初始化清单卡）。
+    草图文件：<code>docs/bot-marketplace-sketch.html</code>。与现有管线的两个差异已拍板（2026-11-12）：bot 先开口用固定文案（listing 携带 intro/firstQuestion，运营撰写，不跑 LLM）；例行任务聊天内卡片开启（保留 Bot 设置长期入口）。详见 design.md v2 与 product-ui-review.md 草图复审更新。
   </div>
 </div>
 
@@ -414,7 +414,7 @@
       ["应用内没有这步", "应用内点「添加 Bot」直接创建进聊天（屏 2 → 屏 4）。"],
     ]],
     after: ["添加后的聊天", [
-      ["bot 先开口", "一条介绍，边界由 bot 亲口说，并带上第一个要你回答的问题。这改变了现状的 inert 语义，需产品确认。"],
+      ["bot 先开口", "一条介绍，边界由 bot 亲口说，并带上第一个要你回答的问题。已确认：固定文案（listing 的 intro/firstQuestion），不跑 LLM。"],
       ["例行任务在聊天里问", "「现在开启 / 稍后」两个快捷回复。稍后的任务留在 Bot 设置里。"],
       ["应用多选卡", "可多选并有选中态；选了才能「完成」，也可以「稍后」。不需要应用的 bot 不出现这张卡。"],
       ["输入框常在", "所有问题都可以直接打字回答，不必只能点按钮。"],
