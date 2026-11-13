@@ -8,6 +8,7 @@ import type { HarnessDriverFactory, HarnessProcess } from "@rakazo/native-runtim
 import { hostDisabledFeatures } from "@rakazo/native-runtime/host-policy";
 import { HarnessRpc } from "@rakazo/native-runtime/rpc";
 import { launchHostProcess } from "./host-process.js";
+import { hostProcessOwnershipAvailable } from "./host-process-owner.js";
 
 // A tested protocol version is an admission requirement, not a guess based on semver.
 export const HOST_ENGINE_VERSION = "0.167.0";
@@ -165,9 +166,10 @@ export interface HostHarnessAdapter {
 export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
   const workspace = os.homedir();
   const env = hostEnvironment();
-  const executable = await resolveHostExecutable();
+  const owned = await hostProcessOwnershipAvailable();
+  const executable = owned ? await resolveHostExecutable() : undefined;
   const adapter: HostHarnessAdapter = {
-    profile: { ...profile, status: "missing" },
+    profile: { ...profile, status: owned ? "missing" : "unsupported" },
     launch: async (directory, tools) => {
       if (!executable || adapter.profile.status !== "ready")
         throw new Error("Local agent unavailable");

@@ -1,4 +1,5 @@
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
@@ -9,7 +10,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { WINDOWS_COMMAND_WRAPPER } from "../desktop-process-tree.js";
 import { launchHostProcess } from "./host-process.js";
 
-describe("host protocol process", () => {
+describe.skipIf(!["linux", "win32"].includes(process.platform))("host protocol process", () => {
   const roots: string[] = [];
   const processes: HarnessProcess[] = [];
   afterEach(async () => {
@@ -165,6 +166,47 @@ describe("host protocol process", () => {
     await second.child.write({ still: "running" });
     expect(JSON.parse(await next())).toEqual({ still: "running" });
   });
+
+  it.each(["stop", "exit", "crash"])(
+    "reaps detached double-forked descendants on %s and leaves unrelated processes running",
+    async (action) => {
+      const unrelated = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"]);
+      const grandchild = `process.on('SIGTERM', () => {}); setInterval(() => require('node:fs').appendFileSync('ticks', 'tick\\n'), 10);`;
+      const intermediate = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grandchild)}], { detached: true, stdio: 'ignore' }); require('node:fs').writeFileSync('descendant', String(child.pid)); child.unref();`;
+      let pid: number | undefined;
+      try {
+        const { child, root } = await launch(`
+        const fs = require('node:fs');
+        const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(intermediate)}], { detached: true, stdio: 'ignore' });
+        child.unref();
+        const timer = setInterval(() => {
+          if (!fs.existsSync('ticks')) return;
+          console.log(fs.readFileSync('descendant', 'utf8'));
+          clearInterval(timer);
+          ${action === "stop" ? "setInterval(() => {}, 1000);" : `process.exit(${action === "exit" ? 0 : 1});`}
+        }, 10);
+      `);
+        pid = Number(await output(child)());
+        if (action !== "stop")
+          expect(await new Promise((resolve) => child.onExit(resolve))).toBe(
+            action === "exit" ? 0 : 1,
+          );
+        await child.stop();
+        expect(() => process.kill(pid!, 0)).toThrow();
+        const stopped = await readFile(path.join(root, "ticks"), "utf8");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(await readFile(path.join(root, "ticks"), "utf8")).toBe(stopped);
+        expect(unrelated.exitCode).toBeNull();
+      } finally {
+        if (pid) {
+          try {
+            process.kill(pid, "SIGKILL");
+          } catch {}
+        }
+        unrelated.kill("SIGKILL");
+      }
+    },
+  );
 
   it("passes only the explicit environment to the CLI", async () => {
     const { child } = await launch("console.log(JSON.stringify(process.env));", {

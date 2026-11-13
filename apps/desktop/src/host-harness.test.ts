@@ -151,6 +151,224 @@ function fixture() {
 }
 
 describe("desktop-owned execution", () => {
+  it.each(["disconnect", "stop", "configure", "close"])(
+    "revokes a pending server grant on %s without replaying its prompt",
+    async (action) => {
+      const f = fixture();
+      await f.configure();
+      const original = f.rpc.hostExecutions.start.getMockImplementation()!;
+      let release!: () => void;
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      f.rpc.hostExecutions.start.mockImplementation(async (request) => {
+        const grant = await original(request);
+        await barrier;
+        return grant;
+      });
+      const pending = f.controller.send(origin, input).catch((error) => error);
+      await vi.waitFor(() => expect(f.rpc.hostExecutions.start).toHaveBeenCalled());
+      expect(f.controller.hasRuns()).toBe(true);
+      if (action === "disconnect") await f.controller.disconnectedWindow();
+      if (action === "stop") await f.controller.stop(origin, input);
+      if (action === "configure")
+        await f.controller.configure(origin, { ...input, profileId: null });
+      if (action === "close") await f.controller.close();
+      release();
+      expect(await pending).toBeInstanceOf(Error);
+      await tick();
+      expect(f.adapter.launch).not.toHaveBeenCalled();
+      const restarted = new DesktopHarness(f.options);
+      cleanups.push(() => restarted.close());
+      await restarted.profiles(origin, input);
+      if (action === "configure")
+        await expect(restarted.send(origin, input)).rejects.toThrow("Choose a local workspace");
+      else await restarted.send(origin, input).catch(() => undefined);
+      expect(f.adapter.launch).not.toHaveBeenCalled();
+      expect(f.dispatches).toHaveLength(0);
+    },
+  );
+
+  it.each(["owner", "inspect"])("revokes authority while waiting for %s", async (stage) => {
+    const f = fixture();
+    await f.configure();
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    if (stage === "owner")
+      f.rpc.me.mockImplementationOnce(async () => {
+        await barrier;
+        return { userId: "user", spaceId: "space" };
+      });
+    else
+      f.options.inspect.mockImplementationOnce(async () => {
+        await barrier;
+        return f.adapter;
+      });
+    const pending = f.controller.send(origin, input).catch((error) => error);
+    await tick();
+    expect(f.controller.hasRuns()).toBe(true);
+    await f.controller.disconnectedWindow();
+    release();
+    expect(await pending).toBeInstanceOf(Error);
+    expect(f.rpc.hostExecutions.start).not.toHaveBeenCalled();
+    expect(f.adapter.launch).not.toHaveBeenCalled();
+  });
+
+  it("reauthenticates a granted launch after the signed-in account changes", async () => {
+    const f = fixture();
+    await f.configure();
+    const original = f.rpc.hostExecutions.start.getMockImplementation()!;
+    f.rpc.hostExecutions.start.mockImplementation(async (request) => {
+      const grant = await original(request);
+      f.setAccount("another-user");
+      return grant;
+    });
+    await expect(f.controller.send(origin, input)).rejects.toThrow("scope changed");
+    expect(f.adapter.launch).not.toHaveBeenCalled();
+  });
+
+  it.each(["disconnect", "stop", "close"])(
+    "does not save consent that finishes after %s",
+    async (action) => {
+      const f = fixture();
+      let release!: (value: boolean) => void;
+      f.options.confirm.mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            release = resolve;
+          }),
+      );
+      const pending = f.configure().catch((error) => error);
+      await vi.waitFor(() => expect(f.options.confirm).toHaveBeenCalled());
+      if (action === "disconnect") await f.controller.disconnectedWindow();
+      if (action === "stop") await f.controller.stop(origin, input);
+      if (action === "close") await f.controller.close();
+      release(true);
+      expect(await pending).toBeInstanceOf(Error);
+      expect(
+        JSON.parse(readFileSync(path.join(f.root, "settings.json"), "utf8")).selections,
+      ).toEqual({});
+    },
+  );
+
+  it("uploads cancellation and partial output only after orderly shutdown confirms cleanup", async () => {
+    const f = fixture();
+    await f.configure();
+    await f.controller.send(origin, input);
+    await tick();
+    f.emitters.get("run-message")!({ type: "text", text: "Partial output" });
+    const stop = f.processes[0]!.stop.bind(f.processes[0]);
+    let release!: () => void;
+    f.processes[0]!.stop = async () => {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await stop();
+    };
+    const closing = f.controller.close();
+    await tick();
+    expect(f.frames.some((frame) => frame.event.type === "cancelled")).toBe(false);
+    release();
+    await closing;
+    expect(f.frames.map((frame) => frame.event)).toContainEqual({
+      type: "text",
+      text: "Partial output",
+    });
+    expect(f.frames.map((frame) => frame.event)).toContainEqual({ type: "cancelled" });
+    expect(f.frames.some((frame) => frame.event.type === "failed")).toBe(false);
+    expect(readdirSync(f.root).some((name) => name.startsWith("run-"))).toBe(false);
+  });
+
+  it("keeps failed shutdown journals and allows Stop and Quit to retry cleanup", async () => {
+    const f = fixture();
+    await f.configure();
+    await f.controller.send(origin, input);
+    await tick();
+    const stop = f.processes[0]!.stop.bind(f.processes[0]);
+    f.processes[0]!.stop = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("host_stop_unconfirmed"))
+      .mockImplementation(stop);
+    await expect(f.controller.close()).rejects.toThrow("host_stop_unconfirmed");
+    expect(f.controller.hasRuns()).toBe(true);
+    expect(f.frames.some((frame) => frame.event.type === "cancelled")).toBe(false);
+    expect(readdirSync(f.root).some((name) => name.startsWith("run-"))).toBe(true);
+    await f.controller.stop(origin, input);
+    expect(f.frames.map((frame) => frame.event)).toContainEqual({ type: "cancelled" });
+    await f.controller.close();
+    expect(f.frames.map((frame) => frame.event)).toContainEqual({ type: "cancelled" });
+    expect(f.controller.hasRuns()).toBe(false);
+  });
+
+  it("allows an explicit retry after a grant was rejected before any local launch", async () => {
+    const f = fixture();
+    await f.configure();
+    f.rpc.hostExecutions.start.mockRejectedValueOnce(new Error("CONFLICT"));
+    await expect(f.controller.send(origin, input)).rejects.toThrow("CONFLICT");
+    await f.controller.send(origin, input);
+    await tick();
+    expect(f.adapter.launch).toHaveBeenCalledTimes(1);
+    expect(f.dispatches).toHaveLength(1);
+  });
+
+  it("does not revoke another bot's pending launch when stopping one bot", async () => {
+    const f = fixture();
+    await f.configure();
+    const original = f.rpc.hostExecutions.start.getMockImplementation()!;
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    f.rpc.hostExecutions.start.mockImplementation(async (request) => {
+      const grant = await original(request);
+      await barrier;
+      return grant;
+    });
+    const pending = f.controller.send(origin, input);
+    await vi.waitFor(() => expect(f.rpc.hostExecutions.start).toHaveBeenCalled());
+    await f.controller.stop(origin, { ...input, botId: "other-bot" });
+    release();
+    await pending;
+    await tick();
+    expect(f.adapter.launch).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps unacknowledged shutdown frames when the final sync fails", async () => {
+    const f = fixture();
+    await f.configure();
+    await f.controller.send(origin, input);
+    await tick();
+    f.setOffline(true);
+    await f.controller.close();
+    expect(f.processes[0]!.stopped).toBe(true);
+    expect(readdirSync(f.root).some((name) => name.startsWith("run-"))).toBe(true);
+    f.setOffline(false);
+    const restarted = new DesktopHarness(f.options);
+    cleanups.push(() => restarted.close());
+    await restarted.profiles(origin, input);
+    expect(f.frames.map((frame) => frame.event)).toContainEqual({ type: "cancelled" });
+    expect(f.adapter.launch).toHaveBeenCalledTimes(1);
+  });
+
+  it("bounds final synchronization even when its transport ignores cancellation", async () => {
+    const f = fixture();
+    await f.configure();
+    await f.controller.send(origin, input);
+    await tick();
+    f.rpc.hostExecutions.sync.mockImplementationOnce(() => new Promise(() => {}));
+    vi.useFakeTimers();
+    try {
+      const closing = f.controller.close();
+      await vi.advanceTimersByTimeAsync(5000);
+      await closing;
+      expect(f.processes[0]!.stopped).toBe(true);
+      expect(readdirSync(f.root).some((name) => name.startsWith("run-"))).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it("keeps credentials and run proofs out of the renderer and launches a nonce once", async () => {
     const f = fixture();
     await f.configure();

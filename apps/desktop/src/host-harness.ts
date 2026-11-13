@@ -57,6 +57,12 @@ const metaSchema = z.object({
   leaseExpiresAt: z.string(),
 });
 type Metadata = z.infer<typeof metaSchema>;
+interface Intent {
+  origin: string;
+  spaceId: string;
+  botId: string;
+  abort: AbortController;
+}
 interface Active {
   meta: Metadata;
   rpc: Client;
@@ -90,6 +96,9 @@ export class DesktopHarness {
   private readonly services = new Map<string, NativeHarnessExecutionService>();
   private readonly runs = new Map<string, Active>();
   private readonly restoring = new Set<string>();
+  private readonly pending = new Set<Intent>();
+  private readonly launching = new Map<string, Intent>();
+  private readonly dispatches = new Map<string, ReturnType<DesktopHarness["dispatch"]>>();
   private closing = false;
   private closed = false;
   private shutdown?: Promise<void>;
@@ -121,7 +130,7 @@ export class DesktopHarness {
       new RPCLink({
         url: `${origin}/rpc`,
         fetch: async (input, init) => {
-          if (this.options.currentOrigin() !== origin || this.closing)
+          if (this.options.currentOrigin() !== origin || this.closed)
             throw new Error("Local execution disconnected");
           const request = new Request(input, init);
           const headers = new Headers(request.headers);
@@ -133,13 +142,42 @@ export class DesktopHarness {
       }),
     );
   }
-  private async owner(origin: string, spaceId: string) {
-    if (origin !== this.options.currentOrigin() || this.closing)
+  private async owner(origin: string, spaceId: string, cleanup = false) {
+    if (origin !== this.options.currentOrigin() || (this.closing && !cleanup) || this.closed)
       throw new Error("Local agent unavailable");
     const rpc = this.client(origin, spaceId);
     const me = await rpc.me();
     if (me.spaceId !== spaceId) throw new Error("Space unavailable");
     return { rpc, userId: me.userId, spaceId };
+  }
+  private intent(origin: string, input: { spaceId: string; botId: string }) {
+    const intent = {
+      origin,
+      spaceId: input.spaceId,
+      botId: input.botId,
+      abort: new AbortController(),
+    };
+    this.assertIntent(intent);
+    this.pending.add(intent);
+    return intent;
+  }
+  private assertIntent(intent: Intent) {
+    if (
+      intent.abort.signal.aborted ||
+      this.closing ||
+      this.options.currentOrigin() !== intent.origin
+    )
+      throw new Error("Local execution disconnected");
+  }
+  private revoke(origin?: string, input?: { spaceId: string; botId: string }) {
+    for (const intent of this.pending)
+      if (
+        !input ||
+        (intent.origin === origin &&
+          intent.spaceId === input.spaceId &&
+          intent.botId === input.botId)
+      )
+        intent.abort.abort();
   }
   private selectionKey(origin: string, userId: string, spaceId: string, botId: string) {
     return key([origin, userId, spaceId, botId]);
@@ -192,8 +230,11 @@ export class DesktopHarness {
             computerId: this.state.installationId,
             engineVersion: meta.version,
             driver: adapter.driver,
-            launch: (request) =>
-              adapter.launch(
+            launch: (request) => {
+              const intent = this.launching.get(request.runId);
+              if (!intent) throw new Error("Local execution disconnected");
+              this.assertIntent(intent);
+              return adapter.launch(
                 meta.selection.workspace,
                 meta.selection.target === "computer"
                   ? {
@@ -217,7 +258,8 @@ export class DesktopHarness {
                       },
                     }
                   : undefined,
-              ),
+              );
+            },
           },
         ],
         undefined,
@@ -303,51 +345,99 @@ export class DesktopHarness {
       target?: "workspace" | "computer";
     },
   ) {
-    const { rpc, userId } = await this.owner(origin, input.spaceId);
-    await rpc.bots.get({ botId: input.botId });
-    const id = this.selectionKey(origin, userId, input.spaceId, input.botId);
-    if (
-      [...this.runs.values()].some(
-        (run) =>
-          !run.finished &&
-          run.meta.origin === origin &&
-          run.meta.spaceId === input.spaceId &&
-          run.meta.botId === input.botId,
+    this.revoke(origin, input);
+    const intent = this.intent(origin, input);
+    try {
+      const { rpc, userId } = await this.owner(origin, input.spaceId);
+      await rpc.bots.get({ botId: input.botId });
+      this.assertIntent(intent);
+      const id = this.selectionKey(origin, userId, input.spaceId, input.botId);
+      if (
+        [...this.runs.values()].some(
+          (run) =>
+            !run.finished &&
+            run.meta.origin === origin &&
+            run.meta.spaceId === input.spaceId &&
+            run.meta.botId === input.botId,
+        )
       )
-    )
-      throw new Error("Stop the current local task before changing its agent");
-    if (input.profileId === null) {
-      delete this.state.selections[id];
+        throw new Error("Stop the current local task before changing its agent");
+      if (input.profileId === null) {
+        delete this.state.selections[id];
+        this.saveState();
+        return null;
+      }
+      const adapter = await (this.options.inspect ?? inspectHostHarness)();
+      this.assertIntent(intent);
+      if (adapter.profile.id !== input.profileId || adapter.profile.status !== "ready")
+        throw new Error("Local agent unavailable");
+      const target = input.target ?? this.state.selections[id]?.target ?? "workspace";
+      const scratch = path.join(this.options.root, "scratch", id);
+      if (target === "computer") mkdirSync(scratch, { recursive: true, mode: 0o700 });
+      const picked = target === "computer" ? scratch : await this.options.chooseDirectory();
+      this.assertIntent(intent);
+      if (!picked) return this.state.selections[id] ?? null;
+      const workspace = await realpath(picked);
+      if (!(await this.options.confirm({ origin, workspace, target })))
+        return this.state.selections[id] ?? null;
+      if ((await this.owner(origin, input.spaceId)).userId !== userId)
+        throw new Error("Local execution scope changed");
+      this.assertIntent(intent);
+      if (
+        [...this.runs.values()].some(
+          (run) =>
+            !run.finished &&
+            run.meta.origin === origin &&
+            run.meta.spaceId === input.spaceId &&
+            run.meta.botId === input.botId,
+        )
+      )
+        throw new Error("Stop the current local task before changing its agent");
+      const selection = { profileId: input.profileId, workspace, target };
+      this.state.selections[id] = selection;
       this.saveState();
-      return null;
+      return selection;
+    } finally {
+      this.pending.delete(intent);
     }
-    const adapter = await (this.options.inspect ?? inspectHostHarness)();
-    if (adapter.profile.id !== input.profileId || adapter.profile.status !== "ready")
-      throw new Error("Local agent unavailable");
-    const target = input.target ?? this.state.selections[id]?.target ?? "workspace";
-    const scratch = path.join(this.options.root, "scratch", id);
-    if (target === "computer") mkdirSync(scratch, { recursive: true, mode: 0o700 });
-    const picked = target === "computer" ? scratch : await this.options.chooseDirectory();
-    if (!picked) return this.state.selections[id] ?? null;
-    const workspace = await realpath(picked);
-    if (!(await this.options.confirm({ origin, workspace, target })))
-      return this.state.selections[id] ?? null;
-    if ((await this.owner(origin, input.spaceId)).userId !== userId)
-      throw new Error("Local execution scope changed");
-    const selection = { profileId: input.profileId, workspace, target };
-    this.state.selections[id] = selection;
-    this.saveState();
-    return selection;
   }
   async send(
     origin: string,
     input: { botId: string; spaceId: string; text: string; clientNonce: string },
   ) {
-    const { rpc, userId } = await this.owner(origin, input.spaceId);
+    const intent = this.intent(origin, input);
+    try {
+      const { rpc, userId } = await this.owner(origin, input.spaceId);
+      this.assertIntent(intent);
+      const id = key([origin, userId, input.spaceId, input.botId, input.clientNonce]);
+      const previous = this.dispatches.get(id);
+      if (previous) return await previous;
+      const dispatch = this.dispatch(intent, rpc, userId, input).finally(() =>
+        this.dispatches.delete(id),
+      );
+      this.dispatches.set(id, dispatch);
+      return await dispatch;
+    } finally {
+      this.pending.delete(intent);
+    }
+  }
+  private async dispatch(
+    intent: Intent,
+    rpc: Client,
+    userId: string,
+    input: { botId: string; spaceId: string; text: string; clientNonce: string },
+  ) {
+    const { origin } = intent;
     const selection =
       this.state.selections[this.selectionKey(origin, userId, input.spaceId, input.botId)];
     if (!selection) throw new Error("Choose a local workspace first");
     const adapter = await (this.options.inspect ?? inspectHostHarness)();
+    this.assertIntent(intent);
+    if (
+      this.state.selections[this.selectionKey(origin, userId, input.spaceId, input.botId)] !==
+      selection
+    )
+      throw new Error("Local execution scope changed");
     if (
       adapter.profile.status !== "ready" ||
       adapter.profile.id !== selection.profileId ||
@@ -368,7 +458,7 @@ export class DesktopHarness {
         target: selection.target,
         ...(selection.model ? { model: selection.model } : {}),
       },
-      { signal: AbortSignal.timeout(20_000) },
+      { signal: AbortSignal.any([intent.abort.signal, AbortSignal.timeout(20_000)]) },
     );
     if (grant.userId !== userId || grant.spaceId !== input.spaceId)
       throw new Error("Local execution scope changed");
@@ -393,17 +483,38 @@ export class DesktopHarness {
     const service = this.service(meta, adapter);
     // Persist dispatch identity before the journal starts. Recovery never dispatches it again.
     this.write(this.metaFile(meta.runId), meta);
-    const snapshot = await service.start({
-      runId: grant.runId,
-      scope: this.scope(meta),
-      fence: 1,
-      leaseExpiresAt: grant.leaseExpiresAt,
-      instructions: grant.instructions,
-      prompt: input.text,
-      context: grant.context,
-      session: grant.session,
-      ...(selection.model ? { model: selection.model } : {}),
-    });
+    try {
+      this.assertIntent(intent);
+      if ((await this.owner(origin, input.spaceId)).userId !== userId)
+        throw new Error("Local execution scope changed");
+      this.assertIntent(intent);
+      if (
+        this.state.selections[this.selectionKey(origin, userId, input.spaceId, input.botId)] !==
+        selection
+      )
+        throw new Error("Local execution scope changed");
+    } catch (error) {
+      await service.stop({ runId: grant.runId, scope: this.scope(meta), fence: 1 });
+      const snapshot = service.recover(meta.runId, this.scope(meta))!;
+      const run = this.entry(meta, service, snapshot.generation);
+      this.runs.set(meta.runId, run);
+      if (!this.closing) await this.pump(run);
+      throw error;
+    }
+    this.launching.set(grant.runId, intent);
+    const snapshot = await service
+      .start({
+        runId: grant.runId,
+        scope: this.scope(meta),
+        fence: 1,
+        leaseExpiresAt: grant.leaseExpiresAt,
+        instructions: grant.instructions,
+        prompt: input.text,
+        context: grant.context,
+        session: grant.session,
+        ...(selection.model ? { model: selection.model } : {}),
+      })
+      .finally(() => this.launching.delete(grant.runId));
     if (this.runs.has(meta.runId))
       return { runId: grant.runId, taskId: grant.taskId, seq: grant.seq };
     const run = this.entry(meta, service, snapshot.generation);
@@ -443,10 +554,10 @@ export class DesktopHarness {
       if (!run.finished && !this.closing) await this.disconnected(run, error);
     }
   }
-  private async pump(run: Active): Promise<void> {
-    if (run.pumping || run.finished || this.closing) return run.pumping;
+  private async pump(run: Active, shutdown?: AbortSignal): Promise<void> {
+    if (run.pumping || run.finished || (this.closing && !shutdown)) return run.pumping;
     run.pumping = (async () => {
-      while (run.dirty && !run.finished && !this.closing) {
+      while (run.dirty && !run.finished && (!this.closing || shutdown) && !shutdown?.aborted) {
         run.dirty = false;
         const snapshot = run.service.recover(run.meta.runId, run.control.scope);
         if (!snapshot) throw new Error("Local execution journal unavailable");
@@ -459,8 +570,11 @@ export class DesktopHarness {
         });
         const result = await run.rpc.hostExecutions.sync(
           { runId: run.meta.runId, token: run.token, frames: page.frames as HostFrame[] },
-          { signal: AbortSignal.timeout(15_000) },
+          {
+            signal: AbortSignal.any([AbortSignal.timeout(15_000), ...(shutdown ? [shutdown] : [])]),
+          },
         );
+        shutdown?.throwIfAborted();
         if (result.after < run.meta.after || result.after > page.nextSequence)
           throw new Error("Execution acknowledgement mismatch");
         run.meta.after = result.after;
@@ -476,12 +590,14 @@ export class DesktopHarness {
           after: run.meta.after,
           leaseExpiresAt: result.leaseExpiresAt,
         });
-        for (const answer of result.answers)
+        for (const answer of this.closing ? [] : result.answers)
           await run.service.respond({ ...run.control, ...answer });
         if (page.frames.length === 128 || frames.length === 128) run.dirty = true;
       }
     })()
-      .catch((error) => this.disconnected(run, error))
+      .catch((error) => {
+        if (!this.closing) return this.disconnected(run, error);
+      })
       .finally(() => {
         run.pumping = undefined;
         if (run.dirty && !run.finished && !this.closing && !run.abort.signal.aborted)
@@ -550,7 +666,8 @@ export class DesktopHarness {
     return true;
   }
   async stop(origin: string, input: { botId: string; spaceId: string }) {
-    const { userId } = await this.owner(origin, input.spaceId);
+    this.revoke(origin, input);
+    const { userId } = await this.owner(origin, input.spaceId, true);
     await Promise.all(
       [...this.runs.values()]
         .filter(
@@ -564,30 +681,61 @@ export class DesktopHarness {
         .map(async (run) => {
           await run.service.cancel(run.control);
           run.dirty = true;
-          await this.pump(run);
+          await this.pump(run, this.closing ? AbortSignal.timeout(5000) : undefined);
         }),
     );
   }
   hasRuns() {
-    return !this.closed && [...this.runs.values()].some((run) => !run.finished);
+    return (
+      !this.closed &&
+      (this.pending.size > 0 || [...this.runs.values()].some((run) => !run.finished))
+    );
   }
   close() {
     if (this.shutdown) return this.shutdown;
     this.closing = true;
+    this.revoke();
     for (const run of this.runs.values()) {
       clearInterval(run.heartbeat);
       clearTimeout(run.retry);
       run.abort.abort();
     }
-    this.shutdown = Promise.all([...this.services.values()].map((service) => service.close())).then(
-      () => {
-        this.closed = true;
-      },
-    );
+    this.shutdown = (async () => {
+      await Promise.all(
+        [...this.services.values()].map((service) => service.close({ cancelled: true })),
+      );
+      const abort = new AbortController();
+      let timeout: NodeJS.Timeout | undefined;
+      try {
+        await Promise.race([
+          Promise.all(
+            [...this.runs.values()].map(async (run) => {
+              await run.pumping;
+              run.dirty = true;
+              await this.pump(run, abort.signal);
+            }),
+          ),
+          new Promise<void>((resolve) => {
+            timeout = setTimeout(() => {
+              abort.abort();
+              resolve();
+            }, 5000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timeout);
+        abort.abort();
+      }
+      this.closed = true;
+    })().catch((error) => {
+      this.shutdown = undefined;
+      throw error;
+    });
     return this.shutdown;
   }
   /** A navigation loses its old native authority immediately, before another page runs. */
   async disconnectedWindow() {
+    this.revoke();
     await Promise.all(
       [...this.runs.values()]
         .filter((run) => !run.finished)
