@@ -71,6 +71,7 @@ export function BotSettings({
   tab = "settings",
   onTabChange,
   computer,
+  computerActions,
   routines,
   memoryProviderConfigured,
   onSave,
@@ -83,6 +84,7 @@ export function BotSettings({
   tab?: BotPanelTab;
   onTabChange?: (tab: BotPanelTab) => void;
   computer?: ReactNode;
+  computerActions?: ReactNode;
   routines?: ReactNode;
   focusModel?: number;
   onOpenConnections?: () => void;
@@ -594,6 +596,7 @@ export function BotSettings({
               memoryProviderConfigured={memoryProviderConfigured}
               memoryScope={memoryScope}
               onMemoryScopeChange={setMemoryScope}
+              actions={computerActions}
             />
             <VoiceGroup
               ids={ids}

@@ -144,7 +144,9 @@ test("ops publishes a bot; a user adds it from the market and uses it", async ({
     .getByRole("combobox", { name: "Message Morning briefing" })
     .fill("Can you check my Gmail inbox?");
   await member.keyboard.press("Enter");
-  await expect(member.getByText("Connect Gmail and I’ll check your inbox.")).toBeVisible();
+  await expect(
+    member.getByTestId("message-bot-bubble").getByText("Connect Gmail and I’ll check your inbox."),
+  ).toBeVisible();
   await captureScreenshot(member, testInfo, "10-user-chat-reply");
 
   // The market now offers the bot it made instead of a second one.

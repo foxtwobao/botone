@@ -1,5 +1,6 @@
 /** Product display copy; source message IDs stay compatible with upstream. */
 export const EN_MESSAGES = {
+  "Choose where Rakazo runs.": "Choose where BotONE runs.",
   "Change Rakazo Server…": "Change BotONE Server…",
   "Downloading Rakazo images failed. Check the output below, then retry.":
     "Downloading BotONE images failed. Check the output below, then retry.",

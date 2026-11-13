@@ -25,6 +25,7 @@ import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } fr
 import { BotAvatar } from "../components/bot-avatar";
 import { BotContextCards } from "../components/bot-context-cards";
 import { BotLookPicker } from "../components/bot-look-picker";
+import { useComputerMaintenanceRows } from "../components/computer-maintenance-actions";
 import { ComputerModePicker } from "../components/computer-mode-picker";
 import { ExecutionSettings } from "../components/execution-settings";
 import { glassHeaderOptions } from "../components/glass-title";
@@ -93,6 +94,7 @@ export default function BotSettingsScreen() {
   const [modelMetaReady, setModelMetaReady] = useState(false);
   const [modelMetaError, setModelMetaError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const computerMaintenanceRows = useComputerMaintenanceRows(botId);
   const [deviceVoiceEnabled, setDeviceVoiceEnabled] = useState(false);
   const [voices, setVoices] = useState<Voice[]>([]);
   const [voiceId, setVoiceId] = useState<string | undefined>();
@@ -638,6 +640,7 @@ export default function BotSettingsScreen() {
               <View style={styles.cardContent}>
                 <ComputerModePicker plain value={computerMode} onChange={setComputerMode} />
               </View>
+              {computerMaintenanceRows}
             </SettingsGroup>
             <SettingsGroup label={t`Voice`}>
               <SettingsSwitch
