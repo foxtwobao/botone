@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { access, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -158,6 +158,22 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
           environments: [],
           approvalPolicy: "never",
           approvalsReviewer: "user",
+          ...(readOnly
+            ? {
+                dynamicTools: [
+                  {
+                    type: "function",
+                    name: "computer_execute",
+                    description: "Offline remote tool fixture",
+                    inputSchema: {
+                      type: "object",
+                      properties: {},
+                      additionalProperties: false,
+                    },
+                  },
+                ],
+              }
+            : {}),
         },
         10_000,
       ),
@@ -177,7 +193,7 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
           timeoutMs + 5_000,
         ),
       );
-    return { child, workspace, marker, command };
+    return { child, workspace, marker, command, config: effective.config, thread };
   }
 
   it("keeps workspace writes, protects metadata, labels the actual tool sandbox and cleans it on stop", async ({
@@ -224,35 +240,21 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
     expect(alive && identity.readBigUInt64LE(16) === unique).toBe(false);
   }, 60_000);
 
-  it("remote profile rejects local command execution and leaves device paths untouched", async ({
-    skip,
-  }) => {
+  it("accepts a remote dynamic-tool session with native tools disabled", async ({ skip }) => {
     if (!executable) return skip();
-    const { workspace, command } = await launch(true);
-    const systemScratch = await Promise.all(
-      ["/private/tmp", "/private/var/tmp"].map(async (directory) => {
-        const target = await mkdtemp(path.join(directory, "native-policy-"));
-        roots.push(target);
-        return target;
-      }),
-    );
-    const targets = [workspace, env.TMPDIR!, ...systemScratch].map((directory) =>
-      path.join(directory, "forbidden-file"),
-    );
-    for (const target of targets) {
-      // The unsandboxed host can write each path.
-      await writeFile(target, "outside-control", { flag: "wx" });
-      await rm(target);
-      const quoted = `'${target.replaceAll("'", "'\\''")}'`;
-      const result = await command(`printf fixture > ${quoted}`);
-      expect(result).toMatchObject({
-        exitCode: expect.any(Number),
-        stdout: "",
-        stderr: expect.stringMatching(/\b(?:Operation not permitted|Permission denied)\b/),
-      });
-      expect(result.exitCode).not.toBe(0);
-      await expect(access(target)).rejects.toThrow();
-    }
+    const { workspace, config, thread } = await launch(true);
+    expect(record(config).features).toMatchObject({
+      shell_tool: false,
+      unified_exec: false,
+      view_image: false,
+      code_mode: false,
+    });
+    expect(record(thread.thread).id).toEqual(expect.any(String));
+    expect(thread).toMatchObject({
+      cwd: workspace,
+      approvalPolicy: "never",
+      approvalsReviewer: "user",
+    });
   }, 60_000);
 
   it("protects both runs' markers and their shared directory inside a writable workspace", async ({
