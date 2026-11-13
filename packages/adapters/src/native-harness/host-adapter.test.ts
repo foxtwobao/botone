@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { hostDisabledFeatures } from "@rakazo/native-runtime/host-policy";
@@ -17,7 +17,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 function fixture() {
-  const root = mkdtempSync(path.join(tmpdir(), "native-cli-discovery-"));
+  const root = realpathSync(mkdtempSync(path.join(tmpdir(), "native-cli-discovery-")));
   roots.push(root);
   return root;
 }

@@ -76,13 +76,12 @@ function send(target, signum) {
   if (result !== 0 && result !== 3) throw new Error('host_process_signal_unavailable');
   return result === 0;
 }
-async function cleanup(root, marker) {
+async function cleanup(root, marker, family = new Set(root ? [root.unique] : [])) {
   // Stop the root first. Its unique ID survives exec; pidversion prevents signalling
   // a different exec image between reading its identity and the native signal call.
   const current = root && identity(root.pid);
   if (current && current.unique === root.unique) { send(current, 17); send(current, 9); }
   const deadline = Date.now() + 10000;
-  const family = new Set(root ? [root.unique] : []);
   let empty;
   while (Date.now() < deadline) {
     const owned = [];
@@ -163,10 +162,11 @@ async function main() {
     if (attempt) return;
     attempt = (async () => {
       // Keep owning after a failed bounded attempt; the desktop can retry Stop/Quit.
+      const family = new Set(root ? [root.unique] : []);
       for (;;) {
         try {
           if (unavailableRoot && child.exitCode === null && child.signalCode === null) throw new Error('host_root_identity_unavailable');
-          await cleanup(root, marker); break;
+          await cleanup(root, marker, family); break;
         }
         catch { await pause(100); }
       }

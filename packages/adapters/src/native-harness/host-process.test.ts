@@ -1,8 +1,9 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { createHostCodexDriver } from "@rakazo/native-runtime/codex";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
@@ -323,18 +324,25 @@ describe.skipIf(!supported)("host protocol process", () => {
   );
 
   it("passes only the explicit environment to the CLI", async () => {
-    const { child } = await launch("console.log(JSON.stringify(process.env));", {
-      FIXTURE_HOST_VALUE: "explicit",
-    });
-    const value = JSON.parse(await output(child)());
-    expect(value.FIXTURE_HOST_VALUE).toBe("explicit");
-    expect(
-      Object.keys(value)
-        .map((key) => key.toLowerCase())
-        .sort(),
-    ).toEqual(
-      process.env.SystemRoot ? ["fixture_host_value", "systemroot"] : ["fixture_host_value"],
-    );
+    const previous = process.env.RAKAZO_HOST_FIXTURE_SECRET;
+    process.env.RAKAZO_HOST_FIXTURE_SECRET = "fake-parent-only-secret";
+    try {
+      const program = "console.log(JSON.stringify(process.env));";
+      const env = { FIXTURE_HOST_VALUE: "explicit" };
+      const { child } = await launch(program, env);
+      const value = JSON.parse(await output(child)());
+      // libuv adds required Windows OS variables even with an explicit env. Compare
+      // against a direct native spawn, including their values, rather than allow extras.
+      const { stdout } = await promisify(execFile)(process.execPath, ["-e", program], {
+        env: { SystemRoot: process.env.SystemRoot, ...env },
+      });
+      expect(value).toEqual(JSON.parse(stdout));
+      expect(value.FIXTURE_HOST_VALUE).toBe("explicit");
+      expect(value).not.toHaveProperty("RAKAZO_HOST_FIXTURE_SECRET");
+    } finally {
+      if (previous === undefined) delete process.env.RAKAZO_HOST_FIXTURE_SECRET;
+      else process.env.RAKAZO_HOST_FIXTURE_SECRET = previous;
+    }
   });
 
   it.each([
