@@ -28,6 +28,7 @@ export async function updateNativeInteraction(
     runId: interaction.runId,
     type: "thread.message.updated",
     payload: { messageId: message.id, blocks },
+    ...(status === "expired" ? { allowCancelledRun: true } : {}),
   });
 }
 
@@ -41,6 +42,7 @@ export async function answerNativeInteraction(
     runId: string;
     messageId: string;
     answer: string;
+    hostAuthorized?: boolean;
   },
 ): Promise<boolean | null> {
   const interaction = await deps.prisma.nativeInteraction.findFirst({
@@ -56,7 +58,12 @@ export async function answerNativeInteraction(
     });
     const current = await tx.nativeInteraction.findUniqueOrThrow({ where: { id: interaction.id } });
     const execution = await tx.nativeExecution.findUnique({ where: { runId: input.runId } });
-    if (!run || current.generation !== execution?.generation) return false;
+    const host =
+      run?.trigger === "host"
+        ? await tx.hostExecution.findUnique({ where: { runId: input.runId } })
+        : null;
+    if (host && !input.hostAuthorized) return false;
+    if (!run || current.generation !== (host?.generation ?? execution?.generation)) return false;
     const message = await tx.message.findUniqueOrThrow({ where: { id: input.messageId } });
     const block = (message.blocks as MessageBlock[]).find(
       (block) => block.kind === "ask" && block.nativeRequestId === current.requestId,

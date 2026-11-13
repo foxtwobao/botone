@@ -3,6 +3,7 @@ import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { bridgeInputSchemas } from "./bridge-tools.js";
 import type { HarnessDriverFactory } from "./driver.js";
 import { initialPrompt, record, text } from "./driver.js";
+import { assertHostConfiguration, assertRemoteHostConfiguration } from "./host-policy.js";
 import { HarnessInteractions, permissionActions } from "./interactions.js";
 import { HarnessProtocolError, HarnessRpc } from "./rpc.js";
 
@@ -19,12 +20,25 @@ function codexDriver(
   emit: Parameters<HarnessDriverFactory>[2],
   host: boolean,
 ): ReturnType<HarnessDriverFactory> {
+  const remote = host ? process.externalTools : undefined;
   let threadId = "";
   let turnId = "";
   let settled = false;
   let starting = false;
   const early: Record<string, unknown>[] = [];
-  const interactions = new HarnessInteractions(emit);
+  const preview = (value: string, limit: number) =>
+    host && value.length > limit ? `${value.slice(0, limit - 1)}…` : value;
+  const interactions = new HarnessInteractions((event) => {
+    if (event.type !== "interaction") return emit(event);
+    emit({
+      ...event,
+      request: {
+        ...event.request,
+        title: preview(event.request.title, 2000),
+        ...(event.request.detail ? { detail: preview(event.request.detail, 16_000) } : {}),
+      },
+    });
+  });
   const finish = (event: NativeExecutionEvent) => {
     if (settled) return;
     settled = true;
@@ -116,12 +130,66 @@ function codexDriver(
         );
         return;
       }
+      if (method === "item/tool/call" && remote) {
+        const name = text(params.tool);
+        const spec = remote.specs.find((tool) => tool.name === name);
+        if (!spec || params.namespace || !text(params.callId)) {
+          await rpc.reject(id);
+          return;
+        }
+        const invoke = async (allowed: boolean) => {
+          if (settled || cancelling) return;
+          emit({
+            type: "operation",
+            id: text(params.callId),
+            name: spec.label ?? name,
+            status: "running",
+          });
+          let result = JSON.stringify({ error: "Permission denied" });
+          if (allowed) {
+            try {
+              result = await remote.invoke(text(params.callId), name, params.arguments);
+            } catch {
+              result = JSON.stringify({
+                error: "Computer operation interrupted; inspect its state before retrying",
+              });
+            }
+          }
+          if (settled || cancelling) return;
+          emit({
+            type: "operation",
+            id: text(params.callId),
+            name: spec.label ?? name,
+            status: allowed ? "completed" : "failed",
+          });
+          await rpc.reply(id, {
+            contentItems: [{ type: "inputText", text: result }],
+            success: allowed,
+          });
+        };
+        if (spec.requiresApproval)
+          interactions.open(
+            {
+              kind: "permission",
+              title: `${spec.label ?? name}?`,
+              detail: JSON.stringify(params.arguments),
+              actions: permissionActions,
+            },
+            (answer) => invoke(answer === "allow"),
+          );
+        else await invoke(true);
+        return;
+      }
       const legacy = method === "execCommandApproval" || method === "applyPatchApproval";
       const permission =
         legacy ||
         ["item/commandExecution/requestApproval", "item/fileChange/requestApproval"].includes(
           method,
         );
+      if (remote && permission) {
+        await rpc.reply(id, { decision: legacy ? "denied" : "decline" });
+        return;
+      }
       if (!permission) {
         // Additional permission profiles cannot be represented by a command/file approval.
         if (method === "item/permissions/requestApproval")
@@ -203,11 +271,33 @@ function codexDriver(
         capabilities: { experimentalApi: true },
       });
       await rpc.notify("initialized", {});
+      if (host) {
+        const effective = record(
+          await rpc.request("config/read", { cwd: process.workspace, includeLayers: false }),
+        );
+        if (remote) assertRemoteHostConfiguration(effective.config, remote.permissions);
+        else assertHostConfiguration(effective.config);
+      }
       const params = {
         developerInstructions: request.instructions,
         cwd: process.workspace,
-        approvalPolicy: host ? "on-request" : "never",
-        sandbox: "workspace-write",
+        approvalPolicy: host && !remote ? "on-request" : "never",
+        ...(remote
+          ? {
+              permissions: remote.permissions,
+              environments: [],
+              ...(!request.session
+                ? {
+                    dynamicTools: remote.specs.map(
+                      ({ requiresApproval: _approval, label: _label, ...tool }) => ({
+                        type: "function",
+                        ...tool,
+                      }),
+                    ),
+                  }
+                : {}),
+            }
+          : { sandbox: "workspace-write" }),
         ...(host
           ? {
               approvalsReviewer: "user",
@@ -233,18 +323,30 @@ function codexDriver(
       if (!threadId) throw new HarnessProtocolError("missing_session");
       if (host) {
         const sandbox = record(result.sandbox);
-        if (
-          result.cwd !== process.workspace ||
-          result.approvalPolicy !== "on-request" ||
-          result.approvalsReviewer !== "user" ||
-          sandbox.type !== "workspaceWrite" ||
-          sandbox.networkAccess !== false ||
-          sandbox.excludeTmpdirEnvVar !== true ||
-          sandbox.excludeSlashTmp !== true ||
-          !Array.isArray(sandbox.writableRoots) ||
-          sandbox.writableRoots.some((root) => root !== process.workspace)
-        )
-          throw new HarnessProtocolError("host_sandbox_not_confirmed");
+        if (remote) {
+          if (
+            result.cwd !== process.workspace ||
+            result.approvalPolicy !== "never" ||
+            result.approvalsReviewer !== "user" ||
+            record(result.activePermissionProfile).id !== remote.permissions ||
+            sandbox.networkAccess !== false ||
+            sandbox.type !== "readOnly"
+          )
+            throw new HarnessProtocolError("host_remote_boundary_not_confirmed");
+        } else {
+          if (
+            result.cwd !== process.workspace ||
+            result.approvalPolicy !== "on-request" ||
+            result.approvalsReviewer !== "user" ||
+            sandbox.type !== "workspaceWrite" ||
+            sandbox.networkAccess !== false ||
+            sandbox.excludeTmpdirEnvVar !== true ||
+            sandbox.excludeSlashTmp !== true ||
+            !Array.isArray(sandbox.writableRoots) ||
+            sandbox.writableRoots.some((root) => root !== process.workspace)
+          )
+            throw new HarnessProtocolError("host_sandbox_not_confirmed");
+        }
       }
       if (request.session && threadId !== request.session.id)
         throw new HarnessProtocolError("session_mismatch");
@@ -254,21 +356,25 @@ function codexDriver(
         await rpc.request("turn/start", {
           threadId,
           // Reapply on every turn, including sessions created with an older approval policy.
-          approvalPolicy: host ? "on-request" : "never",
+          approvalPolicy: host && !remote ? "on-request" : "never",
           ...(host ? { approvalsReviewer: "user" } : {}),
-          sandboxPolicy: host
-            ? {
-                type: "workspaceWrite",
-                writableRoots: [process.workspace],
-                networkAccess: false,
-                excludeTmpdirEnvVar: true,
-                excludeSlashTmp: true,
-              }
+          ...(remote
+            ? { permissions: remote.permissions, environments: [] }
             : {
-                // The selected computer already isolates filesystem, processes, and network.
-                type: "externalSandbox",
-                networkAccess: "enabled",
-              },
+                sandboxPolicy: host
+                  ? {
+                      type: "workspaceWrite",
+                      writableRoots: [process.workspace],
+                      networkAccess: false,
+                      excludeTmpdirEnvVar: true,
+                      excludeSlashTmp: true,
+                    }
+                  : {
+                      // The selected computer already isolates filesystem, processes, and network.
+                      type: "externalSandbox",
+                      networkAccess: "enabled",
+                    },
+              }),
           input: [{ type: "text", text: initialPrompt({ ...request, instructions: "" }) }],
         }),
       );

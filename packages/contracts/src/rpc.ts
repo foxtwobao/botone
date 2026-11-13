@@ -172,6 +172,7 @@ import {
 } from "./domain.js";
 import { ComputerCommandSchema, ProductEventSchema } from "./events.js";
 import { executionContract } from "./executions.js";
+import { hostExecutionContract } from "./host-executions.js";
 import { Id, IsoDate, ThinkingLevelSchema } from "./ids.js";
 import {
   IntegrationProviderConfigSchema,
@@ -318,6 +319,7 @@ export type OrganizationList = z.infer<typeof OrganizationListSchema>;
 
 export const appContract = {
   executions: executionContract,
+  hostExecutions: hostExecutionContract,
   analytics: { screen: oc.input(AnalyticsScreenInput).output(z.object({ ok: z.literal(true) })) },
   aiConsent: {
     status: oc.input(AiConsentQuerySchema).output(AiConsentStatusSchema),

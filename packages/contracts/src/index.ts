@@ -24,6 +24,8 @@ export * from "./domain.js";
 export * from "./events.js";
 export * from "./executions.js";
 export * from "./history.js";
+export * from "./host-computer-tools.js";
+export * from "./host-executions.js";
 export * from "./ids.js";
 export * from "./integration-settings.js";
 export * from "./local-settings.js";

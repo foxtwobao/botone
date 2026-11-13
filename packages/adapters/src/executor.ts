@@ -301,6 +301,11 @@ export function createRunExecutor(executorDeps: ExecutorDeps) {
         },
       });
       if (!run) return;
+      if (run.trigger === "host") {
+        const { finishHostExecution } = await import("./native-harness/host-execution.js");
+        await finishHostExecution(deps, runId);
+        return;
+      }
       // Logs and security events raised by this run's tools name its account and space.
       enrichLogContext({
         "run.id": runId,

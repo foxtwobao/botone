@@ -241,6 +241,42 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["executions/revoke", { id: "missing" }],
       ["executions/get", { botId: "missing" }],
       ["executions/configure", { botId: "missing", configuration: null }],
+      [
+        "hostExecutions/start",
+        {
+          botId: "missing",
+          text: "fixture",
+          clientNonce: "fixture",
+          token: "offline-fixture-proof-with-32-characters",
+          installationId: "fixture",
+          profileId: "fixture",
+          revision: 1,
+          engineVersion: "fixture",
+          target: "workspace",
+        },
+      ],
+      [
+        "hostExecutions/sync",
+        { runId: "missing", token: "offline-fixture-proof-with-32-characters", frames: [] },
+      ],
+      [
+        "hostExecutions/answer",
+        {
+          runId: "missing",
+          token: "offline-fixture-proof-with-32-characters",
+          messageId: "missing",
+          answer: "deny",
+        },
+      ],
+      [
+        "hostExecutions/tool",
+        {
+          runId: "missing",
+          token: "offline-fixture-proof-with-32-characters",
+          id: "missing",
+          call: { name: "computer_list_files", input: { path: "." } },
+        },
+      ],
       ["me"],
       ["deployment/get"],
       ["deployment/update", { signupsEnabled: true }],

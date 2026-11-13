@@ -4,7 +4,7 @@ import path from "node:path";
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { createHostCodexDriver } from "@rakazo/native-runtime/codex";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
-import { startRequest } from "@rakazo/native-runtime/testing";
+import { safeHostConfiguration, startRequest } from "@rakazo/native-runtime/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { WINDOWS_COMMAND_WRAPPER } from "../desktop-process-tree.js";
 import { launchHostProcess } from "./host-process.js";
@@ -110,6 +110,7 @@ describe("host protocol process", () => {
         const frame = JSON.parse(line);
         const result = value => send({ id: frame.id, result: value });
         if (frame.method === 'initialize') result({});
+        if (frame.method === 'config/read') result({ config: ${JSON.stringify(safeHostConfiguration())} });
         if (frame.method === 'thread/start') result({
           thread: { id: 'thread' }, cwd: process.cwd(),
           approvalPolicy: 'on-request', approvalsReviewer: 'user',

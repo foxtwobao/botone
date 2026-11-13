@@ -1,3 +1,5 @@
+import type { DesktopHostBridge } from "./host-executions.js";
+
 /**
  * `unsupported` covers an unpackaged build and a repository with no published releases, which is
  * the normal state for a fork. It is not an error the user needs to act on. Automatic checks stay
@@ -77,6 +79,7 @@ export function isDesktopMenuCommand(value: unknown): value is DesktopMenuComman
 }
 
 export interface RakazoDesktop {
+  harness?: DesktopHostBridge;
   /** Optional for older desktop releases. Returns false when the native write is refused. */
   clipboard?: {
     writeText: (text: string) => Promise<boolean>;

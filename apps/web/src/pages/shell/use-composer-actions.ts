@@ -22,7 +22,9 @@ import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requestBrowserNotificationPermission } from "../../lib/browser-notifications";
 import { setComposerUnsavedWork } from "../../lib/composer-draft";
+import { desktopBridge } from "../../lib/desktop";
 import { scheduleFocusPrompt } from "../../lib/focus-prompt";
+import { selectedHostHarness } from "../../lib/host-harness";
 import type { PageSession } from "../../lib/pages";
 import {
   readFileAsBase64,
@@ -222,15 +224,25 @@ export function useComposerActions({
       const groupId = activeGroupId.current;
       if (!botId && !groupId) return;
       clearReadBoundary();
-      await rpc.threads.answer({
-        ...(groupId ? { groupId } : { botId: botId! }),
-        runId: message.runId ?? "",
-        messageId: message.id,
-        answer: text,
-        ...(fields ? { fields } : {}),
-        ...(remember === false ? { remember } : {}),
-        ...(dismiss ? { dismiss: true as const } : {}),
-      });
+      const localAnswered =
+        message.runId &&
+        message.blocks.some((block) => block.kind === "ask" && block.nativeRequestId)
+          ? await desktopBridge()?.harness?.answer({
+              runId: message.runId,
+              messageId: message.id,
+              answer: text,
+            })
+          : false;
+      if (!localAnswered)
+        await rpc.threads.answer({
+          ...(groupId ? { groupId } : { botId: botId! }),
+          runId: message.runId ?? "",
+          messageId: message.id,
+          answer: text,
+          ...(fields ? { fields } : {}),
+          ...(remember === false ? { remember } : {}),
+          ...(dismiss ? { dismiss: true as const } : {}),
+        });
       // The answer is saved; live events can reconcile a failed refresh.
       try {
         if (groupId && activeGroupId.current === groupId) {
@@ -415,6 +427,22 @@ export function useComposerActions({
           return true;
         }
         const artifactIds: string[] = [];
+        const host = await selectedHostHarness({
+          botId: botTarget,
+          groupId: groupTarget,
+          spaceId: bootstrapMe?.spaceId,
+        });
+        if (
+          host &&
+          (attachments.length ||
+            plan.shouldRunRoutines ||
+            replyAtSend ||
+            replyToMessageId ||
+            plan.mentionPayload.length)
+        )
+          throw new Error(
+            t`Local agents accept text messages. Send attachments, replies and routines with a server agent.`,
+          );
         const uploaded =
           uploadedSendArtifacts.current.get(clientNonce) ?? new WeakMap<File, string>();
         uploadedSendArtifacts.current.set(clientNonce, uploaded);
@@ -470,7 +498,14 @@ export function useComposerActions({
         // The routines run in the same server operation as the message: both or neither.
         const sent = plan.shouldRunRoutines
           ? (await rpc.threads.sendWithRoutines({ ...payload, routineIds: plan.routineIds })).send
-          : await rpc.threads.send(payload);
+          : host
+            ? await host.send({
+                botId: botTarget!,
+                spaceId: bootstrapMe!.spaceId,
+                text: trimmed,
+                clientNonce,
+              })
+            : await rpc.threads.send(payload);
         accepted = true;
         if (sent && botTarget && activeBotId.current === botTarget) {
           updateSnapshot((current) =>
@@ -532,6 +567,7 @@ export function useComposerActions({
     },
     [
       activeSnapshot?.messages,
+      bootstrapMe?.spaceId,
       pageSession,
       clearSentReply,
       flushPendingBrowserNotifications,
@@ -570,6 +606,8 @@ export function useComposerActions({
       if (!botTarget) return;
       setSendError(null);
       try {
+        if (bootstrapMe?.spaceId)
+          await desktopBridge()?.harness?.stop({ botId: botTarget, spaceId: bootstrapMe.spaceId });
         await rpc.threads.stop({ botId: botTarget });
       } catch (error) {
         if (activeBotId.current === botTarget) {
@@ -594,7 +632,7 @@ export function useComposerActions({
       sendingRef.current = false;
       setSending(false);
     }
-  }, [sending, t]);
+  }, [bootstrapMe?.spaceId, sending, t]);
 
   function dismissComposerError() {
     // The strip shows one message at a time, so only dismiss the run failure when it is the

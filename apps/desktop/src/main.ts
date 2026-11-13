@@ -63,6 +63,7 @@ import {
   writeStackChoice,
 } from "./docker-move.js";
 import { prepareHostComputer } from "./host-computer.js";
+import { DesktopHarness, hostIpcSchemas } from "./host-harness.js";
 import {
   createDesktopHostScreen,
   screenDriverInstaller,
@@ -132,6 +133,7 @@ const updaterEnvironment = {
 };
 let requestingComputerAccess = false;
 let hostScreen: HostScreen | undefined;
+let desktopHarness: DesktopHarness | undefined;
 markOnce("rk:main:module-evaluated");
 if (PERFORMANCE_USER_DATA) {
   app.setPath("userData", PERFORMANCE_USER_DATA);
@@ -834,6 +836,83 @@ app.whenReady().then(async () => {
       ? origin
       : null;
   };
+  desktopHarness = new DesktopHarness({
+    root: path.join(userDataDir, "harness"),
+    currentOrigin: remoteServerOrigin,
+    fetch: (url, init) =>
+      (desktop.mainWindow && !desktop.mainWindow.isDestroyed()
+        ? desktop.mainWindow.webContents.session
+        : net
+      ).fetch(url instanceof URL ? url.toString() : url, {
+        ...init,
+        bypassCustomProtocolHandlers: true,
+      }),
+    chooseDirectory: async () => {
+      const result = await dialog.showOpenDialog({
+        properties: ["openDirectory"],
+        title: "Choose workspace",
+      });
+      return result.canceled ? null : (result.filePaths[0] ?? null);
+    },
+    confirm: async ({ origin, workspace, target }) => {
+      const result = await dialog.showMessageBox({
+        type: "question",
+        title: "Use local agent?",
+        message:
+          target === "computer"
+            ? "Allow the local agent to use this server's computer when you send a message on this device?"
+            : "Allow the local agent to work in this folder when you send a message on this device?",
+        detail: target === "computer" ? origin : `${origin}\n${workspace}`,
+        buttons: [t("Allow"), t("Cancel")],
+        defaultId: 1,
+        cancelId: 1,
+      });
+      return result.response === 0;
+    },
+  });
+  for (const method of [
+    "profiles",
+    "selection",
+    "configure",
+    "send",
+    "answer",
+    "stop",
+    "disconnect",
+  ] as const) {
+    ipcMain.handle(`desktop.harness.${method}`, async (event, input: unknown) => {
+      const origin = remoteDeviceOrigin(event);
+      if (!origin || !desktopHarness) {
+        if (method === "profiles") return [];
+        if (method === "selection") return null;
+        if (method === "answer") return false;
+        if (method === "stop" || method === "disconnect") return;
+        throw new Error("Local agent unavailable");
+      }
+      switch (method) {
+        case "profiles":
+          return desktopHarness.profiles(origin, hostIpcSchemas.profiles.parse(input));
+        case "selection":
+          return desktopHarness.selection(origin, hostIpcSchemas.selection.parse(input));
+        case "configure":
+          return desktopHarness.configure(origin, hostIpcSchemas.configure.parse(input));
+        case "send":
+          return desktopHarness.send(origin, hostIpcSchemas.send.parse(input));
+        case "answer":
+          return desktopHarness.answer(origin, hostIpcSchemas.answer.parse(input));
+        case "stop":
+          return desktopHarness.stop(origin, hostIpcSchemas.stop.parse(input));
+        case "disconnect":
+          hostIpcSchemas.disconnect.parse(input);
+          return desktopHarness.disconnectedWindow();
+      }
+    });
+  }
+  app.on("web-contents-created", (_event, contents) => {
+    contents.on("did-start-navigation", (_event, _url, isInPlace, isMainFrame) => {
+      if (contents === desktop.mainWindow?.webContents && isMainFrame && !isInPlace)
+        void desktopHarness?.disconnectedWindow();
+    });
+  });
   const deviceState = async (origin: string | null): Promise<RakazoDesktopDevice | null> => {
     const state = origin === null ? null : desktop.userDevices?.state(origin);
     return state ? { ...state, name: await deviceName() } : null;
@@ -1005,6 +1084,17 @@ app.on("quit", (_event, exitCode) => {
 });
 app.on("before-quit", (event) => {
   desktop.quitting = true;
+  if (desktopHarness?.hasRuns()) {
+    event.preventDefault();
+    void desktopHarness
+      .close()
+      .then(() => app.quit())
+      .catch(() => {
+        desktop.quitting = false;
+        dialog.showErrorBox("Could not stop local agent", "Stop the local task before quitting.");
+      });
+    return;
+  }
   // Server processes this app runs itself stop with it; quit again once they have.
   if (desktop.localStack instanceof NativeStackController && desktop.localStack.hasProcesses()) {
     event.preventDefault();

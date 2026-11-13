@@ -19,7 +19,16 @@ export async function answerExecutionInput(
     answer: input.answer,
   });
   if (answered === null) return null;
-  if (!answered)
-    throw new ORPCError("CONFLICT", { message: "This prompt is no longer awaiting an answer" });
+  if (!answered) {
+    const host = await deps.prisma.hostExecution.findUnique({
+      where: { runId: input.runId },
+      select: { runId: true },
+    });
+    throw new ORPCError("CONFLICT", {
+      message: host
+        ? "Reply on the desktop that started this task."
+        : "This prompt is no longer awaiting an answer",
+    });
+  }
   return { ok: true };
 }

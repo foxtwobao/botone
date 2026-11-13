@@ -41,6 +41,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete window.rakazoDesktop;
   vi.unstubAllGlobals();
   localStorage.clear();
   sessionStorage.clear();
@@ -65,6 +66,30 @@ function mountSignOut(destination: string, onError: (message: string) => void = 
 }
 
 describe("signOut", () => {
+  it("stops native execution before invalidating the server session", async () => {
+    const disconnect = vi.fn(async () => undefined);
+    Object.assign(window, { rakazoDesktop: { harness: { disconnect } } });
+    await signOut("/sign-in");
+    expect(disconnect.mock.invocationCallOrder[0]).toBeLessThan(
+      requestSignOut.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("keeps sign-out retryable when native process cleanup is unconfirmed", async () => {
+    const disconnect = vi.fn(async () => {
+      throw new Error("cleanup unconfirmed");
+    });
+    Object.assign(window, { rakazoDesktop: { harness: { disconnect } } });
+    const onError = vi.fn();
+    const view = mountSignOut("/sign-in", onError);
+    await act(async () => {
+      await view.logOut();
+    });
+    expect(requestSignOut).not.toHaveBeenCalled();
+    expect(view.container.querySelector("button")!.disabled).toBe(false);
+    expect(onError).toHaveBeenCalledWith("Could not stop the local task. Stop it and try again.");
+    view.unmount();
+  });
   it("ends the call first, then leaves for the destination signed out", async () => {
     await signOut("/sign-in");
     expect(endCallBeforeSignOut.mock.invocationCallOrder[0]).toBeLessThan(

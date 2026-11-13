@@ -11,6 +11,15 @@ function subscribe(channel) {
 
 contextBridge.exposeInMainWorld("rakazoDesktop", {
   platform: process.platform,
+  harness: {
+    profiles: (input) => ipcRenderer.invoke("desktop.harness.profiles", input),
+    selection: (input) => ipcRenderer.invoke("desktop.harness.selection", input),
+    configure: (input) => ipcRenderer.invoke("desktop.harness.configure", input),
+    send: (input) => ipcRenderer.invoke("desktop.harness.send", input),
+    answer: (input) => ipcRenderer.invoke("desktop.harness.answer", input),
+    stop: (input) => ipcRenderer.invoke("desktop.harness.stop", input),
+    disconnect: () => ipcRenderer.invoke("desktop.harness.disconnect", {}),
+  },
   nativeWindowFrame: process.platform === "win32",
   clipboard: {
     writeText: (text) => ipcRenderer.invoke("desktop.clipboard.write", text),

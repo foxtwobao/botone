@@ -78,6 +78,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     private readonly root: string,
     private readonly profiles: ExecutionProfileAdmission[],
     private readonly maxEventBytes = 4 * 1024 * 1024,
+    private readonly onFrame?: (runId: string, frame: NativeExecutionFrame) => void,
   ) {
     mkdirSync(root, { recursive: true, mode: 0o700 });
     for (const file of readdirSync(root)) {
@@ -145,7 +146,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     } finally {
       closeSync(descriptor);
     }
-    if (exclusive) {
+    if (exclusive && process.platform !== "win32") {
       const directory = openSync(this.root, "r");
       try {
         fsyncSync(directory);
@@ -216,6 +217,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     this.write(this.file(entry.runId), line);
     entry.size += Buffer.byteLength(line);
     entry.frames.push(frame);
+    this.onFrame?.(entry.runId, frame);
     if (event.type === "completed" || event.type === "failed" || event.type === "cancelled") {
       entry.state = event.type;
       clearTimeout(entry.timer);
@@ -258,6 +260,12 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
       frames,
       nextSequence: frames.at(-1)?.sequence ?? after,
     };
+  }
+
+  /** Read a journal after restart without authorizing a replacement process or prompt. */
+  recover(runId: string, scope: NativeExecutionScope): NativeExecutionSnapshot | null {
+    const entry = this.entries.get(runId);
+    return entry && sameScope(entry.scope, scope) ? this.snapshot(entry) : null;
   }
 
   async start(request: NativeExecutionStart) {
@@ -392,7 +400,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
           } else this.append(entry, event);
         });
         entry.capabilities = entry.driver.capabilities;
-        entry.capabilities.tools = Boolean(entry.process.onTool);
+        entry.capabilities.tools = Boolean(entry.process.onTool || entry.process.externalTools);
         await entry.driver.start(request);
       } catch {
         if (entry.state === "running") await this.stopEntry(entry, "execution_start_failed");

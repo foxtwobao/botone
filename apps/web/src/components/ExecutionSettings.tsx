@@ -9,6 +9,8 @@ import { useSpaceQueries } from "../lib/query";
 import { useSpaceRpc } from "../lib/space-rpc";
 import { errorCode, errorText } from "../lib/user-error";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { HostExecutionTarget } from "./HostExecutionTarget";
+import { useHostExecutionSettings } from "./use-host-execution-settings";
 
 /** Advanced configuration stays beside the model it replaces. Electron shares this screen. */
 export function ExecutionSettings({
@@ -28,15 +30,20 @@ export function ExecutionSettings({
   const ids = useId();
   const rpc = useSpaceRpc();
   const queries = useSpaceQueries();
+  const local = useHostExecutionSettings(botId);
   const list = useQuery(queries.executions.list.queryOptions({ input: { botId } }));
   const saved = useQuery(queries.executions.get.queryOptions({ input: { botId } }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState<{ configuration: BotExecutionConfiguration | null }>();
-  const needsRetry = (list.data ?? []).some(
-    (connection) =>
-      !connection.online || connection.profiles.some((profile) => profile.status !== "ready"),
-  );
+  const needsRetry =
+    local.error ||
+    local.profiles.some((profile) => profile.status !== "ready") ||
+    (!local.selected &&
+      (list.data ?? []).some(
+        (connection) =>
+          !connection.online || connection.profiles.some((profile) => profile.status !== "ready"),
+      ));
   const profileStatus = (status: ExecutionConnectionView["profiles"][number]["status"]) =>
     status === "missing"
       ? t`Not installed`
@@ -67,9 +74,11 @@ export function ExecutionSettings({
         },
       })),
   );
-  const value = saved.data
-    ? JSON.stringify([saved.data.connectionId, saved.data.profileId, saved.data.revision])
-    : "";
+  const value = local.selected
+    ? `device:${local.selected.profileId}`
+    : saved.data
+      ? JSON.stringify([saved.data.connectionId, saved.data.profileId, saved.data.revision])
+      : "";
   const profile = options.find((option) => option.key === value)?.profile;
   const models = new Map((profile?.models ?? []).map((model) => [model.id, model.label]));
   for (const model of [profile?.defaultModel, saved.data?.model]) {
@@ -80,7 +89,11 @@ export function ExecutionSettings({
     setBusy(true);
     setError(undefined);
     try {
+      if (local.selected && stopActiveRuns) {
+        await local.stop();
+      }
       await rpc.executions.configure({ botId, configuration, stopActiveRuns });
+      if (local.selected) await local.select(null);
       setPending(undefined);
       await saved.refetch();
     } catch (error) {
@@ -92,7 +105,7 @@ export function ExecutionSettings({
   }
   return (
     <>
-      {list.data?.length || saved.data ? (
+      {list.data?.length || saved.data || local.profiles.length || local.selected || local.error ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-label font-medium text-muted-foreground" htmlFor={ids}>
@@ -104,7 +117,7 @@ export function ExecutionSettings({
                   variant="ghost"
                   size="sm"
                   disabled={list.isFetching}
-                  onClick={() => void list.refetch()}
+                  onClick={() => void Promise.all([list.refetch(), local.retry()])}
                 >
                   <Trans>Retry</Trans>
                 </Button>
@@ -115,16 +128,29 @@ export function ExecutionSettings({
             className="w-full"
             id={ids}
             value={value}
-            disabled={busy}
-            onChange={(event) => {
-              const option = options.find((option) => option.key === event.target.value);
-              if (!event.target.value || option) void save(option?.configuration ?? null);
+            disabled={busy || local.loading}
+            onChange={async (event) => {
+              const value = event.target.value;
+              if (value.startsWith("device:")) {
+                setBusy(true);
+                setError(undefined);
+                try {
+                  await local.select(value.slice(7));
+                } catch (error) {
+                  setError(errorText(error));
+                } finally {
+                  setBusy(false);
+                }
+                return;
+              }
+              const option = options.find((option) => option.key === value);
+              if (!value || option) void save(option?.configuration ?? null);
             }}
           >
             <NativeSelectOption value="">
               <Trans>Built-in</Trans>
             </NativeSelectOption>
-            {saved.data && !options.some((o) => o.key === value) ? (
+            {saved.data && !local.selected && !options.some((o) => o.key === value) ? (
               <NativeSelectOption value={value}>
                 <Trans>Unavailable</Trans>
               </NativeSelectOption>
@@ -132,6 +158,16 @@ export function ExecutionSettings({
             {options.map((option) => (
               <NativeSelectOption key={option.key} value={option.key}>
                 {option.label}
+              </NativeSelectOption>
+            ))}
+            {local.profiles.map((profile) => (
+              <NativeSelectOption
+                key={`device:${profile.id}`}
+                value={`device:${profile.id}`}
+                disabled={profile.status !== "ready"}
+              >
+                {profile.label}
+                {profile.status !== "ready" ? ` · ${profileStatus(profile.status)}` : ""}
               </NativeSelectOption>
             ))}
             {(list.data ?? []).flatMap((connection) =>
@@ -155,32 +191,51 @@ export function ExecutionSettings({
                 </NativeSelectOption>
               ))}
           </NativeSelect>
-          {error && !pending ? (
+          {local.selected ? (
+            <HostExecutionTarget
+              selection={local.selected}
+              busy={busy}
+              onChange={async (target) => {
+                setBusy(true);
+                setError(undefined);
+                try {
+                  await local.select(local.selected!.profileId, target);
+                } catch (error) {
+                  setError(errorText(error));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            />
+          ) : null}
+          {(error || local.error) && !pending ? (
             <p role="alert" className="text-body-sm text-destructive">
-              {error}
+              {error ?? errorText(local.error)}
             </p>
           ) : null}
         </div>
       ) : null}
-      <fieldset disabled={busy} className="min-w-0">
-        {children(
-          saved.data
-            ? {
-                choices: [
-                  {
-                    key: "",
-                    label: profile?.defaultModel
-                      ? `${t`Default`} (${models.get(profile.defaultModel) ?? profile.defaultModel})`
-                      : t`Default`,
-                  },
-                  ...[...models].map(([key, label]) => ({ key, label })),
-                ],
-                value: saved.data.model ?? "",
-                onChange: (model) => void save({ ...saved.data!, model: model || null }),
-              }
-            : null,
-        )}
-      </fieldset>
+      {!local.selected ? (
+        <fieldset disabled={busy || local.loading} className="min-w-0">
+          {children(
+            saved.data
+              ? {
+                  choices: [
+                    {
+                      key: "",
+                      label: profile?.defaultModel
+                        ? `${t`Default`} (${models.get(profile.defaultModel) ?? profile.defaultModel})`
+                        : t`Default`,
+                    },
+                    ...[...models].map(([key, label]) => ({ key, label })),
+                  ],
+                  value: saved.data.model ?? "",
+                  onChange: (model) => void save({ ...saved.data!, model: model || null }),
+                }
+              : null,
+          )}
+        </fieldset>
+      ) : null}
       {pending !== undefined ? (
         <ConfirmDialog
           open={pending !== undefined}

@@ -1,6 +1,7 @@
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { describe, expect, it } from "vitest";
 import { createHostCodexDriver } from "./codex.js";
+import { safeHostConfiguration } from "./host-policy.test-support.js";
 import { FakeHarnessProcess, startRequest, tick } from "./protocol.test-support.js";
 
 describe("host sandbox policy", () => {
@@ -15,6 +16,8 @@ describe("host sandbox policy", () => {
     const process = new FakeHarnessProcess();
     process.reply = (frame) => {
       if (frame.method === "initialize") process.receive({ id: frame.id, result: {} });
+      if (frame.method === "config/read")
+        process.receive({ id: frame.id, result: { config: safeHostConfiguration() } });
       if (frame.method === "thread/start" || frame.method === "thread/resume")
         process.receive({
           id: frame.id,

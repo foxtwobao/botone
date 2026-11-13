@@ -29,6 +29,40 @@ function runPreload(
 }
 
 describe("desktop preload bridge", () => {
+  it("exposes only intent-based harness calls without executable paths or grants", async () => {
+    const { invoke, exposeInMainWorld } = runPreload("preload.cjs");
+    const bridge = (exposeInMainWorld.mock.calls[0] as [string, RakazoDesktop])[1].harness!;
+    expect(Object.keys(bridge).sort()).toEqual([
+      "answer",
+      "configure",
+      "disconnect",
+      "profiles",
+      "selection",
+      "send",
+      "stop",
+    ]);
+    await bridge.profiles({ spaceId: "space" });
+    await bridge.selection({ botId: "bot", spaceId: "space" });
+    await bridge.configure({
+      botId: "bot",
+      spaceId: "space",
+      profileId: "profile",
+      target: "computer",
+    });
+    await bridge.send({ botId: "bot", spaceId: "space", text: "fixture", clientNonce: "nonce" });
+    await bridge.answer({ runId: "run", messageId: "message", answer: "deny" });
+    await bridge.stop({ botId: "bot", spaceId: "space" });
+    await bridge.disconnect();
+    expect(invoke.mock.calls.map(([channel]) => channel)).toEqual([
+      "desktop.harness.profiles",
+      "desktop.harness.selection",
+      "desktop.harness.configure",
+      "desktop.harness.send",
+      "desktop.harness.answer",
+      "desktop.harness.stop",
+      "desktop.harness.disconnect",
+    ]);
+  });
   it.each(["win32", "darwin", "linux"])(
     "advertises native framing only on Windows (%s)",
     (platform) => {
@@ -50,6 +84,7 @@ describe("desktop preload bridge", () => {
       "clipboard",
       "computer",
       "device",
+      "harness",
       "locale",
       "menu",
       "monitoring",
