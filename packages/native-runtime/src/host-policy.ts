@@ -69,12 +69,21 @@ function assertHostPermissionProfile(
       ["shell_tool", "unified_exec", "view_image", "code_mode"].some(
         (name) => features[name] !== false,
       )) ||
-    (label && (filesystem[label.allow] !== "read" || filesystem[label.deny] !== "deny")) ||
+    (label &&
+      (filesystem[label.directory] !== "deny" ||
+        filesystem[label.allow] !== "read" ||
+        filesystem[label.deny] !== "deny")) ||
     Object.entries(profile).some(
       ([name, value]) => !["filesystem", "network"].includes(name) && value !== null,
     ) ||
     Object.keys(filesystem)
-      .filter((name) => filesystem[name] !== null && name !== label?.allow && name !== label?.deny)
+      .filter(
+        (name) =>
+          filesystem[name] !== null &&
+          name !== label?.directory &&
+          name !== label?.allow &&
+          name !== label?.deny,
+      )
       .sort()
       .join() !==
       (platformDefaults ? ":minimal,:root,:workspace_roots" : ":root,:workspace_roots") ||

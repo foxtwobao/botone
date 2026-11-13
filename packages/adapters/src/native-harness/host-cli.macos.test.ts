@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { access, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -81,9 +81,13 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
     await Promise.all(roots.map((directory) => rm(directory, { recursive: true, force: true })));
   });
 
-  async function launch(readOnly: boolean) {
-    const workspace = await mkdtemp(path.join(root, "workspace-"));
-    await Promise.all([mkdir(path.join(workspace, ".git")), mkdir(path.join(workspace, ".codex"))]);
+  async function launch(readOnly: boolean, workspaceOverride?: string) {
+    const workspace = workspaceOverride ?? (await mkdtemp(path.join(root, "workspace-")));
+    if (!workspaceOverride)
+      await Promise.all([
+        mkdir(path.join(workspace, ".git")),
+        mkdir(path.join(workspace, ".codex")),
+      ]);
     const marker = await createHostProcessMarker();
     const permissions = `fixture_${randomUUID().replaceAll("-", "")}`;
     const label = { id: permissions, ...marker };
@@ -248,5 +252,54 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
       }
       await expect(access(target)).rejects.toThrow();
     }
+  }, 60_000);
+
+  it("protects both runs' markers and their shared directory inside a writable workspace", async ({
+    skip,
+  }) => {
+    if (!executable) return skip();
+    // This workspace deliberately contains the reserved directory. More specific
+    // deny/read entries must win over the workspace's broad write permission.
+    const first = await launch(false, "/private/tmp");
+    const second = await launch(false, "/private/tmp");
+    const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+    const objects = [
+      first.marker.directory,
+      first.marker.allow,
+      first.marker.deny,
+      second.marker.allow,
+      second.marker.deny,
+    ];
+    const original = await Promise.all(objects.map((file) => stat(file)));
+    expect((await first.command(`cat ${quote(first.marker.allow)} > /dev/null`)).exitCode).toBe(0);
+    for (const file of [first.marker.deny, second.marker.allow, second.marker.deny])
+      expect((await first.command(`cat ${quote(file)} > /dev/null`)).exitCode).not.toBe(0);
+    for (const file of objects) {
+      for (const script of [
+        `chmod 0777 ${quote(file)}`,
+        `mv ${quote(file)} ${quote(`${file}-moved`)}`,
+        ...(file === first.marker.directory
+          ? []
+          : [`rm ${quote(file)}`, `printf fixture > ${quote(file)}`]),
+      ])
+        expect((await first.command(script)).exitCode).not.toBe(0);
+    }
+    for (const [index, file] of objects.entries()) {
+      const current = await stat(file);
+      expect([current.dev, current.ino, current.mode]).toEqual([
+        original[index]!.dev,
+        original[index]!.ino,
+        original[index]!.mode,
+      ]);
+    }
+    await first.child.stop();
+    children.delete(first.child);
+    // The first owner's cleanup must remove only its own two markers.
+    await expect(access(first.marker.allow)).rejects.toThrow();
+    await expect(access(first.marker.deny)).rejects.toThrow();
+    expect((await second.command(`cat ${quote(second.marker.allow)} > /dev/null`)).exitCode).toBe(
+      0,
+    );
+    await access(second.marker.deny);
   }, 60_000);
 });

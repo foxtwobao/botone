@@ -1,5 +1,15 @@
 import { execFile, spawn } from "node:child_process";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -13,8 +23,10 @@ import { WINDOWS_COMMAND_WRAPPER } from "../desktop-process-tree.js";
 import { launchHostProcess } from "./host-process.js";
 import {
   createHostProcessMarker,
+  discardHostProcessMarker,
   MACOS_HOST_OWNER,
   macosHostOwnershipAvailable,
+  probeMacosHostOwnership,
 } from "./host-process-macos.js";
 
 const supported = ["linux", "win32", "darwin"].includes(process.platform);
@@ -239,19 +251,7 @@ describe.skipIf(!supported)("host protocol process", () => {
   it.skipIf(process.platform !== "darwin")(
     "probes the actual sandbox label and audit-token signal operations before admission",
     async () => {
-      const probe = await new Promise<{ success: boolean; diagnostic?: string }>((resolve) => {
-        execFile(
-          process.execPath,
-          ["-e", MACOS_HOST_OWNER, createRequire(import.meta.url).resolve("koffi"), "probe"],
-          { env: { ELECTRON_RUN_AS_NODE: "1" }, timeout: 3000, maxBuffer: 1024 },
-          (error, _stdout, stderr) => {
-            resolve({
-              success: !error,
-              diagnostic: stderr.split("\n").find((line) => line.startsWith("host_owner_probe ")),
-            });
-          },
-        );
-      });
+      const probe = await probeMacosHostOwnership();
       expect(probe.success, probe.diagnostic).toBe(true);
       expect(await macosHostOwnershipAvailable()).toBe(true);
     },
@@ -288,7 +288,7 @@ describe.skipIf(!supported)("host protocol process", () => {
         "/usr/bin/sandbox-exec",
         [
           "-p",
-          '(version 1)(allow default)(deny file-read* (subpath "/System/Library"))',
+          '(version 1)(allow default)(deny file-read* (subpath "/private/tmp"))',
           "/bin/sleep",
           "30",
         ],
@@ -353,6 +353,109 @@ describe.skipIf(!supported)("host protocol process", () => {
             process.kill(pid, "SIGKILL");
           } catch {}
         }
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin")(
+    "keeps marker and private owner descriptors out of the native CLI",
+    async () => {
+      const root = await mkdtemp(path.join(tmpdir(), "host private handles "));
+      roots.push(root);
+      const marker = await createHostProcessMarker();
+      const objects = await Promise.all(
+        [marker.directory, marker.allow, marker.deny].map((file) => stat(file)),
+      );
+      const script = path.join(root, "handles.cjs");
+      await writeFile(
+        script,
+        `const fs = require('node:fs');
+        const objects = ${JSON.stringify(objects.map(({ dev, ino }) => [dev, ino]))};
+        const leaked = [];
+        for (let fd = 3; fd < 64; fd++) {
+          try { const info = fs.fstatSync(fd); if (objects.some(([dev, ino]) => info.dev === dev && info.ino === ino)) leaked.push(fd); } catch {}
+        }
+        console.log(JSON.stringify(leaked));`,
+      );
+      const child = await launchHostProcess({
+        executable: process.execPath,
+        args: [script],
+        workspace: root,
+        env: {},
+        marker,
+      });
+      processes.push(child);
+      expect(JSON.parse(await output(child)())).toEqual([]);
+      await child.stop();
+      await expect(access(marker.allow)).rejects.toThrow();
+      await expect(access(marker.deny)).rejects.toThrow();
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin").each(["missing", "replaced"])(
+    "refuses cleanup and leaves an unrelated process alive when the negative marker is %s",
+    async (action) => {
+      const root = await mkdtemp(path.join(tmpdir(), "host marker integrity "));
+      roots.push(root);
+      const marker = await createHostProcessMarker();
+      const script = path.join(root, "fixture.cjs");
+      await writeFile(script, "console.log('ready'); setInterval(() => {}, 1000);");
+      const child = await launchHostProcess({
+        executable: process.execPath,
+        args: [script],
+        workspace: root,
+        env: {},
+        marker,
+      });
+      processes.push(child);
+      expect(await output(child)()).toBe("ready");
+      const foreign = spawn("/bin/sleep", ["30"], { env: {}, stdio: "ignore" });
+      const saved = `${marker.deny}-saved`;
+      let stopped = false;
+      try {
+        await rename(marker.deny, saved);
+        if (action === "replaced")
+          await writeFile(marker.deny, "replacement", { mode: 0o600, flag: "wx" });
+        const stopping = child.stop().then(() => {
+          stopped = true;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        expect(stopped).toBe(false);
+        expect(foreign.exitCode).toBeNull();
+        expect(foreign.signalCode).toBeNull();
+        await rm(marker.deny, { force: true });
+        await rename(saved, marker.deny);
+        await stopping;
+        expect(foreign.exitCode).toBeNull();
+        expect(foreign.signalCode).toBeNull();
+      } finally {
+        await rm(marker.deny, { force: true }).catch(() => {});
+        await rename(saved, marker.deny).catch(() => {});
+        foreign.kill("SIGKILL");
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin")(
+    "rejects workspaces in the reserved marker directory",
+    async () => {
+      const marker = await createHostProcessMarker();
+      const nested = path.join(marker.directory, "workspace-fixture");
+      try {
+        await mkdir(nested);
+        for (const workspace of [marker.directory, nested]) {
+          await expect(
+            launchHostProcess({
+              executable: process.execPath,
+              args: ["-e", ""],
+              workspace,
+              env: {},
+            }),
+          ).rejects.toThrow("host_workspace_reserved");
+        }
+      } finally {
+        await rm(nested, { recursive: true, force: true });
+        discardHostProcessMarker(marker);
       }
     },
   );

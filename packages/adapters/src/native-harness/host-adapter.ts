@@ -53,7 +53,11 @@ export function hostFilesystemOverride(
     ...(readOnly && marker ? [] : ['":minimal"="read"']),
     `":workspace_roots"={"."="${readOnly ? "read" : "write"}"}`,
     ...(marker
-      ? [`${JSON.stringify(marker.allow)}="read"`, `${JSON.stringify(marker.deny)}="deny"`]
+      ? [
+          `${JSON.stringify(marker.directory)}="deny"`,
+          `${JSON.stringify(marker.allow)}="read"`,
+          `${JSON.stringify(marker.deny)}="deny"`,
+        ]
       : []),
   ];
   return `permissions.${permissions}.filesystem={${entries.join(",")}}`;
@@ -194,29 +198,11 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
       if (!executable || adapter.profile.status !== "ready")
         throw new Error("Local agent unavailable");
       const args = hostLaunchArguments();
-      const marker = process.platform === "darwin" ? await createHostProcessMarker() : undefined;
-      const permissions =
-        tools || marker ? `rakazo_host_${randomUUID().replaceAll("-", "")}` : undefined;
-      if (permissions)
-        args.splice(
-          args.length - 1,
-          0,
-          ...(tools ? ["shell_tool", "unified_exec", "view_image", "code_mode"] : []).flatMap(
-            (feature) => ["--disable", feature],
-          ),
-          "-c",
-          hostFilesystemOverride(permissions, !!tools, marker),
-          "-c",
-          `permissions.${permissions}.network.enabled=false`,
-          "-c",
-          `default_permissions=${JSON.stringify(permissions)}`,
-        );
       const probe = await launchHostProcess({
         executable,
         args,
         workspace: directory,
         env,
-        marker,
       });
       let servers: string[];
       try {
@@ -245,6 +231,23 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
       }
       // Empty TOML maps merge with user/project maps. Disable each effective server explicitly.
       args.splice(args.length - 1, 0, "-c", hostMcpOverride(servers));
+      const marker = process.platform === "darwin" ? await createHostProcessMarker() : undefined;
+      const permissions =
+        tools || marker ? `rakazo_host_${randomUUID().replaceAll("-", "")}` : undefined;
+      if (permissions)
+        args.splice(
+          args.length - 1,
+          0,
+          ...(tools ? ["shell_tool", "unified_exec", "view_image", "code_mode"] : []).flatMap(
+            (feature) => ["--disable", feature],
+          ),
+          "-c",
+          hostFilesystemOverride(permissions, !!tools, marker),
+          "-c",
+          `permissions.${permissions}.network.enabled=false`,
+          "-c",
+          `default_permissions=${JSON.stringify(permissions)}`,
+        );
       const launched = await launchHostProcess({
         executable,
         args,

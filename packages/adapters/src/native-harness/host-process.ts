@@ -3,6 +3,7 @@ import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
 import type { HostProcessMarker } from "./host-process-macos.js";
+import { assertHostMarkerWorkspace, discardHostProcessMarker } from "./host-process-macos.js";
 import { spawnOwnedHostCommand } from "./host-process-owner.js";
 
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -20,29 +21,38 @@ export async function launchHostProcess(options: {
   env: NodeJS.ProcessEnv;
   marker?: HostProcessMarker;
 }): Promise<HarnessProcess> {
-  if (!path.isAbsolute(options.executable) || !path.isAbsolute(options.workspace))
-    throw new Error("host_absolute_path_required");
-  // Shell shims require their own verified installer adapter, never implicit shell execution.
-  if (process.platform === "win32" && !/\.exe$/i.test(options.executable))
-    throw new Error("host_executable_unsupported");
   let workspace: string;
+  let owned: Awaited<ReturnType<typeof spawnOwnedHostCommand>>;
   try {
-    workspace = await realpath(options.workspace);
-    if (!(await stat(workspace)).isDirectory()) throw new Error();
-  } catch {
-    throw new Error("host_workspace_unavailable");
+    if (!path.isAbsolute(options.executable) || !path.isAbsolute(options.workspace))
+      throw new Error("host_absolute_path_required");
+    // Shell shims require their own verified installer adapter, never implicit shell execution.
+    if (process.platform === "win32" && !/\.exe$/i.test(options.executable))
+      throw new Error("host_executable_unsupported");
+
+    try {
+      workspace = await realpath(options.workspace);
+      if (!(await stat(workspace)).isDirectory()) throw new Error();
+    } catch {
+      throw new Error("host_workspace_unavailable");
+    }
+    if (process.platform === "darwin") assertHostMarkerWorkspace(workspace);
+    try {
+      if (!(await stat(options.executable)).isFile()) throw new Error();
+    } catch {
+      throw new Error("host_process_start_failed");
+    }
+    owned = await spawnOwnedHostCommand(
+      [options.executable, ...options.args],
+      workspace,
+      options.env,
+      options.marker,
+    );
+  } catch (error) {
+    if (options.marker) discardHostProcessMarker(options.marker);
+    throw error;
   }
-  try {
-    if (!(await stat(options.executable)).isFile()) throw new Error();
-  } catch {
-    throw new Error("host_process_start_failed");
-  }
-  const { child, tree } = await spawnOwnedHostCommand(
-    [options.executable, ...options.args],
-    workspace,
-    options.env,
-    options.marker,
-  );
+  const { child, tree } = owned;
   let lineListener: ((line: string) => void) | undefined;
   let exitListener: ((code?: number | null) => void) | undefined;
   let code: number | null = null;

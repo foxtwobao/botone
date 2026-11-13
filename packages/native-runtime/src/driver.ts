@@ -7,7 +7,7 @@ import type {
 export interface HarnessProcess {
   workspace: string;
   /** A native tool-sandbox label used by a platform's descendant owner. */
-  hostPermissions?: { id: string; allow: string; deny: string };
+  hostPermissions?: { id: string; directory: string; allow: string; deny: string };
   /** A host-owned tool boundary. Engines translate it; they never receive server credentials. */
   externalTools?: {
     permissions: string;

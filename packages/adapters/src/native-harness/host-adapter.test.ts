@@ -33,11 +33,12 @@ describe("native host admission", () => {
     "adds only the per-run sandbox label to readOnly=%s permissions",
     (readOnly) => {
       const override = hostFilesystemOverride("fixture", readOnly, {
-        allow: "/System/Library/fixture-allow",
-        deny: "/System/Library/fixture-deny",
+        directory: "/private/tmp/fixture-markers",
+        allow: "/private/tmp/fixture-markers/fixture-allow",
+        deny: "/private/tmp/fixture-markers/fixture-deny",
       });
       expect(override).toBe(
-        `permissions.fixture.filesystem={":root"="${readOnly ? "deny" : "read"}",${readOnly ? "" : '":minimal"="read",'}":workspace_roots"={"."="${readOnly ? "read" : "write"}"},"/System/Library/fixture-allow"="read","/System/Library/fixture-deny"="deny"}`,
+        `permissions.fixture.filesystem={":root"="${readOnly ? "deny" : "read"}",${readOnly ? "" : '":minimal"="read",'}":workspace_roots"={"."="${readOnly ? "read" : "write"}"},"/private/tmp/fixture-markers"="deny","/private/tmp/fixture-markers/fixture-allow"="read","/private/tmp/fixture-markers/fixture-deny"="deny"}`,
       );
     },
   );

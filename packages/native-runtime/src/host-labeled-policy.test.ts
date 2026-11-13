@@ -7,8 +7,9 @@ import { FakeHarnessProcess, startRequest, tick } from "./protocol.test-support.
 
 const label = {
   id: "fixture",
-  allow: "/System/Library/fixture-allow",
-  deny: "/System/Library/fixture-deny",
+  directory: "/private/tmp/fixture-markers",
+  allow: "/private/tmp/fixture-markers/fixture-allow",
+  deny: "/private/tmp/fixture-markers/fixture-deny",
 };
 function config(readOnly: boolean) {
   const safe = safeHostConfiguration();
@@ -26,6 +27,7 @@ function config(readOnly: boolean) {
           ":root": readOnly ? "deny" : "read",
           ...(!readOnly ? { ":minimal": "read" } : {}),
           ":workspace_roots": { ".": readOnly ? "read" : "write" },
+          [label.directory]: "deny",
           [label.allow]: "read",
           [label.deny]: "deny",
         },
@@ -115,9 +117,11 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
     await driver.cancel();
   });
 
-  it.each(["allow", "deny"])("requires the exact %s probe permission", (probe) => {
+  it.each(["directory", "allow", "deny"])("requires the exact %s probe permission", (probe) => {
     const effective = config(readOnly);
-    record(effective.permissions.fixture.filesystem)[label[probe as "allow" | "deny"]] = "write";
+    record(effective.permissions.fixture.filesystem)[
+      label[probe as "directory" | "allow" | "deny"]
+    ] = "write";
     expect(() =>
       readOnly
         ? assertRemoteHostConfiguration(effective, label.id, label)
