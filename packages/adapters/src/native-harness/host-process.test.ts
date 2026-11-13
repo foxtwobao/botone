@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
@@ -9,8 +10,14 @@ import { safeHostConfiguration, startRequest } from "@rakazo/native-runtime/test
 import { afterEach, describe, expect, it } from "vitest";
 import { WINDOWS_COMMAND_WRAPPER } from "../desktop-process-tree.js";
 import { launchHostProcess } from "./host-process.js";
+import {
+  createHostProcessMarker,
+  MACOS_HOST_OWNER,
+  macosHostOwnershipAvailable,
+} from "./host-process-macos.js";
 
-describe.skipIf(!["linux", "win32"].includes(process.platform))("host protocol process", () => {
+const supported = ["linux", "win32", "darwin"].includes(process.platform);
+describe.skipIf(!supported)("host protocol process", () => {
   const roots: string[] = [];
   const processes: HarnessProcess[] = [];
   afterEach(async () => {
@@ -172,12 +179,12 @@ describe.skipIf(!["linux", "win32"].includes(process.platform))("host protocol p
     async (action) => {
       const unrelated = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"]);
       const grandchild = `process.on('SIGTERM', () => {}); setInterval(() => require('node:fs').appendFileSync('ticks', 'tick\\n'), 10);`;
-      const intermediate = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grandchild)}], { detached: true, stdio: 'ignore' }); require('node:fs').writeFileSync('descendant', String(child.pid)); child.unref();`;
+      const intermediate = `const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grandchild)}], { detached: true, stdio: 'ignore', env: {} }); require('node:fs').writeFileSync('descendant', String(child.pid)); child.unref();`;
       let pid: number | undefined;
       try {
         const { child, root } = await launch(`
         const fs = require('node:fs');
-        const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(intermediate)}], { detached: true, stdio: 'ignore' });
+        const child = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(intermediate)}], { detached: true, stdio: 'ignore', env: {} });
         child.unref();
         const timer = setInterval(() => {
           if (!fs.existsSync('ticks')) return;
@@ -204,6 +211,113 @@ describe.skipIf(!["linux", "win32"].includes(process.platform))("host protocol p
           } catch {}
         }
         unrelated.kill("SIGKILL");
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin")(
+    "probes the actual sandbox label and audit-token signal operations before admission",
+    async () => {
+      expect(await macosHostOwnershipAvailable()).toBe(true);
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin")(
+    "confirms an owner pipe closed before bootstrap without launching a process",
+    async () => {
+      const owner = spawn(
+        process.execPath,
+        ["-e", MACOS_HOST_OWNER, createRequire(import.meta.url).resolve("koffi")],
+        {
+          env: { ELECTRON_RUN_AS_NODE: "1" },
+          stdio: ["ignore", "ignore", "ignore", "pipe", "pipe"],
+        },
+      );
+      const acknowledgement: Buffer[] = [];
+      owner.stdio[4]!.on("data", (data: Buffer) => acknowledgement.push(data));
+      const closed = new Promise((resolve) => owner.once("close", resolve));
+      try {
+        (owner.stdio[3] as NodeJS.WritableStream).end();
+        expect(await closed).toBe(0);
+        expect(Buffer.concat(acknowledgement).toString()).toBe("clean\n");
+      } finally {
+        owner.kill("SIGKILL");
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin")(
+    "does not mistake another sandbox denying both probe paths for this run's label",
+    async () => {
+      const foreign = spawn(
+        "/usr/bin/sandbox-exec",
+        [
+          "-p",
+          '(version 1)(allow default)(deny file-read* (subpath "/System/Library"))',
+          "/bin/sleep",
+          "30",
+        ],
+        { stdio: "ignore", env: {} },
+      );
+      try {
+        const { child } = await launch("console.log('ready'); setInterval(() => {}, 1000);");
+        expect(await output(child)()).toBe("ready");
+        await child.stop();
+        expect(foreign.exitCode).toBeNull();
+        expect(foreign.signalCode).toBeNull();
+      } finally {
+        foreign.kill("SIGKILL");
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "darwin").each(["stop", "exit", "crash"])(
+    "cleans a native CLI's helpers and sandboxed detached tools on %s with empty environments",
+    async (action) => {
+      const root = await mkdtemp(path.join(tmpdir(), "host sandbox label "));
+      roots.push(root);
+      const marker = await createHostProcessMarker();
+      const policy = `(version 1)(allow default)(deny file-read* (literal ${JSON.stringify(marker.deny)}))`;
+      const grandchild = `process.on('SIGTERM', () => {}); setInterval(() => require('node:fs').appendFileSync('tool-ticks', 'tick\\n'), 10);`;
+      const intermediate = `const p = require('node:child_process').spawn(process.execPath, ['-e', ${JSON.stringify(grandchild)}], { detached: true, stdio: 'ignore', env: {} }); require('node:fs').writeFileSync('tool-pid', String(p.pid)); p.unref();`;
+      const script = path.join(root, "native-cli.cjs");
+      await writeFile(
+        script,
+        `const { spawn } = require('node:child_process');
+        const fs = require('node:fs');
+        const helper = spawn(process.execPath, ['-e', "setInterval(() => {}, 1000)"], { detached: true, stdio: 'ignore', env: {} });
+        helper.unref();
+        const tool = spawn('/usr/bin/sandbox-exec', ['-p', ${JSON.stringify(policy)}, process.execPath, '-e', ${JSON.stringify(intermediate)}], { detached: true, stdio: 'ignore', env: {} });
+        tool.unref();
+        const timer = setInterval(() => {
+          if (!fs.existsSync('tool-ticks')) return;
+          console.log(JSON.stringify([Number(fs.readFileSync('tool-pid', 'utf8')), helper.pid]));
+          clearInterval(timer);
+          ${action === "stop" ? "setInterval(() => {}, 1000);" : `process.exit(${action === "exit" ? 0 : 1});`}
+        }, 10);`,
+      );
+      const child = await launchHostProcess({
+        executable: process.execPath,
+        args: [script],
+        workspace: root,
+        env: {},
+        marker,
+      });
+      processes.push(child);
+      const pids = JSON.parse(await output(child)()) as number[];
+      try {
+        if (action !== "stop")
+          expect(await new Promise((resolve) => child.onExit(resolve))).toBe(
+            action === "exit" ? 0 : 1,
+          );
+        await child.stop();
+        for (const pid of pids) expect(() => process.kill(pid, 0)).toThrow();
+      } finally {
+        for (const pid of pids) {
+          try {
+            process.kill(pid, "SIGKILL");
+          } catch {}
+        }
       }
     },
   );

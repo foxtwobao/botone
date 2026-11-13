@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   HOST_ENGINE_VERSION,
   hostEnvironment,
+  hostFilesystemOverride,
   hostLaunchArguments,
   hostMcpOverride,
   resolveHostExecutable,
@@ -28,6 +29,18 @@ function file(root: string, relative: string) {
 }
 
 describe("native host admission", () => {
+  it.each([false, true])(
+    "adds only the per-run sandbox label to readOnly=%s permissions",
+    (readOnly) => {
+      const override = hostFilesystemOverride("fixture", readOnly, {
+        allow: "/System/Library/fixture-allow",
+        deny: "/System/Library/fixture-deny",
+      });
+      expect(override).toBe(
+        `permissions.fixture.filesystem={":root"="${readOnly ? "deny" : "read"}",":minimal"="read",":workspace_roots"={"."="${readOnly ? "read" : "write"}"},"/System/Library/fixture-allow"="read","/System/Library/fixture-deny"="deny"}`,
+      );
+    },
+  );
   it("quotes MCP names as TOML value keys instead of dotted override paths", () => {
     expect(hostMcpOverride(["plain", "server.with.dots", 'quoted"name'])).toBe(
       'mcp_servers={"plain"={enabled=false},"server.with.dots"={enabled=false},"quoted\\"name"={enabled=false}}',

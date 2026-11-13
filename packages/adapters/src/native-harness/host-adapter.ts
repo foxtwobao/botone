@@ -8,6 +8,8 @@ import type { HarnessDriverFactory, HarnessProcess } from "@rakazo/native-runtim
 import { hostDisabledFeatures } from "@rakazo/native-runtime/host-policy";
 import { HarnessRpc } from "@rakazo/native-runtime/rpc";
 import { launchHostProcess } from "./host-process.js";
+import type { HostProcessMarker } from "./host-process-macos.js";
+import { createHostProcessMarker } from "./host-process-macos.js";
 import { hostProcessOwnershipAvailable } from "./host-process-owner.js";
 
 // A tested protocol version is an admission requirement, not a guess based on semver.
@@ -37,6 +39,22 @@ export function hostMcpOverride(servers: string[]) {
   if (servers.length > 256 || value.length > 64_000)
     throw new Error("host_configuration_not_confirmed");
   return value;
+}
+
+export function hostFilesystemOverride(
+  permissions: string,
+  readOnly: boolean,
+  marker?: HostProcessMarker,
+) {
+  const entries = [
+    `":root"="${readOnly ? "deny" : "read"}"`,
+    '":minimal"="read"',
+    `":workspace_roots"={"."="${readOnly ? "read" : "write"}"}`,
+    ...(marker
+      ? [`${JSON.stringify(marker.allow)}="read"`, `${JSON.stringify(marker.deny)}="deny"`]
+      : []),
+  ];
+  return `permissions.${permissions}.filesystem={${entries.join(",")}}`;
 }
 
 /** Preserve the native sign-in, without exporting product server credentials into the CLI. */
@@ -174,23 +192,30 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
       if (!executable || adapter.profile.status !== "ready")
         throw new Error("Local agent unavailable");
       const args = hostLaunchArguments();
-      const permissions = tools ? `rakazo_host_${randomUUID().replaceAll("-", "")}` : undefined;
+      const marker = process.platform === "darwin" ? await createHostProcessMarker() : undefined;
+      const permissions =
+        tools || marker ? `rakazo_host_${randomUUID().replaceAll("-", "")}` : undefined;
       if (permissions)
         args.splice(
           args.length - 1,
           0,
-          ...["shell_tool", "unified_exec", "view_image", "code_mode"].flatMap((feature) => [
-            "--disable",
-            feature,
-          ]),
+          ...(tools ? ["shell_tool", "unified_exec", "view_image", "code_mode"] : []).flatMap(
+            (feature) => ["--disable", feature],
+          ),
           "-c",
-          `permissions.${permissions}.filesystem={":root"="deny",":minimal"="read",":workspace_roots"={"."="read"}}`,
+          hostFilesystemOverride(permissions, !!tools, marker),
           "-c",
           `permissions.${permissions}.network.enabled=false`,
           "-c",
           `default_permissions=${JSON.stringify(permissions)}`,
         );
-      const probe = await launchHostProcess({ executable, args, workspace: directory, env });
+      const probe = await launchHostProcess({
+        executable,
+        args,
+        workspace: directory,
+        env,
+        marker,
+      });
       let servers: string[];
       try {
         const rpc = new HarnessRpc(
@@ -218,14 +243,16 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
       }
       // Empty TOML maps merge with user/project maps. Disable each effective server explicitly.
       args.splice(args.length - 1, 0, "-c", hostMcpOverride(servers));
-      const process = await launchHostProcess({
+      const launched = await launchHostProcess({
         executable,
         args,
         workspace: directory,
         env,
+        marker,
       });
-      if (tools && permissions) process.externalTools = { ...tools, permissions };
-      return process;
+      if (tools && permissions) launched.externalTools = { ...tools, permissions };
+      if (marker && permissions) launched.hostPermissions = { id: permissions, ...marker };
+      return launched;
     },
     driver: createHostCodexDriver,
   };

@@ -1,3 +1,4 @@
+import type { HarnessProcess } from "./driver.js";
 import { record } from "./driver.js";
 import { HarnessProtocolError } from "./rpc.js";
 
@@ -35,31 +36,56 @@ export function assertHostConfiguration(value: unknown) {
     throw new HarnessProtocolError("host_configuration_not_confirmed");
 }
 
-export function assertRemoteHostConfiguration(value: unknown, permissions: string) {
+export function assertLabeledHostConfiguration(
+  value: unknown,
+  label: NonNullable<HarnessProcess["hostPermissions"]>,
+  readOnly: boolean,
+) {
+  assertHostPermissionProfile(value, label.id, readOnly, label);
+}
+
+export function assertRemoteHostConfiguration(
+  value: unknown,
+  permissions: string,
+  label?: HarnessProcess["hostPermissions"],
+) {
+  assertHostPermissionProfile(value, permissions, true, label);
+}
+
+function assertHostPermissionProfile(
+  value: unknown,
+  permissions: string,
+  readOnly: boolean,
+  label?: HarnessProcess["hostPermissions"],
+) {
   assertHostConfiguration(value);
   const config = record(value);
   const features = record(config.features);
   const profile = record(record(config.permissions)[permissions]);
   const filesystem = record(profile.filesystem);
   if (
-    ["shell_tool", "unified_exec", "view_image", "code_mode"].some(
-      (name) => features[name] !== false,
-    ) ||
+    (readOnly &&
+      ["shell_tool", "unified_exec", "view_image", "code_mode"].some(
+        (name) => features[name] !== false,
+      )) ||
+    (label && (filesystem[label.allow] !== "read" || filesystem[label.deny] !== "deny")) ||
     Object.entries(profile).some(
       ([name, value]) => !["filesystem", "network"].includes(name) && value !== null,
     ) ||
     Object.keys(filesystem)
-      .filter((name) => filesystem[name] !== null)
+      .filter((name) => filesystem[name] !== null && name !== label?.allow && name !== label?.deny)
       .sort()
       .join() !== ":minimal,:root,:workspace_roots" ||
-    filesystem[":root"] !== "deny" ||
+    filesystem[":root"] !== (readOnly ? "deny" : "read") ||
     filesystem[":minimal"] !== "read" ||
     Object.keys(record(filesystem[":workspace_roots"])).join() !== "." ||
-    record(filesystem[":workspace_roots"])["."] !== "read" ||
+    record(filesystem[":workspace_roots"])["."] !== (readOnly ? "read" : "write") ||
     Object.entries(record(profile.network)).some(
       ([name, value]) => name !== "enabled" && value !== null,
     ) ||
     record(profile.network).enabled !== false
   )
-    throw new HarnessProtocolError("host_remote_boundary_not_confirmed");
+    throw new HarnessProtocolError(
+      readOnly ? "host_remote_boundary_not_confirmed" : "host_sandbox_not_confirmed",
+    );
 }

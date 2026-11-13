@@ -3,6 +3,8 @@ import { execFile, spawn } from "node:child_process";
 import type { Readable, Writable } from "node:stream";
 import type { NativeProcessTree } from "../desktop-process-tree.js";
 import { spawnOwnedCommand } from "../desktop-process-tree.js";
+import type { HostProcessMarker } from "./host-process-macos.js";
+import { macosHostOwnershipAvailable, spawnMacosHostCommand } from "./host-process-macos.js";
 
 const program = String.raw`
 import ctypes, json, os, pathlib, signal, subprocess, sys, threading, time
@@ -77,9 +79,9 @@ status.write('clean\n'); status.flush(); status.close()
 sys.exit(code if code is not None and code >= 0 else 0)
 `;
 
-/** macOS has no admitted descendant owner yet. A process group is insufficient. */
 export async function hostProcessOwnershipAvailable(platform: NodeJS.Platform = process.platform) {
   if (platform === "win32") return true;
+  if (platform === "darwin") return macosHostOwnershipAvailable();
   if (platform !== "linux") return false;
   return new Promise<boolean>((resolve) => {
     execFile(
@@ -91,15 +93,17 @@ export async function hostProcessOwnershipAvailable(platform: NodeJS.Platform = 
   });
 }
 
-export function spawnOwnedHostCommand(
+export async function spawnOwnedHostCommand(
   argv: string[],
   cwd: string,
   env: NodeJS.ProcessEnv,
-): {
+  marker?: HostProcessMarker,
+): Promise<{
   child: ChildProcessWithoutNullStreams;
   tree: NativeProcessTree;
-} {
+}> {
   if (process.platform === "win32") return spawnOwnedCommand(argv, cwd, env, { input: "stream" });
+  if (process.platform === "darwin") return spawnMacosHostCommand(argv, cwd, env, marker);
   if (process.platform !== "linux") throw new Error("host_process_ownership_unavailable");
   const child = spawn("/usr/bin/python3", ["-I", "-u", "-c", program], {
     cwd,

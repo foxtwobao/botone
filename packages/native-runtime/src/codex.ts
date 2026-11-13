@@ -3,7 +3,11 @@ import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { bridgeInputSchemas } from "./bridge-tools.js";
 import type { HarnessDriverFactory } from "./driver.js";
 import { initialPrompt, record, text } from "./driver.js";
-import { assertHostConfiguration, assertRemoteHostConfiguration } from "./host-policy.js";
+import {
+  assertHostConfiguration,
+  assertLabeledHostConfiguration,
+  assertRemoteHostConfiguration,
+} from "./host-policy.js";
 import { HarnessInteractions, permissionActions } from "./interactions.js";
 import { HarnessProtocolError, HarnessRpc } from "./rpc.js";
 
@@ -21,6 +25,10 @@ function codexDriver(
   host: boolean,
 ): ReturnType<HarnessDriverFactory> {
   const remote = host ? process.externalTools : undefined;
+  const label = host ? process.hostPermissions : undefined;
+  const permissions = label?.id ?? remote?.permissions;
+  // An unsandboxed approval retry would discard the process owner's inherited label.
+  const approvalPolicy = host && !remote && !label ? "on-request" : "never";
   let threadId = "";
   let turnId = "";
   let settled = false;
@@ -186,7 +194,7 @@ function codexDriver(
         ["item/commandExecution/requestApproval", "item/fileChange/requestApproval"].includes(
           method,
         );
-      if (remote && permission) {
+      if ((remote || label) && permission) {
         await rpc.reply(id, { decision: legacy ? "denied" : "decline" });
         return;
       }
@@ -275,17 +283,17 @@ function codexDriver(
         const effective = record(
           await rpc.request("config/read", { cwd: process.workspace, includeLayers: false }),
         );
-        if (remote) assertRemoteHostConfiguration(effective.config, remote.permissions);
+        if (remote) assertRemoteHostConfiguration(effective.config, remote.permissions, label);
+        else if (label) assertLabeledHostConfiguration(effective.config, label, false);
         else assertHostConfiguration(effective.config);
       }
       const params = {
         developerInstructions: request.instructions,
         cwd: process.workspace,
-        approvalPolicy: host && !remote ? "on-request" : "never",
+        approvalPolicy,
+        ...(permissions ? { permissions, environments: [] } : {}),
         ...(remote
           ? {
-              permissions: remote.permissions,
-              environments: [],
               ...(!request.session
                 ? {
                     dynamicTools: remote.specs.map(
@@ -297,7 +305,9 @@ function codexDriver(
                   }
                 : {}),
             }
-          : { sandbox: "workspace-write" }),
+          : permissions
+            ? {}
+            : { sandbox: "workspace-write" }),
         ...(host
           ? {
               approvalsReviewer: "user",
@@ -323,16 +333,18 @@ function codexDriver(
       if (!threadId) throw new HarnessProtocolError("missing_session");
       if (host) {
         const sandbox = record(result.sandbox);
-        if (remote) {
+        if (permissions) {
           if (
             result.cwd !== process.workspace ||
             result.approvalPolicy !== "never" ||
             result.approvalsReviewer !== "user" ||
-            record(result.activePermissionProfile).id !== remote.permissions ||
+            record(result.activePermissionProfile).id !== permissions ||
             sandbox.networkAccess !== false ||
             sandbox.type !== "readOnly"
           )
-            throw new HarnessProtocolError("host_remote_boundary_not_confirmed");
+            throw new HarnessProtocolError(
+              remote ? "host_remote_boundary_not_confirmed" : "host_sandbox_not_confirmed",
+            );
         } else {
           if (
             result.cwd !== process.workspace ||
@@ -356,10 +368,10 @@ function codexDriver(
         await rpc.request("turn/start", {
           threadId,
           // Reapply on every turn, including sessions created with an older approval policy.
-          approvalPolicy: host && !remote ? "on-request" : "never",
+          approvalPolicy,
           ...(host ? { approvalsReviewer: "user" } : {}),
-          ...(remote
-            ? { permissions: remote.permissions, environments: [] }
+          ...(permissions
+            ? { permissions, environments: [] }
             : {
                 sandboxPolicy: host
                   ? {

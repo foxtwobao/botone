@@ -2,6 +2,7 @@ import { realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
+import type { HostProcessMarker } from "./host-process-macos.js";
 import { spawnOwnedHostCommand } from "./host-process-owner.js";
 
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -17,6 +18,7 @@ export async function launchHostProcess(options: {
   args: string[];
   workspace: string;
   env: NodeJS.ProcessEnv;
+  marker?: HostProcessMarker;
 }): Promise<HarnessProcess> {
   if (!path.isAbsolute(options.executable) || !path.isAbsolute(options.workspace))
     throw new Error("host_absolute_path_required");
@@ -35,10 +37,11 @@ export async function launchHostProcess(options: {
   } catch {
     throw new Error("host_process_start_failed");
   }
-  const { child, tree } = spawnOwnedHostCommand(
+  const { child, tree } = await spawnOwnedHostCommand(
     [options.executable, ...options.args],
     workspace,
     options.env,
+    options.marker,
   );
   let lineListener: ((line: string) => void) | undefined;
   let exitListener: ((code?: number | null) => void) | undefined;
@@ -101,7 +104,7 @@ export async function launchHostProcess(options: {
     stopping ??= (async () => {
       try {
         tree.kill();
-        const deadline = Date.now() + (process.platform === "linux" ? 12_000 : 3000);
+        const deadline = Date.now() + (process.platform === "win32" ? 3000 : 12_000);
         while ((!closed || tree.alive()) && Date.now() < deadline) await delay(10);
         if (!closed || tree.alive()) throw new Error("host_stop_unconfirmed");
       } finally {

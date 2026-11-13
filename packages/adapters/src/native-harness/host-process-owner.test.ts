@@ -13,8 +13,8 @@ vi.mock("./host-process.js", () => ({ launchHostProcess: mocks.launch }));
 afterEach(() => vi.clearAllMocks());
 
 describe("host descendant ownership admission", () => {
-  it("rejects macOS without launching a CLI and keeps Windows on its existing Job path", async () => {
-    expect(await hostProcessOwnershipAvailable("darwin")).toBe(false);
+  it("rejects platforms without an owner and keeps Windows on its existing Job path", async () => {
+    expect(await hostProcessOwnershipAvailable("freebsd")).toBe(false);
     expect(await hostProcessOwnershipAvailable("win32")).toBe(true);
     expect(mocks.probe).not.toHaveBeenCalled();
     expect(mocks.launch).not.toHaveBeenCalled();
