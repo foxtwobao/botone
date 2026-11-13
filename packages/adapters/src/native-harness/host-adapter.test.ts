@@ -17,7 +17,7 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 function fixture() {
-  const root = realpathSync(mkdtempSync(path.join(tmpdir(), "native-cli-discovery-")));
+  const root = realpathSync.native(mkdtempSync(path.join(tmpdir(), "native-cli-discovery-")));
   roots.push(root);
   return root;
 }
@@ -37,7 +37,7 @@ describe("native host admission", () => {
         deny: "/System/Library/fixture-deny",
       });
       expect(override).toBe(
-        `permissions.fixture.filesystem={":root"="${readOnly ? "deny" : "read"}",":minimal"="read",":workspace_roots"={"."="${readOnly ? "read" : "write"}"},"/System/Library/fixture-allow"="read","/System/Library/fixture-deny"="deny"}`,
+        `permissions.fixture.filesystem={":root"="${readOnly ? "deny" : "read"}",${readOnly ? "" : '":minimal"="read",'}":workspace_roots"={"."="${readOnly ? "read" : "write"}"},"/System/Library/fixture-allow"="read","/System/Library/fixture-deny"="deny"}`,
       );
     },
   );

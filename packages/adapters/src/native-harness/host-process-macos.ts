@@ -27,6 +27,7 @@ export async function createHostProcessMarker(): Promise<HostProcessMarker> {
 export const MACOS_HOST_OWNER = String.raw`
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
+const { Socket } = require('node:net');
 const koffi = require(process.argv[1]);
 const system = koffi.load('/usr/lib/libproc.dylib');
 const sandbox = koffi.load('/usr/lib/libsandbox.dylib');
@@ -136,22 +137,41 @@ async function probe() {
   const marker = { allow: '/System/Library/rakazo-probe-' + process.pid + '-allow', deny: '/System/Library/rakazo-probe-' + process.pid + '-deny' };
   const child = spawn('/usr/bin/sandbox-exec', ['-p', profile(marker), '/bin/sleep', '5'], { stdio: 'ignore' });
   const closed = new Promise(resolve => child.once('close', resolve));
-  let root;
+  let root, stage = 'label', positive = false, negative = false, selfMatch = false;
   try {
     for (let attempt = 0; attempt < 50; attempt++) {
       root = identity(child.pid);
-      if (root && matches(child.pid, marker)) break;
+      if (root) {
+        positive = allowed(child.pid, marker.allow);
+        negative = allowed(child.pid, marker.deny);
+        if (positive && !negative) break;
+      }
       await pause(10);
     }
-    if (!root || !matches(child.pid, marker) || matches(process.pid, marker)) throw new Error('host_process_label_unavailable');
-    send(root, 17); send(root, 9);
+    selfMatch = matches(process.pid, marker);
+    if (!root || !positive || negative || selfMatch) throw new Error('host_process_label_unavailable');
+    stage = 'signal';
+    // sandbox-exec can exec after its label becomes visible. Refresh the audit
+    // token so admission also tests signalling the final executable identity.
+    const current = identity(child.pid);
+    if (!current || current.unique !== root.unique || !send(current, 17) || !send(current, 9))
+      throw new Error('host_process_signal_unavailable');
+    stage = 'exit';
     await closed;
+    stage = 'cleanup';
     await cleanup(root, marker);
+  } catch (error) {
+    // Only capability facts, never PIDs, command output, paths, or account data.
+    fs.writeSync(2, 'host_owner_probe ' + JSON.stringify({ stage, identity: !!root, positive, negative, selfMatch, exited: child.exitCode !== null || child.signalCode !== null }) + '\n');
+    throw error;
   } finally { child.kill('SIGKILL'); }
 }
 async function main() {
   if (process.argv[2] === 'probe') { await probe(); return; }
-  const control = fs.createReadStream(null, { fd: 3, autoClose: false });
+  // libuv's inherited stdio pipe is a socket. fs.ReadStream would block a worker
+  // in read(2); process.exit then waits forever unless the desktop first sends EOF.
+  // The socket handle lets a naturally exiting CLI finish while its owner is open.
+  const control = new Socket({ fd: 3, readable: true, writable: false });
   let config = '', launched = false, stopping = false, root, marker, child, code = 0, unavailableRoot = false;
   let attempt;
   const stop = () => {

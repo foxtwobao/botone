@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createHostCodexDriver } from "./codex.js";
+import { record } from "./driver.js";
 import { assertLabeledHostConfiguration, assertRemoteHostConfiguration } from "./host-policy.js";
 import { safeHostConfiguration } from "./host-policy.test-support.js";
 import { FakeHarnessProcess, startRequest, tick } from "./protocol.test-support.js";
@@ -23,7 +24,7 @@ function config(readOnly: boolean) {
       fixture: {
         filesystem: {
           ":root": readOnly ? "deny" : "read",
-          ":minimal": "read",
+          ...(!readOnly ? { ":minimal": "read" } : {}),
           ":workspace_roots": { ".": readOnly ? "read" : "write" },
           [label.allow]: "read",
           [label.deny]: "deny",
@@ -116,11 +117,19 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
 
   it.each(["allow", "deny"])("requires the exact %s probe permission", (probe) => {
     const effective = config(readOnly);
-    effective.permissions.fixture.filesystem[label[probe as "allow" | "deny"]] = "write";
+    record(effective.permissions.fixture.filesystem)[label[probe as "allow" | "deny"]] = "write";
     expect(() =>
       readOnly
         ? assertRemoteHostConfiguration(effective, label.id, label)
         : assertLabeledHostConfiguration(effective, label, false),
     ).toThrow("not_confirmed");
   });
+});
+
+it("rejects implicit platform scratch access in a remote profile", () => {
+  const effective = config(true);
+  effective.permissions.fixture.filesystem[":minimal"] = "read";
+  expect(() => assertRemoteHostConfiguration(effective, label.id, label)).toThrow(
+    "host_remote_boundary_not_confirmed",
+  );
 });

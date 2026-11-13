@@ -60,6 +60,26 @@ describe.skipIf(!supported)("host protocol process", () => {
             received = resolve;
           });
   }
+  function expectNotRunning(pid: number) {
+    if (process.platform === "darwin") {
+      const koffi = createRequire(import.meta.url)("koffi");
+      const info = koffi
+        .load("/usr/lib/libproc.dylib")
+        .func("int proc_pidinfo(int, int, uint64_t, void *, int)");
+      const identity = Buffer.alloc(56);
+      const state = Buffer.alloc(64);
+      const live = info(pid, 17, 0, identity, identity.length);
+      const includingZombie = info(pid, 13, 1, state, state.length);
+      // launchd may not have reaped an orphan yet. Confirm kernel SZOMB, rather
+      // than treating kill(pid, 0), which also succeeds for zombies, as liveness.
+      if (includingZombie === state.length && state.readUInt32LE(12) === 5) {
+        expect(live).toBe(0);
+        return;
+      }
+      expect(live).toBe(0);
+    }
+    expect(() => process.kill(pid, 0)).toThrow();
+  }
 
   it("keeps stdin open for multiple UTF-8 frames, with a real private bootstrap on Windows", async () => {
     const { child, root } = await launch(`
@@ -200,7 +220,7 @@ describe.skipIf(!supported)("host protocol process", () => {
             action === "exit" ? 0 : 1,
           );
         await child.stop();
-        expect(() => process.kill(pid!, 0)).toThrow();
+        expectNotRunning(pid!);
         const stopped = await readFile(path.join(root, "ticks"), "utf8");
         await new Promise((resolve) => setTimeout(resolve, 50));
         expect(await readFile(path.join(root, "ticks"), "utf8")).toBe(stopped);
@@ -219,6 +239,20 @@ describe.skipIf(!supported)("host protocol process", () => {
   it.skipIf(process.platform !== "darwin")(
     "probes the actual sandbox label and audit-token signal operations before admission",
     async () => {
+      const probe = await new Promise<{ success: boolean; diagnostic?: string }>((resolve) => {
+        execFile(
+          process.execPath,
+          ["-e", MACOS_HOST_OWNER, createRequire(import.meta.url).resolve("koffi"), "probe"],
+          { env: { ELECTRON_RUN_AS_NODE: "1" }, timeout: 3000, maxBuffer: 1024 },
+          (error, _stdout, stderr) => {
+            resolve({
+              success: !error,
+              diagnostic: stderr.split("\n").find((line) => line.startsWith("host_owner_probe ")),
+            });
+          },
+        );
+      });
+      expect(probe.success, probe.diagnostic).toBe(true);
       expect(await macosHostOwnershipAvailable()).toBe(true);
     },
   );
@@ -312,7 +346,7 @@ describe.skipIf(!supported)("host protocol process", () => {
             action === "exit" ? 0 : 1,
           );
         await child.stop();
-        for (const pid of pids) expect(() => process.kill(pid, 0)).toThrow();
+        for (const pid of pids) expectNotRunning(pid);
       } finally {
         for (const pid of pids) {
           try {

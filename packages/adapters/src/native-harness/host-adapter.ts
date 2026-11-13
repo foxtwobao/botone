@@ -48,7 +48,9 @@ export function hostFilesystemOverride(
 ) {
   const entries = [
     `":root"="${readOnly ? "deny" : "read"}"`,
-    '":minimal"="read"',
+    // macOS platform defaults include writable scratch directories. Remote runs
+    // disable native tools, so they need no implicit platform filesystem access.
+    ...(readOnly && marker ? [] : ['":minimal"="read"']),
     `":workspace_roots"={"."="${readOnly ? "read" : "write"}"}`,
     ...(marker
       ? [`${JSON.stringify(marker.allow)}="read"`, `${JSON.stringify(marker.deny)}="deny"`]

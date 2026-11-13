@@ -63,6 +63,7 @@ function assertHostPermissionProfile(
   const features = record(config.features);
   const profile = record(record(config.permissions)[permissions]);
   const filesystem = record(profile.filesystem);
+  const platformDefaults = !readOnly || !label;
   if (
     (readOnly &&
       ["shell_tool", "unified_exec", "view_image", "code_mode"].some(
@@ -75,9 +76,10 @@ function assertHostPermissionProfile(
     Object.keys(filesystem)
       .filter((name) => filesystem[name] !== null && name !== label?.allow && name !== label?.deny)
       .sort()
-      .join() !== ":minimal,:root,:workspace_roots" ||
+      .join() !==
+      (platformDefaults ? ":minimal,:root,:workspace_roots" : ":root,:workspace_roots") ||
     filesystem[":root"] !== (readOnly ? "deny" : "read") ||
-    filesystem[":minimal"] !== "read" ||
+    (platformDefaults && filesystem[":minimal"] !== "read") ||
     Object.keys(record(filesystem[":workspace_roots"])).join() !== "." ||
     record(filesystem[":workspace_roots"])["."] !== (readOnly ? "read" : "write") ||
     Object.entries(record(profile.network)).some(
