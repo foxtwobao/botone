@@ -6,7 +6,8 @@ import type {
 
 export interface HarnessProcess {
   workspace: string;
-  mcpServer: { name: string; type: string; command: string; args: string[]; env: string[] };
+  /** Omitted for a host process until an authorized platform tool bridge is mounted. */
+  mcpServer?: { name: string; type: string; command: string; args: string[]; env: string[] };
   onTool?(
     listener: (request: { name: string; input: Record<string, unknown> }) => Promise<unknown>,
   ): void;

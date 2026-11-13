@@ -6,7 +6,19 @@ import { initialPrompt, record, text } from "./driver.js";
 import { HarnessInteractions, permissionActions } from "./interactions.js";
 import { HarnessProtocolError, HarnessRpc } from "./rpc.js";
 
-export const createCodexDriver: HarnessDriverFactory = (process, version, emit) => {
+export const createCodexDriver: HarnessDriverFactory = (process, version, emit) =>
+  codexDriver(process, version, emit, false);
+
+/** Host execution always requests the native sandbox; it never trusts external isolation. */
+export const createHostCodexDriver: HarnessDriverFactory = (process, version, emit) =>
+  codexDriver(process, version, emit, true);
+
+function codexDriver(
+  process: Parameters<HarnessDriverFactory>[0],
+  version: string,
+  emit: Parameters<HarnessDriverFactory>[2],
+  host: boolean,
+): ReturnType<HarnessDriverFactory> {
   let threadId = "";
   let turnId = "";
   let settled = false;
@@ -194,8 +206,21 @@ export const createCodexDriver: HarnessDriverFactory = (process, version, emit) 
       const params = {
         developerInstructions: request.instructions,
         cwd: process.workspace,
-        approvalPolicy: "never",
+        approvalPolicy: host ? "on-request" : "never",
         sandbox: "workspace-write",
+        ...(host
+          ? {
+              approvalsReviewer: "user",
+              config: {
+                sandbox_workspace_write: {
+                  writable_roots: [process.workspace],
+                  network_access: false,
+                  exclude_tmpdir_env_var: true,
+                  exclude_slash_tmp: true,
+                },
+              },
+            }
+          : {}),
         ...(request.model ? { model: request.model } : {}),
       };
       const result = record(
@@ -206,6 +231,21 @@ export const createCodexDriver: HarnessDriverFactory = (process, version, emit) 
       );
       threadId = text(record(result.thread).id);
       if (!threadId) throw new HarnessProtocolError("missing_session");
+      if (host) {
+        const sandbox = record(result.sandbox);
+        if (
+          result.cwd !== process.workspace ||
+          result.approvalPolicy !== "on-request" ||
+          result.approvalsReviewer !== "user" ||
+          sandbox.type !== "workspaceWrite" ||
+          sandbox.networkAccess !== false ||
+          sandbox.excludeTmpdirEnvVar !== true ||
+          sandbox.excludeSlashTmp !== true ||
+          !Array.isArray(sandbox.writableRoots) ||
+          sandbox.writableRoots.some((root) => root !== process.workspace)
+        )
+          throw new HarnessProtocolError("host_sandbox_not_confirmed");
+      }
       if (request.session && threadId !== request.session.id)
         throw new HarnessProtocolError("session_mismatch");
       emit({ type: "session", session: { id: threadId, engineVersion: version } });
@@ -214,12 +254,21 @@ export const createCodexDriver: HarnessDriverFactory = (process, version, emit) 
         await rpc.request("turn/start", {
           threadId,
           // Reapply on every turn, including sessions created with an older approval policy.
-          approvalPolicy: "never",
-          sandboxPolicy: {
-            // The selected computer already isolates filesystem, processes, and network.
-            type: "externalSandbox",
-            networkAccess: "enabled",
-          },
+          approvalPolicy: host ? "on-request" : "never",
+          ...(host ? { approvalsReviewer: "user" } : {}),
+          sandboxPolicy: host
+            ? {
+                type: "workspaceWrite",
+                writableRoots: [process.workspace],
+                networkAccess: false,
+                excludeTmpdirEnvVar: true,
+                excludeSlashTmp: true,
+              }
+            : {
+                // The selected computer already isolates filesystem, processes, and network.
+                type: "externalSandbox",
+                networkAccess: "enabled",
+              },
           input: [{ type: "text", text: initialPrompt({ ...request, instructions: "" }) }],
         }),
       );
@@ -247,4 +296,4 @@ export const createCodexDriver: HarnessDriverFactory = (process, version, emit) 
       return true;
     },
   };
-};
+}

@@ -6,6 +6,8 @@
   "exports": {
     ".": "./src/computer-runtime.ts",
     "./bridge-tools": "./src/bridge-tools.ts",
+    "./driver": "./src/driver.ts",
+    "./codex": "./src/codex.ts",
     "./initialization-program": "./src/initialization-program.ts",
     "./managed-configuration": "./src/managed-configuration.ts",
     "./testing": "./src/protocol.test-support.ts",

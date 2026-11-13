@@ -100,16 +100,38 @@ function windowsProcessTree(pid: number): NativeProcessTree {
 // The wrapper waits on a private pipe until the parent assigns its Windows Job. Commands and
 // credentials go through that pipe, never the command line. Descendants inherit the Job.
 // Keep console applications attached; our Job owns descendants across wrapper exit.
-const WINDOWS_COMMAND_WRAPPER = `
+export const WINDOWS_COMMAND_WRAPPER = `
 const { spawn } = require('node:child_process');
+const streaming = process.argv[1] === 'stream';
 let input = '';
+let started = false;
+function start(config, remaining = '') {
+  started = true;
+  const { argv, env } = JSON.parse(config);
+  const child = spawn(argv[0], argv.slice(1), { env, shell: false, stdio: [streaming ? 'pipe' : 'ignore', 'inherit', 'inherit'], windowsHide: true });
+  if (streaming) {
+    child.stdin.on('error', () => {});
+    if (remaining) child.stdin.write(remaining);
+    process.stdin.pipe(child.stdin);
+  }
+  child.on('error', (error) => { if (streaming) process.stdin.destroy(); console.error(error.message); process.exitCode = 1; });
+  child.on('exit', (code) => { if (streaming) process.stdin.destroy(); process.exitCode = code ?? 1; });
+}
+function receive(chunk) {
+  input += chunk;
+  const newline = input.indexOf('\\n');
+  if (streaming && newline !== -1) {
+    process.stdin.removeListener('data', receive);
+    process.stdin.pause();
+    start(input.slice(0, newline), input.slice(newline + 1));
+    input = '';
+  }
+}
 process.stdin.setEncoding('utf8');
-process.stdin.on('data', (chunk) => { input += chunk; });
+process.stdin.on('data', receive);
 process.stdin.on('end', () => {
-  const { argv, env } = JSON.parse(input);
-  const child = spawn(argv[0], argv.slice(1), { env, shell: false, stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true });
-  child.on('error', (error) => { console.error(error.message); process.exitCode = 1; });
-  child.on('exit', (code) => { process.exitCode = code ?? 1; });
+  if (!streaming) start(input);
+  else if (!started) process.exitCode = 1;
 });
 `;
 
@@ -117,6 +139,7 @@ export function spawnOwnedCommand(
   argv: string[],
   cwd: string,
   env: NodeJS.ProcessEnv,
+  options: { input?: "stream" } = {},
 ): {
   child: ChildProcessWithoutNullStreams;
   tree: NativeProcessTree;
@@ -124,7 +147,7 @@ export function spawnOwnedCommand(
   const windows = process.platform === "win32";
   const child = spawn(
     windows ? process.execPath : argv[0]!,
-    windows ? ["-e", WINDOWS_COMMAND_WRAPPER] : argv.slice(1),
+    windows ? ["-e", WINDOWS_COMMAND_WRAPPER, options.input ?? ""] : argv.slice(1),
     {
       cwd,
       env: windows ? { ...env, ELECTRON_RUN_AS_NODE: "1" } : env,
@@ -166,6 +189,11 @@ export function spawnOwnedCommand(
     throw error;
   }
   child.stdin.on("error", () => undefined);
-  if (windows) child.stdin.end(JSON.stringify({ argv, env }));
+  if (windows) {
+    const bootstrap = JSON.stringify({ argv, env });
+    // The first line is consumed by the wrapper only, after Job ownership is established.
+    if (options.input === "stream") child.stdin.write(`${bootstrap}\n`);
+    else child.stdin.end(bootstrap);
+  }
   return { child, tree };
 }

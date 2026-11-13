@@ -119,7 +119,7 @@ export function acpDriver(options: {
             request.session ? options.resumeMethod : "session/new",
             {
               cwd: process.workspace,
-              mcpServers: [process.mcpServer],
+              mcpServers: process.mcpServer ? [process.mcpServer] : [],
               ...(request.session ? { sessionId: request.session.id } : {}),
             },
             60_000,
