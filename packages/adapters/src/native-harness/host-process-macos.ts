@@ -2,7 +2,7 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { execFile, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { realpath, stat } from "node:fs/promises";
-import { createRequire } from "node:module";
+import { createRequire as createHostRequire } from "node:module";
 import type { Readable, Writable } from "node:stream";
 import type { NativeProcessTree } from "../desktop-process-tree.js";
 
@@ -172,6 +172,7 @@ async function main() {
   // in read(2); process.exit then waits forever unless the desktop first sends EOF.
   // The socket handle lets a naturally exiting CLI finish while its owner is open.
   const control = new Socket({ fd: 3, readable: true, writable: false });
+  control.setEncoding('utf8');
   let config = '', launched = false, stopping = false, root, marker, child, code = 0, unavailableRoot = false;
   let attempt;
   const stop = () => {
@@ -222,7 +223,7 @@ async function main() {
 main().catch(() => process.exit(1));
 `;
 
-const modulePath = () => createRequire(import.meta.url).resolve("koffi");
+const modulePath = () => createHostRequire(import.meta.url).resolve("koffi");
 
 export async function macosHostOwnershipAvailable() {
   try {
