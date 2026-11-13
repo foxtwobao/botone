@@ -224,7 +224,7 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
     expect(alive && identity.readBigUInt64LE(16) === unique).toBe(false);
   }, 60_000);
 
-  it("keeps remote workspace, custom scratch and system temporary paths read-only", async ({
+  it("remote profile rejects local command execution and leaves device paths untouched", async ({
     skip,
   }) => {
     if (!executable) return skip();
@@ -240,16 +240,17 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
       path.join(directory, "forbidden-file"),
     );
     for (const target of targets) {
-      // Prove that a rejection is from the CLI boundary, rather than OS permissions.
+      // The unsandboxed host can write each path.
       await writeFile(target, "outside-control", { flag: "wx" });
       await rm(target);
       const quoted = `'${target.replaceAll("'", "'\\''")}'`;
-      try {
-        expect((await command(`printf fixture > ${quoted}`)).exitCode).not.toBe(0);
-      } catch (error) {
-        expect(error).toBeInstanceOf(HarnessProtocolError);
-        expect((error as HarnessProtocolError).code).toBe("rpc_rejected");
-      }
+      const result = await command(`printf fixture > ${quoted}`);
+      expect(result).toMatchObject({
+        exitCode: expect.any(Number),
+        stdout: "",
+        stderr: expect.stringMatching(/\b(?:Operation not permitted|Permission denied)\b/),
+      });
+      expect(result.exitCode).not.toBe(0);
       await expect(access(target)).rejects.toThrow();
     }
   }, 60_000);
