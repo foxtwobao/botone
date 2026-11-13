@@ -75,13 +75,12 @@ export const RU_MESSAGES: Record<string, string> = {
   "Could not open browser sign-in. Close other sign-in attempts and retry.":
     "Не удалось открыть вход в браузере. Закройте другие попытки входа и повторите.",
   "Sign-in callback rejected. Return to Rakazo to retry.":
-    "Ответ на вход отклонён. Вернитесь в BotONE, чтобы повторить попытку.",
+    "Ответ на вход отклонён. Вернитесь в Rakazo, чтобы повторить попытку.",
   "You can close this tab and return to Rakazo.": "Можно закрыть эту вкладку и вернуться в BotONE.",
   "Set up Rakazo": "Настройка BotONE",
   "Quit Rakazo": "Завершить BotONE",
   "Welcome to Rakazo": "Добро пожаловать в BotONE",
-  "Choose which server this app should use.":
-    "Выберите, какой сервер будет использовать это приложение.",
+  "Choose where Rakazo runs.": "Выберите, где будет работать BotONE.",
   Instance: "Экземпляр",
   "This computer": "Этот компьютер",
   "Existing instance": "Существующий экземпляр",
@@ -92,7 +91,6 @@ export const RU_MESSAGES: Record<string, string> = {
   "Name: value": "Имя: значение",
   "Check connection": "Проверить подключение",
   Continue: "Продолжить",
-  "Check again": "Проверить снова",
   Retry: "Повторить",
   "Getting ready…": "Подготовка…",
   "Downloading Rakazo…": "Загрузка BotONE…",
@@ -150,16 +148,13 @@ export const RU_MESSAGES: Record<string, string> = {
   "Connected, but could not save setup for the next launch. Try Continue again.":
     "Подключение установлено, но настройку не удалось сохранить для следующего запуска. Нажмите «Продолжить» ещё раз.",
   "The app-managed Rakazo services are not ready. Retry setup.":
-    "Службы BotONE, которыми управляет приложение, не готовы. Повторите настройку.",
-  "Docker is not installed on this computer.": "Docker не установлен на этом компьютере.",
+    "Службы Rakazo, которыми управляет приложение, не готовы. Повторите настройку.",
   "Docker is installed, but Docker Compose is missing. Install Docker Desktop or the docker-compose-plugin.":
     "Docker установлен, но Docker Compose отсутствует. Установите Docker Desktop или docker-compose-plugin.",
   "Could not check Docker Compose. Check the output below, then retry.":
     "Не удалось проверить Docker Compose. Посмотрите вывод ниже и повторите попытку.",
-  "Docker is installed but not running. Start Docker, then check again.":
-    "Docker установлен, но не запущен. Запустите Docker и проверьте снова.",
-  "This user cannot access Docker. Add it to the docker group (sudo usermod -aG docker $USER), sign out and back in, then check again.":
-    "У этого пользователя нет доступа к Docker. Добавьте его в группу docker (sudo usermod -aG docker $USER), выйдите из системы, войдите снова и проверьте ещё раз.",
+  "This user cannot access Docker. Add it to the docker group (sudo usermod -aG docker $USER), then sign out and back in.":
+    "У этого пользователя нет доступа к Docker. Добавьте его в группу docker (sudo usermod -aG docker $USER), затем выйдите из системы и войдите снова.",
   "The start was interrupted. Retry to continue.":
     "Запуск прерван. Повторите попытку, чтобы продолжить.",
   "Images for {tag} are not published yet. Try again in a few minutes.":
@@ -201,4 +196,37 @@ export const RU_MESSAGES: Record<string, string> = {
   "Chat Details": "Сведения о чате",
   Help: "Справка",
   "Keyboard Shortcuts": "Сочетания клавиш",
+  "Downloading Rakazo failed. Check the internet connection, then retry.":
+    "Не удалось загрузить Rakazo. Проверьте подключение к интернету и повторите попытку.",
+  "Could not move your data from Docker. Check the output below, then retry.":
+    "Не удалось перенести данные из Docker. Посмотрите вывод ниже и повторите попытку.",
+  "The computer runtime already running is too old. Update or quit it, then retry.":
+    "Уже запущенная среда выполнения компьютеров слишком старая. Обновите или закройте её, затем повторите попытку.",
+  "Your Rakazo data is in a different computer runtime. Quit the one running, then retry.":
+    "Ваши данные Rakazo находятся в другой среде выполнения компьютеров. Закройте запущенную среду, затем повторите попытку.",
+  "Run Rakazo without Docker?": "Запускать Rakazo без Docker?",
+  "Your bots and data move over. Docker is stopped, not removed.":
+    "Ваши боты и данные будут перенесены. Docker будет остановлен, но не удалён.",
+  Move: "Перенести",
+  "Keep Docker": "Оставить Docker",
+  "Nothing to install.": "Ничего не нужно устанавливать.",
+  "Your data stays on this computer.": "Ваши данные остаются на этом компьютере.",
+  "Connect to a server you or your team already run.":
+    "Подключитесь к серверу, который уже работает у вас или вашей команды.",
+  "Rakazo needs Docker Desktop to run on this computer.":
+    "Чтобы Rakazo работал на этом компьютере, нужен Docker Desktop.",
+  "Rakazo needs Docker to run on this computer.":
+    "Чтобы Rakazo работал на этом компьютере, нужен Docker.",
+  "Docker Desktop is a free app that runs Rakazo in the background. Install it and open it once.":
+    "Docker Desktop — бесплатное приложение, которое запускает Rakazo в фоне. Установите и один раз откройте его.",
+  "Install Docker Engine and start it.": "Установите Docker Engine и запустите его.",
+  "Download Docker Desktop": "Скачать Docker Desktop",
+  "Install Docker": "Установить Docker",
+  "Docker is installed but not running. Open it to continue.":
+    "Docker установлен, но не запущен. Откройте его, чтобы продолжить.",
+  "Starting {app}…": "Запуск {app}…",
+  "Waiting for Docker Desktop…": "Ожидание Docker Desktop…",
+  "Waiting for Docker…": "Ожидание Docker…",
+  "Docker is installed but not running. Start the Docker service to continue.":
+    "Docker установлен, но не запущен. Запустите службу Docker, чтобы продолжить.",
 };

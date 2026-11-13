@@ -311,7 +311,7 @@ export function modelAccountRoutes(deps: {
       | "revocation_unknown"
       | undefined;
     if (credential && current && !connected) recovery = "authorization_required";
-    if (pending) {
+    if (pending?.ciphertext) {
       const transaction = JSON.parse(
         await secrets.load(pending.ciphertext, pending.id),
       ) as Transaction;
@@ -423,7 +423,7 @@ export function modelAccountRoutes(deps: {
       where: { userId: signed.user.id, provider: "external-model", scope: signed.session.id },
       orderBy: { createdAt: "desc" },
     });
-    if (!pending) return c.json({ connected: false });
+    if (!pending?.ciphertext) return c.json({ connected: false });
     const value = JSON.parse(await secrets.load(pending.ciphertext, pending.id)) as Transaction;
     if (
       value.phase !== "exchanging" ||
@@ -553,7 +553,7 @@ export function modelAccountRoutes(deps: {
     const row = await prisma.modelOAuthSession.findFirst({
       where: { id, provider: "external-model", createdAt: { gt: new Date(Date.now() - TTL) } },
     });
-    if (!row) return c.text("Authorization expired", 400);
+    if (!row?.ciphertext) return c.text("Authorization expired", 400);
     const value = JSON.parse(await secrets.load(row.ciphertext, id)) as Transaction & {
       url: string;
     };
@@ -598,7 +598,7 @@ export function modelAccountRoutes(deps: {
     const row = await prisma.modelOAuthSession.findFirst({
       where: { id, provider: "external-model", createdAt: { gt: new Date(Date.now() - TTL) } },
     });
-    if (!row) return c.text("Authorization expired", 400);
+    if (!row?.ciphertext) return c.text("Authorization expired", 400);
     const value = JSON.parse(await secrets.load(row.ciphertext, id)) as Transaction;
     if (
       value.credentialVersion !== connection.credentialVersion ||
