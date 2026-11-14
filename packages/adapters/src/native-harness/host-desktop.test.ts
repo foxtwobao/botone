@@ -96,11 +96,13 @@ function fixture() {
   const rpc = {
     me: vi.fn(async () => ({ userId: account, spaceId: "space" })),
     bots: { get: vi.fn(async () => ({ id: "bot" })) },
-    hostExecutions: {
-      start,
-      sync,
-      answer: vi.fn(async () => ({ ok: true })),
-      tool: vi.fn(async () => ({ result: '{"written":true}' })),
+    executions: {
+      host: {
+        start,
+        sync,
+        answer: vi.fn(async () => ({ ok: true })),
+        tool: vi.fn(async () => ({ result: '{"written":true}' })),
+      },
     },
     threads: {
       subscribe: vi.fn(async (_input: unknown, options: { signal: AbortSignal }) =>
@@ -151,23 +153,56 @@ function fixture() {
 }
 
 describe("desktop-owned execution", () => {
+  it.each(["failed", "pending"])(
+    "stops a local process without waiting for a %s server identity request",
+    async (status) => {
+      const f = fixture();
+      await f.configure();
+      await f.controller.send(origin, input);
+      await tick();
+      expect(f.processes[0]!.stopped).toBe(false);
+      f.rpc.me.mockClear();
+      if (status === "failed") f.rpc.me.mockRejectedValue(new Error("transport unavailable"));
+      else f.rpc.me.mockImplementation(() => new Promise(() => {}));
+      await f.controller.stop(origin, input);
+      expect(f.processes[0]!.stopped).toBe(true);
+      expect(f.rpc.me).not.toHaveBeenCalled();
+      expect(f.frames.map((frame) => frame.event)).toContainEqual({ type: "cancelled" });
+    },
+  );
+
+  it("only stops runs matching the trusted window, space and bot", async () => {
+    const f = fixture();
+    await f.configure();
+    await f.controller.send(origin, input);
+    await tick();
+    await expect(f.controller.stop("https://other.example.test", input)).rejects.toThrow(
+      "Local agent unavailable",
+    );
+    await f.controller.stop(origin, { ...input, spaceId: "other-space" });
+    await f.controller.stop(origin, { ...input, botId: "other-bot" });
+    expect(f.processes[0]!.stopped).toBe(false);
+    await f.controller.stop(origin, input);
+    expect(f.processes[0]!.stopped).toBe(true);
+  });
+
   it.each(["disconnect", "stop", "configure", "close"])(
     "revokes a pending server grant on %s without replaying its prompt",
     async (action) => {
       const f = fixture();
       await f.configure();
-      const original = f.rpc.hostExecutions.start.getMockImplementation()!;
+      const original = f.rpc.executions.host.start.getMockImplementation()!;
       let release!: () => void;
       const barrier = new Promise<void>((resolve) => {
         release = resolve;
       });
-      f.rpc.hostExecutions.start.mockImplementation(async (request) => {
+      f.rpc.executions.host.start.mockImplementation(async (request) => {
         const grant = await original(request);
         await barrier;
         return grant;
       });
       const pending = f.controller.send(origin, input).catch((error) => error);
-      await vi.waitFor(() => expect(f.rpc.hostExecutions.start).toHaveBeenCalled());
+      await vi.waitFor(() => expect(f.rpc.executions.host.start).toHaveBeenCalled());
       expect(f.controller.hasRuns()).toBe(true);
       if (action === "disconnect") await f.controller.disconnectedWindow();
       if (action === "stop") await f.controller.stop(origin, input);
@@ -212,15 +247,15 @@ describe("desktop-owned execution", () => {
     await f.controller.disconnectedWindow();
     release();
     expect(await pending).toBeInstanceOf(Error);
-    expect(f.rpc.hostExecutions.start).not.toHaveBeenCalled();
+    expect(f.rpc.executions.host.start).not.toHaveBeenCalled();
     expect(f.adapter.launch).not.toHaveBeenCalled();
   });
 
   it("reauthenticates a granted launch after the signed-in account changes", async () => {
     const f = fixture();
     await f.configure();
-    const original = f.rpc.hostExecutions.start.getMockImplementation()!;
-    f.rpc.hostExecutions.start.mockImplementation(async (request) => {
+    const original = f.rpc.executions.host.start.getMockImplementation()!;
+    f.rpc.executions.host.start.mockImplementation(async (request) => {
       const grant = await original(request);
       f.setAccount("another-user");
       return grant;
@@ -305,7 +340,7 @@ describe("desktop-owned execution", () => {
   it("allows an explicit retry after a grant was rejected before any local launch", async () => {
     const f = fixture();
     await f.configure();
-    f.rpc.hostExecutions.start.mockRejectedValueOnce(new Error("CONFLICT"));
+    f.rpc.executions.host.start.mockRejectedValueOnce(new Error("CONFLICT"));
     await expect(f.controller.send(origin, input)).rejects.toThrow("CONFLICT");
     await f.controller.send(origin, input);
     await tick();
@@ -316,18 +351,18 @@ describe("desktop-owned execution", () => {
   it("does not revoke another bot's pending launch when stopping one bot", async () => {
     const f = fixture();
     await f.configure();
-    const original = f.rpc.hostExecutions.start.getMockImplementation()!;
+    const original = f.rpc.executions.host.start.getMockImplementation()!;
     let release!: () => void;
     const barrier = new Promise<void>((resolve) => {
       release = resolve;
     });
-    f.rpc.hostExecutions.start.mockImplementation(async (request) => {
+    f.rpc.executions.host.start.mockImplementation(async (request) => {
       const grant = await original(request);
       await barrier;
       return grant;
     });
     const pending = f.controller.send(origin, input);
-    await vi.waitFor(() => expect(f.rpc.hostExecutions.start).toHaveBeenCalled());
+    await vi.waitFor(() => expect(f.rpc.executions.host.start).toHaveBeenCalled());
     await f.controller.stop(origin, { ...input, botId: "other-bot" });
     release();
     await pending;
@@ -357,7 +392,7 @@ describe("desktop-owned execution", () => {
     await f.configure();
     await f.controller.send(origin, input);
     await tick();
-    f.rpc.hostExecutions.sync.mockImplementationOnce(() => new Promise(() => {}));
+    f.rpc.executions.host.sync.mockImplementationOnce(() => new Promise(() => {}));
     vi.useFakeTimers();
     try {
       const closing = f.controller.close();
@@ -385,7 +420,7 @@ describe("desktop-owned execution", () => {
       prompt: input.text,
       instructions: "Server instructions",
     });
-    expect(f.rpc.hostExecutions.start.mock.calls[0]![0].token).toHaveLength(64);
+    expect(f.rpc.executions.host.start.mock.calls[0]![0].token).toHaveLength(64);
     const metadata = readdirSync(f.root).filter((name) => name.startsWith("run-"));
     expect(metadata).toHaveLength(1);
     expect(readFileSync(path.join(f.root, metadata[0]!), "utf8")).not.toContain(input.text);
@@ -439,7 +474,7 @@ describe("desktop-owned execution", () => {
     await expect(
       f.controller.answer(origin, { runId: "run-message", messageId: "ask", answer: "allow" }),
     ).rejects.toThrow("scope changed");
-    expect(f.rpc.hostExecutions.answer).not.toHaveBeenCalled();
+    expect(f.rpc.executions.host.answer).not.toHaveBeenCalled();
     f.setAccount("user");
     await f.controller.disconnectedWindow();
     expect(f.processes[0]!.stopped).toBe(true);
@@ -461,7 +496,7 @@ describe("desktop-owned execution", () => {
         text: "result",
       }),
     ).toBe('{"written":true}');
-    expect(f.rpc.hostExecutions.tool).toHaveBeenCalledWith(
+    expect(f.rpc.executions.host.tool).toHaveBeenCalledWith(
       expect.objectContaining({ runId: "run-message", id: "operation" }),
       expect.anything(),
     );

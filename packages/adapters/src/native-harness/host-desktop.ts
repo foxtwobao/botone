@@ -142,8 +142,8 @@ export class DesktopHarness {
       }),
     );
   }
-  private async owner(origin: string, spaceId: string, cleanup = false) {
-    if (origin !== this.options.currentOrigin() || (this.closing && !cleanup) || this.closed)
+  private async owner(origin: string, spaceId: string) {
+    if (origin !== this.options.currentOrigin() || this.closing || this.closed)
       throw new Error("Local agent unavailable");
     const rpc = this.client(origin, spaceId);
     const me = await rpc.me();
@@ -245,7 +245,7 @@ export class DesktopHarness {
                           throw new Error("Local execution stopped");
                         const call = HostComputerCallSchema.parse({ name, input });
                         return (
-                          await run.rpc.hostExecutions.tool(
+                          await run.rpc.executions.host.tool(
                             { runId: run.meta.runId, token: run.token, id, call },
                             {
                               signal: AbortSignal.any([
@@ -445,7 +445,7 @@ export class DesktopHarness {
       !adapter.identity
     )
       throw new Error("Local agent unavailable");
-    const grant = await rpc.hostExecutions.start(
+    const grant = await rpc.executions.host.start(
       {
         botId: input.botId,
         text: input.text,
@@ -568,7 +568,7 @@ export class DesktopHarness {
           after: run.meta.after,
           leaseExpiresAt: run.meta.leaseExpiresAt,
         });
-        const result = await run.rpc.hostExecutions.sync(
+        const result = await run.rpc.executions.host.sync(
           { runId: run.meta.runId, token: run.token, frames: page.frames as HostFrame[] },
           {
             signal: AbortSignal.any([AbortSignal.timeout(15_000), ...(shutdown ? [shutdown] : [])]),
@@ -654,7 +654,7 @@ export class DesktopHarness {
     if (!run || run.meta.origin !== origin || run.finished) return false;
     const { userId } = await this.owner(origin, run.meta.spaceId);
     if (userId !== run.meta.userId) throw new Error("Local execution scope changed");
-    const result = await run.rpc.hostExecutions.answer({
+    const result = await run.rpc.executions.host.answer({
       runId: input.runId,
       token: run.token,
       messageId: input.messageId,
@@ -666,14 +666,16 @@ export class DesktopHarness {
     return true;
   }
   async stop(origin: string, input: { botId: string; spaceId: string }) {
+    if (origin !== this.options.currentOrigin() || this.closed)
+      throw new Error("Local agent unavailable");
     this.revoke(origin, input);
-    const { userId } = await this.owner(origin, input.spaceId, true);
+    // Cancellation uses the trusted window and stored run scope, even while offline.
+    // It grants no authority to launch a process or answer a pending request.
     await Promise.all(
       [...this.runs.values()]
         .filter(
           (run) =>
             run.meta.origin === origin &&
-            run.meta.userId === userId &&
             run.meta.spaceId === input.spaceId &&
             run.meta.botId === input.botId &&
             !run.finished,

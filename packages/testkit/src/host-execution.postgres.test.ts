@@ -102,14 +102,14 @@ integration("desktop-originated runs through the authenticated API", () => {
     context: { role: string; content: string }[];
   };
   async function start(input = request()) {
-    return rpc<Grant>("hostExecutions/start", input);
+    return rpc<Grant>("executions/host/start", input);
   }
   async function sync(grant: Grant, frames: HostFrame[]) {
     return rpc<{
       after: number;
       stopped: boolean;
       answers: { requestId: string; answer: string }[];
-    }>("hostExecutions/sync", { runId: grant.runId, token: grant.token, frames });
+    }>("executions/host/sync", { runId: grant.runId, token: grant.token, frames });
   }
 
   it("starts immediately, records one message for a retry, and keeps an atomic delayed backup", async () => {
@@ -130,7 +130,7 @@ integration("desktop-originated runs through the authenticated API", () => {
     expect(backup).toHaveLength(1);
     expect(backup[0]!.run_at.getTime()).toBeGreaterThan(Date.now() + 60_000);
     expect(
-      (await response("hostExecutions/start", { ...input, text: "Different message" })).status,
+      (await response("executions/host/start", { ...input, text: "Different message" })).status,
     ).toBe(409);
     await runAsSystem("host worker test", () =>
       app.executor.continueRun(grant.runId, "fixture-worker"),
@@ -183,7 +183,7 @@ integration("desktop-originated runs through the authenticated API", () => {
     );
     expect(
       (
-        await response("hostExecutions/answer", {
+        await response("executions/host/answer", {
           runId: grant.runId,
           token: "wrong-proof-wrong-proof-wrong-proof",
           messageId: ask.messageId,
@@ -192,7 +192,7 @@ integration("desktop-originated runs through the authenticated API", () => {
       ).status,
     ).toBe(403);
     expect(
-      await rpc("hostExecutions/answer", {
+      await rpc("executions/host/answer", {
         runId: grant.runId,
         token: grant.token,
         messageId: ask.messageId,
@@ -227,7 +227,7 @@ integration("desktop-originated runs through the authenticated API", () => {
     const grant = await start();
     expect(
       (
-        await response("hostExecutions/sync", {
+        await response("executions/host/sync", {
           ...grant,
           frames: [{ sequence: 2, event: { type: "text", text: "gap" } }],
         })
@@ -250,7 +250,7 @@ integration("desktop-originated runs through the authenticated API", () => {
     expect(
       (
         await response(
-          "hostExecutions/sync",
+          "executions/host/sync",
           { runId: grant.runId, token: grant.token, frames: [] },
           otherCookie,
         )
@@ -283,20 +283,20 @@ integration("desktop-originated runs through the authenticated API", () => {
         input: { path: "host-fixture.txt", text: "Remote fixture result" },
       },
     };
-    const first = await rpc("hostExecutions/tool", call);
+    const first = await rpc("executions/host/tool", call);
     expect(first).toEqual({ result: '{"written":true}' });
     const writes = write.mock.calls.length;
-    expect(await rpc("hostExecutions/tool", call)).toEqual(first);
+    expect(await rpc("executions/host/tool", call)).toEqual(first);
     expect(write.mock.calls).toHaveLength(writes);
     expect(
       (
-        await response("hostExecutions/tool", {
+        await response("executions/host/tool", {
           ...call,
           call: { ...call.call, input: { ...call.call.input, text: "Different" } },
         })
       ).status,
     ).toBe(409);
-    const read = await rpc<{ result: string }>("hostExecutions/tool", {
+    const read = await rpc<{ result: string }>("executions/host/tool", {
       ...call,
       id: "fixture-read",
       call: { name: "computer_read_file", input: { path: "host-fixture.txt" } },
@@ -307,9 +307,9 @@ integration("desktop-originated runs through the authenticated API", () => {
       id: "fixture-attach",
       call: { name: "computer_attach_file", input: { path: "host-fixture.txt" } },
     };
-    const attachment = await rpc<{ result: string }>("hostExecutions/tool", attach);
+    const attachment = await rpc<{ result: string }>("executions/host/tool", attach);
     const artifactId = JSON.parse(attachment.result).artifactId;
-    expect(await rpc("hostExecutions/tool", attach)).toEqual(attachment);
+    expect(await rpc("executions/host/tool", attach)).toEqual(attachment);
     expect(await db.artifact.count({ where: { runId: grant.runId } })).toBe(1);
     expect(
       await db.message.count({
@@ -318,7 +318,7 @@ integration("desktop-originated runs through the authenticated API", () => {
     ).toBe(1);
     await db.bot.update({ where: { id: botId }, data: { computerSwitching: true } });
     expect(
-      (await response("hostExecutions/tool", { ...call, id: "changed-computer" })).status,
+      (await response("executions/host/tool", { ...call, id: "changed-computer" })).status,
     ).toBe(409);
     await db.bot.update({ where: { id: botId }, data: { computerSwitching: false } });
     await sync(grant, [{ sequence: 1, event: { type: "completed" } }]);
@@ -364,7 +364,7 @@ integration("desktop-originated runs through the authenticated API", () => {
       ),
     ).toHaveLength(1);
     expect(
-      await rpc("hostExecutions/answer", {
+      await rpc("executions/host/answer", {
         runId: grant.runId,
         token: grant.token,
         messageId: messages[0]!.id,
@@ -403,5 +403,66 @@ integration("desktop-originated runs through the authenticated API", () => {
     expect(fresh.session).toBeUndefined();
     expect(fresh.context).toEqual([]);
     await sync(fresh, [{ sequence: 1, event: { type: "cancelled" } }]);
+  });
+  it("keeps a cleared conversation empty when an old run syncs", async () => {
+    const input = request();
+    const grant = await start(input);
+    await sync(grant, [{ sequence: 1, event: { type: "text", text: "Old cleared output" } }]);
+    await rpc("threads/clear", { botId });
+    expect(await db.message.count({ where: { threadId: grant.threadId } })).toBe(0);
+    expect((await sync(grant, [])).stopped).toBe(true);
+    expect(await db.message.count({ where: { threadId: grant.threadId } })).toBe(0);
+    expect((await response("executions/host/start", input)).status).toBe(409);
+    expect((await sync(grant, [])).stopped).toBe(true);
+    expect(await db.message.count({ where: { threadId: grant.threadId } })).toBe(0);
+  });
+
+  it("uses the locked generation when clear overtakes a starting run", async () => {
+    const previous = await start();
+    await sync(previous, [
+      {
+        sequence: 1,
+        event: {
+          type: "session",
+          session: { id: "before-clear-session", engineVersion: "fixture-version" },
+        },
+      },
+      { sequence: 2, event: { type: "completed" } },
+    ]);
+    const findFirst = app.prisma.thread.findFirst.bind(app.prisma.thread);
+    let release!: () => void;
+    let read!: () => void;
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const observed = new Promise<void>((resolve) => {
+      read = resolve;
+    });
+    const spy = vi.spyOn(app.prisma.thread, "findFirst").mockImplementationOnce((args) => {
+      const query = findFirst(args);
+      const then = query.then.bind(query);
+      // biome-ignore lint/suspicious/noThenProperty: delay the real Prisma thenable after its read.
+      query.then = (fulfilled, rejected) =>
+        then(async (thread) => {
+          read();
+          await barrier;
+          return thread;
+        }).then(fulfilled, rejected);
+      return query;
+    });
+    const pending = start();
+    try {
+      await observed;
+      await rpc("threads/clear", { botId });
+    } finally {
+      release();
+      spy.mockRestore();
+    }
+    const grant = await pending;
+    try {
+      expect(grant.session).toBeUndefined();
+    } finally {
+      await sync(grant, [{ sequence: 1, event: { type: "cancelled" } }]);
+    }
   });
 });

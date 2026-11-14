@@ -102,13 +102,16 @@ export async function startHostExecution(
 ) {
   if (!who.sessionId) throw new HostExecutionError("FORBIDDEN");
   const { actor, sessionId } = who;
-  const thread = await deps.prisma.thread.findFirst({
+  const threadRef = await deps.prisma.thread.findFirst({
     where: { botId: input.botId, spaceId: actor.spaceId, userId: actor.userId, groupId: null },
+    select: { id: true },
   });
-  if (!thread) throw new HostExecutionError("NOT_FOUND");
+  if (!threadRef) throw new HostExecutionError("NOT_FOUND");
   const nonce = `host:${digest([actor.userId, input.botId, input.installationId, input.clientNonce])}`;
   const result = await deps.prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${thread.id} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM threads WHERE id = ${threadRef.id} FOR UPDATE`;
+    // Clear may have advanced the history while this start waited for the lock.
+    const thread = await tx.thread.findUniqueOrThrow({ where: { id: threadRef.id } });
     const bot = await tx.bot.findFirst({
       where: { id: input.botId, spaceId: actor.spaceId, userId: actor.userId, archivedAt: null },
     });
@@ -121,6 +124,7 @@ export async function startHostExecution(
       authorize(existing.hostExecution, who, input.token);
       if (existing.hostExecution.requestHash !== digest(input))
         throw new HostExecutionError("CONFLICT");
+      if (!existing.sourceMessageId) throw new HostExecutionError("CONFLICT");
       if (
         existing.task.prompt !== input.text ||
         existing.hostExecution.installationId !== input.installationId ||
@@ -129,7 +133,7 @@ export async function startHostExecution(
       )
         throw new HostExecutionError("CONFLICT");
       const source = await tx.message.findUniqueOrThrow({
-        where: { id: existing.sourceMessageId! },
+        where: { id: existing.sourceMessageId },
       });
       return {
         run: existing,
@@ -297,13 +301,13 @@ export async function startHostExecution(
     await scheduleHostBackup(tx, run.id, leaseExpiresAt);
     return { run, saved, cursor: started.seq, messageSeq: message.seq };
   }, THREAD_LOCK_TRANSACTION_OPTIONS);
-  await deps.events.notify(thread.id, result.cursor);
+  await deps.events.notify(threadRef.id, result.cursor);
   return {
     runId: result.run.id,
     token: input.token,
     taskId: result.run.taskId,
     seq: result.messageSeq,
-    threadId: thread.id,
+    threadId: threadRef.id,
     userId: actor.userId,
     spaceId: actor.spaceId,
     generation: result.saved.generation,
@@ -504,12 +508,15 @@ export async function finishHostExecution(deps: HostExecutionDeps, runId: string
     const events = await deps.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM threads WHERE id = ${run.threadId} FOR UPDATE`;
       await tx.$queryRaw`SELECT id FROM runs WHERE id = ${run.id} FOR UPDATE`;
+      const current = await tx.run.findUniqueOrThrow({ where: { id: run.id } });
       const pending = await tx.nativeInteraction.findMany({
         where: { runId, status: { in: ["pending", "submitted"] } },
       });
       const events = [];
       if (
-        run.status === "cancelled" &&
+        current.status === "cancelled" &&
+        // Clear deletes the source message. Stop alone preserves it and its partial reply.
+        current.sourceMessageId &&
         saved.resultText &&
         !(await tx.message.findUnique({
           where: {
@@ -522,7 +529,7 @@ export async function finishHostExecution(deps: HostExecutionDeps, runId: string
       ) {
         const message = await persistMessageInTransaction(
           tx,
-          run,
+          current,
           "bot",
           [{ kind: "text", text: saved.resultText }],
           true,

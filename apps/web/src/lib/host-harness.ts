@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { ThreadMessage } from "@rakazo/contracts";
 import { desktopBridge } from "./desktop";
 
@@ -6,14 +7,18 @@ export async function selectedHostSend(input: {
   botId?: string;
   groupId?: string;
   spaceId?: string;
+  textOnly: boolean;
 }) {
   const bridge = desktopBridge()?.harness;
   if (!bridge || !input.botId || input.groupId) return null;
   if (!input.spaceId) throw new Error("Local agent unavailable");
   const scope = { botId: input.botId, spaceId: input.spaceId };
-  return (await bridge.selection(scope))
-    ? (text: string, clientNonce: string) => bridge.send({ ...scope, text, clientNonce })
-    : null;
+  if (!(await bridge.selection(scope))) return null;
+  if (!input.textOnly)
+    throw new Error(
+      t`Local agents accept text messages. Send attachments, replies and routines with a server agent.`,
+    );
+  return (text: string, clientNonce: string) => bridge.send({ ...scope, text, clientNonce });
 }
 
 export async function answerHostHarness(message: ThreadMessage, answer: string) {

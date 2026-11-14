@@ -19,8 +19,8 @@ export function executionRoutes(ctx: RouterContext) {
     return bot;
   };
   return {
-    ...hostExecutionRoutes(ctx),
     executions: {
+      host: hostExecutionRoutes(ctx),
       list: authed.executions.list.handler(async ({ context: { actor }, input }) => {
         const bot = input.botId ? await ownedBot(actor, input.botId) : null;
         const pending = bot

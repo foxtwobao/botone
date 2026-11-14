@@ -20,19 +20,17 @@ async function hostCall<T>(call: () => Promise<T>): Promise<T> {
 
 export function hostExecutionRoutes({ deps, authed }: RouterContext) {
   return {
-    hostExecutions: {
-      tool: authed.hostExecutions.tool.handler(({ context, input }) =>
-        hostCall(() => executeHostComputerTool(deps, context, input)),
-      ),
-      start: authed.hostExecutions.start.handler(({ context, input }) =>
-        hostCall(() => startHostExecution(deps, context, input)),
-      ),
-      sync: authed.hostExecutions.sync.handler(({ context, input }) =>
-        hostCall(() => syncHostExecution(deps, context, input)),
-      ),
-      answer: authed.hostExecutions.answer.handler(({ context, input }) =>
-        hostCall(() => answerHostExecution(deps, context, input)),
-      ),
-    },
+    tool: authed.executions.host.tool.handler(({ context, input }) =>
+      hostCall(() => executeHostComputerTool(deps, context, input)),
+    ),
+    start: authed.executions.host.start.handler(({ context, input }) =>
+      hostCall(() => startHostExecution(deps, context, input)),
+    ),
+    sync: authed.executions.host.sync.handler(({ context, input }) =>
+      hostCall(() => syncHostExecution(deps, context, input)),
+    ),
+    answer: authed.executions.host.answer.handler(({ context, input }) =>
+      hostCall(() => answerHostExecution(deps, context, input)),
+    ),
   };
 }

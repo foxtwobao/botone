@@ -421,18 +421,14 @@ export function useComposerActions({
           botId: botTarget,
           groupId: groupTarget,
           spaceId: bootstrapMe?.spaceId,
-        });
-        if (
-          hostSend &&
-          (attachments.length ||
+          textOnly: !(
+            attachments.length ||
             plan.shouldRunRoutines ||
             replyAtSend ||
             replyToMessageId ||
-            plan.mentionPayload.length)
-        )
-          throw new Error(
-            t`Local agents accept text messages. Send attachments, replies and routines with a server agent.`,
-          );
+            plan.mentionPayload.length
+          ),
+        });
         const uploaded =
           uploadedSendArtifacts.current.get(clientNonce) ?? new WeakMap<File, string>();
         uploadedSendArtifacts.current.set(clientNonce, uploaded);
