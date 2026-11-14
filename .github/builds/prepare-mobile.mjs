@@ -12,7 +12,6 @@ export function mobilePreviewConfig(source, buildNumber) {
   const identifier = "dev.botone.preview";
   const group = `group.${identifier}`;
   app.slug = "botone-preview";
-  app.scheme = "botone-preview";
   delete app.owner;
   delete app.extra.eas;
   app.updates = { enabled: false };
