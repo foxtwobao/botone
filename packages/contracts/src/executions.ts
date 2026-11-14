@@ -2,6 +2,9 @@ import { oc } from "@orpc/contract";
 import { z } from "zod";
 import { Id } from "./ids.js";
 
+export * from "./host-computer-tools.js";
+export * from "./host-executions.js";
+
 export const ExecutionModelsSchema = z
   .array(z.object({ id: z.string().min(1).max(256), label: z.string().min(1).max(100) }))
   .max(500);

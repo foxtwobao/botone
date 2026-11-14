@@ -19,7 +19,6 @@ import { createHostCodexDriver } from "@rakazo/native-runtime/codex";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
 import { safeHostConfiguration, startRequest } from "@rakazo/native-runtime/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { WINDOWS_COMMAND_WRAPPER } from "../desktop-process-tree.js";
 import { launchHostProcess } from "./host-process.js";
 import {
   createHostProcessMarker,
@@ -28,6 +27,7 @@ import {
   macosHostOwnershipAvailable,
   probeMacosHostOwnership,
 } from "./host-process-macos.js";
+import { WINDOWS_HOST_WRAPPER } from "./host-process-windows.js";
 
 const supported = ["linux", "win32", "darwin"].includes(process.platform);
 describe.skipIf(!supported)("host protocol process", () => {
@@ -119,7 +119,7 @@ describe.skipIf(!supported)("host protocol process", () => {
 
   it("consumes the Windows bootstrap without forwarding its credentials to protocol stdin", async () => {
     // Exercise the exact wrapper on every OS, in addition to the native Windows Job tests.
-    const { child } = await launch(`process.argv[1] = 'stream'; ${WINDOWS_COMMAND_WRAPPER}`);
+    const { child } = await launch(WINDOWS_HOST_WRAPPER);
     const next = output(child);
     await child.write({
       argv: [

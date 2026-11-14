@@ -2,9 +2,9 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { execFile, spawn } from "node:child_process";
 import type { Readable, Writable } from "node:stream";
 import type { NativeProcessTree } from "../desktop-process-tree.js";
-import { spawnOwnedCommand } from "../desktop-process-tree.js";
 import type { HostProcessMarker } from "./host-process-macos.js";
 import { macosHostOwnershipAvailable, spawnMacosHostCommand } from "./host-process-macos.js";
+import { spawnWindowsHostCommand } from "./host-process-windows.js";
 
 const program = String.raw`
 import ctypes, json, os, pathlib, signal, subprocess, sys, threading, time
@@ -102,7 +102,7 @@ export async function spawnOwnedHostCommand(
   child: ChildProcessWithoutNullStreams;
   tree: NativeProcessTree;
 }> {
-  if (process.platform === "win32") return spawnOwnedCommand(argv, cwd, env, { input: "stream" });
+  if (process.platform === "win32") return spawnWindowsHostCommand(argv, cwd, env);
   if (process.platform === "darwin") return spawnMacosHostCommand(argv, cwd, env, marker);
   if (process.platform !== "linux") throw new Error("host_process_ownership_unavailable");
   const child = spawn("/usr/bin/python3", ["-I", "-u", "-c", program], {

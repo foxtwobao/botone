@@ -22,9 +22,8 @@ import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requestBrowserNotificationPermission } from "../../lib/browser-notifications";
 import { setComposerUnsavedWork } from "../../lib/composer-draft";
-import { desktopBridge } from "../../lib/desktop";
 import { scheduleFocusPrompt } from "../../lib/focus-prompt";
-import { selectedHostHarness } from "../../lib/host-harness";
+import { answerHostHarness, selectedHostSend, stopHostHarness } from "../../lib/host-harness";
 import type { PageSession } from "../../lib/pages";
 import {
   readFileAsBase64,
@@ -224,16 +223,7 @@ export function useComposerActions({
       const groupId = activeGroupId.current;
       if (!botId && !groupId) return;
       clearReadBoundary();
-      const localAnswered =
-        message.runId &&
-        message.blocks.some((block) => block.kind === "ask" && block.nativeRequestId)
-          ? await desktopBridge()?.harness?.answer({
-              runId: message.runId,
-              messageId: message.id,
-              answer: text,
-            })
-          : false;
-      if (!localAnswered)
+      if (!(await answerHostHarness(message, text)))
         await rpc.threads.answer({
           ...(groupId ? { groupId } : { botId: botId! }),
           runId: message.runId ?? "",
@@ -427,13 +417,13 @@ export function useComposerActions({
           return true;
         }
         const artifactIds: string[] = [];
-        const host = await selectedHostHarness({
+        const hostSend = await selectedHostSend({
           botId: botTarget,
           groupId: groupTarget,
           spaceId: bootstrapMe?.spaceId,
         });
         if (
-          host &&
+          hostSend &&
           (attachments.length ||
             plan.shouldRunRoutines ||
             replyAtSend ||
@@ -498,13 +488,8 @@ export function useComposerActions({
         // The routines run in the same server operation as the message: both or neither.
         const sent = plan.shouldRunRoutines
           ? (await rpc.threads.sendWithRoutines({ ...payload, routineIds: plan.routineIds })).send
-          : host
-            ? await host.send({
-                botId: botTarget!,
-                spaceId: bootstrapMe!.spaceId,
-                text: trimmed,
-                clientNonce,
-              })
+          : hostSend
+            ? await hostSend(trimmed, clientNonce)
             : await rpc.threads.send(payload);
         accepted = true;
         if (sent && botTarget && activeBotId.current === botTarget) {
@@ -606,8 +591,7 @@ export function useComposerActions({
       if (!botTarget) return;
       setSendError(null);
       try {
-        if (bootstrapMe?.spaceId)
-          await desktopBridge()?.harness?.stop({ botId: botTarget, spaceId: bootstrapMe.spaceId });
+        await stopHostHarness({ botId: botTarget, spaceId: bootstrapMe?.spaceId });
         await rpc.threads.stop({ botId: botTarget });
       } catch (error) {
         if (activeBotId.current === botTarget) {

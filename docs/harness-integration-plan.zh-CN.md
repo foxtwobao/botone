@@ -1,6 +1,6 @@
 # Botone 本机与远程 Harness 接入方案
 
-更新日期：2026-11-13。代码基线：已合并上游的 `main`，提交 `39741cb9b`。
+更新日期：2026-11-14。代码基线：已合并上游的 `main`，提交 `39741cb9b`。
 
 Botone 的账号、聊天、配置、运行记录和工具服务统一部署在服务端，桌面端连接该实例。本次补齐桌面客户端调用本机已安装、已登录的代理引擎，先完成本地工作区，再接远程云电脑；保留已有远程 harness 路径。Mac 与 Windows 是本机接入的目标平台，原生能力要求及实机验收范围见下文；客户端只承载宿主执行模块，不要求运行本地 API、worker、数据库、Docker 或 Linux VM，不新增独立部署的执行 daemon。
 
@@ -80,7 +80,7 @@ Windows 的平台适配要求：
 
 - 发现 `.exe`、受支持的 Node CLI 入口及安装 shim；不能将任意 `.cmd`、`.bat` 内容当作可信脚本解析，也不通过 `shell: true` 拼接 prompt。必要包装器按已验证的安装形式适配；未知形式明确报不支持。覆盖空格、中文路径和 PATH 更新。
 - 驱动仍使用 stdio；权限代理优先复用私有管道，Windows 端采用受当前用户访问控制保护的命名管道等本机传输，不公开监听端口。
-- 复用现有 [Windows 进程树管理](../packages/adapters/src/desktop-process-tree.ts) 的 Job Object 与关闭清理机制。`spawnOwnedCommand()` 原有一次性命令模式保持默认；本分支增加显式的流式输入模式，先归入 Job，再消费独立启动帧并启动 CLI，后续输入保留给协议。验证嵌套 Job、沙箱子进程、异常退出和逃逸场景；Job Object 是生命周期边界，不替代文件和网络沙箱。
+- 复用现有 [Windows 进程树管理](../packages/adapters/src/desktop-process-tree.ts) 的 Job Object 与关闭清理机制。`spawnOwnedCommand()` 保持原有一次性命令实现；新增的[宿主流式启动模块](../packages/adapters/src/native-harness/host-process-windows.ts) 先归入 Job，再消费独立启动帧并启动 CLI，后续输入保留给协议。验证嵌套 Job、沙箱子进程、异常退出和逃逸场景；Job Object 是生命周期边界，不替代文件和网络沙箱。
 - 路径校验复用 [Windows 文件访问保护](../packages/adapters/src/desktop-sandbox-win32-path.ts)，验收盘符、大小写、junction/reparse point 和符号链接。UNC、网络盘等特殊目标未通过授权及隔离验收前保持不可用。
 - 使用目标 CLI 在 Windows 上实际提供的沙箱能力；沙箱初始化失败、系统不兼容或需要尚未完成的用户操作时，不降级成完全访问。普通运行不提升整个桌面应用或 harness 的权限。
 - Windows 关闭最后一个窗口当前会触发 App 退出，因此停止语义遵循退出清理，不能沿用 Mac 关窗后留在后台的假设。
@@ -137,6 +137,8 @@ flowchart LR
 宿主模块由现有桌面生命周期按需装配。进程若需要隔离到辅助子进程，也由 App 管理，不产生新的人工部署服务、公开监听端口或单独账号体系。渲染进程不能提交任意启动命令或持有控制凭据。
 
 协议、运行状态和可复用逻辑放在 packages；原生系统交互留在 desktop。可选实现按配置动态加载。一次回合由选定 harness 直接执行，内置运行时继续保持默认可选路径。
+
+宿主编排集中在 [`host-desktop.ts`](../packages/adapters/src/native-harness/host-desktop.ts)，Electron 的 [`host-harness.ts`](../apps/desktop/src/host-harness.ts) 只装配可信 IPC、会话网络请求、原生授权和退出清理。`main.ts` 保留装配与退出顺序；服务端路由和契约导出复用 Fork 已有的执行模块，减少上游文件的改动。
 
 ### 一次本机运行的最小闭环
 
