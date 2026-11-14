@@ -1,0 +1,187 @@
+name: BotONE client test builds
+
+# Deliberately manual only. These artifacts are not store releases.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build
+        type: choice
+        default: all
+        options: [all, android, ios, macos, windows]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate preview configuration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: node --test .github/builds/preview-config.test.mjs
+
+  android:
+    name: Android APK
+    if: inputs.platform == 'all' || inputs.platform == 'android'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+        with:
+          filter: "@rakazo/mobile..."
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4.4.3
+      - name: Configure isolated mobile preview
+        run: node .github/builds/prepare-mobile.mjs "$GITHUB_RUN_NUMBER"
+      - name: Generate Android project
+        run: pnpm --filter @rakazo/mobile exec expo prebuild --platform android --no-install
+      # Expo's generated release configuration uses its development keystore. This is a
+      # self-contained preview APK, never an upload to a store or a production signing key.
+      - name: Build installable preview APK
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
+      - name: Retain APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-android-preview-${{ github.run_number }}
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  ios:
+    name: iOS simulator app
+    if: inputs.platform == 'all' || inputs.platform == 'ios'
+    needs: validate
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+        with:
+          filter: "@rakazo/mobile..."
+      - name: Configure isolated mobile preview
+        run: node .github/builds/prepare-mobile.mjs "$GITHUB_RUN_NUMBER"
+      - name: Generate iOS project and install pods
+        run: pnpm --filter @rakazo/mobile exec expo prebuild --platform ios
+      - name: Build bundled simulator app without signing
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace ios/BotONE.xcworkspace -scheme BotONE \
+            -configuration Release -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/botone-ios" \
+            CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/botone-ios-build.log" 2>&1 || {
+              tail -n 120 "$RUNNER_TEMP/botone-ios-build.log"
+              exit 1
+            }
+          app="$RUNNER_TEMP/botone-ios/Build/Products/Release-iphonesimulator/BotONE.app"
+          test -s "$app/main.jsbundle"
+          mkdir -p "$RUNNER_TEMP/botone-artifacts"
+          ditto -c -k --sequesterRsrc --keepParent "$app" \
+            "$RUNNER_TEMP/botone-artifacts/BotONE-ios-simulator.zip"
+      - name: Retain simulator app
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-ios-simulator-${{ github.run_number }}
+          path: ${{ runner.temp }}/botone-artifacts/*.zip
+          if-no-files-found: error
+          retention-days: 1
+      - name: Retain iOS build failure log
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-ios-build-log-${{ github.run_number }}
+          path: ${{ runner.temp }}/botone-ios-build.log
+          if-no-files-found: ignore
+          retention-days: 1
+
+  desktop:
+    name: Desktop ${{ matrix.platform }}
+    if: inputs.platform == 'all' || inputs.platform == 'macos' || inputs.platform == 'windows'
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.platform == 'macos' && '[{"platform":"macos","os":"macos-26"}]' || inputs.platform == 'windows' && '[{"platform":"windows","os":"windows-2022"}]' || '[{"platform":"macos","os":"macos-26"},{"platform":"windows","os":"windows-2022"}]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      RAKAZO_ALLOW_DEV_SECRETS: "1"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+        with:
+          electron: "true"
+      - name: Generate database client for compilation
+        run: pnpm db:generate
+        env:
+          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+      - name: Build web renderer and desktop main process
+        run: pnpm --filter @rakazo/web build && pnpm --filter @rakazo/desktop build
+      - name: Package universal macOS preview
+        if: matrix.platform == 'macos'
+        run: >-
+          pnpm --filter @rakazo/desktop exec electron-builder
+          --config ../../.github/builds/desktop.cjs --mac --universal --publish never
+      - name: Verify macOS app and disabled updater
+        if: matrix.platform == 'macos'
+        run: |
+          set -euo pipefail
+          app="apps/desktop/out/mac-universal/BotONE.app"
+          codesign --verify --deep --strict "$app"
+          test ! -e "$app/Contents/Resources/app-update.yml"
+          test -s "$app/Contents/Resources/web/index.html"
+      - name: Package Windows x64 preview
+        if: matrix.platform == 'windows'
+        run: >-
+          pnpm --filter @rakazo/desktop exec electron-builder
+          --config ../../.github/builds/desktop.cjs --win --x64 --publish never
+      - name: Verify Windows app and disabled updater
+        if: matrix.platform == 'windows'
+        run: |
+          set -euo pipefail
+          test -s apps/desktop/out/win-unpacked/BotONE.exe
+          test ! -e apps/desktop/out/win-unpacked/resources/app-update.yml
+          test -s apps/desktop/out/win-unpacked/resources/web/index.html
+      - name: Retain desktop installers
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-${{ matrix.platform }}-preview-${{ github.run_number }}
+          path: |
+            apps/desktop/out/*.dmg
+            apps/desktop/out/*.zip
+            apps/desktop/out/*.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
