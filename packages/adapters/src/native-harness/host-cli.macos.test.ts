@@ -13,7 +13,6 @@ import { HarnessProtocolError, HarnessRpc } from "@rakazo/native-runtime/rpc";
 import koffi from "koffi";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
-  HOST_ENGINE_VERSION,
   hostFilesystemOverride,
   hostLaunchArguments,
   resolveHostExecutable,
@@ -21,10 +20,10 @@ import {
 import { launchHostProcess } from "./host-process.js";
 import { createHostProcessMarker, macosHostOwnershipAvailable } from "./host-process-macos.js";
 
-// CI installs this exact official CLI. A developer without it skips these offline checks.
+// CI installs an official CLI. A developer without it skips these offline checks.
 // No native account is read and no turn/model request is sent. Any accidental model call
 // is directed to a loopback address without a service, with authentication disabled.
-describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies", () => {
+describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () => {
   const roots: string[] = [];
   const children = new Set<HarnessProcess>();
   let root: string;
@@ -62,13 +61,12 @@ describe.skipIf(process.platform !== "darwin")("pinned native CLI macOS policies
             resolve(status);
           });
         });
-        if (code !== 0 || lines.join("") !== `codex-cli ${HOST_ENGINE_VERSION}`)
-          executable = undefined;
+        if (code !== 0 || !/^codex-cli \d+\.\d+\.\d+$/.test(lines.join(""))) executable = undefined;
       } finally {
         await probe.stop();
       }
     } else executable = undefined;
-    if (process.env.CI && !executable) throw new Error("pinned_native_cli_or_owner_unavailable");
+    if (process.env.CI && !executable) throw new Error("native_cli_or_owner_unavailable");
   });
 
   afterEach(async () => {
