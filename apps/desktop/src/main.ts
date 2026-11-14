@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { HostScreen } from "@rakazo/adapters/host-screen";
@@ -719,9 +719,13 @@ app.whenReady().then(async () => {
           randomHex,
           onState,
         });
+  const packageMetadata = JSON.parse(
+    readFileSync(path.join(app.getAppPath(), "package.json"), "utf8"),
+  ) as { defaultServerUrl?: unknown };
   const target = resolveStartupTarget({
     envUrl: process.env.RAKAZO_WEB_URL,
     saved: desktop.currentSetup,
+    defaultUrl: packageMetadata.defaultServerUrl,
     forceSetup: process.env.RAKAZO_FORCE_SETUP === "1",
   });
   if (process.env.RAKAZO_PERFORMANCE_CLEAR_CACHE === "1") {

@@ -134,6 +134,7 @@ jobs:
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
       RAKAZO_ALLOW_DEV_SECRETS: "1"
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL }}
     defaults:
       run:
         shell: bash
@@ -141,6 +142,8 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+      - name: Require a configured desktop server
+        run: node -e 'if (!process.env.EXPO_PUBLIC_API_URL?.trim()) throw new Error("Set EXPO_PUBLIC_API_URL before building desktop previews")'
       - uses: ./.github/actions/setup-workspace
         with:
           electron: "true"
@@ -165,6 +168,7 @@ jobs:
           codesign --verify --deep --strict "$app"
           test ! -e "$app/Contents/Resources/app-update.yml"
           test -s "$app/Contents/Resources/web/index.html"
+          node .github/builds/verify-desktop-server.mjs "$app/Contents/Resources/app.asar"
       - name: Package Windows x64 preview
         if: matrix.platform == 'windows'
         run: >-
@@ -177,6 +181,7 @@ jobs:
           test -s "apps/desktop/out/win-unpacked/BotONE Preview.exe"
           test ! -e apps/desktop/out/win-unpacked/resources/app-update.yml
           test -s apps/desktop/out/win-unpacked/resources/web/index.html
+          node .github/builds/verify-desktop-server.mjs apps/desktop/out/win-unpacked/resources/app.asar
       - name: Retain desktop installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

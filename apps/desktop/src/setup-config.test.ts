@@ -203,6 +203,29 @@ describe("startup target", () => {
     });
   });
 
+  it("opens a packaged default on first launch and preserves explicit choices", () => {
+    const defaultUrl = "https://app.example.com/";
+    expect(resolveStartupTarget({ defaultUrl })).toEqual({
+      kind: "app",
+      url: "https://app.example.com",
+      source: "default",
+    });
+    expect(resolveStartupTarget({ defaultUrl, saved })).toMatchObject({ source: "saved" });
+    expect(
+      resolveStartupTarget({ defaultUrl, saved, envUrl: "http://127.0.0.1:4321" }),
+    ).toMatchObject({
+      source: "env",
+    });
+    expect(resolveStartupTarget({ defaultUrl, forceSetup: true })).toEqual({ kind: "setup" });
+  });
+
+  it.each(["", "ftp://example.com", "https://user:secret@example.com", "http://example.com", 123])(
+    "opens setup for an invalid packaged default instead of another server (%s)",
+    (defaultUrl) => {
+      expect(resolveStartupTarget({ defaultUrl })).toEqual({ kind: "setup" });
+    },
+  );
+
   it("lets RAKAZO_WEB_URL point the shell anywhere without touching saved setup", () => {
     expect(resolveStartupTarget({ envUrl: "http://127.0.0.1:4321", saved })).toEqual({
       kind: "app",
