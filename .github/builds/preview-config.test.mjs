@@ -36,6 +36,7 @@ test("desktop previews keep resources and entitlements but disable upstream upda
   const { build } = require("../../apps/desktop/package.json");
   assert.equal(config.publish, null);
   assert.equal(config.appId, "dev.botone.preview.desktop");
+  assert.equal(config.productName, "BotONE Preview");
   assert.equal(config.extraMetadata.productName, "BotONE Preview");
   assert.notEqual(config.extraMetadata.name, build.extraMetadata.name);
   assert.equal(config.mac.identity, "-");

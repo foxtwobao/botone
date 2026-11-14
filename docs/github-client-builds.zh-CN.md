@@ -30,7 +30,7 @@ gh workflow run botone-build-clients.yml --repo OWNER/REPO --ref main -f platfor
 
 测试包使用独立标识：移动端为 `dev.botone.preview`，桌面端为 `dev.botone.preview.desktop`。它们不是生产应用标识，正式发布前需要确认自己的应用标识和长期签名方案。Android 开发密钥不用于正式发行，也不要用测试包覆盖现有生产安装。
 
-桌面包的运行时名称为 `BotONE Preview`，使 Electron 使用独立的默认用户数据目录，避免测试配置写进正常安装的目录。安装器和应用文件仍沿用 BotONE 文件名，请把测试应用放在单独位置。
+桌面包的应用名称和运行时名称为 `BotONE Preview`，使安装器和 Electron 分别使用独立的应用位置与默认用户数据目录，避免测试包替换正常安装或写进正常安装的数据目录。
 
 在 Mac 上安装 iOS 模拟器包：
 
