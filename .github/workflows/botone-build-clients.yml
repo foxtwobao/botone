@@ -36,7 +36,7 @@ jobs:
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
-      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -70,12 +70,13 @@ jobs:
     name: iOS simulator app
     if: inputs.platform == 'all' || inputs.platform == 'ios'
     needs: validate
-    runs-on: macos-26
+    # The native folding module uses APIs from the iOS 27.1 SDK.
+    runs-on: xcode-27
     timeout-minutes: 90
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
-      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -143,6 +144,8 @@ jobs:
       - uses: ./.github/actions/setup-workspace
         with:
           electron: "true"
+          # A nonempty selection avoids Bash 3's nounset error on an empty array.
+          filter: "*"
       - name: Generate database client for compilation
         run: pnpm db:generate
         env:

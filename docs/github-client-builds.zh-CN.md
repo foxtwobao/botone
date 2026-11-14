@@ -54,6 +54,8 @@ macOS 测试包不含上游发布流程的服务器下载描述文件。本地�
 | --- | --- |
 | `EXPO_PUBLIC_API_URL` | `https://app.example.com` |
 
+也可使用同名 Repository secret；两处都设置时，优先使用 Variable。配置修改后需重新启动构建才会写入新包。
+
 该地址会进入客户端，并不是秘密。只填普通服务器地址，不得带密码、Token 或私人链接；不要把真实部署配置提交到 Git。
 
 移动端在一次性 CI checkout 中转换配置：清除上游 Expo 项目归属与推送项目关联，关闭 OTA，修改测试包名及分享 App Group，使用运行编号作为构建号。仓库中的上游 `app.json`、`app.config.ts` 和 `eas.json` 不改动。远程推送暂不启用，本地通知不受此配置限制。
