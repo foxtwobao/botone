@@ -256,7 +256,7 @@ jobs:
       - name: Install pinned native CLI for macOS policy tests
         if: runner.os == 'macOS'
         run: |
-          npm install --prefix "$RUNNER_TEMP/native-cli" --no-save --ignore-scripts @openai/codex@0.167.0
+          npm install --prefix "$RUNNER_TEMP/native-cli" --no-save --ignore-scripts @openai/codex@0.169.0
           echo "$RUNNER_TEMP/native-cli/node_modules/.bin" >> "$GITHUB_PATH"
       - run: pnpm db:generate
         env:

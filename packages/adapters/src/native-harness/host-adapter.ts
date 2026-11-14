@@ -12,8 +12,6 @@ import type { HostProcessMarker } from "./host-process-macos.js";
 import { createHostProcessMarker } from "./host-process-macos.js";
 import { hostProcessOwnershipAvailable } from "./host-process-owner.js";
 
-// A tested protocol version is an admission requirement, not a guess based on semver.
-export const HOST_ENGINE_VERSION = "0.167.0";
 const profile = { id: "native-cli", label: "Codex · This device" };
 
 export function hostLaunchArguments() {
@@ -265,7 +263,6 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
   adapter.profile.status = "unsupported";
   try {
     adapter.version = await versionOf(executable, workspace, env);
-    if (adapter.version !== HOST_ENGINE_VERSION) return adapter;
     adapter.profile.status = "unauthenticated";
     const child = await launchHostProcess({
       executable,

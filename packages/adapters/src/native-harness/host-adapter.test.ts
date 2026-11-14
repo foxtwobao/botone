@@ -2,18 +2,23 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { hostDisabledFeatures } from "@rakazo/native-runtime/host-policy";
-import { afterEach, describe, expect, it } from "vitest";
+import { FakeHarnessProcess } from "@rakazo/native-runtime/testing";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  HOST_ENGINE_VERSION,
   hostEnvironment,
   hostFilesystemOverride,
   hostLaunchArguments,
   hostMcpOverride,
+  inspectHostHarness,
   resolveHostExecutable,
 } from "./host-adapter.js";
+import * as hostProcess from "./host-process.js";
+import * as hostProcessOwner from "./host-process-owner.js";
 
 const roots: string[] = [];
 afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 function fixture() {
@@ -29,6 +34,47 @@ function file(root: string, relative: string) {
 }
 
 describe("native host admission", () => {
+  it.each(["0.167.0", "0.169.0"])(
+    "discovers an authenticated CLI %s without a version allowlist",
+    async (version) => {
+      const root = fixture();
+      file(root, process.platform === "win32" ? "codex.exe" : "codex");
+      vi.stubEnv("PATH", root);
+      vi.stubEnv("CODEX_HOME", root);
+      vi.spyOn(hostProcessOwner, "hostProcessOwnershipAvailable").mockResolvedValue(true);
+      const native = new FakeHarnessProcess();
+      native.reply = (frame) => {
+        if (frame.id === undefined) return;
+        native.receive({
+          id: frame.id,
+          result: frame.method === "account/read" ? { account: { type: "fixture" } } : {},
+        });
+      };
+      const stopVersion = vi.fn(async () => {});
+      vi.spyOn(hostProcess, "launchHostProcess").mockImplementation(async ({ args }) =>
+        args[0] === "--version"
+          ? {
+              workspace: root,
+              onLine: (listener) => listener(`codex-cli ${version}`),
+              onExit: (listener) => listener(0),
+              write: async () => {},
+              stop: stopVersion,
+            }
+          : native,
+      );
+      const adapter = await inspectHostHarness();
+      expect(adapter.version).toBe(version);
+      expect(adapter.profile.status).toBe("ready");
+      expect(native.sent.map((frame) => frame.method)).toEqual([
+        "initialize",
+        "initialized",
+        "account/read",
+      ]);
+      expect(native.stopped).toBe(true);
+      expect(stopVersion).toHaveBeenCalledOnce();
+    },
+  );
+
   it.each([false, true])(
     "adds only the per-run sandbox label to readOnly=%s permissions",
     (readOnly) => {
@@ -70,8 +116,7 @@ describe("native host admission", () => {
     });
   });
 
-  it("disables native side channels before initialization and pins the tested protocol", () => {
-    expect(HOST_ENGINE_VERSION).toBe("0.167.0");
+  it("disables native side channels before initialization", () => {
     const args = hostLaunchArguments();
     for (const feature of hostDisabledFeatures)
       expect(args.join(" ")).toContain(`--disable ${feature}`);
