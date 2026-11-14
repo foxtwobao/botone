@@ -56,6 +56,8 @@ macOS 测试包不含上游发布流程的服务器下载描述文件。本地�
 
 也可使用同名 Repository secret；两处都设置时，优先使用 Variable。配置修改后需重新启动构建才会写入新包。
 
+桌面测试包也读取此地址，首次启动直接连接自己的服务器；之后保留用户已保存的服务器选择。桌面打包必须配置该值，避免首次启动意外连接上游服务。登录选项及页面 Logo 由所连接的服务器提供；只显示 SSO 登录需要服务器设置 `AUTH_PASSWORD_ENABLED=false` 并配置 OIDC，见[账号配置](self-host-accounts.md#openid-connect-sso)。
+
 该地址会进入客户端，并不是秘密。只填普通服务器地址，不得带密码、Token 或私人链接；不要把真实部署配置提交到 Git。
 
 移动端在一次性 CI checkout 中转换配置：清除上游 Expo 项目归属与推送项目关联，关闭 OTA，修改测试包名及分享 App Group，使用运行编号作为构建号。仓库中的上游 `app.json`、`app.config.ts` 和 `eas.json` 不改动。远程推送暂不启用，本地通知不受此配置限制。

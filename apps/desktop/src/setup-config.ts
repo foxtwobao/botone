@@ -13,7 +13,7 @@ export const PROBE_RESPONSE_LIMIT_BYTES = 64 * 1024;
 export const SETUP_FILE_NAME = "setup.json";
 
 export type StartupTarget =
-  | { kind: "app"; url: string; source: "env" | "saved" | "cloud" }
+  | { kind: "app"; url: string; source: "env" | "saved" | "default" | "cloud" }
   | { kind: "setup" };
 
 const SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
@@ -123,14 +123,15 @@ export function serializeSetup(setup: DesktopSetup): string {
 }
 
 /**
- * Decides between the setup window and the app window. A first launch opens Rakazo
- * Cloud; other servers are a choice made from setup later. An explicit
+ * Decides between the setup window and the app window. A first launch opens the packaged
+ * default server, or Rakazo Cloud when none is configured. An explicit
  * `RAKAZO_WEB_URL` still wins over saved configuration so test and performance
  * harnesses can point the shell anywhere without touching a user's real setup.
  */
 export function resolveStartupTarget(input: {
   envUrl?: string;
   saved?: DesktopSetup | null;
+  defaultUrl?: unknown;
   forceSetup?: boolean;
 }): StartupTarget {
   if (input.forceSetup === true) return { kind: "setup" };
@@ -142,6 +143,10 @@ export function resolveStartupTarget(input: {
     const saved = parseSetupInput(input.saved);
     if (saved !== null) return { kind: "app", url: saved.serverUrl, source: "saved" };
     return { kind: "setup" };
+  }
+  if (input.defaultUrl !== undefined) {
+    const url = typeof input.defaultUrl === "string" ? normalizeServerUrl(input.defaultUrl) : null;
+    return url === null ? { kind: "setup" } : { kind: "app", url, source: "default" };
   }
   return { kind: "app", url: RAKAZO_CLOUD_URL, source: "cloud" };
 }

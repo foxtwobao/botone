@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { mobilePreviewConfig } from "./prepare-mobile.mjs";
 
 const source = JSON.parse(readFileSync(new URL("../../apps/mobile/app.json", import.meta.url)));
@@ -22,6 +24,25 @@ test("mobile previews cannot fetch upstream updates or register upstream push to
     (plugin) => Array.isArray(plugin) && plugin[0] === "expo-sharing",
   );
   assert.equal(sharing[1].ios.appGroupId, `group.${app.ios.bundleIdentifier}`);
+});
+
+test("desktop previews embed the configured server and reject credential-bearing addresses", () => {
+  const configFile = fileURLToPath(new URL("./desktop.cjs", import.meta.url));
+  const code = "console.log(require(process.argv[1]).extraMetadata.defaultServerUrl)";
+  const run = (address) =>
+    execFileSync(process.execPath, ["-e", code, configFile], {
+      env: { ...process.env, EXPO_PUBLIC_API_URL: address },
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  assert.equal(run("https://app.example.com/").trim(), "https://app.example.com");
+  for (const address of [
+    "http://app.example.com",
+    "https://user:secret@app.example.com",
+    "https://app.example.com?token=fake",
+  ]) {
+    assert.throws(() => run(address));
+  }
 });
 
 test("mobile previews reject invalid or overflowing native build numbers", () => {
