@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { authClient } from "./auth";
 import { endCallBeforeSignOut, forgetSignedInUser, sessionChangedUnderPage } from "./call-session";
 import { clearComposerDrafts } from "./composer-draft";
+import { desktopBridge } from "./desktop";
 import { clearSpaceSelection } from "./rpc";
 
 /** Kept across the reload after a failed sign-out, so the fresh page can say it failed. */
@@ -15,6 +16,7 @@ let logOutFailed = false;
  * answer or queued request from this session survives in the page.
  */
 export async function signOut(destination: string): Promise<void> {
+  await desktopBridge()?.harness?.disconnect();
   // Hang up while the session still exists, so the server-side hang-up is authorized.
   await endCallBeforeSignOut();
   // The account changed while hanging up: signing out now would sign out the other account.
@@ -68,7 +70,13 @@ export function useSignOut(destination: string, onError: (message: string) => vo
     busy.current = true;
     setSigningOut(true);
     // The page is left either way, so it stays busy until then.
-    await signOut(destination);
+    try {
+      await signOut(destination);
+    } catch {
+      busy.current = false;
+      setSigningOut(false);
+      onError(t`Could not stop the local task. Stop it and try again.`);
+    }
   }
 
   return { signingOut, logOut };

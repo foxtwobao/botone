@@ -23,6 +23,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { BotIntroHarness } from "./discard-bot-intro.js";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
+import { hostExecutionAuthCalls } from "./host-execution-auth-calls.js";
 import { sessionCookieHeader } from "./index.js";
 import { asSystem } from "./system-db.js";
 
@@ -241,6 +242,7 @@ describeWithDatabase("API authorization and resource isolation", () => {
       ["executions/revoke", { id: "missing" }],
       ["executions/get", { botId: "missing" }],
       ["executions/configure", { botId: "missing", configuration: null }],
+      ...hostExecutionAuthCalls,
       ["me"],
       ["deployment/get"],
       ["deployment/update", { signupsEnabled: true }],

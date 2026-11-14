@@ -54,7 +54,7 @@ function loadWindowsApi() {
   };
 }
 
-function windowsProcessTree(pid: number): NativeProcessTree {
+export function windowsProcessTree(pid: number): NativeProcessTree {
   windowsApi ??= loadWindowsApi();
   const api = windowsApi;
   const job = api.create(null, null);

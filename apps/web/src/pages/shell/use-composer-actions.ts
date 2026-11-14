@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { requestBrowserNotificationPermission } from "../../lib/browser-notifications";
 import { setComposerUnsavedWork } from "../../lib/composer-draft";
 import { scheduleFocusPrompt } from "../../lib/focus-prompt";
+import { answerHostHarness, selectedHostSend, stopHostHarness } from "../../lib/host-harness";
 import type { PageSession } from "../../lib/pages";
 import {
   readFileAsBase64,
@@ -222,15 +223,16 @@ export function useComposerActions({
       const groupId = activeGroupId.current;
       if (!botId && !groupId) return;
       clearReadBoundary();
-      await rpc.threads.answer({
-        ...(groupId ? { groupId } : { botId: botId! }),
-        runId: message.runId ?? "",
-        messageId: message.id,
-        answer: text,
-        ...(fields ? { fields } : {}),
-        ...(remember === false ? { remember } : {}),
-        ...(dismiss ? { dismiss: true as const } : {}),
-      });
+      if (!(await answerHostHarness(message, text)))
+        await rpc.threads.answer({
+          ...(groupId ? { groupId } : { botId: botId! }),
+          runId: message.runId ?? "",
+          messageId: message.id,
+          answer: text,
+          ...(fields ? { fields } : {}),
+          ...(remember === false ? { remember } : {}),
+          ...(dismiss ? { dismiss: true as const } : {}),
+        });
       // The answer is saved; live events can reconcile a failed refresh.
       try {
         if (groupId && activeGroupId.current === groupId) {
@@ -415,6 +417,18 @@ export function useComposerActions({
           return true;
         }
         const artifactIds: string[] = [];
+        const hostSend = await selectedHostSend({
+          botId: botTarget,
+          groupId: groupTarget,
+          spaceId: bootstrapMe?.spaceId,
+          textOnly: !(
+            attachments.length ||
+            plan.shouldRunRoutines ||
+            replyAtSend ||
+            replyToMessageId ||
+            plan.mentionPayload.length
+          ),
+        });
         const uploaded =
           uploadedSendArtifacts.current.get(clientNonce) ?? new WeakMap<File, string>();
         uploadedSendArtifacts.current.set(clientNonce, uploaded);
@@ -470,7 +484,9 @@ export function useComposerActions({
         // The routines run in the same server operation as the message: both or neither.
         const sent = plan.shouldRunRoutines
           ? (await rpc.threads.sendWithRoutines({ ...payload, routineIds: plan.routineIds })).send
-          : await rpc.threads.send(payload);
+          : hostSend
+            ? await hostSend(trimmed, clientNonce)
+            : await rpc.threads.send(payload);
         accepted = true;
         if (sent && botTarget && activeBotId.current === botTarget) {
           updateSnapshot((current) =>
@@ -532,6 +548,7 @@ export function useComposerActions({
     },
     [
       activeSnapshot?.messages,
+      bootstrapMe?.spaceId,
       pageSession,
       clearSentReply,
       flushPendingBrowserNotifications,
@@ -570,6 +587,7 @@ export function useComposerActions({
       if (!botTarget) return;
       setSendError(null);
       try {
+        await stopHostHarness({ botId: botTarget, spaceId: bootstrapMe?.spaceId });
         await rpc.threads.stop({ botId: botTarget });
       } catch (error) {
         if (activeBotId.current === botTarget) {
@@ -594,7 +612,7 @@ export function useComposerActions({
       sendingRef.current = false;
       setSending(false);
     }
-  }, [sending, t]);
+  }, [bootstrapMe?.spaceId, sending, t]);
 
   function dismissComposerError() {
     // The strip shows one message at a time, so only dismiss the run failure when it is the

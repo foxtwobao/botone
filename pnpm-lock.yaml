@@ -951,6 +951,12 @@ importers:
       '@opentelemetry/sdk-trace':
         specifier: 3.1.0
         version: 3.1.0(@opentelemetry/api@1.10.0)
+      '@orpc/client':
+        specifier: 1.16.2
+        version: 1.16.2(@opentelemetry/api@1.10.0)
+      '@orpc/contract':
+        specifier: 1.16.2
+        version: 1.16.2(@opentelemetry/api@1.10.0)
       '@photon-ai/chat-adapter-imessage':
         specifier: 3.2.0
         version: 3.2.0(chat@4.44.0(supports-color@8.1.1)(zod@4.6.7))(supports-color@8.1.1)(typescript@7.0.2)(zod@4.6.7)

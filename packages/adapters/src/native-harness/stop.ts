@@ -30,6 +30,21 @@ export async function stopNativeThreadRuns(
     });
     await Promise.all(
       runs.map(async (run) => {
+        if (run.trigger === "host") {
+          const events = await deps.prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT id FROM threads WHERE id = ${threadId} FOR UPDATE`;
+            await tx.$queryRaw`SELECT id FROM runs WHERE id = ${run.id} FOR UPDATE`;
+            const pending = await tx.nativeInteraction.findMany({
+              where: { runId: run.id, status: { in: ["pending", "submitted"] } },
+            });
+            const events = [];
+            for (const interaction of pending)
+              events.push(await updateNativeInteraction(tx, interaction, "expired"));
+            return events;
+          });
+          for (const event of events) await deps.events.notify(threadId, event.seq);
+          return;
+        }
         const saved = run.nativeExecution;
         const configuration = run.bot.executionConfiguration;
         if (!saved && !configuration) return;

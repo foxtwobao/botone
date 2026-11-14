@@ -78,6 +78,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     private readonly root: string,
     private readonly profiles: ExecutionProfileAdmission[],
     private readonly maxEventBytes = 4 * 1024 * 1024,
+    private readonly onFrame?: (runId: string, frame: NativeExecutionFrame) => void,
   ) {
     mkdirSync(root, { recursive: true, mode: 0o700 });
     for (const file of readdirSync(root)) {
@@ -145,7 +146,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     } finally {
       closeSync(descriptor);
     }
-    if (exclusive) {
+    if (exclusive && process.platform !== "win32") {
       const directory = openSync(this.root, "r");
       try {
         fsyncSync(directory);
@@ -216,6 +217,7 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     this.write(this.file(entry.runId), line);
     entry.size += Buffer.byteLength(line);
     entry.frames.push(frame);
+    this.onFrame?.(entry.runId, frame);
     if (event.type === "completed" || event.type === "failed" || event.type === "cancelled") {
       entry.state = event.type;
       clearTimeout(entry.timer);
@@ -225,7 +227,11 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
 
   private stopEntry(entry: Entry, code?: string): Promise<void> {
     if (entry.stopping) return entry.stopping;
-    if (entry.state !== "running") return Promise.resolve();
+    if (
+      entry.state !== "running" &&
+      ["completed", "failed", "cancelled"].includes(entry.frames.at(-1)?.event.type ?? "")
+    )
+      return Promise.resolve();
     // Fence controlled operations before awaiting process-tree termination.
     entry.state = "failed";
     entry.bridge?.close();
@@ -241,7 +247,10 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
       await entry.driver?.cancel().catch(() => undefined);
       await entry.process?.stop();
       this.append(entry, code ? { type: "failed", code } : { type: "cancelled" });
-    })();
+    })().catch((error) => {
+      entry.stopping = undefined;
+      throw error;
+    });
     // Observe background cleanup failures without claiming the process stopped.
     void entry.stopping.catch(() => {});
     return entry.stopping;
@@ -258,6 +267,12 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
       frames,
       nextSequence: frames.at(-1)?.sequence ?? after,
     };
+  }
+
+  /** Read a journal after restart without authorizing a replacement process or prompt. */
+  recover(runId: string, scope: NativeExecutionScope): NativeExecutionSnapshot | null {
+    const entry = this.entries.get(runId);
+    return entry && sameScope(entry.scope, scope) ? this.snapshot(entry) : null;
   }
 
   async start(request: NativeExecutionStart) {
@@ -315,7 +330,10 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     this.entries.set(request.runId, entry);
     if (sessionKey) this.sessions.set(sessionKey, request.runId);
     this.arm(entry);
-    entry.launching = Promise.resolve().then(() => profile.launch(request));
+    entry.launching = Promise.resolve().then(() => {
+      if (entry.state !== "running") throw new Error("execution_stopped");
+      return profile.launch(request);
+    });
     // Different runs launch immediately; there is no global process slot or work queue.
     void (async () => {
       try {
@@ -387,12 +405,15 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
             entry.stopping = (async () => {
               await entry.process?.stop();
               this.append(entry, event);
-            })();
+            })().catch((error) => {
+              entry.stopping = undefined;
+              throw error;
+            });
             void entry.stopping.catch(() => {});
           } else this.append(entry, event);
         });
         entry.capabilities = entry.driver.capabilities;
-        entry.capabilities.tools = Boolean(entry.process.onTool);
+        entry.capabilities.tools = Boolean(entry.process.onTool || entry.process.externalTools);
         await entry.driver.start(request);
       } catch {
         if (entry.state === "running") await this.stopEntry(entry, "execution_start_failed");
@@ -492,9 +513,11 @@ export class NativeHarnessExecutionService implements NativeExecutionProvider {
     return result;
   }
 
-  async close() {
+  async close(options: { cancelled?: boolean } = {}) {
     await Promise.all(
-      [...this.entries.values()].map((entry) => this.stopEntry(entry, "execution_service_stopped")),
+      [...this.entries.values()].map((entry) =>
+        this.stopEntry(entry, options.cancelled ? undefined : "execution_service_stopped"),
+      ),
     );
   }
 }

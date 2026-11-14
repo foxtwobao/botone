@@ -1314,6 +1314,7 @@ model Run {
   steeringMessages     SteeringMessage[]
   externalMessage      ExternalMessage?
   nativeExecution      NativeExecution?
+  hostExecution        HostExecution?
   nativeInteractions   NativeInteraction[]
 
   @@unique([spaceId, clientNonce])
@@ -2877,4 +2878,29 @@ model NativeInteraction {
   @@unique([runId, requestId])
   @@index([spaceId, userId, runId, status])
   @@map("native_interactions")
+}
+
+// A desktop-started run. No CLI credentials or local paths are stored here.
+model HostExecution {
+  runId String @id
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+  spaceId String
+  userId String
+  authSessionId String
+  installationId String
+  profileId String
+  bindingKey String
+  generation String
+  tokenHash String
+  requestHash String
+  engineVersion String
+  targetComputerId String?
+  dispatch Json
+  lastSequence Int @default(0)
+  resultText String @default("")
+  terminal String?
+  sessionRef String?
+  createdAt DateTime @default(now())
+  @@index([spaceId, userId, bindingKey, createdAt])
+  @@map("host_executions")
 }

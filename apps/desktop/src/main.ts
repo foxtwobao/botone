@@ -63,6 +63,7 @@ import {
   writeStackChoice,
 } from "./docker-move.js";
 import { prepareHostComputer } from "./host-computer.js";
+import { prepareDesktopHarness } from "./host-harness.js";
 import {
   createDesktopHostScreen,
   screenDriverInstaller,
@@ -132,6 +133,7 @@ const updaterEnvironment = {
 };
 let requestingComputerAccess = false;
 let hostScreen: HostScreen | undefined;
+let stopDesktopHarnessBeforeQuit: ReturnType<typeof prepareDesktopHarness> | undefined;
 markOnce("rk:main:module-evaluated");
 if (PERFORMANCE_USER_DATA) {
   app.setPath("userData", PERFORMANCE_USER_DATA);
@@ -834,6 +836,15 @@ app.whenReady().then(async () => {
       ? origin
       : null;
   };
+  stopDesktopHarnessBeforeQuit = prepareDesktopHarness({
+    root: path.join(userDataDir, "harness"),
+    currentOrigin: remoteServerOrigin,
+    originForEvent: remoteDeviceOrigin,
+    mainWindow: () => desktop.mainWindow,
+    onQuitFailure: () => {
+      desktop.quitting = false;
+    },
+  });
   const deviceState = async (origin: string | null): Promise<RakazoDesktopDevice | null> => {
     const state = origin === null ? null : desktop.userDevices?.state(origin);
     return state ? { ...state, name: await deviceName() } : null;
@@ -1005,6 +1016,7 @@ app.on("quit", (_event, exitCode) => {
 });
 app.on("before-quit", (event) => {
   desktop.quitting = true;
+  if (stopDesktopHarnessBeforeQuit?.(event)) return;
   // Server processes this app runs itself stop with it; quit again once they have.
   if (desktop.localStack instanceof NativeStackController && desktop.localStack.hasProcesses()) {
     event.preventDefault();

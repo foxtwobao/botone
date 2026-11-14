@@ -105,6 +105,7 @@ export const ROW_SECURITY_MODELS: ReadonlySet<string> = new Set([
   "ExecutionConnection",
   "BotExecution",
   "NativeExecution",
+  "HostExecution",
   "NativeInteraction",
   "BillingAuditEvent",
   "PushToken",

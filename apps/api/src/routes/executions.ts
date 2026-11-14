@@ -4,13 +4,15 @@ import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
 import { ensureAutomaticExecution } from "../automatic-execution.js";
 import { stopBotExecutionRuns } from "../execution-stop.js";
 import type { RouterContext } from "./context.js";
+import { hostExecutionRoutes } from "./host-executions.js";
 
 const owner = (actor: { spaceId: string; userId: string }) => ({
   spaceId: actor.spaceId,
   userId: actor.userId,
 });
 
-export function executionRoutes({ deps, authed }: RouterContext) {
+export function executionRoutes(ctx: RouterContext) {
+  const { deps, authed } = ctx;
   const ownedBot = async (actor: { spaceId: string; userId: string }, botId: string) => {
     const bot = await deps.prisma.bot.findFirst({ where: { id: botId, ...owner(actor) } });
     if (!bot) throw new ORPCError("NOT_FOUND");
@@ -18,6 +20,7 @@ export function executionRoutes({ deps, authed }: RouterContext) {
   };
   return {
     executions: {
+      host: hostExecutionRoutes(ctx),
       list: authed.executions.list.handler(async ({ context: { actor }, input }) => {
         const bot = input.botId ? await ownedBot(actor, input.botId) : null;
         const pending = bot

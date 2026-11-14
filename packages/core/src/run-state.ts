@@ -127,8 +127,14 @@ export function helperCardState(block: { status: string; result?: string; progre
   };
 }
 
-/** Runs that may use their bot's computer: a background helper never does. */
-export const COMPUTER_USING_RUNS = { trigger: { not: BACKGROUND_HELPER_TRIGGER } } as const;
+/** Device workspace runs and background helpers do not reserve the bot's server computer. */
+export const COMPUTER_USING_RUNS = {
+  trigger: { not: BACKGROUND_HELPER_TRIGGER },
+  OR: [
+    { trigger: { not: "host" } },
+    { hostExecution: { is: { targetComputerId: { not: null } } } },
+  ],
+};
 
 /** Prompt of a run created to answer messages that waited behind another turn. */
 export const STEERING_CONTINUATION_PROMPT = "Respond to the user's steering context.";

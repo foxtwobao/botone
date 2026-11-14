@@ -1,6 +1,10 @@
 import { oc } from "@orpc/contract";
 import { z } from "zod";
+import { hostExecutionContract } from "./host-executions.js";
 import { Id } from "./ids.js";
+
+export * from "./host-computer-tools.js";
+export * from "./host-executions.js";
 
 export const ExecutionModelsSchema = z
   .array(z.object({ id: z.string().min(1).max(256), label: z.string().min(1).max(100) }))
@@ -39,6 +43,7 @@ export const BotExecutionSchema = z.object({
 export type BotExecutionConfiguration = z.infer<typeof BotExecutionSchema>;
 export type ExecutionConnectionView = z.infer<typeof ExecutionConnectionSchema>;
 export const executionContract = {
+  host: hostExecutionContract,
   list: oc.input(z.object({ botId: Id.optional() })).output(z.array(ExecutionConnectionSchema)),
   revoke: oc.input(z.object({ id: Id })).output(z.object({ ok: z.literal(true) })),
   get: oc.input(z.object({ botId: Id })).output(BotExecutionSchema.nullable()),

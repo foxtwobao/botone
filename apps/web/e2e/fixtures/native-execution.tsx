@@ -51,7 +51,11 @@ window.fetch = async (input, init) => {
       return Response.json({ json: { ok: true } });
     }
     const values: Record<string, unknown> = {
-      "/rpc/me": { isAdmin: parameters.get("state") !== "unprepared" },
+      "/rpc/me": {
+        isAdmin: parameters.get("state") !== "unprepared",
+        userId: "fixture-user",
+        spaceId: "fixture-space",
+      },
       "/rpc/executions/get": configuration,
       "/rpc/executions/list": [
         {

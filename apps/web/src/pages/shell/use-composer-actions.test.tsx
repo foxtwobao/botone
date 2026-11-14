@@ -120,6 +120,61 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   localStorage.clear();
+  delete window.rakazoDesktop;
+});
+
+it("sends an explicitly selected device agent through its native bridge", async () => {
+  const send = vi.fn(async () => ({ runId: "device-run", taskId: "device-task", seq: 1 }));
+  Object.assign(window, {
+    rakazoDesktop: { harness: { selection: async () => ({ profileId: "device" }), send } },
+  });
+  me = { spaceId: "fixture-space" } as Me;
+  act(() => root.render(<Harness />));
+  await act(async () => expect(await latest.sendMessage("hello", [], "device-nonce")).toBe(true));
+  expect(send).toHaveBeenCalledWith({
+    spaceId: "fixture-space",
+    botId: "bot-1",
+    text: "hello",
+    clientNonce: "device-nonce",
+  });
+  expect(rpc.threads.send).not.toHaveBeenCalled();
+});
+
+it.each(["selection", "send"])(
+  "never falls back to a server agent after device %s fails",
+  async (failure) => {
+    const selection = vi.fn(async () => ({ profileId: "device" }));
+    const send = vi.fn(async () => ({ runId: "device-run", taskId: "device-task", seq: 1 }));
+    if (failure === "selection") selection.mockRejectedValue(new Error("Device unavailable"));
+    else send.mockRejectedValue(new Error("Device unavailable"));
+    Object.assign(window, { rakazoDesktop: { harness: { selection, send } } });
+    me = { spaceId: "fixture-space" } as Me;
+    act(() => root.render(<Harness />));
+    await act(async () =>
+      expect(await latest.sendMessage("hello", [], "device-nonce")).toBe(false),
+    );
+    expect(latest.sendError).toBeTruthy();
+    expect(rpc.threads.send).not.toHaveBeenCalled();
+    expect(rpc.threads.sendWithRoutines).not.toHaveBeenCalled();
+  },
+);
+
+it("keeps unsupported attachments local when a device agent is selected", async () => {
+  const send = vi.fn();
+  Object.assign(window, {
+    rakazoDesktop: { harness: { selection: async () => ({ profileId: "device" }), send } },
+  });
+  me = { spaceId: "fixture-space" } as Me;
+  act(() => root.render(<Harness />));
+  act(
+    () =>
+      void latest.onAttachmentPick([new File(["fixture"], "fixture.txt", { type: "text/plain" })]),
+  );
+  await act(async () => expect(await latest.sendMessage("hello", [], "device-nonce")).toBe(false));
+  expect(latest.activePendingAttachments).toHaveLength(1);
+  expect(rpc.artifacts.create).not.toHaveBeenCalled();
+  expect(send).not.toHaveBeenCalled();
+  expect(rpc.threads.send).not.toHaveBeenCalled();
 });
 
 it.each([undefined, 1, 8])(

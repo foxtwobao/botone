@@ -6,7 +6,22 @@ import type {
 
 export interface HarnessProcess {
   workspace: string;
-  mcpServer: { name: string; type: string; command: string; args: string[]; env: string[] };
+  /** A native tool-sandbox label used by a platform's descendant owner. */
+  hostPermissions?: { id: string; directory: string; allow: string; deny: string };
+  /** A host-owned tool boundary. Engines translate it; they never receive server credentials. */
+  externalTools?: {
+    permissions: string;
+    specs: {
+      name: string;
+      label?: string;
+      description: string;
+      inputSchema: unknown;
+      requiresApproval: boolean;
+    }[];
+    invoke(id: string, name: string, input: unknown): Promise<string>;
+  };
+  /** Omitted for a host process until an authorized platform tool bridge is mounted. */
+  mcpServer?: { name: string; type: string; command: string; args: string[]; env: string[] };
   onTool?(
     listener: (request: { name: string; input: Record<string, unknown> }) => Promise<unknown>,
   ): void;
