@@ -1,8 +1,9 @@
 # GitHub Actions for self-hosted deployments
 
-The default pipeline validates changes and publishes the application to Docker Hub for
-`linux/amd64`. Optional upstream services remain in the repository to keep upstream merges
-small, but do not run automatically unless enabled below.
+The default pipeline validates changes. Docker Hub application and prepared computer images
+are published only through manual runs on `main`. Optional upstream services remain in the
+repository to keep upstream merges small; see [workflow controls](workflow-controls.zh-CN.md)
+for repository-level disabling and manual publication.
 
 ## Default pipeline
 
@@ -13,9 +14,11 @@ small, but do not run automatically unless enabled below.
 - `computer-replay.yml`: runs for changes affecting computer execution.
 - `publish-server-image.yml`: validates Dockerfiles on relevant pull requests. Its GHCR
   publication is disabled by default; this does not disable pull-request image validation.
-- `publish-dockerhub.yml`: publishes the application on main pushes, or manual runs on main,
+- `publish-dockerhub.yml`: publishes the application only on manual runs on main,
   using the existing Docker Hub credentials. It publishes full commit tags and `latest` after
   image checks. See [Docker Hub configuration](self-host-model-account.md#docker-hub-amd64-publication).
+- `publish-execution.yml`: validates and publishes the prepared computer image only on manual
+  runs on main. Computer execution tests remain in `computer-replay.yml` and core CI.
 
 ## Optional repository variables
 

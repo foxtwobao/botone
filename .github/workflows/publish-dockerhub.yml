@@ -1,8 +1,6 @@
 name: Publish Docker Hub amd64
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
