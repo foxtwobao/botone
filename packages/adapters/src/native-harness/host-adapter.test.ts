@@ -12,17 +12,13 @@ import {
   inspectHostHarness,
   resolveHostExecutable,
 } from "./host-adapter.js";
-import { launchHostProcess } from "./host-process.js";
-
-vi.mock("./host-process.js", () => ({ launchHostProcess: vi.fn() }));
-vi.mock("./host-process-owner.js", () => ({
-  hostProcessOwnershipAvailable: vi.fn(async () => true),
-}));
+import * as hostProcess from "./host-process.js";
+import * as hostProcessOwner from "./host-process-owner.js";
 
 const roots: string[] = [];
 afterEach(() => {
   vi.unstubAllEnvs();
-  vi.clearAllMocks();
+  vi.restoreAllMocks();
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 function fixture() {
@@ -45,6 +41,7 @@ describe("native host admission", () => {
       file(root, process.platform === "win32" ? "codex.exe" : "codex");
       vi.stubEnv("PATH", root);
       vi.stubEnv("CODEX_HOME", root);
+      vi.spyOn(hostProcessOwner, "hostProcessOwnershipAvailable").mockResolvedValue(true);
       const native = new FakeHarnessProcess();
       native.reply = (frame) => {
         if (frame.id === undefined) return;
@@ -54,7 +51,7 @@ describe("native host admission", () => {
         });
       };
       const stopVersion = vi.fn(async () => {});
-      vi.mocked(launchHostProcess).mockImplementation(async ({ args }) =>
+      vi.spyOn(hostProcess, "launchHostProcess").mockImplementation(async ({ args }) =>
         args[0] === "--version"
           ? {
               workspace: root,
