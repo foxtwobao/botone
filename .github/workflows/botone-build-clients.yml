@@ -36,7 +36,7 @@ jobs:
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
-      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -75,7 +75,7 @@ jobs:
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
-      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3100' }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -143,6 +143,8 @@ jobs:
       - uses: ./.github/actions/setup-workspace
         with:
           electron: "true"
+          # A nonempty selection avoids Bash 3's nounset error on an empty array.
+          filter: "*"
       - name: Generate database client for compilation
         run: pnpm db:generate
         env:
