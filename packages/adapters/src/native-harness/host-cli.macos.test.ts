@@ -44,7 +44,10 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
       PATH: process.env.PATH ?? "/usr/bin:/bin:/usr/sbin:/sbin",
     };
     executable = await resolveHostExecutable({ env, home });
-    if (executable && (await macosHostOwnershipAvailable())) {
+    if (process.env.CI) expect(executable, "installed CLI discovery").toBeDefined();
+    const owned = executable ? await macosHostOwnershipAvailable() : false;
+    if (process.env.CI) expect(owned, "native process ownership").toBe(true);
+    if (executable && owned) {
       const probe = await launchHostProcess({
         executable,
         args: ["--version"],
@@ -61,6 +64,10 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
             resolve(status);
           });
         });
+        if (process.env.CI) {
+          expect(code, "CLI version command exit status").toBe(0);
+          expect(lines.join(""), "CLI version output").toMatch(/^codex-cli \d+\.\d+\.\d+$/);
+        }
         if (code !== 0 || !/^codex-cli \d+\.\d+\.\d+$/.test(lines.join(""))) executable = undefined;
       } finally {
         await probe.stop();
