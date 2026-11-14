@@ -4,6 +4,11 @@ const { build } = require("../../apps/desktop/package.json");
 module.exports = {
   ...build,
   appId: "dev.botone.preview.desktop",
+  extraMetadata: {
+    ...build.extraMetadata,
+    name: "botone-preview",
+    productName: "BotONE Preview",
+  },
   publish: null,
   forceCodeSigning: false,
   mac: {
