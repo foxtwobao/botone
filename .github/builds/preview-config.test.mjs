@@ -17,6 +17,7 @@ test("mobile previews cannot fetch upstream updates or register upstream push to
   assert.equal(app.extra.eas, undefined);
   assert.equal(app.android.googleServicesFile, undefined);
   assert.equal(app.android.package, "dev.botone.preview");
+  assert.equal(app.scheme, "rakazo");
   assert.equal(app.ios.bundleIdentifier, app.android.package);
   assert.equal(app.android.versionCode, 123);
   assert.equal(app.ios.buildNumber, "123");
