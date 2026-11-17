@@ -71,7 +71,7 @@ pnpm --filter @rakazo/mobile exec expo prebuild --platform ios
 xcodebuild -workspace apps/mobile/ios/BotONE.xcworkspace -scheme BotONE \
   -configuration Debug -sdk iphonesimulator -destination "id=$sim_udid" \
   -derivedDataPath "$RUNNER_TEMP/botone-ipad" \
-  CODE_SIGNING_ALLOWED=NO build > "$out/xcodebuild.log" 2>&1 || {
+  CODE_SIGNING_ALLOWED=YES CODE_SIGNING_IDENTITY=- build > "$out/xcodebuild.log" 2>&1 || {
     tail -n 100 "$out/xcodebuild.log"
     exit 1
   }
