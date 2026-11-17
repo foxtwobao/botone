@@ -40,12 +40,19 @@ read -r device_type runtime < <(python3 - "$out/simulators.json" <<'PY'
 import json
 import sys
 data = json.load(open(sys.argv[1]))
-devices = [d for d in data['devicetypes'] if 'iPad Pro 13-inch' in d['name']]
-runtimes = [r for r in data['runtimes'] if r.get('isAvailable') and 'iOS' in r['name']]
-if not devices or not runtimes:
+runtimes = [r for r in data['runtimes'] if r.get('isAvailable') and r.get('platform') == 'iOS']
+if not runtimes:
     raise SystemExit('A 13-inch iPad device type and an iOS simulator runtime are required')
-runtime = max(runtimes, key=lambda r: tuple(map(int, r['version'].split('.'))))
-print(devices[-1]['identifier'], runtime['identifier'])
+for runtime in sorted(runtimes, key=lambda r: tuple(map(int, r['version'].split('.'))), reverse=True):
+    devices = [
+        d for d in runtime.get('supportedDeviceTypes', [])
+        if d.get('productFamily') == 'iPad' and 'iPad Pro 13-inch' in d['name']
+    ]
+    if devices:
+        print(devices[0]['identifier'], runtime['identifier'])
+        break
+else:
+    raise SystemExit('No installed iOS runtime supports a 13-inch iPad simulator')
 PY
 )
 sim_udid=$(xcrun simctl create "BotONE screenshot iPad" "$device_type" "$runtime")
