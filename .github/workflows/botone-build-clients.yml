@@ -9,6 +9,10 @@ on:
         type: choice
         default: all
         options: [all, android, ios, macos, windows]
+      ipad_screenshots:
+        description: Capture 13-inch iPad screenshots instead of the iOS preview (select ios)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -68,7 +72,7 @@ jobs:
 
   ios:
     name: iOS simulator app
-    if: inputs.platform == 'all' || inputs.platform == 'ios'
+    if: (inputs.platform == 'all' || inputs.platform == 'ios') && !inputs.ipad_screenshots
     needs: validate
     # The native folding module uses APIs from the iOS 27.1 SDK.
     runs-on: xcode-27
@@ -120,6 +124,39 @@ jobs:
           path: ${{ runner.temp }}/botone-ios-build.log
           if-no-files-found: ignore
           retention-days: 1
+
+  ipad_screenshots:
+    name: Capture 13-inch iPad screenshots
+    if: inputs.platform == 'ios' && inputs.ipad_screenshots
+    needs: validate
+    runs-on: xcode-27
+    timeout-minutes: 120
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:3110
+      DATABASE_URL: postgres://screenshot@127.0.0.1:5439/postgres
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-workspace
+        with:
+          filter: "*"
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build and capture the existing iOS screenshot catalog
+        run: bash .github/builds/capture-ios-screenshots.sh
+      - name: Retain screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-ipad-screenshots-${{ github.run_number }}
+          path: test-report/ios-screenshots
+          if-no-files-found: error
+          retention-days: 30
 
   desktop:
     name: Desktop ${{ matrix.platform }}
