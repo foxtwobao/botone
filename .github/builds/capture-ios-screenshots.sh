@@ -69,14 +69,14 @@ JS
 
 pnpm --filter @rakazo/mobile exec expo prebuild --platform ios
 xcodebuild -workspace apps/mobile/ios/BotONE.xcworkspace -scheme BotONE \
-  -configuration Release -sdk iphonesimulator -destination "id=$sim_udid" \
+  -configuration Debug -sdk iphonesimulator -destination "id=$sim_udid" \
   -derivedDataPath "$RUNNER_TEMP/botone-ipad" \
   CODE_SIGNING_ALLOWED=NO build > "$out/xcodebuild.log" 2>&1 || {
     tail -n 100 "$out/xcodebuild.log"
     exit 1
   }
 xcrun simctl install "$sim_udid" \
-  "$RUNNER_TEMP/botone-ipad/Build/Products/Release-iphonesimulator/BotONE.app"
+  "$RUNNER_TEMP/botone-ipad/Build/Products/Debug-iphonesimulator/BotONE.app"
 
 # The bundled release points to the same local API that the existing catalog starts.
 # These sections provide the primary product screens without production accounts or models.
