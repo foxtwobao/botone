@@ -1963,6 +1963,10 @@ msgstr "返回"
 msgid "Back or forward"
 msgstr "后退或前进"
 
+#: apps/web/src/components/bot-marketplace/admin-bot-listing-form.tsx
+msgid "Back to Bot market"
+msgstr "返回 Bot 市场"
+
 #: apps/web/src/components/pages/PageNotice.tsx
 msgid "Back to chat"
 msgstr "返回聊天"
