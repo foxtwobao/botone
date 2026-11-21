@@ -354,6 +354,27 @@ importers:
         specifier: 2.9.1
         version: 2.9.1
 
+  apps/harmony:
+    devDependencies:
+      '@rakazo/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@rakazo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@rakazo/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@rakazo/mobile':
+        specifier: workspace:*
+        version: link:../mobile
+      '@rakazo/ui-tokens':
+        specifier: workspace:*
+        version: link:../../packages/ui-tokens
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   apps/mobile:
     dependencies:
       '@expo/metro-runtime':
@@ -2737,16 +2758,8 @@ packages:
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
-  '@chat-adapter/catalog@4.43.0':
-    resolution: {integrity: sha512-JRH40HwYIXdIiwSc/gNw65q5T/gaf691n4//2YOhjRE4YO9KzSFJ/N+RrTD3M8iGz2jI4Jg92wb6OAqfYsAkTQ==}
-    engines: {node: '>=20'}
-
   '@chat-adapter/catalog@4.44.0':
     resolution: {integrity: sha512-UtpW5mMgIjYBRDIgxJKh+tfnlFe0GjLsFG5MPPUDA5b/PggSOAt00TFr0xF6UIXXh1SaK3V1u3FiXyM2sdnaJQ==}
-    engines: {node: '>=20'}
-
-  '@chat-adapter/shared@4.43.0':
-    resolution: {integrity: sha512-uclU9sQLQa5f9pN9xpCHkMC7eypnIvXnZRnpgdAzltL2d0PhrsJlSPkijmc4Q4FzSfof4kh+gE6yAMFp/tNsQQ==}
     engines: {node: '>=20'}
 
   '@chat-adapter/shared@4.44.0':
@@ -7634,21 +7647,6 @@ packages:
     resolution: {integrity: sha512-JKqRa5KyoBsndRrq2LuGhob1uCdO1goWAbqaSLCld3KE9q288CnEo999GdWuDVWa9yqt1uf5F9/Oe3iFkSrW2w==}
     peerDependencies:
       chat: '>=4.0.0'
-
-  chat@4.43.0:
-    resolution: {integrity: sha512-9ICxMewK1+4J0pEbR7eMBTh3JCL3NkyDHAgGrU/gblyyw/+QUcwFHCXIoQMt0Xlyup1c5smS0/gYytTt8NVc6w==}
-    engines: {node: '>=20'}
-    peerDependencies:
-      ai: ^6.0.182 || ^7.0.0
-      workflow: ^5.0.0-beta.35
-      zod: ^3.0.0 || ^4.0.0
-    peerDependenciesMeta:
-      ai:
-        optional: true
-      workflow:
-        optional: true
-      zod:
-        optional: true
 
   chat@4.44.0:
     resolution: {integrity: sha512-DGVc9yV1ifOJFpe8Pz6BAoOBVT7/iI/7kkMuB+ZUrpyQ1iw1ElibxyvYBx7tEo1qPl6w510+Acvt1XSVPSgKjA==}
@@ -15291,18 +15289,7 @@ snapshots:
 
   '@cfworker/json-schema@4.1.1': {}
 
-  '@chat-adapter/catalog@4.43.0': {}
-
   '@chat-adapter/catalog@4.44.0': {}
-
-  '@chat-adapter/shared@4.43.0(supports-color@8.1.1)(zod@4.6.7)':
-    dependencies:
-      chat: 4.43.0(supports-color@8.1.1)(zod@4.6.7)
-    transitivePeerDependencies:
-      - ai
-      - supports-color
-      - workflow
-      - zod
 
   '@chat-adapter/shared@4.44.0(supports-color@8.1.1)(zod@4.6.7)':
     dependencies:
@@ -18099,7 +18086,7 @@ snapshots:
 
   '@photon-ai/chat-adapter-imessage@3.2.0(chat@4.44.0(supports-color@8.1.1)(zod@4.6.7))(supports-color@8.1.1)(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
-      '@chat-adapter/shared': 4.43.0(supports-color@8.1.1)(zod@4.6.7)
+      '@chat-adapter/shared': 4.44.0(supports-color@8.1.1)(zod@4.6.7)
       '@spectrum-ts/core': 10.0.0(supports-color@8.1.1)(typescript@7.0.2)
       '@spectrum-ts/imessage': 10.0.0(@spectrum-ts/core@10.0.0(supports-color@8.1.1)(typescript@7.0.2))(supports-color@8.1.1)(typescript@7.0.2)
       chat: 4.44.0(supports-color@8.1.1)(zod@4.6.7)
@@ -20999,21 +20986,6 @@ snapshots:
     dependencies:
       chat: 4.44.0(supports-color@8.1.1)(zod@4.6.7)
       sendblue: 3.21.2
-
-  chat@4.43.0(supports-color@8.1.1)(zod@4.6.7):
-    dependencies:
-      '@chat-adapter/catalog': 4.43.0
-      '@workflow/serde': 4.1.0-beta.2
-      mdast-util-to-string: 4.0.0
-      remark-gfm: 4.0.1(supports-color@8.1.1)
-      remark-parse: 11.0.0(supports-color@8.1.1)
-      remark-stringify: 11.0.0
-      remend: 1.3.1
-      unified: 11.0.5
-    optionalDependencies:
-      zod: 4.6.7
-    transitivePeerDependencies:
-      - supports-color
 
   chat@4.44.0(supports-color@8.1.1)(zod@4.6.7):
     dependencies:
