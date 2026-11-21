@@ -1,7 +1,9 @@
 // S4 spike: @ohos.security.asset add/query/remove round trip — the store that will hold
 // session tokens and saved servers. Uses a fake probe secret, never real credentials.
+// Negative paths assert the SDK's documented error codes, not just "it threw".
 import { asset } from '@kit.AssetStoreKit';
 import { util } from '@kit.ArkTS';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { describe, expect, it } from '@ohos/hypium';
 
 function toBytes(text: string): Uint8Array {
@@ -23,6 +25,15 @@ export default function assetSmoke() {
       attrs.set(asset.Tag.ACCESSIBILITY, asset.Accessibility.DEVICE_FIRST_UNLOCKED);
       await asset.add(attrs);
 
+      // add is not idempotent: a duplicate alias rejects with 24000003 (already exists).
+      let duplicateCode = 0;
+      try {
+        await asset.add(attrs);
+      } catch (err) {
+        duplicateCode = (err as BusinessError).code;
+      }
+      expect(duplicateCode).assertEqual(24000003);
+
       const query: asset.AssetMap = new Map();
       query.set(asset.Tag.ALIAS, alias);
       query.set(asset.Tag.RETURN_TYPE, asset.ReturnType.ALL);
@@ -31,17 +42,33 @@ export default function assetSmoke() {
       const stored = found[0].get(asset.Tag.SECRET) as Uint8Array;
       expect(fromBytes(stored)).assertEqual('probe-secret-value');
 
-      // remove() rejects query-only tags such as RETURN_TYPE; it takes the alias alone.
+      // remove() rejects query-only tags such as RETURN_TYPE with 401 (parameter error);
+      // it takes the alias alone.
+      const badRemoval: asset.AssetMap = new Map();
+      badRemoval.set(asset.Tag.ALIAS, alias);
+      badRemoval.set(asset.Tag.RETURN_TYPE, asset.ReturnType.ALL);
+      let removalCode = 0;
+      let removalMessage = '';
+      try {
+        await asset.remove(badRemoval);
+      } catch (err) {
+        removalCode = (err as BusinessError).code;
+        removalMessage = (err as BusinessError).message;
+      }
+      expect(removalCode).assertEqual(401);
+      expect(removalMessage).assertContain('Unsupported tag');
+
       const removal: asset.AssetMap = new Map();
       removal.set(asset.Tag.ALIAS, alias);
       await asset.remove(removal);
-      let notFound = false;
+      // query after remove rejects with 24000002 (not found).
+      let notFoundCode = 0;
       try {
         await asset.query(query);
       } catch (err) {
-        notFound = true;
+        notFoundCode = (err as BusinessError).code;
       }
-      expect(notFound).assertTrue();
+      expect(notFoundCode).assertEqual(24000002);
     });
   });
 }

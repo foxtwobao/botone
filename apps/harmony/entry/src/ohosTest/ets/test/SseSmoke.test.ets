@@ -1,6 +1,8 @@
 // S3 spike: requestInStream against a local SSE source (scripts/spike-sse-server.mjs on the
 // host, reached through the emulator's QEMU gateway 10.0.2.2). Records chunk boundaries,
 // POST framing and abrupt-close behavior; conclusions live in docs/m0-spike.md.
+// The server cuts a multi-byte UTF-8 character mid-byte across two writes, so the
+// reassembled text proves streaming decode across chunk boundaries, not just chunk counts.
 import { http } from '@kit.NetworkKit';
 import { util } from '@kit.ArkTS';
 import { hilog } from '@kit.PerformanceAnalysisKit';
@@ -15,7 +17,7 @@ interface Capture {
   text: string;
 }
 
-function streamOnce(path: string): Promise<Capture> {
+function streamOnce(path: string, accept: string = 'text/event-stream'): Promise<Capture> {
   const request = http.createHttp();
   const decoder = util.TextDecoder.create('utf-8');
   const capture: Capture = { code: 0, chunkSizes: [], text: '' };
@@ -30,7 +32,7 @@ function streamOnce(path: string): Promise<Capture> {
   });
   const coded = request.requestInStream(`${BASE}${path}`, {
     method: http.RequestMethod.POST,
-    header: { 'content-type': 'application/json', 'accept': 'text/event-stream' },
+    header: { 'content-type': 'application/json', 'accept': accept },
     extraData: '{"json":{}}',
     connectTimeout: 8000,
     readTimeout: 15000,
@@ -52,9 +54,18 @@ export default function sseSmoke() {
       hilog.info(DOMAIN, 'S3', 'text=%{public}s', capture.text);
       expect(capture.code).assertEqual(200);
       expect(capture.text).assertContain('data: {"json":{"type":"probe","seq":1}}');
-      expect(capture.text).assertContain('data: {"json":{"type":"split","seq":2}}');
+      // The server cuts 鸿 (E9 B8 BF) after its first byte across two writes: the full
+      // frame below only reassembles if streaming UTF-8 decode spans chunk boundaries.
+      expect(capture.text).assertContain('data: {"json":{"type":"split","seq":2,"text":"鸿蒙"}}');
       expect(capture.text).assertContain('data: {"json":{"type":"heartbeat"}}');
+      expect(capture.text).assertContain('data: {"json":{"type":"done"}}');
+      expect(capture.text.includes('\uFFFD')).assertFalse();
       expect(capture.chunkSizes.length > 0).assertTrue();
+    });
+
+    it('wrong_accept_header_is_rejected', 0, async () => {
+      const capture = await streamOnce('/sse', 'application/json');
+      expect(capture.code).assertEqual(400);
     });
 
     it('abrupt_close_rejects_partial_transfer', 0, async () => {
