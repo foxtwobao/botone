@@ -3,7 +3,7 @@
 // scope guards are tested deterministically; only the session/server stores touch device storage.
 import { describe, expect, it, beforeAll, afterEach } from '@ohos/hypium';
 import { abilityDelegatorRegistry } from '@kit.TestKit';
-import { queryCache, currentScope } from '../../../main/ets/data/query-cache';
+import { queryCache, currentScope } from '../../../main/ets/query/query-cache';
 import type { RpcContext } from '../../../main/ets/net/rpc';
 import { initServerStore, switchServer } from '../../../main/ets/net/server-store';
 import {

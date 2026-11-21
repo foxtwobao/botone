@@ -12,12 +12,12 @@ guest reaches host at 10.0.2.2). Fixture servers on host 8787/8788; real backend
 
 ## What landed
 
-- **QueryCache** (`data/query-cache.ets`): the §5 semantics without react-query. Key =
+- **QueryCache** (`query/query-cache.ets`): the §5 semantics without react-query. Key =
   (server, sessionGeneration, space, proc, input); `peek` paints the last answer only in the
   current scope; `read` pins the context, refuses a late answer whose scope moved on (returns
   null, caches nothing); `invalidate(proc)` and `clear()` are the write-stale and session-change
   entry points. No staleTime timer, no polling.
-- **SaveController** (`data/save-controller.ets`): the `useSave` contract — context pinned at the
+- **SaveController** (`query/save-controller.ets`): the `useSave` contract — context pinned at the
   tap, single-flight, `send` writes only with that pinned context and is refused once its
   server/session/Space is no longer current, pending/error owned by the controller, declared
   reads invalidated on success. Archive (inbox) and restore (archived) both use it with
@@ -91,11 +91,26 @@ guest reaches host at 10.0.2.2). Fixture servers on host 8787/8788; real backend
   not-poll, archive/restore closed loop (bot+group), foreground catch-up, restart re-read,
   offline-keeps-painted-rows.
 - `pnpm checks`: **152/152 pass**. Biome clean on `apps/harmony`.
+- After the `data/` → `query/` rename (incident below), the whole suite was re-run on the renamed
+  tree: vitest 31/31, hypium 89/89 on the emulator (fixture servers 8787+8788, locally injected
+  signing), `pnpm checks` 152/152.
 - Real backend (3110) by hand on the emulator: sign-in → inbox with live signal-driven
   preview/working dot and unread; archive → archived page; restore → back in inbox; offline
   banner over painted rows when the server is unreachable. Screenshots:
   `screenshots/m2-inbox.png` (working + unread + pinned + identity colors), `m2-archived.png`,
   `m2-offline.png`.
+
+## Incident: the data folder was swallowed by an upstream ignore rule
+
+The first M2 commit shipped without `query-cache.ets` and `save-controller.ets`: they lived in
+`entry/src/main/ets/data/`, and the upstream `.gitignore` rule `apps/**/data` silently ignored the
+whole folder, so `git add` never staged them. Local builds kept passing (the files were on disk);
+only a clean checkout failed to compile — 14 errors in the app build, 28 in ohosTest. Fix: rename
+the folder to `ets/query/` (verified with `git check-ignore` that the new path is not ignored) and
+update every import. No gitignore negation, no force-add, no upstream file touched. Lesson: after
+pushing, verify from a clean checkout (fresh worktree at the pushed commit: codegen + app build +
+ohosTest build), never trust a build in the tree where the files were authored. This fix commit was
+verified that way; all three builds pass from the clean checkout.
 
 ## Upstream files
 

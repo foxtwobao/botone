@@ -17,7 +17,7 @@ import { flushPendingSignOut } from '../net/sign-out';
 import type { SignOutContext } from '../net/sign-out';
 import { loadI18n } from '../i18n/i18n';
 import { appearance } from '../uikit/theme';
-import { queryCache } from '../data/query-cache';
+import { queryCache } from '../query/query-cache';
 import { rosterStore } from '../stores/roster-store';
 import { archivedStore } from '../stores/archived-store';
 

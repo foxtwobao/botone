@@ -8,7 +8,7 @@ import { rosterStore } from '../../../main/ets/stores/roster-store';
 import { archivedStore } from '../../../main/ets/stores/archived-store';
 import { holdRoster } from '../../../main/ets/realtime/roster';
 import { foreground } from '../../../main/ets/realtime/foreground';
-import { queryCache } from '../../../main/ets/data/query-cache';
+import { queryCache } from '../../../main/ets/query/query-cache';
 import { initServerStore, switchServer } from '../../../main/ets/net/server-store';
 import { clearSessionToken, saveSessionToken, setSelectedSpace } from '../../../main/ets/net/session';
 import { getJson, postJson, parseJsonObject } from '../../../main/ets/net/http';

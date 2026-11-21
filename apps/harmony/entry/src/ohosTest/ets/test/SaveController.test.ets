@@ -3,9 +3,9 @@
 // by the controller. Writes go to the fixture server; the scope-refusal case never reaches it.
 import { describe, expect, it, beforeAll, beforeEach, afterEach } from '@ohos/hypium';
 import { abilityDelegatorRegistry } from '@kit.TestKit';
-import { SaveController } from '../../../main/ets/data/save-controller';
-import type { SaveSend } from '../../../main/ets/data/save-controller';
-import { queryCache } from '../../../main/ets/data/query-cache';
+import { SaveController } from '../../../main/ets/query/save-controller';
+import type { SaveSend } from '../../../main/ets/query/save-controller';
+import { queryCache } from '../../../main/ets/query/query-cache';
 import { rpc } from '../../../main/ets/net/rpc';
 import type { RpcContext } from '../../../main/ets/net/rpc';
 import { decodeBotList } from '../../../main/ets/contract/decode';
