@@ -1,0 +1,337 @@
+{
+  "normalize": [
+    {
+      "input": "",
+      "ok": false,
+      "error": "Enter a server URL"
+    },
+    {
+      "input": "   ",
+      "ok": false,
+      "error": "Enter a server URL"
+    },
+    {
+      "input": "example.com",
+      "ok": true,
+      "url": "https://example.com"
+    },
+    {
+      "input": "https://example.com",
+      "ok": true,
+      "url": "https://example.com"
+    },
+    {
+      "input": "https://example.com/path?query=1#frag",
+      "ok": true,
+      "url": "https://example.com"
+    },
+    {
+      "input": "HTTPS://Example.COM:8443/x",
+      "ok": true,
+      "url": "https://example.com:8443"
+    },
+    {
+      "input": "http://example.com",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://10.0.2.2:3100",
+      "ok": true,
+      "url": "http://10.0.2.2:3100"
+    },
+    {
+      "input": "http://192.168.1.5:3100",
+      "ok": true,
+      "url": "http://192.168.1.5:3100"
+    },
+    {
+      "input": "http://172.16.0.1:3100",
+      "ok": true,
+      "url": "http://172.16.0.1:3100"
+    },
+    {
+      "input": "http://100.64.0.1:3100",
+      "ok": true,
+      "url": "http://100.64.0.1:3100"
+    },
+    {
+      "input": "http://127.0.0.1:3100",
+      "ok": true,
+      "url": "http://127.0.0.1:3100"
+    },
+    {
+      "input": "http://localhost:3100",
+      "ok": true,
+      "url": "http://localhost:3100"
+    },
+    {
+      "input": "http://localhost.:3100",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://my-server.local:3100",
+      "ok": true,
+      "url": "http://my-server.local:3100"
+    },
+    {
+      "input": "http://[::1]:3100",
+      "ok": true,
+      "url": "http://[::1]:3100"
+    },
+    {
+      "input": "http://[fd00::1]:3100",
+      "ok": true,
+      "url": "http://[fd00::1]:3100"
+    },
+    {
+      "input": "http://[fe80::1]:3100",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://169.254.169.254",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://100.100.100.200",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://metadata.google.internal",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://010.0.0.1",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://256.0.0.1",
+      "ok": false,
+      "error": "That doesn’t look like a URL"
+    },
+    {
+      "input": "ftp://example.com",
+      "ok": false,
+      "error": "Use an http or https URL"
+    },
+    {
+      "input": "not a url at all",
+      "ok": false,
+      "error": "That doesn’t look like a URL"
+    },
+    {
+      "input": "http://",
+      "ok": false,
+      "error": "That doesn’t look like a URL"
+    },
+    {
+      "input": "https://user:pass@example.com",
+      "ok": true,
+      "url": "https://example.com"
+    },
+    {
+      "input": "http://[2001:db8::1]:3100",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "input": "http://[::ffff:10.0.0.1]:3100",
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    }
+  ],
+  "privateHost": [
+    {
+      "host": "localhost",
+      "expected": true
+    },
+    {
+      "host": "LOCALHOST",
+      "expected": true
+    },
+    {
+      "host": "localhost.",
+      "expected": false
+    },
+    {
+      "host": "sub.localhost",
+      "expected": true
+    },
+    {
+      "host": "printer.local",
+      "expected": true
+    },
+    {
+      "host": "example.com",
+      "expected": false
+    },
+    {
+      "host": "127.0.0.1",
+      "expected": true
+    },
+    {
+      "host": "127.5.5.5",
+      "expected": true
+    },
+    {
+      "host": "10.1.2.3",
+      "expected": true
+    },
+    {
+      "host": "172.16.0.1",
+      "expected": true
+    },
+    {
+      "host": "172.32.0.1",
+      "expected": false
+    },
+    {
+      "host": "192.168.0.1",
+      "expected": true
+    },
+    {
+      "host": "100.64.0.1",
+      "expected": true
+    },
+    {
+      "host": "100.128.0.1",
+      "expected": false
+    },
+    {
+      "host": "169.254.169.254",
+      "expected": false
+    },
+    {
+      "host": "100.100.100.200",
+      "expected": false
+    },
+    {
+      "host": "8.8.8.8",
+      "expected": false
+    },
+    {
+      "host": "010.0.0.1",
+      "expected": false
+    },
+    {
+      "host": "::1",
+      "expected": true
+    },
+    {
+      "host": "[::1]",
+      "expected": true
+    },
+    {
+      "host": "fd00::1",
+      "expected": true
+    },
+    {
+      "host": "fc00::1",
+      "expected": true
+    },
+    {
+      "host": "fe80::1",
+      "expected": false
+    },
+    {
+      "host": "2001:db8::1",
+      "expected": false
+    },
+    {
+      "host": "::ffff:10.0.0.1",
+      "expected": false
+    },
+    {
+      "host": "::ffff:127.0.0.1",
+      "expected": false
+    },
+    {
+      "host": "64:ff9b::10.0.0.1",
+      "expected": false
+    },
+    {
+      "host": "2002:0a00:0001::",
+      "expected": false
+    },
+    {
+      "host": "metadata.google.internal",
+      "expected": false
+    },
+    {
+      "host": "fd00:ec2::254",
+      "expected": false
+    },
+    {
+      "host": "fe80::1%en0",
+      "expected": false
+    }
+  ],
+  "probe": [
+    {
+      "input": "https://good.example",
+      "response": {
+        "status": 200,
+        "body": "{\"json\":{\"ok\":true,\"version\":\"1.0.0\"}}"
+      },
+      "ok": true,
+      "url": "https://good.example"
+    },
+    {
+      "input": "https://bad.example",
+      "response": {
+        "status": 200,
+        "body": "{\"json\":{\"ok\":false}}"
+      },
+      "ok": false,
+      "error": "That URL did not look like a Rakazo server"
+    },
+    {
+      "input": "https://error.example",
+      "response": {
+        "status": 200,
+        "body": "{\"error\":{\"message\":\"nope\"}}"
+      },
+      "ok": false,
+      "error": "That URL did not look like a Rakazo server"
+    },
+    {
+      "input": "https://html.example",
+      "response": {
+        "status": 200,
+        "body": "<html>proxy</html>"
+      },
+      "ok": false,
+      "error": "That URL did not look like a Rakazo server"
+    },
+    {
+      "input": "https://404.example",
+      "response": {
+        "status": 404,
+        "body": "{\"json\":{}}"
+      },
+      "ok": false,
+      "error": "That URL did not look like a Rakazo server"
+    },
+    {
+      "input": "https://down.example",
+      "response": "unreachable",
+      "ok": false,
+      "error": "Could not reach that server"
+    },
+    {
+      "input": "http://public.example",
+      "response": {
+        "status": 200,
+        "body": "{\"json\":{\"ok\":true}}"
+      },
+      "ok": false,
+      "error": "Public servers need https://. HTTP only works on your local network."
+    }
+  ]
+}

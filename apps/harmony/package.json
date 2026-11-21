@@ -5,14 +5,18 @@
   "description": "BotONE HarmonyOS app (ArkTS). hvigor/devecocli build; dev-only workspace deps for contract alignment.",
   "type": "module",
   "scripts": {
-    "harmony:build": "devecocli build"
+    "harmony:build": "devecocli build",
+    "harmony:codegen": "node scripts/gen-tokens.ts && node scripts/gen-i18n.ts && tsx scripts/gen-client-build.ts && node scripts/embed-fixtures.ts"
   },
   "devDependencies": {
+    "@lingui/core": "6.12.0",
+    "@lingui/format-po": "6.12.0",
     "@rakazo/contracts": "workspace:*",
     "@rakazo/core": "workspace:*",
     "@rakazo/i18n": "workspace:*",
     "@rakazo/mobile": "workspace:*",
     "@rakazo/ui-tokens": "workspace:*",
+    "expo-secure-store": "58.0.3",
     "zod": "4.6.7"
   }
 }
