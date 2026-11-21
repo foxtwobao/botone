@@ -28,6 +28,20 @@ test("counts source files above 1,000 lines", () => {
   }
 });
 
+test("the file line limit covers ArkTS sources and exempts their tests", () => {
+  const rule = rules.find((candidate) => candidate.name === "max-file-lines");
+  assert.ok(rule.matches("apps/harmony/entry/src/main/ets/pages/Index.ets"));
+  const text = "line\n".repeat(1000);
+  assert.deepEqual(
+    countFileLines(`${text}line`, "apps/harmony/entry/src/main/ets/spike/probe.ets"),
+    [{ line: 1001, text: "1001 lines, limit 1000" }],
+  );
+  assert.deepEqual(
+    countFileLines("line\n".repeat(3000), "apps/harmony/entry/src/test/probe.test.ets"),
+    [],
+  );
+});
+
 test("exempts tests and evals from the file line limit", () => {
   const text = "line\n".repeat(3000);
   for (const file of [

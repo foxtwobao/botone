@@ -1,0 +1,88 @@
+name: harmony
+
+# ArkTS build only. The TS contract-alignment tests run in the required unit-tests job
+# (vitest include + the harmony devDep edges); this workflow builds the unsigned HAP and
+# never sees secrets. Signing and store upload are a later, separate workflow.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/harmony/**"
+      - "packages/contracts/src/**"
+      - "packages/core/src/threads/**"
+      - "packages/core/src/messages/**"
+      - "packages/core/src/runs/**"
+      - "packages/core/src/primitives/retry-policy.ts"
+      - "packages/core/src/account/ai-consent.ts"
+      - "packages/ui-tokens/**"
+      - "packages/i18n/locales/**"
+      - "apps/mobile/lib/api/**"
+      - ".github/workflows/harmony.yml"
+  pull_request:
+    paths:
+      - "apps/harmony/**"
+      - "packages/contracts/src/**"
+      - "packages/core/src/threads/**"
+      - "packages/core/src/messages/**"
+      - "packages/core/src/runs/**"
+      - "packages/core/src/primitives/retry-policy.ts"
+      - "packages/core/src/account/ai-consent.ts"
+      - "packages/ui-tokens/**"
+      - "packages/i18n/locales/**"
+      - "apps/mobile/lib/api/**"
+      - ".github/workflows/harmony.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harmony-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Unsigned HAP
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Restore command-line-tools
+        id: tools-cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ${{ runner.temp }}/command-line-tools
+          key: harmony-command-line-tools-${{ vars.HARMONY_CMDLINE_TOOLS_VERSION }}
+      - name: Install HarmonyOS command-line-tools
+        if: steps.tools-cache.outputs.cache-hit != 'true'
+        env:
+          URL: ${{ vars.HARMONY_CMDLINE_TOOLS_URL }}
+          VERSION: ${{ vars.HARMONY_CMDLINE_TOOLS_VERSION }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$VERSION" ]; then
+            echo "::error::Set HARMONY_CMDLINE_TOOLS_URL and HARMONY_CMDLINE_TOOLS_VERSION to the pinned command-line-tools release (design S5). The download center publishes the link per release; this job must not guess it."
+            exit 1
+          fi
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/command-line-tools.zip"
+          unzip -q "$RUNNER_TEMP/command-line-tools.zip" -d "$RUNNER_TEMP"
+      - name: Build unsigned HAP
+        env:
+          DEVECO_SDK_HOME: ${{ runner.temp }}/command-line-tools/sdk
+        run: |
+          export PATH="$RUNNER_TEMP/command-line-tools/bin:$PATH"
+          npm install -g @deveco/deveco-cli@1.3.0-stable
+          cd apps/harmony
+          ohpm install
+          # M1 adds the tokens/i18n codegen step here, before the build.
+          devecocli build
+      - name: Upload unsigned HAP
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: harmony-unsigned-hap
+          path: apps/harmony/entry/build/default/outputs/default/entry-default-unsigned.hap
+          if-no-files-found: error
+          retention-days: 7
