@@ -522,7 +522,10 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     },
     update: { modelCreditsEnabled },
   });
-  const connectedApps = await createConnectedApps({ prisma, artifacts, events, env }, () => auth);
+  const connectedApps = await createConnectedApps(
+    { prisma, artifacts, events, env, secrets },
+    () => auth,
+  );
   const connectors = createConnectorRuntime(
     runtimeEnv,
     { prisma, secrets, events, jobs },

@@ -8,16 +8,17 @@ import type { AppEnv } from "./env.js";
 
 /** API-only composition; authentication never becomes a worker or adapter dependency. */
 export async function createConnectedApps(
-  services: Pick<ApplicationServices, "prisma" | "artifacts" | "events"> & {
+  services: Pick<ApplicationServices, "prisma" | "artifacts" | "events" | "secrets"> & {
     env: Pick<AppEnv, "maxUploadSizeBytes" | "oidc">;
   },
   getAuth: () => Auth,
 ) {
-  const { prisma, artifacts, events, env } = services;
+  const { prisma, artifacts, events, env, secrets } = services;
   const apps = await loadConfiguredApps({
     prisma,
     artifacts,
     events,
+    secrets,
     env: process.env,
     maxUploadSizeBytes: env.maxUploadSizeBytes,
     credentials: (userId) => userAppCredentialReader(prisma, getAuth(), env.oidc?.issuer)(userId),

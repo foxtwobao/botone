@@ -1,4 +1,4 @@
-import type { ArtifactStore, ConnectorProvider } from "@rakazo/adapter-kit";
+import type { ArtifactStore, ConnectorProvider, SecretStore } from "@rakazo/adapter-kit";
 import type { Actor } from "@rakazo/contracts";
 import type { PrismaClient, ThreadEvents } from "@rakazo/db";
 import { runAsTenant } from "@rakazo/db";
@@ -21,6 +21,8 @@ export interface ApplicationServices {
   events: ThreadEvents;
   maxUploadSizeBytes?: number;
   env: Record<string, string | undefined>;
+  /** Only the API host brokers per-connection secrets; workers forward without them. */
+  secrets?: SecretStore;
   /** Only the API host supplies credentials; workers forward calls without loading app code. */
   credentials?: (userId: string) => Promise<UserAccessCredential | null>;
   /** Reuse the host connection actions' lock scope without owning their implementation. */
@@ -50,6 +52,7 @@ export class ApplicationCredentialError extends Error {
 // Trusted, built-in adapters only. Configuration cannot name executable modules.
 const adapters = {
   creative: () => import("./creative-application.js"),
+  feishu: () => import("./providers/integration/feishu/feishu-application.js"),
 };
 
 /** Shared API/worker entry point; app-specific lifecycle and credentials stay in adapters. */
