@@ -1,0 +1,1300 @@
+{
+  "constants": {
+    "maxRetryAfterMs": 300000,
+    "reconnectSpreadMs": 5000
+  },
+  "isRetryable": [
+    {
+      "expected": true
+    },
+    {
+      "error": null,
+      "expected": true
+    },
+    {
+      "error": "transport failure",
+      "expected": true
+    },
+    {
+      "error": {},
+      "expected": true
+    },
+    {
+      "error": {
+        "status": 302
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "status": 400
+      },
+      "expected": false
+    },
+    {
+      "error": {
+        "status": 401
+      },
+      "expected": false
+    },
+    {
+      "error": {
+        "status": 404
+      },
+      "expected": false
+    },
+    {
+      "error": {
+        "status": 408
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "status": 426
+      },
+      "expected": false
+    },
+    {
+      "error": {
+        "status": 429
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "status": 500
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "status": 503
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "retryAfterMs": 5000
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "retryAfterMs": 0
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "retryAfterMs": -5
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "retryAfterMs": null
+      },
+      "expected": true
+    },
+    {
+      "error": {
+        "retryAfterMs": 999999999
+      },
+      "expected": true
+    }
+  ],
+  "parseRetryAfter": [
+    {
+      "value": null,
+      "now": 1750000000000,
+      "expected": null
+    },
+    {
+      "value": "",
+      "now": 1750000000000,
+      "expected": null
+    },
+    {
+      "value": "   ",
+      "now": 1750000000000,
+      "expected": null
+    },
+    {
+      "value": "120",
+      "now": 1750000000000,
+      "expected": 120000
+    },
+    {
+      "value": "0",
+      "now": 1750000000000,
+      "expected": 0
+    },
+    {
+      "value": "-5",
+      "now": 1750000000000,
+      "expected": 0
+    },
+    {
+      "value": "999999",
+      "now": 1750000000000,
+      "expected": 300000
+    },
+    {
+      "value": "not a date",
+      "now": 1750000000000,
+      "expected": null
+    },
+    {
+      "value": "Sun, 15 Jun 2025 15:07:40 GMT",
+      "now": 1750000000000,
+      "expected": 60000
+    },
+    {
+      "value": "Sun, 15 Jun 2025 15:05:40 GMT",
+      "now": 1750000000000,
+      "expected": 0
+    }
+  ],
+  "jitter": [
+    {
+      "ms": 0,
+      "random": 0,
+      "expected": 0
+    },
+    {
+      "ms": 0,
+      "random": 0.25,
+      "expected": 0
+    },
+    {
+      "ms": 0,
+      "random": 0.5,
+      "expected": 0
+    },
+    {
+      "ms": 0,
+      "random": 0.999,
+      "expected": 0
+    },
+    {
+      "ms": 1,
+      "random": 0,
+      "expected": 1
+    },
+    {
+      "ms": 1,
+      "random": 0.25,
+      "expected": 1
+    },
+    {
+      "ms": 1,
+      "random": 0.5,
+      "expected": 1
+    },
+    {
+      "ms": 1,
+      "random": 0.999,
+      "expected": 1
+    },
+    {
+      "ms": 1000,
+      "random": 0,
+      "expected": 1000
+    },
+    {
+      "ms": 1000,
+      "random": 0.25,
+      "expected": 875
+    },
+    {
+      "ms": 1000,
+      "random": 0.5,
+      "expected": 750
+    },
+    {
+      "ms": 1000,
+      "random": 0.999,
+      "expected": 501
+    },
+    {
+      "ms": 30000,
+      "random": 0,
+      "expected": 30000
+    },
+    {
+      "ms": 30000,
+      "random": 0.25,
+      "expected": 26250
+    },
+    {
+      "ms": 30000,
+      "random": 0.5,
+      "expected": 22500
+    },
+    {
+      "ms": 30000,
+      "random": 0.999,
+      "expected": 15015
+    }
+  ],
+  "retryDelay": [
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 1000
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 1000
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 1000
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {}
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {}
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {}
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {}
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 1000,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 1000,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 1000,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 1000,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 875,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 750,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 501,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.25,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.5,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    },
+    {
+      "backoffMs": 1000,
+      "random": 0.999,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    }
+  ],
+  "reconnectDelay": [
+    {
+      "random": 0,
+      "expected": 0
+    },
+    {
+      "random": 0.25,
+      "expected": 1250
+    },
+    {
+      "random": 0.5,
+      "expected": 2500
+    },
+    {
+      "random": 0.999,
+      "expected": 4995
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "text": "transport failure"
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {}
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {}
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {}
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {}
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 302
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 400
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 401
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 404
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 408
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 426
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 429
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 500
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "status": 503
+      }
+    },
+    {
+      "random": 0,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 5000,
+      "error": {
+        "retryAfterMs": 5000
+      }
+    },
+    {
+      "random": 0,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 120000,
+      "error": {
+        "status": 503,
+        "retryAfterMs": 120000
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "retryAfterMs": 0
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "retryAfterMs": -5
+      }
+    },
+    {
+      "random": 0,
+      "expected": 0,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 1250,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 2500,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 4995,
+      "error": {
+        "retryAfterMs": null
+      }
+    },
+    {
+      "random": 0,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    },
+    {
+      "random": 0.25,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    },
+    {
+      "random": 0.5,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    },
+    {
+      "random": 0.999,
+      "expected": 300000,
+      "error": {
+        "retryAfterMs": 999999999
+      }
+    }
+  ]
+}
