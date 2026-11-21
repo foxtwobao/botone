@@ -310,7 +310,11 @@ export interface ConnectionAuthProvider {
   begin(
     request: { provider: string; redirectUrl: string },
     context: AdapterContext,
-  ): Promise<{ authorizationUrl: string | null; state: string }>;
+  ): Promise<{
+    authorizationUrl: string | null;
+    state: string;
+    connectionMetadata?: Record<string, string>;
+  }>;
   complete(
     request: { state: string; code?: string },
     context: AdapterContext,

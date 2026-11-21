@@ -264,7 +264,7 @@ export async function beginConnection(
           data: {
             status: auth.authorizationUrl ? "pending" : "connected",
             providerRef: auth.state || null,
-            metadata: { state: auth.state, attempt },
+            metadata: { ...auth.connectionMetadata, state: auth.state, attempt },
           },
         });
         if (updated.count > 0) return true;
@@ -414,9 +414,14 @@ export async function completeConnection(
           "connections.complete",
           context.signal,
         );
+        let completedConnectionRef: string | undefined;
         if (input.code && current.status !== "connected") {
           const state = current.providerRef ?? current.provider;
-          await transactionConnector.complete({ state, code: input.code }, adapterContext);
+          const completed = await transactionConnector.complete(
+            { state, code: input.code },
+            adapterContext,
+          );
+          completedConnectionRef = completed.connectionRef;
         }
         const ready = await transactionConnector.connectionReady(adapterContext, current.provider);
         if (!ready) return current;
@@ -466,7 +471,10 @@ export async function completeConnection(
               if (!resolvedSiblingId) return current;
               excludeIds.push(resolvedSiblingId);
             }
-            resolvedAccountId = await resolveAccountId(current.providerRef, excludeIds);
+            resolvedAccountId = await resolveAccountId(
+              completedConnectionRef ?? current.providerRef,
+              excludeIds,
+            );
           } catch (error) {
             // Not being able to ask is not "no account": connecting the row now would store a
             // ref revoke cannot target. Leave it for the next poll, which asks again: a warning,
@@ -493,7 +501,7 @@ export async function completeConnection(
           return current;
         }
 
-        const providerRef = resolvedAccountId ?? current.providerRef;
+        const providerRef = resolvedAccountId ?? completedConnectionRef ?? current.providerRef;
         if (providerRef) {
           const taken = await tx.connection.findFirst({
             where: {

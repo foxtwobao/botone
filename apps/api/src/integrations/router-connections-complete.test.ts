@@ -145,7 +145,8 @@ describe("connections.complete", () => {
   );
 
   it("forwards an optional code to the managed connector", async () => {
-    const complete = vi.fn().mockResolvedValue({ connectionRef: "gmail" });
+    const complete = vi.fn().mockResolvedValue({ connectionRef: "gmail-connected-ref" });
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
     const connectionReady = vi.fn().mockResolvedValue(true);
     const update = vi.fn().mockResolvedValue({
       id: "conn-1",
@@ -189,7 +190,7 @@ describe("connections.complete", () => {
               .mockResolvedValueOnce(null)
               .mockResolvedValueOnce({ ...row, status: "connected" }),
             findMany: vi.fn().mockResolvedValue([]),
-            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+            updateMany,
           },
         };
         return fn(tx);
@@ -238,6 +239,11 @@ describe("connections.complete", () => {
       expect.objectContaining({ spaceId: "workspace-1", userId: "user-1" }),
     );
     expect(connectionReady).toHaveBeenCalled();
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ providerRef: "gmail-connected-ref" }),
+      }),
+    );
   });
 
   it.each(["lock", "slot"] as const)(

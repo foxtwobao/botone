@@ -20,7 +20,11 @@ import { beginConnection } from "./connection-flows.js";
 
 describe("connections.begin", () => {
   it("reuses a revoked row for the same provider instead of inserting a duplicate", async () => {
-    const begin = vi.fn().mockResolvedValue({ state: "gmail-state", authorizationUrl: null });
+    const begin = vi.fn().mockResolvedValue({
+      state: "gmail-state",
+      authorizationUrl: null,
+      connectionMetadata: { redirectUri: "https://app.example.test/callback" },
+    });
     const update = vi.fn().mockResolvedValue({
       id: "conn-old",
       connectorId: "composio",
@@ -122,7 +126,14 @@ describe("connections.begin", () => {
         status: "pending",
         metadata: { equals: { attempt } },
       }),
-      data: expect.objectContaining({ providerRef: "gmail-state" }),
+      data: expect.objectContaining({
+        providerRef: "gmail-state",
+        metadata: {
+          state: "gmail-state",
+          attempt,
+          redirectUri: "https://app.example.test/callback",
+        },
+      }),
     });
     await expect(response.json()).resolves.toMatchObject({
       json: { connectionId: "conn-old" },

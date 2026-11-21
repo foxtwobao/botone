@@ -37,7 +37,6 @@ const ID = "feishu";
 
 const connectionMetadataSchema = z.object({
   redirectUri: z.string().optional(),
-  oauthState: z.string().optional(),
 });
 
 type FeishuModule = "doc" | "task" | "calendar" | "sheet";
@@ -349,13 +348,13 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
         this.deps.prisma.secret.delete({ where: { id: superseded } }),
       );
   }
-  private async loadTokens(context: AdapterContext, row: ConnectionRow): Promise<FeishuUserToken> {
+  private async loadTokens(_context: AdapterContext, row: ConnectionRow): Promise<FeishuUserToken> {
     const secrets = this.deps.secrets;
     if (!secrets || !row.secretId) throw new FeishuServiceError("authorization_required", 403);
     const secret = await this.deps.prisma.secret.findUnique({ where: { id: row.secretId } });
     if (!secret) throw new FeishuServiceError("authorization_required", 403);
     const plaintext = await secrets.load(secret.ciphertext, secret.id);
-    let parsed;
+    let parsed: ReturnType<typeof feishuTokenSchema.safeParse>;
     try {
       parsed = feishuTokenSchema.safeParse(JSON.parse(plaintext));
     } catch {
@@ -481,20 +480,9 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
     const identity = await this.identity(context);
     const prefix = this.prefix(context, identity);
     if (!this.userMode) return { state: prefix, authorizationUrl: null };
-    // Random per-request state, persisted server-side, so a callback cannot be forged or replayed.
+    // The request state is saved by the managed connection flow, then replaced by `prefix` after completion.
     const state = randomUUID();
     await this.ensureConnection(context);
-    await this.deps.prisma.connection.updateMany({
-      where: {
-        spaceId: context.spaceId,
-        userId: context.userId,
-        connectorId: ID,
-        provider: ID,
-        providerRef: prefix,
-        status: { in: ["pending", "connected"] },
-      },
-      data: { metadata: { redirectUri: request.redirectUrl, oauthState: state } },
-    });
     const scopes = [
       "contact:user.base:readonly",
       ...this.config.modules.flatMap((module) => MODULE_SCOPES[module]),
@@ -503,14 +491,17 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
     return {
       state,
       authorizationUrl: feishuAuthorizeUrl(this.config, request.redirectUrl, state, scopes),
+      connectionMetadata: { redirectUri: request.redirectUrl },
     };
   }
   async connectionReady(context: AdapterContext, externalId: string) {
     if (externalId !== ID) return false;
     const identity = await this.identity(context);
     const prefix = this.prefix(context, identity);
-    const eligible = (await this.rows(context, ["pending", "connected"])).find(
-      (row) => row.providerRef === prefix,
+    const eligible = (await this.rows(context, ["pending", "connected"])).find((row) =>
+      this.userMode
+        ? row.status === "connected" && Boolean(row.secretId)
+        : row.providerRef === prefix,
     );
     if (!eligible?.providerRef) return false;
     try {
@@ -540,7 +531,7 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
           { fallback: {} },
         );
       const row = (await this.rows(context, ["pending", "connected"])).find(
-        (row) => meta(row).oauthState === request.state,
+        (row) => row.providerRef === request.state,
       );
       if (!row) throw new FeishuServiceError("forbidden", 403);
       const redirectUri = meta(row).redirectUri;
@@ -555,10 +546,14 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
       // Consume the one-time state so the callback cannot be replayed.
       await this.deps.prisma.connection.updateMany({
         where: { id: row.id },
-        data: { status: "connected", metadata: {} },
+        data: {
+          status: "connected",
+          providerRef: this.prefix(context, identity),
+          metadata: {},
+        },
       });
       await this.recordCreated(context, row.id);
-      return { connectionRef: row.providerRef! };
+      return { connectionRef: this.prefix(context, identity) };
     }
     if (request.state !== this.prefix(context, identity))
       throw new FeishuServiceError("forbidden", 403);

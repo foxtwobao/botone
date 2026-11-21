@@ -150,13 +150,31 @@ function fixture() {
   return { connector, connections, secretsRows, calls, ctx, config };
 }
 
+async function beginUser(
+  f: ReturnType<typeof fixture>,
+  redirectUrl = "https://app.example.test/cb",
+) {
+  const begun = await f.connector.begin({ provider: "feishu", redirectUrl }, f.ctx());
+  const row = f.connections[0];
+  if (!row) throw new Error("begin must create its pending connection");
+  row.providerRef = begun.state;
+  row.metadata = begun.connectionMetadata ?? {};
+  row.status = "pending";
+  return begun;
+}
+
+async function completeUser(
+  f: ReturnType<typeof fixture>,
+  begun: Awaited<ReturnType<typeof beginUser>>,
+  code = "auth-code",
+) {
+  return f.connector.complete({ state: begun.state, code }, f.ctx());
+}
+
 async function connectUser(f: ReturnType<typeof fixture>) {
-  const begun = await f.connector.begin(
-    { provider: "feishu", redirectUrl: "https://app.example.test/cb" },
-    f.ctx(),
-  );
+  const begun = await beginUser(f);
   expect(begun.authorizationUrl).toContain("/authen/v1/authorize");
-  const done = await f.connector.complete({ state: begun.state, code: "auth-code" }, f.ctx());
+  const done = await completeUser(f, begun);
   return done.connectionRef;
 }
 
@@ -170,6 +188,7 @@ describe("feishu user identity (OAuth) offline contract", () => {
     expect(f.calls).toContain("token:authorization_code");
     expect(await f.connector.listConnectedExternalIds(f.ctx())).toEqual(["feishu"]);
     expect(state).toBeTruthy();
+    expect(f.connections[0]?.providerRef).toBe(state);
   });
 
   it("executes office tools as the authorizing user", async () => {
@@ -257,11 +276,8 @@ describe("feishu user identity (OAuth) offline contract", () => {
 
   it("rejects a replayed OAuth callback once the state is consumed", async () => {
     const f = fixture();
-    const begun = await f.connector.begin(
-      { provider: "feishu", redirectUrl: "https://app.example.test/cb" },
-      f.ctx(),
-    );
-    await f.connector.complete({ state: begun.state, code: "auth-code" }, f.ctx());
+    const begun = await beginUser(f);
+    await completeUser(f, begun);
     await expect(
       f.connector.complete({ state: begun.state, code: "auth-code" }, f.ctx()),
     ).rejects.toMatchObject({ code: "forbidden" });
@@ -270,12 +286,9 @@ describe("feishu user identity (OAuth) offline contract", () => {
   it("re-authorization on a connected row refreshes the redirect URI and state", async () => {
     const f = fixture();
     await connectUser(f);
-    const again = await f.connector.begin(
-      { provider: "feishu", redirectUrl: "https://app.example.test/cb2" },
-      f.ctx(),
-    );
+    const again = await beginUser(f, "https://app.example.test/cb2");
     expect(again.authorizationUrl).toContain("cb2");
-    await f.connector.complete({ state: again.state, code: "auth-code-2" }, f.ctx());
+    await completeUser(f, again, "auth-code-2");
     expect(f.connections[0]?.status).toBe("connected");
     expect(f.calls.filter((c) => c === "token:authorization_code")).toHaveLength(2);
   });
