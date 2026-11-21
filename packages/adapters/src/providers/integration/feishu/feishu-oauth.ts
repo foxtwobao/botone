@@ -8,10 +8,6 @@ const DOMAINS = {
   lark: "https://open.larksuite.com",
 } as const;
 
-/** The user-identity scopes the office tools need; offline_access yields a refresh token. */
-export const FEISHU_USER_SCOPES =
-  "contact:user.base:readonly docx:document task:task:read offline_access";
-
 export const feishuTokenSchema = z.object({
   accessToken: z.string().min(1),
   refreshToken: z.string().min(1).optional(),
@@ -19,17 +15,19 @@ export const feishuTokenSchema = z.object({
 });
 export type FeishuUserToken = z.infer<typeof feishuTokenSchema>;
 
+/** The scope list is the union of the enabled modules' scopes, plus identity and offline access. */
 export function feishuAuthorizeUrl(
   config: FeishuConnectionConfig,
   redirectUri: string,
   state: string,
+  scopes: string,
 ) {
   const base = DOMAINS[config.domain];
   const query = new URLSearchParams({
     app_id: config.appId,
     redirect_uri: redirectUri,
     response_type: "code",
-    scope: FEISHU_USER_SCOPES,
+    scope: scopes,
     state,
   });
   return `${base}/open-apis/authen/v1/authorize?${query}`;

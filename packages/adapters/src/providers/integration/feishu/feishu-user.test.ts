@@ -5,7 +5,7 @@ import type { ApplicationServices } from "../../../configured-apps.js";
 import { ConnectorRegistry } from "../../../integrations/connector-registry.js";
 import { memoryLeaseQueryRaw } from "./feishu.test-support.js";
 import { FeishuOfficeConnector } from "./feishu-connector.js";
-import type { FeishuOfficeProvider } from "./feishu-contracts.js";
+import type { FeishuConnectionConfig, FeishuOfficeProvider } from "./feishu-contracts.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -88,11 +88,12 @@ function fixture() {
     secrets,
     providerScopeKey: () => "scope",
   } as unknown as ApplicationServices;
-  const config = {
+  const config: FeishuConnectionConfig = {
     appId: "cli_synthetic",
     appSecret: "synthetic",
     domain: "feishu" as const,
     identity: "user" as const,
+    modules: ["doc", "task", "calendar", "sheet"],
     name: "Feishu",
   };
   const unusedAppProvider = {} as FeishuOfficeProvider;

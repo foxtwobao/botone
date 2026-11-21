@@ -12,6 +12,8 @@ export const feishuConnectionSchema = z.strictObject({
   domain: z.enum(["feishu", "lark"]).default("feishu"),
   /** app acts as itself (tenant token); user acts as each authorizing person (OAuth). */
   identity: z.enum(["app", "user"]).default("app"),
+  /** Which office modules' tools are exposed; keeps the bot tool list progressive. */
+  modules: z.array(z.enum(["doc", "task", "calendar", "sheet"])).default(["doc", "task"]),
   name: z.string().min(1).max(100),
   icon: httpsLink.optional(),
   spaceIds: z.array(z.string().min(1)).min(1).optional(),
@@ -48,6 +50,48 @@ export interface FeishuTaskPage {
   nextPageToken?: string;
 }
 
+export const feishuListEventsSchema = z.strictObject({
+  startTime: z.number().int(),
+  endTime: z.number().int(),
+  calendarId: z.string().min(1).max(200).optional(),
+});
+export const feishuCreateEventSchema = z.strictObject({
+  summary: z.string().min(1).max(500),
+  startTime: z.number().int(),
+  endTime: z.number().int(),
+  calendarId: z.string().min(1).max(200).optional(),
+});
+export const feishuCreateSheetSchema = z.strictObject({ title: z.string().min(1).max(200) });
+export const feishuReadSheetSchema = z.strictObject({
+  spreadsheetToken: z.string().min(1).max(200),
+  range: z.string().min(1).max(200),
+});
+export const feishuAppendRowsSchema = z.strictObject({
+  spreadsheetToken: z.string().min(1).max(200),
+  range: z.string().min(1).max(200),
+  values: z
+    .array(z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])))
+    .min(1)
+    .max(100),
+});
+
+export interface FeishuEvent {
+  eventId: string;
+  summary: string;
+}
+export interface FeishuSheet {
+  spreadsheetToken: string;
+  title: string;
+}
+export interface FeishuSheetValues {
+  range: string;
+  values: unknown[][];
+}
+export interface FeishuAppendResult {
+  range: string;
+  updatedRows: number;
+}
+
 /** The office actions one connected Feishu app offers; the provider owns the vendor translation. */
 export interface FeishuOfficeProvider {
   /** Confirm the app credentials are accepted, without needing any business permission. */
@@ -62,4 +106,24 @@ export interface FeishuOfficeProvider {
     input: z.infer<typeof feishuListTasksSchema>,
     signal: AbortSignal,
   ): Promise<FeishuTaskPage>;
+  listEvents(
+    input: z.infer<typeof feishuListEventsSchema>,
+    signal: AbortSignal,
+  ): Promise<FeishuEvent[]>;
+  createEvent(
+    input: z.infer<typeof feishuCreateEventSchema>,
+    signal: AbortSignal,
+  ): Promise<FeishuEvent>;
+  createSheet(
+    input: z.infer<typeof feishuCreateSheetSchema>,
+    signal: AbortSignal,
+  ): Promise<FeishuSheet>;
+  readSheet(
+    input: z.infer<typeof feishuReadSheetSchema>,
+    signal: AbortSignal,
+  ): Promise<FeishuSheetValues>;
+  appendRows(
+    input: z.infer<typeof feishuAppendRowsSchema>,
+    signal: AbortSignal,
+  ): Promise<FeishuAppendResult>;
 }

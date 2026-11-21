@@ -84,12 +84,15 @@ export function memoryLeaseQueryRaw() {
   };
 }
 
-export function feishuFixture() {
+export function feishuFixture(
+  modules: FeishuConnectionConfig["modules"] = ["doc", "task", "calendar", "sheet"],
+) {
   const config: FeishuConnectionConfig = {
     appId: "cli_synthetic",
     appSecret: "synthetic-secret",
     domain: "feishu",
     identity: "app",
+    modules,
     name: "Feishu",
     spaceIds: ["space-a"],
   };
@@ -120,6 +123,26 @@ export function feishuFixture() {
     listTasks: vi.fn(async (input) => {
       calls.push({ method: "listTasks", input });
       return { tasks: [{ taskId: "task-synthetic", summary: "Synthetic task" }] };
+    }),
+    listEvents: vi.fn(async (input) => {
+      calls.push({ method: "listEvents", input });
+      return [{ eventId: "event-synthetic", summary: "Synthetic event" }];
+    }),
+    createEvent: vi.fn(async (input) => {
+      calls.push({ method: "createEvent", input });
+      return { eventId: "event-synthetic", summary: input.summary };
+    }),
+    createSheet: vi.fn(async (input) => {
+      calls.push({ method: "createSheet", input });
+      return { spreadsheetToken: "sheet-synthetic", title: input.title };
+    }),
+    readSheet: vi.fn(async (input) => {
+      calls.push({ method: "readSheet", input });
+      return { range: input.range, values: [["a", 1]] };
+    }),
+    appendRows: vi.fn(async (input) => {
+      calls.push({ method: "appendRows", input });
+      return { range: input.range, updatedRows: input.values.length };
     }),
   };
   const tables = {

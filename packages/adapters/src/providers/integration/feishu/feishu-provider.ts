@@ -3,9 +3,13 @@ import { deadlineSignal } from "@rakazo/core";
 import { z } from "zod";
 import { readBoundedText } from "../../../integrations/connector-http.js";
 import type {
+  FeishuAppendResult,
   FeishuConnectionConfig,
   FeishuDoc,
+  FeishuEvent,
   FeishuOfficeProvider,
+  FeishuSheet,
+  FeishuSheetValues,
   FeishuTask,
   FeishuTaskPage,
 } from "./feishu-contracts.js";
@@ -134,6 +138,138 @@ async function listTasksOp(
   return { tasks, ...(data.has_more && data.page_token ? { nextPageToken: data.page_token } : {}) };
 }
 
+async function primaryCalendarId(call: FeishuCall, signal: AbortSignal): Promise<string> {
+  const data = await call(
+    "GET",
+    "/open-apis/calendar/v4/calendars/primary",
+    signal,
+    z.object({
+      calendar_id: z.string().optional(),
+      calendar: z.object({ calendar_id: z.string() }).optional(),
+    }),
+  );
+  const id = data.calendar_id ?? data.calendar?.calendar_id;
+  if (!id) throw new FeishuServiceError("invalid_response");
+  return id;
+}
+async function listEventsOp(
+  call: FeishuCall,
+  input: { startTime: number; endTime: number; calendarId?: string },
+  signal: AbortSignal,
+): Promise<FeishuEvent[]> {
+  const calendarId = input.calendarId ?? (await primaryCalendarId(call, signal));
+  const data = await call(
+    "GET",
+    `/open-apis/calendar/v4/calendars/${encodeURIComponent(calendarId)}/events`,
+    signal,
+    z.object({
+      items: z
+        .array(z.object({ event_id: z.string(), summary: z.string().default("") }))
+        .default([]),
+    }),
+    undefined,
+    { start_time: String(input.startTime), end_time: String(input.endTime) },
+  );
+  return data.items.map((event) => ({ eventId: event.event_id, summary: event.summary }));
+}
+async function createEventOp(
+  call: FeishuCall,
+  input: { summary: string; startTime: number; endTime: number; calendarId?: string },
+  signal: AbortSignal,
+): Promise<FeishuEvent> {
+  const calendarId = input.calendarId ?? (await primaryCalendarId(call, signal));
+  const data = await call(
+    "POST",
+    `/open-apis/calendar/v4/calendars/${encodeURIComponent(calendarId)}/events`,
+    signal,
+    z.object({ event: z.object({ event_id: z.string(), summary: z.string().default("") }) }),
+    {
+      summary: input.summary,
+      start_time: { timestamp: String(input.startTime) },
+      end_time: { timestamp: String(input.endTime) },
+    },
+  );
+  return { eventId: data.event.event_id, summary: data.event.summary };
+}
+async function createSheetOp(
+  call: FeishuCall,
+  input: { title: string },
+  signal: AbortSignal,
+): Promise<FeishuSheet> {
+  const data = await call(
+    "POST",
+    "/open-apis/sheets/v3/spreadsheets",
+    signal,
+    z.object({
+      spreadsheet: z.object({ spreadsheet_token: z.string(), title: z.string().default("") }),
+    }),
+    { title: input.title },
+  );
+  return { spreadsheetToken: data.spreadsheet.spreadsheet_token, title: data.spreadsheet.title };
+}
+async function readSheetOp(
+  call: FeishuCall,
+  input: { spreadsheetToken: string; range: string },
+  signal: AbortSignal,
+): Promise<FeishuSheetValues> {
+  const data = await call(
+    "GET",
+    `/open-apis/sheets/v2/spreadsheets/${encodeURIComponent(input.spreadsheetToken)}/values/${encodeURIComponent(input.range)}`,
+    signal,
+    z.object({
+      valueRange: z.object({
+        range: z.string().default(""),
+        values: z.array(z.array(z.unknown())).default([]),
+      }),
+    }),
+  );
+  return { range: data.valueRange.range, values: data.valueRange.values };
+}
+/** Feishu append rejects a single-cell range; widen it to one row of the values' width. */
+function expandAppendRange(range: string, width: number): string {
+  const match = /^(.*!)?([A-Z]+)(\d+)$/.exec(range);
+  const col = match?.[2];
+  const row = match?.[3];
+  if (!match || !col || !row || width <= 1) return range;
+  const prefix = match[1] ?? "";
+  let start = 0;
+  for (const ch of col) start = start * 26 + (ch.charCodeAt(0) - 64);
+  let end = start + width - 1;
+  let endCol = "";
+  while (end > 0) {
+    endCol = String.fromCharCode(65 + ((end - 1) % 26)) + endCol;
+    end = Math.floor((end - 1) / 26);
+  }
+  return `${prefix}${col}${row}:${endCol}${row}`;
+}
+async function appendRowsOp(
+  call: FeishuCall,
+  input: {
+    spreadsheetToken: string;
+    range: string;
+    values: (string | number | boolean | null)[][];
+  },
+  signal: AbortSignal,
+): Promise<FeishuAppendResult> {
+  const range = expandAppendRange(input.range, input.values[0]?.length ?? 1);
+  const data = await call(
+    "POST",
+    `/open-apis/sheets/v2/spreadsheets/${encodeURIComponent(input.spreadsheetToken)}/values_append`,
+    signal,
+    z.object({
+      updates: z
+        .object({ updatedRows: z.number().optional(), updatedRange: z.string().optional() })
+        .optional(),
+    }),
+    { valueRange: { range, values: input.values } },
+    { insertDataOption: "INSERT_ROWS" },
+  );
+  return {
+    range: data.updates?.updatedRange ?? range,
+    updatedRows: data.updates?.updatedRows ?? input.values.length,
+  };
+}
+
 /** App identity (tenant access token); the official SDK owns token caching and refresh. */
 export class LarkFeishuProvider implements FeishuOfficeProvider {
   readonly config: FeishuConnectionConfig;
@@ -238,6 +374,34 @@ export class LarkFeishuProvider implements FeishuOfficeProvider {
   listTasks(input: { pageSize?: number; pageToken?: string }, signal: AbortSignal) {
     return listTasksOp(this.call.bind(this), input, signal);
   }
+  listEvents(
+    input: { startTime: number; endTime: number; calendarId?: string },
+    signal: AbortSignal,
+  ) {
+    return listEventsOp(this.call.bind(this), input, signal);
+  }
+  createEvent(
+    input: { summary: string; startTime: number; endTime: number; calendarId?: string },
+    signal: AbortSignal,
+  ) {
+    return createEventOp(this.call.bind(this), input, signal);
+  }
+  createSheet(input: { title: string }, signal: AbortSignal) {
+    return createSheetOp(this.call.bind(this), input, signal);
+  }
+  readSheet(input: { spreadsheetToken: string; range: string }, signal: AbortSignal) {
+    return readSheetOp(this.call.bind(this), input, signal);
+  }
+  appendRows(
+    input: {
+      spreadsheetToken: string;
+      range: string;
+      values: (string | number | boolean | null)[][];
+    },
+    signal: AbortSignal,
+  ) {
+    return appendRowsOp(this.call.bind(this), input, signal);
+  }
 }
 
 /** User identity (user_access_token); every call acts as the authorizing person. */
@@ -327,5 +491,33 @@ export class UserLarkFeishuProvider implements FeishuOfficeProvider {
       user_id: open_id,
       user_id_type: "open_id",
     });
+  }
+  listEvents(
+    input: { startTime: number; endTime: number; calendarId?: string },
+    signal: AbortSignal,
+  ) {
+    return listEventsOp(this.call.bind(this), input, signal);
+  }
+  createEvent(
+    input: { summary: string; startTime: number; endTime: number; calendarId?: string },
+    signal: AbortSignal,
+  ) {
+    return createEventOp(this.call.bind(this), input, signal);
+  }
+  createSheet(input: { title: string }, signal: AbortSignal) {
+    return createSheetOp(this.call.bind(this), input, signal);
+  }
+  readSheet(input: { spreadsheetToken: string; range: string }, signal: AbortSignal) {
+    return readSheetOp(this.call.bind(this), input, signal);
+  }
+  appendRows(
+    input: {
+      spreadsheetToken: string;
+      range: string;
+      values: (string | number | boolean | null)[][];
+    },
+    signal: AbortSignal,
+  ) {
+    return appendRowsOp(this.call.bind(this), input, signal);
   }
 }

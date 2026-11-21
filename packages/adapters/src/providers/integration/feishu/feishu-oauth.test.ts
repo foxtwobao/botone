@@ -1,13 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { FeishuConnectionConfig } from "./feishu-contracts.js";
 import { exchangeFeishuCode } from "./feishu-oauth.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
-const config = {
+const config: FeishuConnectionConfig = {
   appId: "cli_synthetic",
   appSecret: "synthetic",
   domain: "feishu" as const,
   identity: "user" as const,
+  modules: ["doc", "task"],
   name: "Feishu",
 };
 
