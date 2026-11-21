@@ -156,7 +156,7 @@ test("a browser outside the desktop app opens sign-in on its local server", asyn
   );
   await page.goto("/");
   await expect(page).toHaveURL(/\/sign-in$/);
-  await expect(page.getByRole("heading", { name: "Sign in to Rakazo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to BotONE" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign up", exact: true })).toHaveCount(0);
   await captureScreenshot(page, testInfo, "local-account-sign-in");
 
