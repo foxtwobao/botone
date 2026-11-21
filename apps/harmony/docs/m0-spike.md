@@ -109,6 +109,10 @@ exercised yet — M0 has no local tests, its spikes are instrumented (`ohosTest`
 - `python3 .github/scripts/changed-areas.test.py`: 11 tests OK, including the harmony
   path-trigger cases and the devDep-coverage assertion.
 - folder-size + ratchets tests: 62 pass, including the new `.ets` positives.
+- `turbo run build --dry`: harmony appears only as a `<NONEXISTENT>`-command
+  placeholder, exactly like the 34 existing members without a `build` script — the
+  root build runs no harmony command and needs no SDK; `harmony:build` stays invisible
+  to Turbo.
 
 Environment note: `pnpm install`'s supply-chain check rejects the pre-existing lockfile
 entry `@azure/core-xml@1.6.1` (version absent from the registry manifest); the install
