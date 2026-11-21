@@ -37,6 +37,8 @@ export const SESSIONLESS_ROUTES: Readonly<Record<string, string>> = {
   "ALL /api/v1/messaging/webhook/:provider": "the platform's signature, checked by its adapter",
   "GET /api/v1/messaging/install/slack/callback":
     "none: redirects to the web app, where the signed-in installer finishes; no database",
+  "GET /api/v1/integrations/feishu/callback":
+    "the one-time OAuth state bound to a stored pending connection, plus the provider code; exchanged server-side",
   "POST /api/v1/phone/webhook": "the platform's signature, checked by its adapter",
   "POST /api/v1/billing/webhook": "the billing provider's signature, checked by its adapter",
   "GET /api/v1/billing/return?client=mobile":

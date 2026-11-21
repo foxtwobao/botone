@@ -20,6 +20,8 @@ export const exclude = [
   "packages/core/src/agent-import/**",
   // Composition roots wire vendors up and read their configuration, which AGENTS.md allows.
   "apps/api/src/{app,env,index}.ts",
+  // The sessionless-route registry names each vendor callback it admits, like the IPC channel map.
+  "apps/api/src/http/sessionless-routes.ts",
   "apps/api/src/telemetry/{monitoring,native-monitoring}.ts",
   "apps/api/src/cli/**",
   "apps/worker/src/index.ts",
@@ -92,6 +94,8 @@ const VENDORS = [
   // Connectors
   "composio",
   "pipedream",
+  "feishu",
+  "lark",
   // Memory
   "supermemory",
   "honcho",

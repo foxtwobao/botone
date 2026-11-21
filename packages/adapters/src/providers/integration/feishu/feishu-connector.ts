@@ -6,12 +6,14 @@ import type {
   ConnectorTool,
   ManagedConnectorProvider,
 } from "@rakazo/adapter-kit";
+import { deadlineSignal } from "@rakazo/core";
 import { LeaseHeldError, readJsonColumn, recordSecurityEvent, withLease } from "@rakazo/db";
 import { bestEffort } from "@rakazo/logging";
 import { z } from "zod";
 import type { ApplicationServices } from "../../../configured-apps.js";
 import { scopeConnectorTools } from "../../../integrations/connector-accounts.js";
 import { TOOL_RESULT_TEXT_LIMIT } from "../../../runtime/pi/pi-runtime-limits.js";
+import { MODULE_SCOPES, MODULE_TOOLS } from "./feishu.tool-definition.js";
 import type { FeishuConnectionConfig, FeishuOfficeProvider } from "./feishu-contracts.js";
 import {
   feishuAppendRowsSchema,
@@ -38,177 +40,6 @@ const ID = "feishu";
 const connectionMetadataSchema = z.object({
   redirectUri: z.string().optional(),
 });
-
-type FeishuModule = "doc" | "task" | "calendar" | "sheet";
-type FeishuTool = ConnectorTool & { title: string };
-
-/** Scopes each module needs; the OAuth request is the union of the enabled modules. */
-const MODULE_SCOPES: Record<FeishuModule, string[]> = {
-  doc: ["docx:document"],
-  task: ["task:task:read", "task:task:write"],
-  calendar: [
-    "calendar:calendar:read",
-    "calendar:calendar.event:read",
-    "calendar:calendar.event:create",
-  ],
-  sheet: ["sheets:spreadsheet:create", "sheets:spreadsheet:read", "sheets:spreadsheet:write_only"],
-};
-
-const MODULE_TOOLS: Record<FeishuModule, FeishuTool[]> = {
-  doc: [
-    {
-      name: "feishu_create_doc",
-      title: "Create document",
-      description:
-        "Create a Feishu document and return its ID and title. Optionally place it in a folder by its folder token.",
-      readOnly: false,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["title"],
-        properties: {
-          title: { type: "string", minLength: 1, maxLength: 200 },
-          folderToken: { type: "string", minLength: 1, maxLength: 200 },
-        },
-      },
-    },
-    {
-      name: "feishu_read_doc",
-      title: "Read document",
-      description:
-        "Read the plain-text content of an accessible Feishu document, by its document ID.",
-      readOnly: true,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["documentId"],
-        properties: { documentId: { type: "string", minLength: 1, maxLength: 200 } },
-      },
-    },
-  ],
-  task: [
-    {
-      name: "feishu_create_task",
-      title: "Create task",
-      description:
-        "Create a Feishu task with a summary, optional description and optional due time (epoch milliseconds).",
-      readOnly: false,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["summary"],
-        properties: {
-          summary: { type: "string", minLength: 1, maxLength: 500 },
-          description: { type: "string", maxLength: 4000 },
-          dueTimestamp: { type: "integer", minimum: 0 },
-        },
-      },
-    },
-    {
-      name: "feishu_list_tasks",
-      title: "List tasks",
-      description: "List accessible Feishu tasks. Continue from nextPageToken when present.",
-      readOnly: true,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          pageSize: { type: "integer", minimum: 1, maximum: 100 },
-          pageToken: { type: "string", minLength: 1, maxLength: 500 },
-        },
-      },
-    },
-  ],
-  calendar: [
-    {
-      name: "feishu_list_events",
-      title: "List calendar events",
-      description:
-        "List Feishu calendar events between two unix-second timestamps. Defaults to the primary calendar; pass calendarId for another.",
-      readOnly: true,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["startTime", "endTime"],
-        properties: {
-          startTime: { type: "integer" },
-          endTime: { type: "integer" },
-          calendarId: { type: "string", minLength: 1, maxLength: 200 },
-        },
-      },
-    },
-    {
-      name: "feishu_create_event",
-      title: "Create calendar event",
-      description:
-        "Create a Feishu calendar event with a summary and unix-second start/end times. Defaults to the primary calendar.",
-      readOnly: false,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["summary", "startTime", "endTime"],
-        properties: {
-          summary: { type: "string", minLength: 1, maxLength: 500 },
-          startTime: { type: "integer" },
-          endTime: { type: "integer" },
-          calendarId: { type: "string", minLength: 1, maxLength: 200 },
-        },
-      },
-    },
-  ],
-  sheet: [
-    {
-      name: "feishu_create_sheet",
-      title: "Create spreadsheet",
-      description: "Create a Feishu spreadsheet and return its token and title.",
-      readOnly: false,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["title"],
-        properties: { title: { type: "string", minLength: 1, maxLength: 200 } },
-      },
-    },
-    {
-      name: "feishu_read_sheet",
-      title: "Read spreadsheet range",
-      description:
-        "Read cell values of a Feishu spreadsheet range, e.g. Sheet1!A1:C10, by spreadsheet token.",
-      readOnly: true,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["spreadsheetToken", "range"],
-        properties: {
-          spreadsheetToken: { type: "string", minLength: 1, maxLength: 200 },
-          range: { type: "string", minLength: 1, maxLength: 200 },
-        },
-      },
-    },
-    {
-      name: "feishu_append_rows",
-      title: "Append spreadsheet rows",
-      description:
-        "Append rows of cell values to a Feishu spreadsheet range, by spreadsheet token. A single-cell range is widened to one row of the values' width.",
-      readOnly: false,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        required: ["spreadsheetToken", "range", "values"],
-        properties: {
-          spreadsheetToken: { type: "string", minLength: 1, maxLength: 200 },
-          range: { type: "string", minLength: 1, maxLength: 200 },
-          values: {
-            type: "array",
-            minItems: 1,
-            maxItems: 100,
-            items: { type: "array", items: { type: ["string", "number", "boolean", "null"] } },
-          },
-        },
-      },
-    },
-  ],
-};
 
 interface FeishuIdentity {
   appId: string;
@@ -327,19 +158,19 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
     const secrets = this.deps.secrets;
     if (!secrets) throw new FeishuServiceError("unavailable");
     const record = await secrets.put(JSON.stringify(tokens), context);
-    await this.deps.prisma.secret.create({
-      data: {
-        id: record.id,
-        userId: context.userId,
-        spaceId: context.spaceId,
-        kind: ID,
-        ciphertext: record.ciphertext,
-      },
-    });
     const superseded = row.secretId;
-    await this.deps.prisma.connection.update({
-      where: { id: row.id },
-      data: { secretId: record.id },
+    // Secret row and the connection pointer commit together so a failure cannot orphan a live token.
+    await this.deps.prisma.$transaction(async (tx) => {
+      await tx.secret.create({
+        data: {
+          id: record.id,
+          userId: context.userId,
+          spaceId: context.spaceId,
+          kind: ID,
+          ciphertext: record.ciphertext,
+        },
+      });
+      await tx.connection.update({ where: { id: row.id }, data: { secretId: record.id } });
     });
     row.secretId = record.id;
     if (superseded)
@@ -380,10 +211,11 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
           row.secretId = fresh.secretId;
           const current = await this.loadTokens(context, row);
           if (!current.refreshToken || current.expiresAt >= Date.now() + 60_000) return current;
+          // Own deadline, not the run signal: an aborted run must not strand a rotated refresh token.
           const refreshed = await refreshFeishuToken(
             this.config,
             current.refreshToken,
-            context.signal,
+            deadlineSignal(20_000),
           );
           await this.storeTokens(context, row, refreshed);
           await recordSecurityEvent({
@@ -479,10 +311,16 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
     if (request.provider !== ID) throw new FeishuServiceError("not_found", 404);
     const identity = await this.identity(context);
     const prefix = this.prefix(context, identity);
-    if (!this.userMode) return { state: prefix, authorizationUrl: null };
+    if (!this.userMode) {
+      // Verify before the shared flow marks the row connected, so bad credentials fail at begin.
+      await this.provider.verify(context.signal);
+      return { state: prefix, authorizationUrl: null };
+    }
     // The request state is saved by the managed connection flow, then replaced by `prefix` after completion.
     const state = randomUUID();
     await this.ensureConnection(context);
+    // Feishu redirects to a sessionless server callback that exchanges the code; the client only polls.
+    const callbackUrl = `${new URL(request.redirectUrl).origin}/api/v1/integrations/feishu/callback`;
     const scopes = [
       "contact:user.base:readonly",
       ...this.config.modules.flatMap((module) => MODULE_SCOPES[module]),
@@ -490,8 +328,8 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
     ].join(" ");
     return {
       state,
-      authorizationUrl: feishuAuthorizeUrl(this.config, request.redirectUrl, state, scopes),
-      connectionMetadata: { redirectUri: request.redirectUrl },
+      authorizationUrl: feishuAuthorizeUrl(this.config, callbackUrl, state, scopes),
+      connectionMetadata: { redirectUri: callbackUrl },
     };
   }
   async connectionReady(context: AdapterContext, externalId: string) {
@@ -513,10 +351,20 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
       }
       return true;
     } catch (error) {
-      if (error instanceof FeishuServiceError && error.code === "authorization_required")
-        return false;
+      // A dead grant or an unreachable provider both mean "not ready"; never leak into the poll loop.
+      if (error instanceof FeishuServiceError) return false;
       throw error;
     }
+  }
+  async needsReconnect(context: AdapterContext, externalId: string) {
+    if (externalId !== ID || !this.userMode) return false;
+    const rows = await this.rows(context, ["connected"]);
+    if (!rows.length) return false;
+    const ready = await bestEffort(
+      "probe Feishu connection readiness",
+      this.connectionReady(context, externalId),
+    );
+    return ready !== true;
   }
   async complete(request: { state: string; code?: string }, context: AdapterContext) {
     const identity = await this.identity(context);
@@ -572,15 +420,17 @@ export class FeishuOfficeConnector implements ManagedConnectorProvider {
       },
     });
     if (!row) return;
+    // Clear the secret pointer and metadata atomically with the status; idempotent on repeat revoke.
+    const updated = await this.deps.prisma.connection.updateMany({
+      where: { id: row.id, status: { not: "revoked" } },
+      data: { status: "revoked", secretId: null, metadata: {} },
+    });
+    if (!updated.count) return;
     if (row.secretId)
       await bestEffort(
         "delete revoked Feishu secret",
         this.deps.prisma.secret.delete({ where: { id: row.secretId } }),
       );
-    await this.deps.prisma.connection.updateMany({
-      where: { id: row.id },
-      data: { status: "revoked" },
-    });
     await recordSecurityEvent({
       type: "credential.deleted",
       userId: context.userId,

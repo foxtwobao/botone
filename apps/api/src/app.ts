@@ -1185,6 +1185,36 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       return c.redirect(target.toString());
     });
   }
+  // Sessionless Feishu OAuth callback: the one-time state names a pending connection; the code is
+  // exchanged server-side so every client surface completes by polling, without reading the popup URL.
+  app.get("/api/v1/integrations/feishu/callback", async (c) => {
+    const back = new URL("/integrations/callback", env.webOrigin).toString();
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    if (!code || !state) return c.redirect(back);
+    const row = await prisma.connection.findFirst({
+      where: { connectorId: "feishu", provider: "feishu", providerRef: state, status: "pending" },
+    });
+    const connector = connectedApps.connectors.find((x) => x.describe().id === "feishu") as
+      | ManagedConnectorProvider
+      | undefined;
+    if (!row || !connector) return c.redirect(back);
+    try {
+      await connector.complete(
+        { state, code },
+        {
+          userId: row.userId,
+          spaceId: row.spaceId,
+          operationId: "feishu.oauth.callback",
+          traceId: "feishu.oauth.callback",
+          signal: AbortSignal.timeout(20_000),
+        },
+      );
+    } catch (error) {
+      getLogger().warn("feishu oauth callback could not complete the connection", { error });
+    }
+    return c.redirect(back);
+  });
   app.use(
     "/rpc/*",
     clientBuildMiddleware({

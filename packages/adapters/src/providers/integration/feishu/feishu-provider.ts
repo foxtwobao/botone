@@ -34,9 +34,14 @@ export class FeishuServiceError extends Error {
 }
 
 /** Feishu business codes the caller can act on; anything else stays a sanitized unavailable. */
-function classifyCode(code: unknown): "forbidden" | "rate_limited" | "unavailable" {
+function classifyCode(
+  code: unknown,
+): "forbidden" | "rate_limited" | "authorization_required" | "unavailable" {
   if (code === 99991672) return "forbidden";
   if (code === 99991400) return "rate_limited";
+  // Invalid/expired app or user access token: the person must re-authorize, not retry.
+  if (code === 99991661 || code === 99991663 || code === 99991664 || code === 99991668)
+    return "authorization_required";
   return "unavailable";
 }
 

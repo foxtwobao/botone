@@ -17,6 +17,7 @@ const match = (row: Row, where: Row = {}): boolean =>
     if (v && typeof v === "object" && !Array.isArray(v)) {
       const c = v as Row;
       if ("in" in c) return (c.in as unknown[]).includes(a);
+      if ("not" in c) return a !== c.not;
       return Boolean(a && typeof a === "object" && match(a as Row, c));
     }
     return a === v;
@@ -287,7 +288,12 @@ describe("feishu user identity (OAuth) offline contract", () => {
     const f = fixture();
     await connectUser(f);
     const again = await beginUser(f, "https://app.example.test/cb2");
-    expect(again.authorizationUrl).toContain("cb2");
+    expect(decodeURIComponent(again.authorizationUrl)).toContain(
+      "/api/v1/integrations/feishu/callback",
+    );
+    expect(again.connectionMetadata?.redirectUri).toBe(
+      "https://app.example.test/api/v1/integrations/feishu/callback",
+    );
     await completeUser(f, again, "auth-code-2");
     expect(f.connections[0]?.status).toBe("connected");
     expect(f.calls.filter((c) => c === "token:authorization_code")).toHaveLength(2);
