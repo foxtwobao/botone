@@ -4,7 +4,7 @@ const SOURCE_LIMIT = 1000;
 
 export const message = `A new source file may not exceed ${SOURCE_LIMIT} lines. Tests and evals are exempt. Split the file along its responsibilities; do not add it to the frozen list.`;
 
-export const include = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,astro,css,py,sh,swift,kt}"];
+export const include = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,astro,css,py,sh,swift,kt,ets}"];
 
 export const exclude = ["apps/www/src/i18n/**"];
 

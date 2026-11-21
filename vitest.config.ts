@@ -14,6 +14,7 @@ const include = [
   "apps/web/server/**/*.test.ts",
   "apps/mobile/{lib,components}/**/*.test.{ts,tsx}",
   "apps/mobile/plugins/**/*.test.js",
+  "apps/harmony/contract/**/*.test.ts",
   "apps/api/src/**/*.test.ts",
   "apps/worker/src/**/*.test.ts",
 ];

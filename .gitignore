@@ -57,3 +57,13 @@ apps/web/public/computer-screen/sdk/
 
 # Private marketing pages, cloned in by apps/www/scripts/clone-marketing.sh
 apps/www/src/marketing/
+
+# HarmonyOS (apps/harmony): hvigor/ohpm artifacts and local signing material
+oh_modules/
+.hvigor/
+local.properties
+*.p12
+*.cer
+*.p7b
+apps/harmony/**/token.dek
+apps/harmony/**/token.enc
