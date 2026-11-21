@@ -15,6 +15,7 @@ import {
 } from './session';
 import { currentApiBase } from './server-store';
 import { serverHeaders } from './server-headers';
+import { clientBuildHeaders } from './client-build';
 import { flushPendingSignOut } from './sign-out';
 import type { SignOutContext } from './sign-out';
 import { t } from '../i18n/i18n';
@@ -47,7 +48,7 @@ function noteUpdateRequired(): void {
 }
 
 export async function authHeaders(spaceId: string | null): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = clientBuildHeaders();
   const custom = serverHeaders(currentApiBase());
   for (const key of Object.keys(custom)) {
     headers[key] = custom[key];

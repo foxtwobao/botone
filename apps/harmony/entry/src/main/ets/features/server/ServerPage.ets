@@ -1,6 +1,8 @@
 // Server address management (design §7.2 M1): normalize → probe → switch with rollback,
-// recent servers (≤5) with their saved headers, and the default server. Copy reuses the
-// mobile catalog msgids; errors arrive as msgids from the net layer and translate here.
+// recent servers (≤5) with their saved headers, and the default server. The current address
+// already has its own card, so the recent list never repeats it; removing a saved server is a
+// long-press context menu, not a button on every row. Copy reuses the mobile catalog msgids;
+// errors arrive as msgids from the net layer and translate here.
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
 import { ActionButton, ErrorText, Field } from '../../uikit/controls';
@@ -21,7 +23,27 @@ export struct ServerPage {
   @Local servers: SavedServer[] = [];
 
   aboutToAppear(): void {
-    this.servers = savedServers();
+    this.refreshServers();
+  }
+
+  /** The current address is shown in its own card above; listing it again reads as a duplicate. */
+  private refreshServers(): void {
+    const current = currentApiBase();
+    this.servers = savedServers().filter((entry): boolean => entry.apiBase !== current);
+  }
+
+  @Builder
+  serverMenu(apiBase: string) {
+    Menu() {
+      MenuItem({ content: t('Remove') })
+        .contentFontColor(appearance.tokens().destructive)
+        .enabled(!this.busy)
+        .onClick((): void => {
+          void removeSavedServer(apiBase).then((): void => {
+            this.refreshServers();
+          });
+        })
+    }
   }
 
   private async save(target: string): Promise<void> {
@@ -36,7 +58,7 @@ export struct ServerPage {
     const result = await switchServer(target, headers);
     this.busy = false;
     if (result.ok) {
-      this.servers = savedServers();
+      this.refreshServers();
       app.noteServerChanged();
       this.stack.pop();
     } else {
@@ -104,24 +126,13 @@ export struct ServerPage {
               .alignSelf(ItemAlign.Start)
             Column({ space: 8 }) {
               ForEach(this.servers, (entry: SavedServer): void => {
-                Row({ space: 10 }) {
+                Row() {
                   Text(displaySavedServer(entry.apiBase))
                     .fontSize(typeScale.body.fontSize)
                     .fontColor(appearance.tokens().foreground)
                     .layoutWeight(1)
                     .maxLines(1)
                     .textOverflow({ overflow: TextOverflow.Ellipsis })
-                  Button(t('Remove'))
-                    .fontSize(typeScale.caption.fontSize)
-                    .fontColor(appearance.tokens().destructive)
-                    .backgroundColor(appearance.tokens().background)
-                    .height(32)
-                    .enabled(!this.busy)
-                    .onClick((): void => {
-                      void removeSavedServer(entry.apiBase).then((): void => {
-                        this.servers = savedServers();
-                      });
-                    })
                 }
                 .width('100%')
                 .padding(12)
@@ -130,6 +141,7 @@ export struct ServerPage {
                 .onClick((): void => {
                   void this.save(entry.apiBase);
                 })
+                .bindContextMenu(this.serverMenu(entry.apiBase), ResponseType.LongPress)
               }, (entry: SavedServer): string => entry.apiBase)
             }
             .width('100%')

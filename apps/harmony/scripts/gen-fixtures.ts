@@ -21,7 +21,7 @@ import { MAX_MOBILE_RPC_RESPONSE_BYTES } from "@rakazo/mobile/lib/api/api.js";
 import { subscribeThread } from "@rakazo/mobile/lib/api/api-live.js";
 import { normalizeApiBase, probeApiBase } from "@rakazo/mobile/lib/api/endpoint.js";
 import { vi } from "vitest";
-import { readCatalog as readPoCatalog } from "../scripts/po.ts";
+import { readCatalog as readPoCatalog } from "./po.ts";
 
 const localesDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -475,7 +475,7 @@ const SAMPLE_VALUES: Record<string, string | number> = {
 
 export function generateIcuFixture(): IcuFixture {
   const cases: IcuCase[] = [];
-  for (const locale of ["en", "zh-CN"]) {
+  for (const locale of ["en", "zh-CN", "zh-TW"]) {
     const catalog = readCatalog(locale);
     i18n.load(locale, catalog);
     i18n.activate(locale);

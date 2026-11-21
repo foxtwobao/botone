@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "harmony:build": "devecocli build",
-    "harmony:codegen": "node scripts/gen-tokens.ts && node scripts/gen-i18n.ts && node scripts/embed-fixtures.ts"
+    "harmony:codegen": "node scripts/gen-tokens.ts && node scripts/gen-i18n.ts && tsx scripts/gen-client-build.ts && node scripts/embed-fixtures.ts"
   },
   "devDependencies": {
     "@lingui/core": "6.12.0",

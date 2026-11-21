@@ -5,15 +5,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  appContract,
-  authCapabilitiesSchema,
-  MeSchema,
-  SpaceNavigationSchema,
-} from "@rakazo/contracts";
+import { appContract } from "@rakazo/contracts";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { snapshotViews } from "./manifest";
+import { meView, snapshotViews, spacesListView } from "../scripts/contract-manifest";
 
 const snapshotDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "snapshots");
 const update = process.env.HARMONY_UPDATE_SNAPSHOTS === "1";
@@ -33,12 +28,18 @@ function normalize(value: unknown): unknown {
 }
 
 describe("harmony layer-1 contract snapshots", () => {
-  it("pins the views to the schemas the real contract procedures use", () => {
-    expect(appContract.health["~orpc"].outputSchema).toBeDefined();
-    expect(appContract.me["~orpc"].outputSchema).toBe(MeSchema);
-    expect(appContract.spaces.list["~orpc"].outputSchema).toBe(SpaceNavigationSchema);
-    // capabilities is better-auth REST, not an RPC procedure; its schema is the contract source.
-    expect(authCapabilitiesSchema).toBeDefined();
+  it("views project the real procedure outputs, not hand-written copies", () => {
+    // health is consumed whole: the view IS the procedure's own output schema.
+    expect(snapshotViews.health).toBe(appContract.health["~orpc"].outputSchema);
+    // Picked views keep the procedure's own field schemas, so a rebind replaces them and goes red.
+    const meOutput = appContract.me["~orpc"].outputSchema!;
+    const meShape = meOutput.shape as Record<string, unknown>;
+    for (const [key, field] of Object.entries(meView.shape)) {
+      expect(field, `me.${key}`).toBe(meShape[key]);
+    }
+    const spacesOutput = appContract.spaces.list["~orpc"].outputSchema!;
+    expect(spacesListView.shape.current.shape.id).toBe(spacesOutput.shape.current.shape.id);
+    expect(spacesListView.shape.current.shape.name).toBe(spacesOutput.shape.current.shape.name);
   });
 
   for (const [name, schema] of Object.entries(snapshotViews)) {

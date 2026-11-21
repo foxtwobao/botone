@@ -42,9 +42,7 @@ export class AppState {
     setUpdateHandler((): void => {
       this.updateRequired = true;
     });
-    subscribeSession((): void => {
-      this.sessionChanged();
-    });
+    this.watchSession();
     try {
       await initServerStore(context);
       await loadI18n(context);
@@ -64,6 +62,13 @@ export class AppState {
     }
   }
 
+  /** Wires the session listener; the returned function stops it. Bootstrap calls this once. */
+  watchSession(): () => void {
+    return subscribeSession((): void => {
+      this.sessionChanged();
+    });
+  }
+
   private sessionChanged(): void {
     void loadSessionToken().then((token: string): void => {
       if (!token) {
@@ -71,6 +76,9 @@ export class AppState {
         this.spaceName = '';
         this.meError = '';
         this.phase = 'signIn';
+      } else if (this.phase === 'signIn') {
+        // A sign-in or a rolled-back switch restored the session: the account page owns the screen.
+        void this.loadMe();
       }
     });
   }

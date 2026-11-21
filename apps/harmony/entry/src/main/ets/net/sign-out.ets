@@ -6,6 +6,7 @@
 // Single session, so mobile's multi-account queue and reconcile races shrink to one pass.
 import { assetGetString, assetPutString } from './asset-store';
 import { postJson, RPC_TIMEOUT_MS } from './http';
+import { clientBuildHeaders } from './client-build';
 import { parseServerHeaders } from './server-headers';
 
 const PENDING_SIGN_OUT_KEY = 'rakazo.pending_sign_out';
@@ -182,7 +183,7 @@ export function promotePendingSignOut(record: PendingSignOut): Promise<void> {
  * retries. Redirects are refused by the transport, so only the endpoint itself confirms.
  */
 async function deliver(record: PendingSignOut): Promise<boolean> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = clientBuildHeaders();
   for (const key of Object.keys(record.headers)) {
     headers[key] = record.headers[key];
   }

@@ -18,6 +18,8 @@ const splitFrame = Buffer.from('data: {"json":{"type":"split","seq":2,"text":"é¸
 const cut = splitFrame.indexOf("é¸¿") + 1;
 
 const signOuts = [];
+// Every x-rakazo-client-build header the client sends, so tests can pin the build handshake.
+const clientBuilds = [];
 const ME = {
   userId: "user-fake",
   email: "ada@example.com",
@@ -174,11 +176,14 @@ createServer((req, res) => {
   });
   req.on("end", () => {
     console.log(`${req.method} ${req.url}`);
+    const clientBuild = req.headers["x-rakazo-client-build"];
+    if (clientBuild) clientBuilds.push(clientBuild);
     if (req.url === "/__state") {
-      return json(res, 200, { signOuts });
+      return json(res, 200, { signOuts, clientBuilds });
     }
     if (req.url === "/__reset") {
       signOuts.length = 0;
+      clientBuilds.length = 0;
       return json(res, 200, {});
     }
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);

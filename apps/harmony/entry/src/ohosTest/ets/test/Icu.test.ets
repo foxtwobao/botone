@@ -1,5 +1,5 @@
-// Replays the committed ICU fixture: every en/zh-CN plural message at four counts plus the
-// interpolation set, expected values evaluated by @lingui/core over the real catalogs.
+// Replays the committed ICU fixture: every en/zh-CN/zh-TW plural message at four counts plus
+// the interpolation set, expected values evaluated by @lingui/core over the real catalogs.
 import { describe, expect, it } from '@ohos/hypium';
 import { fixtureIcu } from './fixtures.generated';
 import { formatIcu } from '../../../main/ets/i18n/icu';

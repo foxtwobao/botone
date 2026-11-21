@@ -19,6 +19,7 @@ import { currentApiBase, initServerStore, switchServer } from '../../../main/ets
 import { serverHeaders } from '../../../main/ets/net/server-headers';
 import { probeApiBase } from '../../../main/ets/net/endpoint';
 import { getJson, parseJsonObject } from '../../../main/ets/net/http';
+import { AppState } from '../../../main/ets/app/app-state';
 
 const BASE = 'http://10.0.2.2:8787';
 const BASE2 = 'http://10.0.2.2:8788';
@@ -66,6 +67,19 @@ async function saveToken(token: string): Promise<void> {
   await saveSessionToken(token);
 }
 
+/** The session listener loads the account asynchronously; wait for the page with a deadline. */
+async function waitForPhase(state: AppState, phase: string): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    if (state.phase === phase) {
+      return;
+    }
+    await new Promise<void>((resolve: () => void): void => {
+      setTimeout(resolve, 100);
+    });
+  }
+  throw new Error(`app phase did not become ${phase}`);
+}
+
 export default function netTest() {
   describe('NetAgainstFixtureServer', () => {
     beforeAll(async () => {
@@ -88,6 +102,17 @@ export default function netTest() {
       expect(me !== null).assertTrue();
       expect(me!.email).assertEqual('ada@example.com');
       expect(me!.spaceId).assertEqual('space-fake');
+    });
+
+    it('rpc_names_the_client_build', 0, async () => {
+      await saveToken('fake-token');
+      await rpc('me', {});
+      const response = await getJson(`${BASE}/__state`, {}, 8000, 64 * 1024);
+      const body = parseJsonObject(response.body);
+      const builds = body!['clientBuilds'] as Object[];
+      expect(builds.length > 0).assertTrue();
+      // Phase 1 reuses the mobile build series: kind mobile, a 14-digit UTC build id.
+      expect(/^mobile\/\d{14}$/.test(builds[builds.length - 1] as string)).assertTrue();
     });
 
     it('rpc_401_without_space_clears_the_session', 0, async () => {
@@ -226,6 +251,26 @@ export default function netTest() {
       expect(result.ok).assertFalse();
       expect(currentApiBase()).assertEqual(BASE);
       expect(await loadSessionToken()).assertEqual('fake-token');
+    });
+
+    it('failed_switch_keeps_the_account_page', 0, async () => {
+      // The real app state, wired like bootstrap wires it: a failed probe must not move the
+      // screen off the account (the verifier's repro: back from the server page stays signed in).
+      const state = new AppState();
+      const unwatch = state.watchSession();
+      try {
+        state.phase = 'signIn'; // bootstrap's conclusion with no stored token
+        await saveToken('fake-token');
+        await waitForPhase(state, 'me');
+        const result = await switchServer('http://10.0.2.2:9', {});
+        expect(result.ok).assertFalse();
+        expect(state.phase).assertEqual('me');
+        expect(state.me !== null).assertTrue();
+        expect(currentApiBase()).assertEqual(BASE);
+        expect(await loadSessionToken()).assertEqual('fake-token');
+      } finally {
+        unwatch();
+      }
     });
 
     it('switch_to_healthy_server_commits_and_revokes_the_old_session', 0, async () => {

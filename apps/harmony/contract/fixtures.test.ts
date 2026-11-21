@@ -20,7 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as SecureStore from "expo-secure-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fixtureGenerators } from "./fixtures";
+import { fixtureGenerators } from "../scripts/gen-fixtures";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures");
 const update = process.env.HARMONY_UPDATE_FIXTURES === "1";

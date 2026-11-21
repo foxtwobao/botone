@@ -1,7 +1,9 @@
 // ServerStore (design §5.3): the current address is a non-secret preference; switching is a
-// serialized transaction — record the old session's revocation (provisional) → clear the
-// session → probe the new address → commit, rolling back to the old address on any failure.
-// A rolled-back switch's record is settled so it never revokes the session still in use.
+// serialized transaction — record the old session's revocation (provisional) → probe the new
+// address WHILE THE OLD SESSION STAYS ACTIVE → only a successful probe clears the session and
+// commits. A failed probe changes nothing: the user keeps their account page, address and
+// credentials, and the provisional record is settled so it never revokes the session in use.
+// A failure after the clear rolls back to the old address and session.
 import { common } from '@kit.AbilityKit';
 import { preferences } from '@kit.ArkData';
 import { defaultApiBase, normalizeApiBase, probeApiBase } from './endpoint';
@@ -70,6 +72,16 @@ async function rollBack(previous: string, previousHeaders: Record<string, string
   }
 }
 
+/** A failed probe never cleared the session: drop the provisional record while its token is
+ * still the active one, so no later pass revokes the session in use. A token a sign-in replaced
+ * during the probe keeps its record for delivery, like any other ended session. */
+async function settleFailedProbe(record: PendingSignOut): Promise<void> {
+  const snapshot = await snapshotSessionToken();
+  if (snapshot.ok && snapshot.value === record.token) {
+    await removePendingSignOut(record);
+  }
+}
+
 async function changeServer(input: string, headers: Record<string, string>): Promise<EndpointResult> {
   const parsed = normalizeApiBase(input);
   if (!parsed.ok) {
@@ -80,8 +92,8 @@ async function changeServer(input: string, headers: Record<string, string>): Pro
   const previousHeaders = serverHeaders(previous);
   let previousToken = '';
   let record: PendingSignOut | null = null;
+  const generation = currentSessionGeneration();
   if (switching) {
-    const generation = currentSessionGeneration();
     const snapshot = await snapshotSessionToken();
     if (!snapshot.ok) {
       return failure('Could not save the previous server session');
@@ -100,9 +112,23 @@ async function changeServer(input: string, headers: Record<string, string>): Pro
       }
       record = revocation;
     }
-    // A sign-in during the read owns the session now; the switch stops before clearing anything.
+    // A sign-in during the read owns the session now; the switch stops before touching anything.
     if (generation !== currentSessionGeneration()) {
       return failure('Could not save the previous server session');
+    }
+  }
+  // The probe runs on the old session's watch: a failed probe must never sign the user out.
+  const probed = await probeApiBase(parsed.url, headers);
+  if (!probed.ok) {
+    if (record !== null) {
+      await settleFailedProbe(record);
+    }
+    return probed;
+  }
+  if (switching) {
+    // A sign-in during the probe owns the session now; the switch must not clear or carry it.
+    if (generation !== currentSessionGeneration()) {
+      return failure('Something went wrong. Try again.');
     }
     if (!(await clearSessionToken())) {
       await rollBack(previous, previousHeaders, previousToken, record);
@@ -115,15 +141,6 @@ async function changeServer(input: string, headers: Record<string, string>): Pro
       await rollBack(previous, previousHeaders, previousToken, record);
     }
     return failure('Could not save the server URL');
-  }
-  const probed = await probeApiBase(parsed.url, headers);
-  if (!probed.ok) {
-    if (switching) {
-      await rollBack(previous, previousHeaders, previousToken, record);
-    } else {
-      await saveServerHeaders(previous, previousHeaders);
-    }
-    return probed;
   }
   if (store === null) {
     if (switching) {
