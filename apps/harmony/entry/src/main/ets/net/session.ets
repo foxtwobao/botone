@@ -15,6 +15,7 @@ let generation = 0;
 let invalidated = false;
 let writes: Promise<void> = Promise.resolve();
 const listeners: Set<() => void> = new Set();
+const spaceListeners: Set<() => void> = new Set();
 
 // Phase 1 is single-Space: every read/write uses me.spaceId (design Q5). The cache lives with
 // the session because a sign-out or server switch must drop it, and it is never persisted —
@@ -26,7 +27,21 @@ export function selectedSpaceId(): string {
 }
 
 export function setSelectedSpace(id: string): void {
+  if (cachedSpaceId === id) {
+    return;
+  }
   cachedSpaceId = id;
+  for (const listener of spaceListeners) {
+    listener();
+  }
+}
+
+/** The roster stream reopens when the selected Space changes, as it does on a session change. */
+export function subscribeSpaceSelection(listener: () => void): () => void {
+  spaceListeners.add(listener);
+  return (): void => {
+    spaceListeners.delete(listener);
+  };
 }
 
 export function currentSessionGeneration(): number {

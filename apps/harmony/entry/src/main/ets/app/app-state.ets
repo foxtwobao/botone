@@ -17,6 +17,9 @@ import { flushPendingSignOut } from '../net/sign-out';
 import type { SignOutContext } from '../net/sign-out';
 import { loadI18n } from '../i18n/i18n';
 import { appearance } from '../uikit/theme';
+import { queryCache } from '../data/query-cache';
+import { rosterStore } from '../stores/roster-store';
+import { archivedStore } from '../stores/archived-store';
 
 @ObservedV2
 export class AppState {
@@ -30,10 +33,17 @@ export class AppState {
   /** Observable mirror of the server store's address so screens refresh after a switch. */
   @Trace serverBase: string = '';
   private context: common.UIAbilityContext | null = null;
+  private unwatchSession: (() => void) | null = null;
 
   /** Called after a committed server switch; screens watching serverBase re-read. */
   noteServerChanged(): void {
     this.serverBase = currentApiBase();
+  }
+
+  /** Stops the global session listener so instrumented tests own the session without the app reacting. */
+  detach(): void {
+    this.unwatchSession?.();
+    this.unwatchSession = null;
   }
 
   async bootstrap(context: common.UIAbilityContext): Promise<void> {
@@ -42,7 +52,11 @@ export class AppState {
     setUpdateHandler((): void => {
       this.updateRequired = true;
     });
-    this.watchSession();
+    this.unwatchSession = this.watchSession();
+    // The stores listen for roster signals and foreground catch-up; the screens own the stream
+    // holder (RosterHolder), so it opens only while a signed-in screen is actually shown.
+    rosterStore.start();
+    archivedStore.start();
     try {
       await initServerStore(context);
       await loadI18n(context);
@@ -70,6 +84,11 @@ export class AppState {
   }
 
   private sessionChanged(): void {
+    // A session change crosses an auth boundary: forget every cached read and painted roster so
+    // the next session never shows the previous owner's data (mobile clearQueries).
+    queryCache.clear();
+    rosterStore.reset();
+    archivedStore.reset();
     void loadSessionToken().then((token: string): void => {
       if (!token) {
         this.me = null;
@@ -77,7 +96,7 @@ export class AppState {
         this.meError = '';
         this.phase = 'signIn';
       } else if (this.phase === 'signIn') {
-        // A sign-in or a rolled-back switch restored the session: the account page owns the screen.
+        // A sign-in or a rolled-back switch restored the session: the inbox owns the screen.
         void this.loadMe();
       }
     });

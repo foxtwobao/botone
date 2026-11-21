@@ -1,0 +1,32 @@
+{
+  "items": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "pinned": {
+        "type": "boolean"
+      },
+      "preview": {
+        "type": "string"
+      },
+      "snoozedUntil": {
+        "type": ["string", "null"]
+      },
+      "unread": {
+        "type": "boolean"
+      },
+      "updatedAt": {
+        "type": "string"
+      }
+    },
+    "required": ["id", "name", "pinned", "unread", "preview", "updatedAt"],
+    "type": "object"
+  },
+  "type": "array"
+}

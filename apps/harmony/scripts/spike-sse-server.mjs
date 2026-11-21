@@ -30,6 +30,118 @@ const ME = {
   defaultModel: null,
 };
 
+// ---- M2 roster state -------------------------------------------------------
+// A mutable fake roster so archive/restore and signal-driven re-reads have something to change.
+// Every /rpc request is logged (path + body + sequence) so a test can prove reads happen only on
+// a signal or foreground, never on a timer. All ids/credentials here are fake probes.
+const SPACE = "space-fake";
+let seq = 0;
+const requests = [];
+const notificationClients = new Set();
+
+function makeBot(id, name, over = {}) {
+  return {
+    id,
+    spaceId: SPACE,
+    name,
+    title: "",
+    color: "#3EC5A8",
+    pinned: false,
+    sectionId: null,
+    unread: false,
+    snoozedUntil: null,
+    parentBotId: null,
+    preview: "",
+    status: "idle",
+    runErrorId: null,
+    updatedAt: "2026-11-21T10:00:00.000Z",
+    archivedAt: null,
+    ...over,
+  };
+}
+function makeGroup(id, name, over = {}) {
+  return {
+    id,
+    spaceId: SPACE,
+    name,
+    pinned: false,
+    sectionId: null,
+    members: [],
+    preview: "",
+    unread: false,
+    snoozedUntil: null,
+    updatedAt: "2026-11-21T10:00:00.000Z",
+    archivedAt: null,
+    ...over,
+  };
+}
+
+let bots = [];
+let groups = [];
+// When offline, read RPCs drop the connection (a transport failure, not an HTTP answer) so the
+// client's offline banner + memory-cache fallback can be exercised without stopping the server.
+let offline = false;
+const OFFLINE_READS = new Set([
+  "/rpc/spaces/list",
+  "/rpc/bots/list",
+  "/rpc/bots/listArchived",
+  "/rpc/groups/listArchived",
+]);
+function resetRoster() {
+  bots = [
+    makeBot("bot-1", "Alpha", {
+      pinned: true,
+      unread: true,
+      status: "running",
+      color: "#3EC5A8",
+      preview: "Working on it",
+      updatedAt: "2026-11-21T12:00:00.000Z",
+    }),
+    makeBot("bot-2", "Beta", {
+      color: "#F5A03C",
+      preview: "Hi there",
+      updatedAt: "2026-11-21T11:00:00.000Z",
+    }),
+    makeBot("bot-3", "Gamma", { color: "#6A6BF5", archivedAt: "2026-11-20T09:00:00.000Z" }),
+  ];
+  groups = [
+    makeGroup("group-1", "Team", {
+      unread: true,
+      preview: "Group chat",
+      updatedAt: "2026-11-21T11:30:00.000Z",
+    }),
+    makeGroup("group-2", "Old Team", { archivedAt: "2026-11-19T09:00:00.000Z" }),
+  ];
+}
+resetRoster();
+
+const activeBots = () => bots.filter((b) => b.archivedAt === null);
+const archivedBots = () => bots.filter((b) => b.archivedAt !== null);
+const activeGroups = () => groups.filter((g) => g.archivedAt === null);
+const archivedGroups = () => groups.filter((g) => g.archivedAt !== null);
+
+function navigation() {
+  return {
+    current: {
+      id: SPACE,
+      name: "Ada’s Space",
+      bots: activeBots(),
+      groups: activeGroups(),
+      botSections: [],
+    },
+    spaces: [],
+    firstBotDue: false,
+  };
+}
+
+/** Push one signal frame to every open notifications/subscribe stream. */
+function sendSignal(type) {
+  const frame = `data: ${JSON.stringify({ json: { type } })}\n\n`;
+  for (const res of notificationClients) {
+    res.write(frame);
+  }
+}
+
 function json(res, status, value, headers = {}) {
   res.writeHead(status, { "content-type": "application/json", ...headers });
   res.end(JSON.stringify(value));
@@ -67,7 +179,37 @@ function handleRpc(req, res, body) {
   if (path === "/rpc/spaces/list") {
     if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     if (space === "space-stale") return rpcError(res, 401, "UNAUTHORIZED", "Space inaccessible");
-    return json(res, 200, { json: { current: { id: "space-fake", name: "Ada’s Space" } } });
+    return json(res, 200, { json: navigation() });
+  }
+  if (path === "/rpc/bots/list") {
+    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+    return json(res, 200, { json: activeBots() });
+  }
+  if (path === "/rpc/bots/listArchived") {
+    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+    return json(res, 200, { json: archivedBots() });
+  }
+  if (path === "/rpc/groups/listArchived") {
+    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+    return json(res, 200, { json: archivedGroups() });
+  }
+  if (path === "/rpc/bots/archive" || path === "/rpc/bots/restore") {
+    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+    const input = JSON.parse(body || "{}").json ?? {};
+    const bot = bots.find((b) => b.id === input.botId);
+    if (!bot) return rpcError(res, 404, "NOT_FOUND", "Bot not found");
+    bot.archivedAt = path.endsWith("/archive") ? new Date().toISOString() : null;
+    sendSignal("roster");
+    return json(res, 200, { json: { ok: true } });
+  }
+  if (path === "/rpc/groups/archive" || path === "/rpc/groups/restore") {
+    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+    const input = JSON.parse(body || "{}").json ?? {};
+    const group = groups.find((g) => g.id === input.groupId);
+    if (!group) return rpcError(res, 404, "NOT_FOUND", "Group not found");
+    group.archivedAt = path.endsWith("/archive") ? new Date().toISOString() : null;
+    sendSignal("roster");
+    return json(res, 200, { json: { ok: true } });
   }
   if (path === "/rpc/error500")
     return rpcError(res, 500, "INTERNAL", "Server fault", { "retry-after": "2" });
@@ -169,6 +311,35 @@ function handleSse(req, res) {
   }, 200);
 }
 
+// notifications/subscribe: the roster signal stream. Opens with each signal once (reconnect
+// catches up), then stays open; /__signal pushes a frame so a test can drive a re-read on demand.
+function handleNotifications(req, res) {
+  if (req.headers.accept !== "text/event-stream") {
+    res.writeHead(400).end();
+    return;
+  }
+  if (bearer(req) !== "fake-token") {
+    return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+  }
+  res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
+  for (const type of [
+    "roster",
+    "computerUpdates",
+    "runs",
+    "routines",
+    "meetings",
+    "artifacts",
+    "meetingCalendar",
+    "organizations",
+  ]) {
+    res.write(`data: ${JSON.stringify({ json: { type } })}\n\n`);
+  }
+  notificationClients.add(res);
+  // res 'close' is the connection ending; req 'close' fires once the POST body is consumed,
+  // which would drop a still-open SSE client before any injected signal could reach it.
+  res.on("close", () => notificationClients.delete(res));
+}
+
 createServer((req, res) => {
   let body = "";
   req.on("data", (chunk) => {
@@ -178,14 +349,52 @@ createServer((req, res) => {
     console.log(`${req.method} ${req.url}`);
     const clientBuild = req.headers["x-rakazo-client-build"];
     if (clientBuild) clientBuilds.push(clientBuild);
+    if (req.url.startsWith("/rpc/")) {
+      seq += 1;
+      requests.push({ seq, path: req.url, body, t: Date.now() });
+    }
     if (req.url === "/__state") {
-      return json(res, 200, { signOuts, clientBuilds });
+      return json(res, 200, { signOuts, clientBuilds, streams: notificationClients.size });
+    }
+    if (req.url === "/__requests") {
+      return json(res, 200, { requests, seq });
+    }
+    if (req.url === "/__signal") {
+      const input = body ? JSON.parse(body) : {};
+      sendSignal(input.type || "roster");
+      return json(res, 200, { ok: true });
+    }
+    if (req.url === "/__mutate") {
+      // Simulate another device's chat activity WITHOUT a signal: the client must not notice
+      // until a signal (or foreground) tells it to re-read.
+      const input = body ? JSON.parse(body) : {};
+      const bot = bots.find((b) => b.id === input.botId);
+      if (bot) {
+        if (typeof input.preview === "string") bot.preview = input.preview;
+        if (typeof input.unread === "boolean") bot.unread = input.unread;
+        if (typeof input.status === "string") bot.status = input.status;
+      }
+      return json(res, 200, { ok: true });
+    }
+    if (req.url === "/__offline") {
+      const input = body ? JSON.parse(body) : {};
+      offline = input.on === true;
+      return json(res, 200, { ok: true, offline });
     }
     if (req.url === "/__reset") {
       signOuts.length = 0;
       clientBuilds.length = 0;
+      requests.length = 0;
+      seq = 0;
+      offline = false;
+      resetRoster();
       return json(res, 200, {});
     }
+    if (offline && OFFLINE_READS.has(req.url)) {
+      res.destroy();
+      return;
+    }
+    if (req.url === "/rpc/notifications/subscribe") return handleNotifications(req, res);
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);
     if (req.url.startsWith("/api/auth/")) return handleAuth(req, res, body);
     if (req.url.startsWith("/sse")) {

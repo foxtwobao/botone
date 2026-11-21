@@ -1,0 +1,595 @@
+{
+  "working": [
+    {
+      "status": "idle",
+      "expected": false
+    },
+    {
+      "status": "queued",
+      "expected": true
+    },
+    {
+      "status": "leased",
+      "expected": true
+    },
+    {
+      "status": "running",
+      "expected": true
+    },
+    {
+      "status": "waiting_input",
+      "expected": false
+    },
+    {
+      "status": "waiting_takeover",
+      "expected": false
+    },
+    {
+      "status": "completed",
+      "expected": false
+    },
+    {
+      "status": "failed",
+      "expected": false
+    },
+    {
+      "status": "cancelled",
+      "expected": false
+    },
+    {
+      "status": "something-new",
+      "expected": false
+    }
+  ],
+  "snoozed": [
+    {
+      "snoozedUntil": null,
+      "now": 1795262400000,
+      "expected": false
+    },
+    {
+      "snoozedUntil": "",
+      "now": 1795262400000,
+      "expected": false
+    },
+    {
+      "snoozedUntil": "2026-11-21T13:00:00.000Z",
+      "now": 1795262400000,
+      "expected": true
+    },
+    {
+      "snoozedUntil": "2026-11-21T11:00:00.000Z",
+      "now": 1795262400000,
+      "expected": false
+    },
+    {
+      "snoozedUntil": "2026-11-21T12:00:00.000Z",
+      "now": 1795262400000,
+      "expected": false
+    },
+    {
+      "snoozedUntil": "not-a-date",
+      "now": 1795262400000,
+      "expected": false
+    }
+  ],
+  "cases": [
+    {
+      "name": "empty roster",
+      "now": 1795262400000,
+      "bots": [],
+      "groups": [],
+      "expected": []
+    },
+    {
+      "name": "bots then groups in server order",
+      "now": 1795262400000,
+      "bots": [
+        {
+          "id": "b1",
+          "name": "b1",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "b2",
+          "name": "b2",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "groups": [
+        {
+          "id": "g1",
+          "name": "g1",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "g2",
+          "name": "g2",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "expected": [
+        {
+          "kind": "bot",
+          "id": "b1",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "b2",
+          "working": false
+        },
+        {
+          "kind": "group",
+          "id": "g1",
+          "working": false
+        },
+        {
+          "kind": "group",
+          "id": "g2",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "pinned first, bots before groups within each bucket",
+      "now": 1795262400000,
+      "bots": [
+        {
+          "id": "b1",
+          "name": "b1",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "b2",
+          "name": "b2",
+          "color": "#3EC5A8",
+          "pinned": true,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "b3",
+          "name": "b3",
+          "color": "#3EC5A8",
+          "pinned": true,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "groups": [
+        {
+          "id": "g1",
+          "name": "g1",
+          "pinned": true,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "g2",
+          "name": "g2",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "expected": [
+        {
+          "kind": "bot",
+          "id": "b2",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "b3",
+          "working": false
+        },
+        {
+          "kind": "group",
+          "id": "g1",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "b1",
+          "working": false
+        },
+        {
+          "kind": "group",
+          "id": "g2",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "working statuses show, waiting and terminal do not",
+      "now": 1795262400000,
+      "bots": [
+        {
+          "id": "queued",
+          "name": "queued",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "queued",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "leased",
+          "name": "leased",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "leased",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "running",
+          "name": "running",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "running",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "waiting",
+          "name": "waiting",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "waiting_input",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "takeover",
+          "name": "takeover",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "waiting_takeover",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "done",
+          "name": "done",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "completed",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "failed",
+          "name": "failed",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "failed",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "idle",
+          "name": "idle",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "groups": [
+        {
+          "id": "g1",
+          "name": "g1",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "expected": [
+        {
+          "kind": "bot",
+          "id": "queued",
+          "working": true
+        },
+        {
+          "kind": "bot",
+          "id": "leased",
+          "working": true
+        },
+        {
+          "kind": "bot",
+          "id": "running",
+          "working": true
+        },
+        {
+          "kind": "bot",
+          "id": "waiting",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "takeover",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "done",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "failed",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "idle",
+          "working": false
+        },
+        {
+          "kind": "group",
+          "id": "g1",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "snoozed chats hide until they wake",
+      "now": 1795262400000,
+      "bots": [
+        {
+          "id": "awake",
+          "name": "awake",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "snoozed",
+          "name": "snoozed",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": "2026-11-21T13:00:00.000Z"
+        },
+        {
+          "id": "woke",
+          "name": "woke",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": "2026-11-21T11:00:00.000Z"
+        },
+        {
+          "id": "bad-snooze",
+          "name": "bad-snooze",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": "not-a-date"
+        }
+      ],
+      "groups": [
+        {
+          "id": "g-snoozed",
+          "name": "g-snoozed",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": "2026-11-21T13:00:00.000Z"
+        },
+        {
+          "id": "g-awake",
+          "name": "g-awake",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "expected": [
+        {
+          "kind": "bot",
+          "id": "awake",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "woke",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "bad-snooze",
+          "working": false
+        },
+        {
+          "kind": "group",
+          "id": "g-awake",
+          "working": false
+        }
+      ]
+    },
+    {
+      "name": "pinned and snoozed together",
+      "now": 1795262400000,
+      "bots": [
+        {
+          "id": "p1",
+          "name": "p1",
+          "color": "#3EC5A8",
+          "pinned": true,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "running",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "p2",
+          "name": "p2",
+          "color": "#3EC5A8",
+          "pinned": true,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "idle",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": "2026-11-21T13:00:00.000Z"
+        },
+        {
+          "id": "u1",
+          "name": "u1",
+          "color": "#3EC5A8",
+          "pinned": false,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "status": "queued",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "groups": [
+        {
+          "id": "pg",
+          "name": "pg",
+          "pinned": true,
+          "sectionId": null,
+          "unread": false,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        },
+        {
+          "id": "ug",
+          "name": "ug",
+          "pinned": false,
+          "sectionId": null,
+          "unread": true,
+          "preview": "",
+          "updatedAt": "2026-11-21T10:00:00.000Z",
+          "snoozedUntil": null
+        }
+      ],
+      "expected": [
+        {
+          "kind": "bot",
+          "id": "p1",
+          "working": true
+        },
+        {
+          "kind": "group",
+          "id": "pg",
+          "working": false
+        },
+        {
+          "kind": "bot",
+          "id": "u1",
+          "working": true
+        },
+        {
+          "kind": "group",
+          "id": "ug",
+          "working": false
+        }
+      ]
+    }
+  ]
+}

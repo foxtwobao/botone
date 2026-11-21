@@ -8,8 +8,11 @@ import { fileURLToPath } from "node:url";
 import { i18n } from "@lingui/core";
 import { isPrivateNetworkHost } from "@rakazo/contracts";
 import {
+  chatSnoozed,
+  groupBotsForSidebar,
   IDLE_TIMEOUT_MS,
   isRetryableError,
+  isRunWorking,
   jitterMs,
   MAX_RETRY_AFTER_MS,
   parseRetryAfter,
@@ -531,9 +534,186 @@ export function generateIcuFixture(): IcuFixture {
   return { cases };
 }
 
+// ---------------------------------------------------------------- inbox
+
+interface InboxBot {
+  id: string;
+  name: string;
+  color: string;
+  pinned: boolean;
+  sectionId: string | null;
+  unread: boolean;
+  preview: string;
+  status: string;
+  updatedAt: string;
+  snoozedUntil: string | null;
+}
+interface InboxGroup {
+  id: string;
+  name: string;
+  pinned: boolean;
+  sectionId: string | null;
+  unread: boolean;
+  preview: string;
+  updatedAt: string;
+  snoozedUntil: string | null;
+}
+interface InboxCase {
+  name: string;
+  now: number;
+  bots: InboxBot[];
+  groups: InboxGroup[];
+  expected: { kind: string; id: string; working: boolean }[];
+}
+interface InboxFixture {
+  working: { status: string; expected: boolean }[];
+  snoozed: { snoozedUntil: string | null; now: number; expected: boolean }[];
+  cases: InboxCase[];
+}
+
+/** The expected row order/working from the REAL core helpers the ArkTS projection ports. */
+function expectedRows(bots: InboxBot[], groups: InboxGroup[], now: number) {
+  const chats = [
+    ...bots.map((bot) => ({
+      type: "bot" as const,
+      bot,
+      id: bot.id,
+      pinned: bot.pinned,
+      sectionId: bot.sectionId,
+    })),
+    ...groups.map((group) => ({
+      type: "group" as const,
+      group,
+      id: group.id,
+      pinned: group.pinned,
+      sectionId: group.sectionId,
+    })),
+  ];
+  const awake = chats.filter(
+    (chat) => !chatSnoozed(chat.type === "bot" ? chat.bot : chat.group, now),
+  );
+  // No sections in Phase 1: groupBotsForSidebar yields the pinned bucket then the unassigned one.
+  const grouped = groupBotsForSidebar(awake, [], {});
+  return grouped.flatMap((section) =>
+    section.bots.map((item) => ({
+      kind: item.type,
+      id: item.type === "bot" ? item.bot.id : item.group.id,
+      working: item.type === "bot" ? isRunWorking(item.bot.status) : false,
+    })),
+  );
+}
+
+export function generateInboxFixture(): InboxFixture {
+  const now = Date.parse("2026-11-21T12:00:00.000Z");
+  const bot = (id: string, over: Partial<InboxBot> = {}): InboxBot => ({
+    id,
+    name: id,
+    color: "#3EC5A8",
+    pinned: false,
+    sectionId: null,
+    unread: false,
+    preview: "",
+    status: "idle",
+    updatedAt: "2026-11-21T10:00:00.000Z",
+    snoozedUntil: null,
+    ...over,
+  });
+  const group = (id: string, over: Partial<InboxGroup> = {}): InboxGroup => ({
+    id,
+    name: id,
+    pinned: false,
+    sectionId: null,
+    unread: false,
+    preview: "",
+    updatedAt: "2026-11-21T10:00:00.000Z",
+    snoozedUntil: null,
+    ...over,
+  });
+
+  const scripted: { name: string; bots: InboxBot[]; groups: InboxGroup[] }[] = [
+    { name: "empty roster", bots: [], groups: [] },
+    {
+      name: "bots then groups in server order",
+      bots: [bot("b1"), bot("b2")],
+      groups: [group("g1"), group("g2")],
+    },
+    {
+      name: "pinned first, bots before groups within each bucket",
+      bots: [bot("b1"), bot("b2", { pinned: true }), bot("b3", { pinned: true })],
+      groups: [group("g1", { pinned: true }), group("g2")],
+    },
+    {
+      name: "working statuses show, waiting and terminal do not",
+      bots: [
+        bot("queued", { status: "queued" }),
+        bot("leased", { status: "leased" }),
+        bot("running", { status: "running" }),
+        bot("waiting", { status: "waiting_input" }),
+        bot("takeover", { status: "waiting_takeover" }),
+        bot("done", { status: "completed" }),
+        bot("failed", { status: "failed" }),
+        bot("idle", { status: "idle" }),
+      ],
+      groups: [group("g1")],
+    },
+    {
+      name: "snoozed chats hide until they wake",
+      bots: [
+        bot("awake"),
+        bot("snoozed", { snoozedUntil: "2026-11-21T13:00:00.000Z" }),
+        bot("woke", { snoozedUntil: "2026-11-21T11:00:00.000Z" }),
+        bot("bad-snooze", { snoozedUntil: "not-a-date" }),
+      ],
+      groups: [group("g-snoozed", { snoozedUntil: "2026-11-21T13:00:00.000Z" }), group("g-awake")],
+    },
+    {
+      name: "pinned and snoozed together",
+      bots: [
+        bot("p1", { pinned: true, status: "running" }),
+        bot("p2", { pinned: true, snoozedUntil: "2026-11-21T13:00:00.000Z" }),
+        bot("u1", { status: "queued" }),
+      ],
+      groups: [group("pg", { pinned: true }), group("ug", { unread: true })],
+    },
+  ];
+
+  const cases: InboxCase[] = scripted.map((c) => ({
+    name: c.name,
+    now,
+    bots: c.bots,
+    groups: c.groups,
+    expected: expectedRows(c.bots, c.groups, now),
+  }));
+
+  const working = [
+    "idle",
+    "queued",
+    "leased",
+    "running",
+    "waiting_input",
+    "waiting_takeover",
+    "completed",
+    "failed",
+    "cancelled",
+    "something-new",
+  ].map((status) => ({ status, expected: isRunWorking(status) }));
+
+  const snoozed = [
+    null,
+    "",
+    "2026-11-21T13:00:00.000Z",
+    "2026-11-21T11:00:00.000Z",
+    "2026-11-21T12:00:00.000Z",
+    "not-a-date",
+  ].map((snoozedUntil) => ({ snoozedUntil, now, expected: chatSnoozed({ snoozedUntil }, now) }));
+
+  return { working, snoozed, cases };
+}
+
 export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>> = {
   retry: generateRetryFixture,
   endpoint: generateEndpointFixture,
   sse: generateSseFixture,
   icu: generateIcuFixture,
+  inbox: generateInboxFixture,
 };

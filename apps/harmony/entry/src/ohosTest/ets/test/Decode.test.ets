@@ -3,8 +3,14 @@
 import { describe, expect, it } from '@ohos/hypium';
 import {
   decodeAuthCapabilities,
+  decodeBot,
+  decodeBotList,
+  decodeGroup,
+  decodeGroupList,
   decodeHealth,
   decodeMe,
+  decodeOk,
+  decodeRoster,
   decodeSpaceNavigation,
 } from '../../../main/ets/contract/decode';
 
@@ -88,6 +94,66 @@ export default function decodeTest() {
       expect(decodeAuthCapabilities(JSON.parse('{"passwordAuth":true}'))).assertNull();
       expect(decodeAuthCapabilities(JSON.parse('{"passwordReset":true,"resetUrl":42}'))).assertNull();
       expect(decodeAuthCapabilities(null)).assertNull();
+    });
+
+    const BOT_JSON = '{"id":"b1","name":"Alpha","color":"#3EC5A8","pinned":true,"unread":true,'
+      + '"preview":"Hi","status":"running","updatedAt":"2026-11-21T10:00:00.000Z","extra":1}';
+
+    it('bot_decodes_consumed_fields_and_ignores_extras', 0, () => {
+      const bot = decodeBot(JSON.parse(BOT_JSON));
+      expect(bot !== null).assertTrue();
+      expect(bot!.id).assertEqual('b1');
+      expect(bot!.color).assertEqual('#3EC5A8');
+      expect(bot!.pinned).assertTrue();
+      expect(bot!.unread).assertTrue();
+      expect(bot!.status).assertEqual('running');
+      expect(bot!.snoozedUntil).assertNull();
+    });
+
+    it('bot_snoozed_until_nullable_optional', 0, () => {
+      const snoozed = decodeBot(JSON.parse(BOT_JSON.replace('"extra":1', '"snoozedUntil":"2026-11-21T13:00:00.000Z"')));
+      expect(snoozed!.snoozedUntil).assertEqual('2026-11-21T13:00:00.000Z');
+      const explicitNull = decodeBot(JSON.parse(BOT_JSON.replace('"extra":1', '"snoozedUntil":null')));
+      expect(explicitNull!.snoozedUntil).assertNull();
+      // A mistyped consumed field fails the row.
+      expect(decodeBot(JSON.parse(BOT_JSON.replace('"pinned":true', '"pinned":"yes"')))).assertNull();
+      expect(decodeBot(JSON.parse('{"id":"b1"}'))).assertNull();
+    });
+
+    it('group_decodes_and_rejects', 0, () => {
+      const group = decodeGroup(JSON.parse('{"id":"g1","name":"Team","pinned":false,"unread":true,'
+        + '"preview":"Chat","updatedAt":"2026-11-21T10:00:00.000Z"}'));
+      expect(group !== null).assertTrue();
+      expect(group!.id).assertEqual('g1');
+      expect(group!.unread).assertTrue();
+      expect(group!.snoozedUntil).assertNull();
+      expect(decodeGroup(JSON.parse('{"id":"g1","name":"Team"}'))).assertNull();
+    });
+
+    it('lists_drop_bad_rows_but_fail_on_non_array', 0, () => {
+      const bots = decodeBotList(JSON.parse(`[${BOT_JSON},{"id":"bad"},${BOT_JSON.replace('"b1"', '"b2"')}]`));
+      expect(bots !== null).assertTrue();
+      expect(bots!.length).assertEqual(2);
+      expect(bots![1].id).assertEqual('b2');
+      expect(decodeBotList(JSON.parse('{"not":"array"}'))).assertNull();
+      expect(decodeGroupList(JSON.parse('[]'))!.length).assertEqual(0);
+    });
+
+    it('roster_reads_current_bots_and_groups', 0, () => {
+      const group = '{"id":"g1","name":"Team","pinned":false,"unread":false,"preview":"","updatedAt":"2026-11-21T10:00:00.000Z"}';
+      const roster = decodeRoster(JSON.parse(`{"current":{"id":"s1","name":"S","bots":[${BOT_JSON}],"groups":[${group}]}}`));
+      expect(roster !== null).assertTrue();
+      expect(roster!.bots.length).assertEqual(1);
+      expect(roster!.groups.length).assertEqual(1);
+      expect(decodeRoster(JSON.parse('{"current":{"id":"s1"}}'))).assertNull();
+      expect(decodeRoster(JSON.parse('{}'))).assertNull();
+    });
+
+    it('ok_decodes_archive_restore_answer', 0, () => {
+      expect(decodeOk(JSON.parse('{"ok":true}'))).assertTrue();
+      expect(decodeOk(JSON.parse('{"ok":false}'))).assertFalse();
+      expect(decodeOk(JSON.parse('{}'))).assertFalse();
+      expect(decodeOk(null)).assertFalse();
     });
   });
 }

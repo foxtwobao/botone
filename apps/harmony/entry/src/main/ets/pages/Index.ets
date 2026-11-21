@@ -1,9 +1,12 @@
 // Navigation root (design §6.2): one Navigation + NavPathStack. The session phase picks the
-// root screen; ServerPage is a pushed destination. System back is Navigation's own.
+// root screen — sign-in, or the inbox once signed in. Account, archived and server are pushed
+// destinations; system back is Navigation's own.
 import { app } from '../app/app-state';
 import { appearance } from '../uikit/theme';
 import { SignInPage } from '../features/signin/SignInPage';
+import { InboxPage } from '../features/inbox/InboxPage';
 import { MePage } from '../features/me/MePage';
+import { ArchivedPage } from '../features/archived/ArchivedPage';
 import { ServerPage } from '../features/server/ServerPage';
 
 @Entry
@@ -15,6 +18,10 @@ struct Index {
   destinations(name: string) {
     if (name === 'server') {
       ServerPage({ stack: this.stack })
+    } else if (name === 'archived') {
+      ArchivedPage({ stack: this.stack })
+    } else if (name === 'account') {
+      MePage({ stack: this.stack })
     }
   }
 
@@ -23,7 +30,7 @@ struct Index {
       if (app.phase === 'signIn') {
         SignInPage({ stack: this.stack })
       } else if (app.phase === 'me') {
-        MePage({ stack: this.stack })
+        InboxPage({ stack: this.stack })
       } else {
         Column() {
           LoadingProgress()
