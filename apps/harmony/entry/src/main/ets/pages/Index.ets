@@ -1,11 +1,11 @@
+import { ProbeCard } from '../spike/probe-card';
+
 @Entry
-@Component
+@ComponentV2
 struct Index {
   build() {
     Column() {
-      Text('BotONE')
-        .fontSize(20)
-        .fontColor($r('sys.color.ohos_id_color_text_primary'))
+      ProbeCard()
     }
     .width('100%')
     .height('100%')

@@ -16,6 +16,8 @@
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
+import { decodeHealth } from '../spike/json-decode';
+import { blockLabel, getBlockProbe } from '../spike/type-guards';
 
 const DOMAIN = 0x0000;
 
@@ -26,6 +28,11 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
+    // S1 runtime self-check: the decode and guard probes must also work on device, not only compile.
+    const health = decodeHealth('{"json":{"ok":true,"version":"probe"}}');
+    const block = getBlockProbe(JSON.parse('{"kind":"text","text":"probe"}'));
+    hilog.info(DOMAIN, 'S1', 'decode=%{public}s guard=%{public}s',
+      health !== null && health.ok ? 'ok' : 'fail', block !== null ? blockLabel(block) : 'fail');
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
   }
 
