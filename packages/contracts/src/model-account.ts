@@ -64,6 +64,8 @@ export type ModelAccountErrorCode = z.infer<typeof modelAccountErrorCodeSchema>;
 
 export const modelAccountLimitsSchema = z
   .strictObject({
+    // Omitted by older clients. Null restores the connection default.
+    reasoning: ModelSettingsSchema.shape.reasoning.nullable(),
     contextWindow: ModelSettingsSchema.shape.contextWindow,
     maxTokens: ModelSettingsSchema.shape.maxTokens,
   })
@@ -73,6 +75,7 @@ export const modelAccountLimitsSchema = z
       limits.contextWindow ?? DEFAULT_MODEL_CONTEXT_WINDOW,
     ),
   );
+export type ModelAccountLimits = z.infer<typeof modelAccountLimitsSchema>;
 export const modelAccountSettingsSchema = z.union([
   z.strictObject({ apiProtocol: z.enum(["chat-completions", "responses"]) }),
   z.strictObject({

@@ -6,6 +6,7 @@ import {
   parseModelSecret,
 } from "@rakazo/adapters";
 import type { Auth } from "@rakazo/auth";
+import type { ModelAccountLimits } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
 import { asSystem, createDb } from "@rakazo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -522,8 +523,8 @@ postgres("external model account isolated PostgreSQL", () => {
       request(path, { method: "POST", body: JSON.stringify(body) });
     expect((await post("/connect")).status).toBe(200);
     const credentialId = `external-${accountId}`;
-    const limits = { contextWindow: 32768, maxTokens: 1024 };
-    const update = (modelId: string, values: Partial<typeof limits>) =>
+    const limits = { contextWindow: 32768, maxTokens: 1024, reasoning: true };
+    const update = (modelId: string, values: ModelAccountLimits) =>
       post("/settings", { credentialId, modelId, limits: values });
     const storedModels = async () => {
       const cred = await prisma.userModelCredential.findUniqueOrThrow({
@@ -549,7 +550,7 @@ postgres("external model account isolated PostgreSQL", () => {
     ] as const)
       expect((await post(path, body)).status).toBe(200);
     expect(await storedModels()).toEqual({ "example-model": limits, "second-model": limits });
-    expect((await update("example-model", {})).status).toBe(200);
+    expect((await update("example-model", { reasoning: null })).status).toBe(200);
     expect(await storedModels()).toEqual({ "second-model": limits });
     expect(await (await request("/status")).json()).toMatchObject({
       connected: true,

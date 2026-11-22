@@ -23,6 +23,7 @@ type SettingsCredential = Pick<
   | "maxTokens"
   | "contextWindow"
   | "reasoning"
+  | "defaultReasoningModelIds"
   | "visionModelIds"
   | "maxImagesPerPrompt"
 >;
@@ -180,12 +181,14 @@ export function credentialModelSettings(
   modelId: string,
 ): ModelSettings {
   const own = credential.modelSettings?.[modelId];
-  if (own) return own;
+  const catalogReasoning = credential.defaultReasoningModelIds?.includes(modelId);
+  if (own)
+    return catalogReasoning && own.reasoning === undefined ? { ...own, reasoning: true } : own;
   const compatible = credential.provider === OPENAI_COMPATIBLE_PROVIDER_ID;
   return {
     ...(credential.maxTokens !== undefined ? { maxTokens: credential.maxTokens } : {}),
     ...(credential.contextWindow !== undefined ? { contextWindow: credential.contextWindow } : {}),
-    ...(compatible && credential.reasoning ? { reasoning: true } : {}),
+    ...(compatible && (catalogReasoning || credential.reasoning) ? { reasoning: true } : {}),
     ...(compatible && credential.visionModelIds?.includes(modelId) ? { images: true } : {}),
     ...(compatible && credential.maxImagesPerPrompt !== undefined
       ? { maxImagesPerPrompt: credential.maxImagesPerPrompt }

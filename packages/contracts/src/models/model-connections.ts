@@ -144,6 +144,8 @@ export const ModelCredentialSchema = z.object({
   enabledModelIds: z.array(z.string()).optional(),
   /** The connection's enabled models that accept images, where it declares them per model. */
   visionModelIds: z.array(z.string()).optional(),
+  /** Models the connection recognizes as supporting thinking by default. */
+  defaultReasoningModelIds: z.array(z.string()).optional(),
   /** Settings saved for individual models on this connection. */
   modelSettings: z.record(z.string(), ModelSettingsSchema).optional(),
   /** Stored secret kind. Absent when the secret could not be read. */

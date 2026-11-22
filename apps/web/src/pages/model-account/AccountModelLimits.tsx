@@ -1,7 +1,12 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { ModelCredential } from "@rakazo/contracts";
 import { DEFAULT_MODEL_CONTEXT_WINDOW, DEFAULT_MODEL_MAX_TOKENS } from "@rakazo/contracts";
-import { connectionModels, createModelAccountClient, parseAccountModelLimits } from "@rakazo/core";
+import {
+  connectionModels,
+  createModelAccountClient,
+  credentialModelSettings,
+  parseAccountModelLimits,
+} from "@rakazo/core";
 import {
   Button,
   ModelSettingsFields,
@@ -23,15 +28,27 @@ export function AccountModelLimits({
 }) {
   const { t } = useLingui();
   const models = connectionModels(credential, []);
-  const [draft, setDraft] = useState<{ id: string; context: string; output: string }>();
-  const limits = draft && parseAccountModelLimits(draft.context, draft.output);
+  const [draft, setDraft] = useState<{
+    id: string;
+    context: string;
+    output: string;
+    reasoning: boolean;
+    initialReasoning: boolean;
+  }>();
+  const limits =
+    draft &&
+    parseAccountModelLimits(
+      draft.context,
+      draft.output,
+      draft.reasoning === draft.initialReasoning ? undefined : draft.reasoning,
+    );
   const save = useMutation({
     mutationFn: async (reset: boolean) => {
       if (draft && (reset || limits))
         await createModelAccountClient().saveLimits(
           credential.id,
           draft.id,
-          limits && !reset ? limits : {},
+          limits && !reset ? limits : { reasoning: null },
         );
     },
     onSuccess: async () => {
@@ -49,16 +66,19 @@ export function AccountModelLimits({
         onValueChange={(id) => {
           const model = models.find((item) => item.id === id);
           if (!model) return;
+          const settings = credentialModelSettings(credential, model.id);
           save.reset();
           setDraft({
             id: model.id,
-            context: model.settings?.contextWindow?.toString() ?? "",
-            output: model.settings?.maxTokens?.toString() ?? "",
+            context: settings.contextWindow?.toString() ?? "",
+            output: settings.maxTokens?.toString() ?? "",
+            reasoning: settings.reasoning ?? false,
+            initialReasoning: settings.reasoning ?? false,
           });
         }}
       >
-        <SelectTrigger aria-label={t`Model limits`}>
-          <SelectValue placeholder={t`Model limits`} />
+        <SelectTrigger aria-label={t`Model options`}>
+          <SelectValue placeholder={t`Model options`} />
         </SelectTrigger>
         <SelectContent>
           {models.map(({ id }) => (
@@ -72,6 +92,10 @@ export function AccountModelLimits({
         <>
           <ModelSettingsFields
             disabled={save.isPending}
+            capabilities
+            reasoning={draft.reasoning}
+            reasoningLabel={t`Supports thinking`}
+            onReasoningChange={(reasoning) => setDraft({ ...draft, reasoning })}
             contextWindow={draft.context}
             contextWindowLabel={t`Context limit`}
             contextWindowPlaceholder={String(DEFAULT_MODEL_CONTEXT_WINDOW)}
@@ -95,7 +119,9 @@ export function AccountModelLimits({
             <Button disabled={!limits || save.isPending} onClick={() => save.mutate(false)}>
               <Trans>Save</Trans>
             </Button>
-            {selected.settings?.contextWindow || selected.settings?.maxTokens ? (
+            {selected.settings?.contextWindow ||
+            selected.settings?.maxTokens ||
+            selected.settings?.reasoning !== undefined ? (
               <Button variant="ghost" disabled={save.isPending} onClick={() => save.mutate(true)}>
                 <Trans>Restore defaults</Trans>
               </Button>

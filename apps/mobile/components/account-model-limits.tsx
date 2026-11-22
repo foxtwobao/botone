@@ -5,7 +5,7 @@ import {
   MAX_MODEL_CONTEXT_WINDOW,
   MAX_MODEL_MAX_TOKENS,
 } from "@rakazo/contracts";
-import { connectionModels, parseAccountModelLimits } from "@rakazo/core";
+import { connectionModels, credentialModelSettings, parseAccountModelLimits } from "@rakazo/core";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { modelAccountClient } from "../lib/model-account-client";
@@ -13,7 +13,7 @@ import { useI18n } from "../lib/model-account-i18n";
 import { queryClient } from "../lib/query/query";
 import { LimitField } from "./models/model-connection-fields";
 import { NativeActionButton } from "./native/native-action-button";
-import { SettingsGroup } from "./settings/settings-group";
+import { SettingsGroup, SettingsSwitch } from "./settings/settings-group";
 import { MenuPicker } from "./ui/menu-picker";
 
 export function AccountModelLimits({
@@ -25,8 +25,20 @@ export function AccountModelLimits({
 }) {
   const { t } = useI18n();
   const models = connectionModels(credential, []);
-  const [draft, setDraft] = useState<{ id: string; context: string; output: string }>();
-  const limits = draft && parseAccountModelLimits(draft.context, draft.output);
+  const [draft, setDraft] = useState<{
+    id: string;
+    context: string;
+    output: string;
+    reasoning: boolean;
+    initialReasoning: boolean;
+  }>();
+  const limits =
+    draft &&
+    parseAccountModelLimits(
+      draft.context,
+      draft.output,
+      draft.reasoning === draft.initialReasoning ? undefined : draft.reasoning,
+    );
   const save = useMutation(
     {
       mutationFn: async (reset: boolean) => {
@@ -34,7 +46,7 @@ export function AccountModelLimits({
           await modelAccountClient().saveLimits(
             credential.id,
             draft.id,
-            limits && !reset ? limits : {},
+            limits && !reset ? limits : { reasoning: null },
           );
       },
       onSuccess: async () => {
@@ -57,7 +69,7 @@ export function AccountModelLimits({
       }
     >
       <MenuPicker
-        label={t("Model limits")}
+        label={t("Model options")}
         placeholder={t("Choose a model")}
         choices={models.map(({ id }) => ({ key: id, label: id }))}
         value={selected?.id ?? ""}
@@ -65,11 +77,14 @@ export function AccountModelLimits({
         onChange={(id) => {
           const model = models.find((item) => item.id === id);
           if (!model) return;
+          const settings = credentialModelSettings(credential, model.id);
           save.reset();
           setDraft({
             id,
-            context: model.settings?.contextWindow?.toString() ?? "",
-            output: model.settings?.maxTokens?.toString() ?? "",
+            context: settings.contextWindow?.toString() ?? "",
+            output: settings.maxTokens?.toString() ?? "",
+            reasoning: settings.reasoning ?? false,
+            initialReasoning: settings.reasoning ?? false,
           });
         }}
       />
@@ -91,13 +106,21 @@ export function AccountModelLimits({
             busy={save.isPending}
             maxLength={String(MAX_MODEL_MAX_TOKENS).length}
           />
+          <SettingsSwitch
+            label={t("Supports thinking")}
+            value={draft.reasoning}
+            disabled={save.isPending}
+            onChange={(reasoning) => setDraft({ ...draft, reasoning })}
+          />
           <NativeActionButton
             label={t("Save")}
             disabled={!limits}
             busy={save.isPending}
             onPress={() => save.mutate(false)}
           />
-          {selected.settings?.contextWindow || selected.settings?.maxTokens ? (
+          {selected.settings?.contextWindow ||
+          selected.settings?.maxTokens ||
+          selected.settings?.reasoning !== undefined ? (
             <NativeActionButton
               label={t("Restore defaults")}
               prominence="quiet"
