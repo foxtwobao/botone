@@ -1,0 +1,2124 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "messages": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "author": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "name"],
+            "type": "object"
+          },
+          "blocks": {
+            "items": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "text",
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "card",
+                      "type": "string"
+                    },
+                    "lines": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "k": {
+                            "type": "string"
+                          },
+                          "v": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["k", "v"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["kind", "lines"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "actions": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "enum": ["created", "cancelled"],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "label"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "answer": {
+                      "type": "string"
+                    },
+                    "answerMessageId": {
+                      "type": "string"
+                    },
+                    "approvalEffectId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "credential": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "auth": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "bearer",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,120}$",
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "const": "header",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type", "name"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "basic",
+                                  "type": "string"
+                                },
+                                "username": {
+                                  "maxLength": 200,
+                                  "minLength": 1,
+                                  "pattern": "^[^:\\r\\n]+$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type", "username"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "login",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "command",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "card",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "type": {
+                                  "const": "contact",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["type"],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+                          "type": "string"
+                        },
+                        "origin": {
+                          "default": "",
+                          "maxLength": 2048,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["name", "origin", "auth"],
+                      "type": "object"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "detailFormat": {
+                      "enum": ["text", "code"],
+                      "type": "string"
+                    },
+                    "dismissed": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "expired": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "input": {
+                      "enum": ["text", "secret"],
+                      "type": "string"
+                    },
+                    "instructionUpdate": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "after": {
+                          "type": "string"
+                        },
+                        "before": {
+                          "type": "string"
+                        },
+                        "botId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "undoVersionId": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["botId", "before", "after", "reason"],
+                      "type": "object"
+                    },
+                    "kind": {
+                      "const": "ask",
+                      "type": "string"
+                    },
+                    "loginFields": {
+                      "items": {
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "maxItems": 8,
+                      "minItems": 1,
+                      "type": "array"
+                    },
+                    "nativeDelivery": {
+                      "enum": ["pending", "submitted", "delivered", "expired"],
+                      "type": "string"
+                    },
+                    "nativeKind": {
+                      "enum": ["permission", "question"],
+                      "type": "string"
+                    },
+                    "nativeRequestId": {
+                      "type": "string"
+                    },
+                    "oneTimeCode": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "origin": {
+                          "maxLength": 2048,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["origin"],
+                      "type": "object"
+                    },
+                    "outgoingDraft": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "batch": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "action": {
+                              "maxLength": 64,
+                              "pattern": "^[a-z][a-z0-9_]*$",
+                              "type": "string"
+                            },
+                            "arguments": {
+                              "maxLength": 64,
+                              "pattern": "^[a-z][a-z0-9_]*$",
+                              "type": "string"
+                            },
+                            "items": {
+                              "maxLength": 64,
+                              "pattern": "^[a-z][a-z0-9_]*$",
+                              "type": "string"
+                            },
+                            "operation": {
+                              "maxLength": 200,
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          },
+                          "required": ["items", "action", "arguments", "operation"],
+                          "type": "object"
+                        },
+                        "keys": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "body": {
+                              "maxLength": 64,
+                              "pattern": "^[a-z][a-z0-9_]*$",
+                              "type": "string"
+                            },
+                            "subject": {
+                              "maxLength": 64,
+                              "pattern": "^[a-z][a-z0-9_]*$",
+                              "type": "string"
+                            },
+                            "to": {
+                              "maxLength": 64,
+                              "pattern": "^[a-z][a-z0-9_]*$",
+                              "type": "string"
+                            }
+                          },
+                          "required": ["to", "body"],
+                          "type": "object"
+                        },
+                        "source": {
+                          "maxLength": 80,
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "values": {
+                          "oneOf": [
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "body": {
+                                  "maxLength": 16000,
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "email",
+                                  "type": "string"
+                                },
+                                "subject": {
+                                  "maxLength": 998,
+                                  "pattern": "^[^\\r\\n]*$",
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "format": "email",
+                                  "maxLength": 254,
+                                  "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["kind", "to", "subject", "body"],
+                              "type": "object"
+                            },
+                            {
+                              "additionalProperties": false,
+                              "properties": {
+                                "body": {
+                                  "maxLength": 16000,
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "const": "message",
+                                  "type": "string"
+                                },
+                                "to": {
+                                  "maxLength": 254,
+                                  "minLength": 1,
+                                  "pattern": "^\\S+$",
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["kind", "to", "body"],
+                              "type": "object"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["source", "values", "keys"],
+                      "type": "object"
+                    },
+                    "purpose": {
+                      "enum": ["otp", "password", "api_key"],
+                      "type": "string"
+                    },
+                    "receipt": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "amount": {
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "amountSource": {
+                          "enum": ["button", "page"],
+                          "type": "string"
+                        },
+                        "button": {
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "items": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "amount": {
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "name": {
+                                "maxLength": 200,
+                                "type": "string"
+                              }
+                            },
+                            "required": ["name", "amount"],
+                            "type": "object"
+                          },
+                          "maxItems": 30,
+                          "type": "array"
+                        },
+                        "more": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "atLeast": {
+                              "type": "boolean"
+                            },
+                            "count": {
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991,
+                              "type": "integer"
+                            }
+                          },
+                          "required": ["count", "atLeast"],
+                          "type": "object"
+                        },
+                        "total": {
+                          "maxLength": 100,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["items", "amountSource"],
+                      "type": "object"
+                    },
+                    "remembered": {
+                      "const": false,
+                      "type": "boolean"
+                    },
+                    "replaces": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "origin": {
+                          "maxLength": 2048,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["id", "origin"],
+                      "type": "object"
+                    },
+                    "settingsUpdate": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "after": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "autoSpeak": {
+                              "type": "boolean"
+                            },
+                            "modelId": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 200,
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "modelProvider": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 80,
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "thinkingLevel": {
+                              "anyOf": [
+                                {
+                                  "enum": [
+                                    "off",
+                                    "minimal",
+                                    "low",
+                                    "medium",
+                                    "high",
+                                    "xhigh",
+                                    "max"
+                                  ],
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "voiceId": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 120,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "before": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "autoSpeak": {
+                              "type": "boolean"
+                            },
+                            "modelId": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 200,
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "modelProvider": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 80,
+                                  "minLength": 1,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "thinkingLevel": {
+                              "anyOf": [
+                                {
+                                  "enum": [
+                                    "off",
+                                    "minimal",
+                                    "low",
+                                    "medium",
+                                    "high",
+                                    "xhigh",
+                                    "max"
+                                  ],
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "voiceId": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 120,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "botId": {
+                          "minLength": 1,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["botId", "before", "after"],
+                      "type": "object"
+                    },
+                    "sharedBrowser": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "site": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["pending", "answered"],
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "answerId": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "choice",
+                      "type": "string"
+                    },
+                    "options": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "letter": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "letter", "label"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "subtitle": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "question", "options"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "connectorId": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "app_connect",
+                      "type": "string"
+                    },
+                    "logo": {
+                      "type": ["string", "null"]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["pending", "connected"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "provider", "name", "description", "logo", "status"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "type": "string"
+                    },
+                    "initial": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "connect",
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["pending", "connected"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "name", "initial", "color", "status"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "computer",
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "state", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "callId": {
+                      "type": "string"
+                    },
+                    "durationSeconds": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "farewell": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "voice_call",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "title", "farewell"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "callId": {
+                      "type": "string"
+                    },
+                    "durationSeconds": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "expiresAt": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "call_request",
+                      "type": "string"
+                    },
+                    "opening": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["ringing", "answered", "declined", "missed"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "callId", "reason", "opening", "status", "expiresAt"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "meta",
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "change": {
+                      "enum": ["created", "updated", "enabled", "disabled", "deleted"],
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "routine_event",
+                      "type": "string"
+                    },
+                    "name": {
+                      "maxLength": 200,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "change", "name"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "delivery",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "activity": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "kind": {
+                      "const": "progress",
+                      "type": "string"
+                    },
+                    "pendingToolNames": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "shown": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "durationMs": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "steps",
+                      "type": "string"
+                    },
+                    "steps": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "count": {
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991,
+                            "type": "integer"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "type": "string"
+                          },
+                          "outcomes": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "failed": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "stopped": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              },
+                              "succeeded": {
+                                "exclusiveMinimum": 0,
+                                "maximum": 9007199254740991,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
+                          }
+                        },
+                        "required": ["label", "count"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["kind", "steps"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "subagent",
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "progress": {
+                      "type": "string"
+                    },
+                    "result": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["running", "completed", "failed"],
+                      "type": "string"
+                    },
+                    "task": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "agentId", "name", "task", "status"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "botId": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "child_bot",
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["created", "archived", "deleted"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "botId", "name", "status"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "branch": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "cloud_agent",
+                      "type": "string"
+                    },
+                    "latestRunId": {
+                      "type": "string"
+                    },
+                    "prUrl": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["running", "finished", "failed", "cancelled", "expired"],
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "agentId", "title", "status", "url"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "goal": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "skill_draft",
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "playbook": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "approvalBoundaries": {
+                          "type": "string"
+                        },
+                        "failureHandling": {
+                          "type": "string"
+                        },
+                        "howToCheck": {
+                          "type": "string"
+                        },
+                        "inputs": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "steps": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "whatToReturn": {
+                          "type": "string"
+                        },
+                        "whenToUse": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "whenToUse",
+                        "inputs",
+                        "steps",
+                        "howToCheck",
+                        "whatToReturn",
+                        "approvalBoundaries",
+                        "failureHandling"
+                      ],
+                      "type": "object"
+                    },
+                    "skillId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["draft", "saved"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "skillId", "name", "goal", "playbook", "status"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "items": {},
+                      "maxItems": 5000,
+                      "type": "array"
+                    },
+                    "kind": {
+                      "const": "chart",
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "spec": {
+                      "additionalProperties": {},
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": ["kind", "name", "spec", "data"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "endpoint": {
+                      "type": ["string", "null"]
+                    },
+                    "kind": {
+                      "const": "mcp_approval",
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "needsOAuth": {
+                      "type": "boolean"
+                    },
+                    "serverId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "status": {
+                      "default": "pending",
+                      "enum": ["pending", "connected", "dismissed"],
+                      "type": "string"
+                    },
+                    "transport": {
+                      "enum": ["streamable_http", "sse", "stdio"],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "name",
+                    "serverId",
+                    "transport",
+                    "endpoint",
+                    "needsOAuth",
+                    "status"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "model",
+                                "type": "string"
+                              },
+                              "provider": {
+                                "type": "string"
+                              },
+                              "providerName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["kind", "title", "provider"],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "mcp",
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "needs": {
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "api_key",
+                                          "type": "string"
+                                        },
+                                        "provider": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind", "provider"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "credentials",
+                                          "type": "string"
+                                        },
+                                        "names": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": ["kind", "names"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "env",
+                                          "type": "string"
+                                        },
+                                        "names": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": ["kind", "names"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "program",
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "local_paths",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "requires",
+                                          "type": "string"
+                                        },
+                                        "names": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": ["kind", "names"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "turn_on",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "webhook",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "email_address",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "chat_app",
+                                          "type": "string"
+                                        },
+                                        "provider": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind", "provider"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "bundled_files",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    }
+                                  ]
+                                },
+                                "type": "array"
+                              },
+                              "serverId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["kind", "serverId", "name", "needs"],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "routine",
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "routineId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["kind", "routineId", "name"],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "skill",
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "needs": {
+                                "items": {
+                                  "oneOf": [
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "api_key",
+                                          "type": "string"
+                                        },
+                                        "provider": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind", "provider"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "credentials",
+                                          "type": "string"
+                                        },
+                                        "names": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": ["kind", "names"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "env",
+                                          "type": "string"
+                                        },
+                                        "names": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": ["kind", "names"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "program",
+                                          "type": "string"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind", "name"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "local_paths",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "requires",
+                                          "type": "string"
+                                        },
+                                        "names": {
+                                          "items": {
+                                            "type": "string"
+                                          },
+                                          "type": "array"
+                                        }
+                                      },
+                                      "required": ["kind", "names"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "turn_on",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "webhook",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "email_address",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "chat_app",
+                                          "type": "string"
+                                        },
+                                        "provider": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind", "provider"],
+                                      "type": "object"
+                                    },
+                                    {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "bundled_files",
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["kind"],
+                                      "type": "object"
+                                    }
+                                  ]
+                                },
+                                "type": "array"
+                              }
+                            },
+                            "required": ["kind", "name", "needs"],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "kind": {
+                      "const": "import_setup",
+                      "type": "string"
+                    },
+                    "undone": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["kind", "items"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "artifactId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "imageHandling": {
+                      "const": "confirm",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "image",
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "artifactId", "mimeType", "name"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "artifactId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "file",
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["kind", "artifactId", "mimeType", "name", "size"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "artifactId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "csp": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "connectDomains": {
+                          "items": {
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "maxItems": 32,
+                          "type": "array"
+                        },
+                        "resourceDomains": {
+                          "items": {
+                            "maxLength": 256,
+                            "type": "string"
+                          },
+                          "maxItems": 32,
+                          "type": "array"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "kind": {
+                      "const": "app",
+                      "type": "string"
+                    },
+                    "prefersBorder": {
+                      "type": "boolean"
+                    },
+                    "server": {
+                      "maxLength": 200,
+                      "type": "string"
+                    },
+                    "tool": {
+                      "maxLength": 200,
+                      "type": "string"
+                    },
+                    "toolArguments": {
+                      "additionalProperties": {},
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "toolResult": {
+                      "additionalProperties": {},
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "artifactId",
+                    "server",
+                    "tool",
+                    "toolArguments",
+                    "toolResult"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "expiresAt": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "tool_question",
+                      "type": "string"
+                    },
+                    "publicKey": {
+                      "maxLength": 64,
+                      "type": "string"
+                    },
+                    "question": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "fields": {
+                          "items": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "default": {
+                                    "maxLength": 2000,
+                                    "type": "string"
+                                  },
+                                  "format": {
+                                    "enum": ["email", "uri", "date", "date-time"],
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "maxLength": 120,
+                                    "type": "string"
+                                  },
+                                  "maxLength": {
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 2000,
+                                    "type": "integer"
+                                  },
+                                  "minLength": {
+                                    "maximum": 9007199254740991,
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "maxLength": 64,
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "type": {
+                                    "const": "text",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["name", "label", "required", "type", "maxLength"],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "default": {
+                                    "type": "number"
+                                  },
+                                  "integer": {
+                                    "type": "boolean"
+                                  },
+                                  "label": {
+                                    "maxLength": 120,
+                                    "type": "string"
+                                  },
+                                  "maximum": {
+                                    "type": "number"
+                                  },
+                                  "minimum": {
+                                    "type": "number"
+                                  },
+                                  "name": {
+                                    "maxLength": 64,
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "type": {
+                                    "const": "number",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["name", "label", "required", "type", "integer"],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "default": {
+                                    "type": "boolean"
+                                  },
+                                  "label": {
+                                    "maxLength": 120,
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "maxLength": 64,
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "type": {
+                                    "const": "boolean",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["name", "label", "required", "type"],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "default": {
+                                    "maxLength": 2000,
+                                    "type": "string"
+                                  },
+                                  "label": {
+                                    "maxLength": 120,
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "maxLength": 64,
+                                    "minLength": 1,
+                                    "type": "string"
+                                  },
+                                  "options": {
+                                    "items": {
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "label": {
+                                          "maxLength": 120,
+                                          "type": "string"
+                                        },
+                                        "value": {
+                                          "maxLength": 2000,
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": ["value", "label"],
+                                      "type": "object"
+                                    },
+                                    "maxItems": 25,
+                                    "minItems": 1,
+                                    "type": "array"
+                                  },
+                                  "required": {
+                                    "type": "boolean"
+                                  },
+                                  "type": {
+                                    "const": "choice",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": ["name", "label", "required", "type", "options"],
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "maxItems": 10,
+                          "type": "array"
+                        },
+                        "message": {
+                          "maxLength": 1000,
+                          "type": "string"
+                        },
+                        "source": {
+                          "maxLength": 200,
+                          "type": "string"
+                        }
+                      },
+                      "required": ["source", "message", "fields"],
+                      "type": "object"
+                    },
+                    "sealedValues": {
+                      "maxLength": 100000,
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": ["pending", "accepted", "declined", "expired"],
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "question", "status", "expiresAt", "publicKey"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "page",
+                      "type": "string"
+                    },
+                    "pageId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "version": {
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["kind", "pageId", "version", "title"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "fromBotId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "hop": {
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "handoff",
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "toBotId": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "fromBotId", "toBotId", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "channelId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "fromAddress": {
+                      "type": "string"
+                    },
+                    "fromLabel": {
+                      "type": "string"
+                    },
+                    "hop": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "kind": {
+                      "const": "channel_message",
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "transport": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "provider", "channelId", "fromAddress", "fromLabel", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "intent": {
+                      "enum": ["request", "result", "question", "status", "fyi"],
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "bot_message_sent",
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "toBotId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "toBotName": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "toBotId", "toBotName", "text"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "fromBotId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "fromBotName": {
+                      "type": "string"
+                    },
+                    "hop": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "intent": {
+                      "enum": ["request", "result", "question", "status", "fyi"],
+                      "type": "string"
+                    },
+                    "kind": {
+                      "const": "bot_message_received",
+                      "type": "string"
+                    },
+                    "returnToMessageId": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["kind", "fromBotId", "fromBotName", "text"],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "botId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "callId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "replyPreview": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "attachment": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "artifactId": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "kind": {
+                        "enum": ["image", "file"],
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["kind", "artifactId", "mimeType", "name"],
+                    "type": "object"
+                  },
+                  "author": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name"],
+                    "type": "object"
+                  },
+                  "botId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "page": {
+                    "const": true,
+                    "type": "boolean"
+                  },
+                  "role": {
+                    "enum": ["user", "bot", "system"],
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": ["role", "text"],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replyQuote": {
+            "type": "string"
+          },
+          "replyToMessageId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "role": {
+            "enum": ["user", "bot", "system"],
+            "type": "string"
+          },
+          "runId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "seq": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "threadId": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["id", "threadId", "seq", "role", "blocks", "createdAt"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "olderCursor": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "threadId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["threadId", "messages", "olderCursor"],
+  "type": "object"
+}

@@ -1,0 +1,4 @@
+{
+  "enum": ["model", "voice", "memory"],
+  "type": "string"
+}

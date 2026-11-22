@@ -267,3 +267,62 @@ File-cap note: the full-cluster port left `thread-snapshot.ets` at 1,013 lines (
 `max-file-lines` cap is 1,000). The refresh/live-race cluster (mergeThreadSnapshot /
 reconcileRefreshedThread and their page-merge helpers) moved verbatim to `thread/thread-merge.ets`;
 thread-stream and the reducer test import it from there (no re-export cycle). 902 + 117 lines.
+
+## Stage E — contract surface + fixtures + screenshots
+
+The layer-1 manifest (`scripts/contract-manifest.ts`) grew the M3 chat surface, every view
+projected from the REAL appContract schema (a rebind or field mutation goes red):
+
+- threads/get → `thread-snapshot` (messages/run/activeRuns/members projected to the consumed
+  element schemas; computer/groupName not consumed in Phase 1), threads/messages →
+  `thread-message-page`, the shared `thread-message` (blocks stays the FULL MessageBlock union —
+  the render layer degrades unknown kinds), `thread-run`, `thread-member`.
+- inputs: `thread-target` (head's bare target), `thread-messages-input`, `thread-subscribe-input`,
+  `thread-send-input`, `thread-answer-input`, `thread-stop-input`, `thread-markread-input`. The
+  superRefine-bearing inputs (target's exactly-one-of, send's text-or-attachment, answer's
+  answer-or-dismiss, consent query's `.default({})`) cannot be `.pick()`ed in zod 4, so
+  `pickRefined` rebuilds a plain object from the SAME field schemas — the refinement itself is a
+  hand-written sender rule + layer-2 fixture (§4.3.2), which toJSONSchema cannot express anyway.
+- outputs: `thread-head-output`, `thread-send-output` (taskId/runId/seq), `thread-stop-output`,
+  `thread-markread-output`; `thread-event` IS the real eventIterator yields schema (consumed whole).
+- consent: `ai-consent-status-input` (target+uses), `ai-consent-status-output` (the full disclosure
+  the prompt renders), `ai-consent-allow-input` (scope/version/keys).
+- enums pinned whole: `product-event-type` (46), `run-status` (8), `message-role`, `ai-data-use`,
+  `space-change-kind`; `message-block-kinds` covers all 30 MessageBlock variants (a new kind goes
+  red even though the render layer already degrades it).
+- the rendered blocks' field shapes (§6.4 whitelist): T1 text/meta/progress/card/steps/
+  routine_event/ask/choice, T2 handoff/channel_message/bot_message_*/voice_call/computer/subagent/
+  image/file, plus delivery. ask projects the fields the renderer reads (incl. the protected-card
+  markers that force T3); its actions project id/label only.
+
+`snapshots.test.ts` gained M3 wiring assertions (the picked fields keep the source's own schemas;
+the nested arrays reuse the SAME projected elements; blocks IS MessageBlock; the event view IS the
+yields schema; the enums are the real enums; the kind list covers every variant). **60 snapshots**
+(17 M2 + 43 M3), regenerated with `HARMONY_UPDATE_SNAPSHOTS=1`.
+
+Tests: vitest **77/77** (was 34; +43 snapshot cases + the M3 wiring assertions); hypium **138/138**
+(126 + 12 ThreadRender), fixture servers 8787+8788.
+
+Screenshots (committed under `screenshots/`):
+
+- `m3-thread.png`, `m3-thread-live.png` — real backend (3110, spike account): history with day
+  separator + markdown-lite bubbles, then a live send → streamed reply → run end.
+- `m3-consent.png` — fixture server (8787, unallowed recipients): first send prompts "Send data to
+  Fake Model Provider?" with the per-use summary, Privacy policy / Not now / Allow. Tapping Allow
+  prompts the second recipient (Fake Memory Provider) in server order; allowing both dispatches the
+  send (user bubble + working run). The full disclosure→allow→send loop verified on-device.
+- `m3-ask.png`, `m3-ask-answered.png` — fixture server: an ask card (approval actions Allow/Deny +
+  detail) injected live over the open stream; tapping Allow dispatches threads/answer through the
+  same gate (consent already granted, no re-prompt) and the card reconciles to answered ("allow"),
+  the run resuming. The ask answer loop verified on-device.
+
+The consent and ask captures use the fixture server because the spike bot's consent is pre-allowed
+and it asks no questions; the fixture's unallowed recipients and `/__threadEvent` injection give the
+deterministic states the DoD asks for. The real-backend captures prove the live transport; the
+fixture captures prove the gate/card UI against the same ArkTS code paths.
+
+File-cap note: the generator hit the same 1,000-line cap (1,101). The run-lifecycle reduce scenarios
+plus the `run()`/`message()` builders moved verbatim to `scripts/gen-thread-fixtures-run.ts` (414
+lines; the parent keeps the shared shapes/builders and imports them back). Regeneration is
+byte-identical — vitest 77/77 with zero fixture drift — and hypium 138/138 after a rebuild of both
+HAPs; `pnpm checks` exits 0.

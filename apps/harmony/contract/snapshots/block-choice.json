@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "answerId": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "choice",
+      "type": "string"
+    },
+    "options": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "letter": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "letter", "label"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "question": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "question", "options"],
+  "type": "object"
+}

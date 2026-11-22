@@ -1,0 +1,397 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "label"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "answer": {
+      "type": "string"
+    },
+    "credential": {
+      "additionalProperties": false,
+      "properties": {
+        "auth": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "bearer",
+                  "type": "string"
+                }
+              },
+              "required": ["type"],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,120}$",
+                  "type": "string"
+                },
+                "type": {
+                  "const": "header",
+                  "type": "string"
+                }
+              },
+              "required": ["type", "name"],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "basic",
+                  "type": "string"
+                },
+                "username": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "pattern": "^[^:\\r\\n]+$",
+                  "type": "string"
+                }
+              },
+              "required": ["type", "username"],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "login",
+                  "type": "string"
+                }
+              },
+              "required": ["type"],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "command",
+                  "type": "string"
+                }
+              },
+              "required": ["type"],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "card",
+                  "type": "string"
+                }
+              },
+              "required": ["type"],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "contact",
+                  "type": "string"
+                }
+              },
+              "required": ["type"],
+              "type": "object"
+            }
+          ]
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+          "type": "string"
+        },
+        "origin": {
+          "default": "",
+          "maxLength": 2048,
+          "type": "string"
+        }
+      },
+      "required": ["name", "origin", "auth"],
+      "type": "object"
+    },
+    "detail": {
+      "type": "string"
+    },
+    "dismissed": {
+      "const": true,
+      "type": "boolean"
+    },
+    "expired": {
+      "const": true,
+      "type": "boolean"
+    },
+    "input": {
+      "enum": ["text", "secret"],
+      "type": "string"
+    },
+    "instructionUpdate": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "type": "string"
+        },
+        "before": {
+          "type": "string"
+        },
+        "botId": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "undoVersionId": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": ["botId", "before", "after", "reason"],
+      "type": "object"
+    },
+    "kind": {
+      "const": "ask",
+      "type": "string"
+    },
+    "loginFields": {
+      "items": {
+        "maxLength": 64,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "type": "array"
+    },
+    "oneTimeCode": {
+      "additionalProperties": false,
+      "properties": {
+        "origin": {
+          "maxLength": 2048,
+          "type": "string"
+        }
+      },
+      "required": ["origin"],
+      "type": "object"
+    },
+    "receipt": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "maxLength": 100,
+          "type": "string"
+        },
+        "amountSource": {
+          "enum": ["button", "page"],
+          "type": "string"
+        },
+        "button": {
+          "maxLength": 200,
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "amount": {
+                "maxLength": 100,
+                "type": "string"
+              },
+              "name": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "required": ["name", "amount"],
+            "type": "object"
+          },
+          "maxItems": 30,
+          "type": "array"
+        },
+        "more": {
+          "additionalProperties": false,
+          "properties": {
+            "atLeast": {
+              "type": "boolean"
+            },
+            "count": {
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "type": "integer"
+            }
+          },
+          "required": ["count", "atLeast"],
+          "type": "object"
+        },
+        "total": {
+          "maxLength": 100,
+          "type": "string"
+        }
+      },
+      "required": ["items", "amountSource"],
+      "type": "object"
+    },
+    "replaces": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "type": "string"
+        },
+        "origin": {
+          "maxLength": 2048,
+          "type": "string"
+        }
+      },
+      "required": ["id", "origin"],
+      "type": "object"
+    },
+    "settingsUpdate": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "additionalProperties": false,
+          "properties": {
+            "autoSpeak": {
+              "type": "boolean"
+            },
+            "modelId": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "modelProvider": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "thinkingLevel": {
+              "anyOf": [
+                {
+                  "enum": ["off", "minimal", "low", "medium", "high", "xhigh", "max"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "voiceId": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "before": {
+          "additionalProperties": false,
+          "properties": {
+            "autoSpeak": {
+              "type": "boolean"
+            },
+            "modelId": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "modelProvider": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "thinkingLevel": {
+              "anyOf": [
+                {
+                  "enum": ["off", "minimal", "low", "medium", "high", "xhigh", "max"],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "voiceId": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "type": "object"
+        },
+        "botId": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": ["botId", "before", "after"],
+      "type": "object"
+    },
+    "status": {
+      "enum": ["pending", "answered"],
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "text"],
+  "type": "object"
+}

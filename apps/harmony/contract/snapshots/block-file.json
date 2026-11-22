@@ -1,0 +1,14 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "file",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "name"],
+  "type": "object"
+}

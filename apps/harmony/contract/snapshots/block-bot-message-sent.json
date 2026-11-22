@@ -1,0 +1,17 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "bot_message_sent",
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "toBotName": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "toBotName", "text"],
+  "type": "object"
+}

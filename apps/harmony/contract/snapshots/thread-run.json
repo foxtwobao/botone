@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "completedAt": {
+      "type": ["string", "null"]
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "error": {
+      "type": ["string", "null"]
+    },
+    "id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "modelId": {
+      "type": ["string", "null"]
+    },
+    "modelProvider": {
+      "type": ["string", "null"]
+    },
+    "routineId": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "routineName": {
+      "type": ["string", "null"]
+    },
+    "startedAt": {
+      "type": ["string", "null"]
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "leased",
+        "running",
+        "waiting_input",
+        "waiting_takeover",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "type": "string"
+    },
+    "taskId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "threadId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "trigger": {
+      "enum": [
+        "user",
+        "routine",
+        "resume",
+        "follow_up",
+        "reaction",
+        "call_end",
+        "spawn",
+        "skill",
+        "bot_message",
+        "webhook",
+        "messaging",
+        "cloud_agent",
+        "purchase",
+        "media",
+        "created",
+        "tickets",
+        "helper",
+        "helper_result"
+      ],
+      "type": "string"
+    },
+    "userId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "botId",
+    "threadId",
+    "taskId",
+    "status",
+    "trigger",
+    "routineId",
+    "modelProvider",
+    "modelId",
+    "error",
+    "startedAt",
+    "completedAt",
+    "createdAt"
+  ],
+  "type": "object"
+}

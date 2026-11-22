@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "privacyUrl": {
+      "format": "uri",
+      "type": "string"
+    },
+    "recipients": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "privacyUrl": {
+            "format": "uri",
+            "type": "string"
+          },
+          "use": {
+            "enum": ["model", "voice", "memory"],
+            "type": "string"
+          }
+        },
+        "required": ["key", "name", "use", "detail", "allowed"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": ["scope", "version", "recipients"],
+  "type": "object"
+}
