@@ -66,4 +66,3 @@ export function installConsentDialog(): () => void {
     setConsentPrompt(null);
   };
 }
-

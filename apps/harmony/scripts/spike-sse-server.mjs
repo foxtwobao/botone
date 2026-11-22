@@ -195,13 +195,39 @@ function threadState(target) {
   return THREAD_SCRIPTS.get(threadId) ?? scriptThread(threadId, target.botId ?? threadId);
 }
 
-/** The snapshot threads/get returns: durable messages plus the latest run record. */
-function threadSnapshotOf(state) {
-  const messages = [];
-  let run = null;
-  let cursor = 0;
+// A seeded long thread (/__threadSeed): `count` durable user/bot message pairs numbered so the
+// transcript order is provable, plus an optional trailing event script (an open ask, a running
+// run, an unknown block). Seeded history lives outside `events` — pages read it directly, the
+// snapshot returns only the server-shaped recent page (100 messages, olderCursor at its floor).
+const THREAD_PAGE_SIZE = 100;
+function seedThread(threadId, botId, count, tail = []) {
+  const history = [];
+  for (let i = 1; i <= count; i += 1) {
+    const role = i % 2 === 1 ? "user" : "bot";
+    history.push({
+      id: `${threadId}-h${i}`,
+      threadId,
+      seq: i,
+      role,
+      blocks: [{ kind: "text", text: `history ${i}` }],
+      botId,
+      createdAt: new Date(Date.now() - (count - i) * 60_000).toISOString(),
+    });
+  }
+  const events = tail.map((spec, index) =>
+    threadEvent(threadId, count + index + 1, spec.type, {
+      ...(spec.runId ? { runId: spec.runId } : {}),
+      payload: spec.payload ?? {},
+    }));
+  const state = { threadId, botId, events, sends: 0, history };
+  THREAD_SCRIPTS.set(threadId, state);
+  return state;
+}
+
+/** Durable messages: seeded history plus the message events, in seq order. */
+function durableMessages(state) {
+  const rows = [...(state.history ?? [])];
   for (const event of state.events) {
-    cursor = Math.max(cursor, event.seq);
     if (event.type === "thread.message.created" || event.type === "thread.message.updated") {
       const payload = event.payload;
       const row = {
@@ -214,10 +240,28 @@ function threadSnapshotOf(state) {
         createdAt: event.createdAt,
       };
       if (event.runId) row.runId = event.runId;
-      const index = messages.findIndex((m) => m.id === row.id);
-      if (index >= 0) messages[index] = row;
-      else messages.push(row);
+      const index = rows.findIndex((m) => m.id === row.id);
+      if (index >= 0) rows[index] = row;
+      else rows.push(row);
     }
+  }
+  return rows.sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
+}
+
+/** One history page older than `before`, server-shaped (THREAD_MESSAGE_PAGE_SIZE + olderCursor). */
+function messagePage(state, before) {
+  const rows = durableMessages(state).filter((m) => (m.seq ?? 0) < before);
+  const page = rows.slice(-THREAD_PAGE_SIZE);
+  const older = rows.length > page.length ? (page[0]?.seq ?? null) : null;
+  return { threadId: state.threadId, messages: page, olderCursor: older };
+}
+
+/** The snapshot threads/get returns: the recent durable page plus the latest run record. */
+function threadSnapshotOf(state) {
+  let run = null;
+  let cursor = (state.history ?? []).reduce((max, m) => Math.max(max, m.seq ?? 0), 0);
+  for (const event of state.events) {
+    cursor = Math.max(cursor, event.seq);
     if (event.type === "run.started") {
       run = {
         id: event.runId,
@@ -239,11 +283,12 @@ function threadSnapshotOf(state) {
     if (event.type === "run.failed" && run) run = { ...run, status: "failed", error: event.payload.error ?? null };
     if (event.type === "run.waiting_input" && run) run = { ...run, status: "waiting_input" };
   }
+  const page = messagePage(state, Number.MAX_SAFE_INTEGER);
   const snapshot = {
     threadId: state.threadId,
     cursor,
-    messages,
-    olderCursor: null,
+    messages: page.messages,
+    olderCursor: page.olderCursor,
     run,
     activeRuns: run ? [run] : [],
   };
@@ -394,19 +439,23 @@ function handleThreadRpc(req, res, body) {
     return json(res, 200, { json: { threadId: state.threadId, cursor } });
   }
   if (path === "/rpc/threads/messages") {
-    // One page of durable history older than `before`; the script keeps it all on one page.
+    // One page of durable history older than `before` (server-shaped: 100 rows + olderCursor).
     const before = typeof input.before === "number" ? input.before : Number.MAX_SAFE_INTEGER;
-    const snapshot = threadSnapshotOf(state);
-    const messages = snapshot.messages.filter((m) => m.seq < before);
-    return json(res, 200, { json: { threadId: state.threadId, messages, olderCursor: null } });
+    return json(res, 200, { json: messagePage(state, before) });
   }
   if (path === "/rpc/threads/send") {
     state.sends += 1;
-    const runId = `${state.threadId}-send-${state.sends}`;
     const messageId = `${state.threadId}-user-${state.sends}`;
-    const seq = state.events.reduce((max, e) => Math.max(max, e.seq), 0);
+    const seq = nextEventSeq(state);
     const messageSeq = snapshotMessageSeq(state) + 1;
+    // A composer send while the viewer's run waits on an ask ANSWERS that run (the real server's
+    // answerWaitingRunWithText): the user message is recorded, the card marks answered, and the
+    // SAME run resumes — no new run is created.
+    const snapshot = threadSnapshotOf(state);
+    const waiting = snapshot.run && snapshot.run.status === "waiting_input" ? snapshot.run : null;
+    const runId = waiting ? waiting.id : `${state.threadId}-send-${state.sends}`;
     pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "thread.message.created", {
+      runId,
       payload: {
         messageId,
         seq: messageSeq,
@@ -415,20 +464,36 @@ function handleThreadRpc(req, res, body) {
         author: { id: ME.userId, name: ME.name },
       },
     }));
-    pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "run.started", {
+    if (waiting) {
+      const asked = durableMessages(state).find((m) => m.runId === waiting.id
+        && (m.blocks ?? []).some((b) => b.kind === "ask" && b.status !== "answered"));
+      if (asked) {
+        const blocks = asked.blocks.map((b) =>
+          b.kind === "ask" ? { ...b, status: "answered", answer: input.text ?? "" } : b);
+        pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "thread.message.updated", {
+          runId,
+          payload: { messageId: asked.id, seq: asked.seq, role: asked.role, blocks },
+        }));
+      }
+    }
+    pushThreadEvent(state, threadEvent(state.threadId, seq + (waiting ? 3 : 2), "run.started", {
       runId,
-      payload: { trigger: "user", userId: ME.userId },
+      payload: { trigger: waiting ? "resume" : "user", userId: ME.userId },
     }));
     return json(res, 200, { json: { taskId: runId, runId, seq: messageSeq } });
   }
   if (path === "/rpc/threads/answer") {
-    const seq = state.events.reduce((max, e) => Math.max(max, e.seq), 0);
+    const seq = nextEventSeq(state);
+    // Keep the answered card's own question/actions; only status+answer change (the real server
+    // updates the stored block, it does not replace the card). The run resumes (queued → the
+    // worker's run.started); no user message is created — only a composer SEND records one.
+    const asked = durableMessages(state).find((m) => m.id === input.messageId);
+    const askBlock = (asked?.blocks ?? []).find((b) => b.kind === "ask") ?? { kind: "ask", text: "Proceed?" };
+    const blocks = (asked?.blocks ?? [askBlock]).map((b) =>
+      b.kind === "ask" ? { ...b, status: "answered", answer: input.answer } : b);
     pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "thread.message.updated", {
       runId: input.runId,
-      payload: {
-        messageId: input.messageId,
-        blocks: [{ kind: "ask", text: "Proceed?", status: "answered", answer: input.answer }],
-      },
+      payload: { messageId: input.messageId, seq: asked?.seq, role: asked?.role ?? "bot", blocks },
     }));
     pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "run.started", {
       runId: input.runId,
@@ -439,7 +504,7 @@ function handleThreadRpc(req, res, body) {
   if (path === "/rpc/threads/stop") {
     const snapshot = threadSnapshotOf(state);
     if (snapshot.run) {
-      const seq = state.events.reduce((max, e) => Math.max(max, e.seq), 0);
+      const seq = nextEventSeq(state);
       pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "run.cancelled", { runId: snapshot.run.id }));
     }
     return json(res, 200, { json: { ok: true } });
@@ -451,7 +516,15 @@ function handleThreadRpc(req, res, body) {
 }
 
 function snapshotMessageSeq(state) {
-  return threadSnapshotOf(state).messages.reduce((max, m) => Math.max(max, m.seq ?? 0), 0);
+  return durableMessages(state).reduce((max, m) => Math.max(max, m.seq ?? 0), 0);
+}
+
+/** The next event seq: above every event AND every seeded history row. */
+function nextEventSeq(state) {
+  return Math.max(
+    state.events.reduce((max, e) => Math.max(max, e.seq), 0),
+    (state.history ?? []).reduce((max, m) => Math.max(max, m.seq ?? 0), 0),
+  );
 }
 
 function json(res, status, value, headers = {}) {
@@ -701,7 +774,7 @@ createServer((req, res) => {
       // Inject one thread event (another device's activity): {botId|groupId, type, runId?, payload?}.
       const input = body ? JSON.parse(body) : {};
       const state = threadState(input);
-      const nextSeq = state.events.reduce((max, e) => Math.max(max, e.seq), 0) + 1;
+      const nextSeq = nextEventSeq(state) + 1;
       const event = threadEvent(state.threadId, nextSeq, input.type || "thread.progress", {
         ...(input.runId ? { runId: input.runId } : {}),
         ...(input.botId && input.groupId ? { botId: input.botId } : {}),
@@ -709,6 +782,19 @@ createServer((req, res) => {
       });
       pushThreadEvent(state, event);
       return json(res, 200, { ok: true, seq: nextSeq });
+    }
+    if (req.url === "/__threadSeed") {
+      // Seed a long thread: {botId, count, tail?: [{type, runId?, payload?}]}. The recent page
+      // stays server-shaped (100 messages); older history pages come from threads/messages.
+      const input = body ? JSON.parse(body) : {};
+      const botId = input.botId || "bot-1";
+      const count = Math.max(0, Math.min(20_000, Number(input.count) || 0));
+      const state = seedThread(`thread-${botId}`, botId, count, Array.isArray(input.tail) ? input.tail : []);
+      if (!bots.some((b) => b.id === botId)) {
+        bots.push(makeBot(botId, input.name || `Seeded ${botId}`));
+        sendSignal("roster");
+      }
+      return json(res, 200, { ok: true, threadId: state.threadId, count });
     }
     if (req.url === "/__threadCut") {
       // End every open stream for a thread without an HTTP answer (a deploy closing connections).

@@ -244,7 +244,8 @@ export struct ThreadPage {
       }
 
       Row({ space: 8 }) {
-        TextInput({ text: this.draft, placeholder: t('Message…') })
+        // $$ two-way: a programmatic draft restore (failed send / Not now) must reach the field.
+        TextInput({ text: $$this.draft, placeholder: t('Message…') })
           .layoutWeight(1)
           .height(46)
           .fontSize(typeScale.body.fontSize)

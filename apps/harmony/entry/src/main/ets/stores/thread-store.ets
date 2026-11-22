@@ -5,6 +5,7 @@
 // without losing live state. No timed re-read: the stream's own refresh paths are the only reads.
 import { rpc } from '../net/rpc';
 import { RpcError, errorText, isServerUnreachable } from '../net/errors';
+import { AiConsentBlocked } from '../net/consent';
 import { SaveController } from '../query/save-controller';
 import type { SaveSend } from '../query/save-controller';
 import { currentSessionGeneration, selectedSpaceId } from '../net/session';
@@ -170,12 +171,13 @@ export class ThreadStore {
         this.sendFailedText = '';
       },
       onFailed: (error: RpcError): void => {
-        // A refusal is the user's choice: no error copy, the composer keeps the text.
-        if (error.name === 'AiConsentBlocked' && error.message.includes('Review AI data sharing')) {
-          this.send.reset();
-        }
+        // The failed text is captured BEFORE any reset: reset clears the input it lives in.
         const input = this.send.input;
         this.sendFailedText = input !== null && typeof input['text'] === 'string' ? input['text'] as string : '';
+        // Not now is the user's choice: no error copy, the composer keeps the text.
+        if (error instanceof AiConsentBlocked && error.refusedByUser) {
+          this.send.reset();
+        }
       },
     });
     this.answer = new SaveController({
@@ -194,7 +196,7 @@ export class ThreadStore {
         // the card. A failed refresh only delays the card (mobile thread-answer semantics).
       },
       onFailed: (error: RpcError): void => {
-        if (error.name === 'AiConsentBlocked' && error.message.includes('Review AI data sharing')) {
+        if (error instanceof AiConsentBlocked && error.refusedByUser) {
           this.answer.reset();
         }
       },
@@ -305,6 +307,7 @@ export class ThreadStore {
     const cursor = this.stream.cursor;
     const terminal = this.stream.terminalRunIds;
     const snapshot = this.stream.current();
+    const historyExpanded = this.stream.historyExpanded;
     const input: Record<string, Object> = {};
     if (this.groupId) {
       input['groupId'] = this.groupId;
@@ -323,6 +326,7 @@ export class ThreadStore {
     });
     this.stream.cursor = cursor;
     this.stream.loaded = snapshot !== null;
+    this.stream.historyExpanded = historyExpanded;
     for (const id of terminal) {
       this.stream.terminalRunIds.add(id);
     }
@@ -375,18 +379,25 @@ export class ThreadStore {
     const generation = currentSessionGeneration();
     try {
       const page = decodeThreadMessagePage(await rpc('threads/messages', body));
-      if (generation !== currentSessionGeneration() || page === null || this.snapshot === null) {
+      const live = this.stream?.current() ?? null;
+      if (generation !== currentSessionGeneration() || page === null || live === null) {
         return;
       }
-      if (page.threadId !== this.snapshot.threadId) {
+      if (page.threadId !== live.threadId) {
         return;
       }
+      // Merge against the LIVE snapshot, not the one the read started from: events that arrived
+      // while the page was in flight must survive the prepend (mobile keeps loaded history the
+      // same way — thread-sync's preserveHistory refresh).
       const pageSnapshot: ThreadSnapshot = {
-        threadId: page.threadId, cursor: this.snapshot.cursor, olderCursor: page.olderCursor,
-        messages: page.messages, run: this.snapshot.run, activeRuns: this.snapshot.activeRuns,
+        threadId: page.threadId, cursor: live.cursor, olderCursor: page.olderCursor,
+        messages: page.messages, run: live.run, activeRuns: live.activeRuns,
       };
-      const merged = prependPage(this.snapshot, pageSnapshot);
-      this.stream.commit(merged);
+      const merged = prependPage(live, pageSnapshot);
+      if (this.stream !== null) {
+        this.stream.historyExpanded = true;
+      }
+      this.stream?.commit(merged);
       this.paint(merged);
     } catch (err) {
       const error = err instanceof RpcError ? err as RpcError : null;

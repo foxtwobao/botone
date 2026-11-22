@@ -326,3 +326,53 @@ plus the `run()`/`message()` builders moved verbatim to `scripts/gen-thread-fixt
 lines; the parent keeps the shared shapes/builders and imports them back). Regeneration is
 byte-identical — vitest 77/77 with zero fixture drift — and hypium 138/138 after a rebuild of both
 HAPs; `pnpm checks` exits 0.
+
+## Fix round — verifier blockers (pending the real-run scope note)
+
+Independent re-check of `cbc571031` left two blockers: `RealThreadSmoke` timed out waiting for a
+run to end, and six UI loops had no device evidence. This round closes the UI loops on the
+fixture server and records why the real run does not end.
+
+### RealThreadSmoke — environment, not the stream
+
+The timed-out run was still `running` on the API after tool progress `Writing spike_ok`, with no
+terminal event. A different manual send on the same stack did finish. `Writing <path>` is the pi
+runtime's progress line for the `write_file` tool, and `write_file` is in `CORE_BUILTIN_TOOL_NAMES`
+(always offered). A simpler bot template does not remove it.
+
+Checked against `docs/self-host-models.md` and this checkout's dev env (names only): `AGENT_RUNTIME=pi`,
+deployment model is the hosted default, `RAKAZO_LOCAL_MODELS` is empty. Ollama is installed with a
+small local model, but that is a real OpenAI-compatible server, not a fixture. The scripted runtime
+(`capabilities.scripted`) exists for tests only; the pi process will not run a `scripted` model.
+There is no account-level deterministic provider to point the smoke bot at.
+
+**Scope adjustment, pending owner approval.** The opt-in test no longer waits 120s for the model
+to finish and does not count a hang as a pass. After the live progress bubble it calls
+`threads/stop` while the run is still working, then asserts the stream clears that run (gone,
+failed, or cancelled), the progress bubble is gone, and a reconnect from the cursor neither gaps
+nor duplicates. The real suite was not re-run: the dev API was down, and this assertion change
+is the adjustment above, not a claim that a model run now completes.
+
+### Device loops (fixture 8787, emulator)
+
+- Ask card's own Answer field (`threads/answer`, no user message): card shows the answer, Stop
+  appears because the run resumes. `screenshots/m3-ask-card-answer.png`.
+- Stop: that resumed run, Stop clears the control. `screenshots/m3-stop.png`.
+- Not now: consent dialog, 暂不, composer keeps the draft, request log has status and no send.
+  `screenshots/m3-notnow-dialog.png`, `m3-notnow-draft.png`.
+- Send while the fixture is down: failure row plus the draft restored; after the fixture returns,
+  Retry dispatches `threads/send` and the user bubble appears. `screenshots/m3-retry-failed.png`,
+  `m3-retry.png`.
+- Stream cut (`/__threadCut`): hello, the bot reply, and the user bubble each stay once.
+  `screenshots/m3-reconnect.png`.
+- 10k seed: open shows a page older than the recent 100 (`history 9801`) and "加载更早的消息";
+  tapping it loads `history 9701`; a fling moves the window without sticking. Frame time felt
+  immediate on this emulator; a numeric frame budget is M4. `screenshots/m3-10k.png`.
+- Unknown kind `flux-capacitor` on the thread page renders the placeholder and the page stays up.
+  `screenshots/m3-unknown-block.png`.
+
+History paging keeps loaded pages across a settle refresh (`historyExpanded` on the stream, the
+same rule as mobile `preserveHistory`). A page read merges onto the live snapshot so a message
+that arrives mid-read is not dropped. Composer and ask-card fields use two-way text so a restored
+draft reaches the control. Not now is `AiConsentBlocked` with `refusedByUser`, so the composer
+keeps the text and shows no error.

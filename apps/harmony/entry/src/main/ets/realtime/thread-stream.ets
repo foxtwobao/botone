@@ -92,6 +92,9 @@ export class ThreadStream {
   cursor: number = -1;
   /** Whether a snapshot was loaded for this chat (resume skips the initial threads/get). */
   loaded: boolean = false;
+  /** Older history pages were prepended; a refresh must keep them (mobile thread-sync's
+   * preserveHistory: expandedHistoryThread === the refreshed thread). */
+  historyExpanded: boolean = false;
   connected: boolean = false;
   readonly terminalRunIds: Set<string> = new Set();
   private snapshot: ThreadSnapshot | null = null;
@@ -188,7 +191,7 @@ export class ThreadStream {
     if (next === null) {
       throw new RpcError('Unexpected response from the server');
     }
-    const merged = reconcileRefreshedThread(this.snapshot, next);
+    const merged = reconcileRefreshedThread(this.snapshot, next, this.historyExpanded);
     this.snapshot = merged;
     // The live cursor is the replay position; a refresh behind it must not rewind the stream.
     this.cursor = Math.max(this.cursor, merged.cursor);

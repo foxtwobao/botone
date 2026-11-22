@@ -153,7 +153,7 @@ struct AskCard {
           }, (action: AskActionView): string => action.id)
         } else if (this.ask.textInput) {
           Row({ space: 8 }) {
-            TextInput({ text: this.draft, placeholder: t('Answer') })
+            TextInput({ text: $$this.draft, placeholder: t('Answer') })
               .layoutWeight(1)
               .height(42)
               .fontSize(typeScale.body.fontSize)

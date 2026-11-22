@@ -101,9 +101,14 @@ export function aiConsentTarget(body: Record<string, Object>): Record<string, Ob
 
 /** A foreground check failed before the requested mutation was dispatched (core AiConsentBlocked). */
 export class AiConsentBlocked extends RpcError {
-  constructor(message: string) {
+  /** The user answered Not now: their choice, not an error — the composer keeps the draft and
+   * shows no failure copy (the gate's refusal message is the contract's AI_CONSENT_REQUIRED). */
+  readonly refusedByUser: boolean;
+
+  constructor(message: string, refusedByUser: boolean = false) {
     super(message);
     this.name = 'AiConsentBlocked';
+    this.refusedByUser = refusedByUser;
   }
 }
 
@@ -155,7 +160,7 @@ function ensureRecipient(context: RpcContext, status: AiConsentStatus, recipient
   const task: Promise<void> = (async (): Promise<void> => {
     const allowed = await askUser(recipient, consentPrivacyUrl(recipient, status));
     if (!allowed) {
-      throw new Error(AI_CONSENT_REQUIRED);
+      throw new AiConsentBlocked(AI_CONSENT_REQUIRED, true);
     }
     // The allow RPC carries the pinned context; its own dispatch re-check refuses a generation
     // that moved during the prompt (mobile api.ts:726 inside the nested request), so the allow

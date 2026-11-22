@@ -201,4 +201,3 @@ export function reduceLiveMessageBlocks(current: Record<string, Object>[],
   }
   return [...segments, progress];
 }
-

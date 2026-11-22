@@ -16,8 +16,10 @@ import { decodeSendOutput, newClientNonce, sendReceipt } from '../../../main/ets
 import { app } from '../../../main/ets/app/app-state';
 import { setConsentPrompt } from '../../../main/ets/net/consent';
 import type { AiRecipient } from '../../../main/ets/net/consent';
+import { ThreadStore } from '../../../main/ets/stores/thread-store';
 
 const BASE = 'http://10.0.2.2:8787';
+const ME_USER = 'user-fake';
 
 async function waitFor(condition: () => boolean, label: string): Promise<void> {
   for (let attempt = 0; attempt < 300; attempt += 1) {
@@ -330,6 +332,79 @@ export default function threadRealtimeTest() {
       await pause(800);
       expect(await requestCount('/rpc/threads/get')).assertEqual(2);
       stream.stop();
+    });
+
+    it('seeded_history_pages_backwards_and_a_settle_refresh_keeps_them', 0, async () => {
+      // A 10k-message thread: the open returns the server-shaped recent page (100 messages,
+      // olderCursor at its floor); loadOlder prepends page after page; a run-settle refresh
+      // must NOT drop the loaded history (mobile thread-sync's preserveHistory).
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 10_000;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+        'recent page');
+      expect(store.olderCursor).assertEqual(9901);
+      expect(store.snapshot!.cursor).assertEqual(10_000);
+      await store.loadOlder();
+      await waitFor((): boolean => store.snapshot!.messages.length === 200, 'first older page');
+      expect(store.olderCursor).assertEqual(9801);
+      await store.loadOlder();
+      await waitFor((): boolean => store.snapshot!.messages.length === 300, 'second older page');
+      // The pages are contiguous and ordered: history 9701 … history 10000, each exactly once.
+      const texts = messageTexts(store.snapshot);
+      expect(texts.length).assertEqual(300);
+      expect(texts[0]).assertEqual('history 9701');
+      expect(texts[299]).assertEqual('history 10000');
+      expect(new Set(texts).size).assertEqual(300);
+      // A run starts and settles live: the coalesced refresh reconciles the run but keeps
+      // every loaded page (the bug this pins: a refresh used to reset to the recent 100).
+      const runPayload: Record<string, Object> = {};
+      runPayload['trigger'] = 'user';
+      await inject('run.started', 'run-seed', runPayload);
+      await waitFor((): boolean => store.working(), 'run working');
+      await inject('run.completed', 'run-seed', {});
+      await waitFor((): boolean => !store.working() && store.snapshot!.messages.length === 300,
+        'settle refresh keeps history');
+      await pause(400);
+      expect(store.snapshot!.messages.length).assertEqual(300);
+      expect(messageTexts(store.snapshot)[0]).assertEqual('history 9701');
+      expect(store.olderCursor).assertEqual(9701);
+      store.close();
+    });
+
+    it('a_live_message_arriving_during_a_page_read_survives_the_prepend', 0, async () => {
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 300;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+        'recent page');
+      // Start the page read, then land a live message before the read's commit paints.
+      const loading = store.loadOlder();
+      const payload: Record<string, Object> = {};
+      payload['messageId'] = 'live-during-page';
+      payload['seq'] = 301;
+      payload['role'] = 'bot';
+      const blocks: Object[] = [];
+      const block: Record<string, Object> = {};
+      block['kind'] = 'text';
+      block['text'] = 'live while paging';
+      blocks.push(block);
+      payload['blocks'] = blocks;
+      await inject('thread.message.created', '', payload);
+      await loading;
+      await waitFor((): boolean => messageTexts(store.snapshot).includes('live while paging'),
+        'live message kept');
+      const texts = messageTexts(store.snapshot);
+      expect(texts.filter((t: string): boolean => t === 'live while paging').length).assertEqual(1);
+      expect(texts.length).assertEqual(201);
+      expect(texts[0]).assertEqual('history 101');
+      store.close();
     });
 
   });
