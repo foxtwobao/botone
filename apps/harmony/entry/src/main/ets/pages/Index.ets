@@ -5,7 +5,7 @@ import { app } from '../app/app-state';
 import { appearance } from '../uikit/theme';
 import { SignInPage } from '../features/signin/SignInPage';
 import { InboxPage } from '../features/inbox/InboxPage';
-import { MePage } from '../features/me/MePage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { ArchivedPage } from '../features/archived/ArchivedPage';
 import { ServerPage } from '../features/server/ServerPage';
 import { ThreadPage } from '../features/chat/ThreadPage';
@@ -22,8 +22,8 @@ struct Index {
       ServerPage({ stack: this.stack })
     } else if (name === 'archived') {
       ArchivedPage({ stack: this.stack })
-    } else if (name === 'account') {
-      MePage({ stack: this.stack })
+    } else if (name === 'settings') {
+      SettingsPage({ stack: this.stack })
     } else if (name === 'chat') {
       ThreadPage({
         stack: this.stack,

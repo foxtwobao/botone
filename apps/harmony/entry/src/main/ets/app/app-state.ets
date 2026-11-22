@@ -20,6 +20,7 @@ import { appearance } from '../uikit/theme';
 import { queryCache } from '../query/query-cache';
 import { rosterStore } from '../stores/roster-store';
 import { archivedStore } from '../stores/archived-store';
+import { settingsStore } from '../stores/settings-store';
 
 @ObservedV2
 export class AppState {
@@ -57,8 +58,10 @@ export class AppState {
     // holder (RosterHolder), so it opens only while a signed-in screen is actually shown.
     rosterStore.start();
     archivedStore.start();
+    settingsStore.start();
     try {
       await initServerStore(context);
+      await appearance.init(context);
       await loadI18n(context);
     } catch (err) {
       this.phase = 'signIn';
@@ -89,6 +92,7 @@ export class AppState {
     queryCache.clear();
     rosterStore.reset();
     archivedStore.reset();
+    settingsStore.reset();
     void loadSessionToken().then((token: string): void => {
       if (!token) {
         this.me = null;

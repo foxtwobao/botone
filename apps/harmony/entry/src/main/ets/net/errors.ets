@@ -51,6 +51,9 @@ const TECHNICAL_MESSAGE: RegExp[] = [
   /\d+ bytes\b/,
   /unexpected token|is not a function|cannot read propert|undefined is not|null is not an object|json parse error/i,
   /^input validation failed\b/i,
+  // The stores' decode sentinel: the envelope did not decode. English-only internal marker,
+  // never catalog copy — falling through would print it raw on a non-English screen.
+  /^unexpected response from the server$/i,
 ];
 
 function isTechnicalMessage(message: string): boolean {

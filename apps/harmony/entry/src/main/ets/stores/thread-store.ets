@@ -18,6 +18,7 @@ import { decodeSendOutput, newClientNonce, sendReceipt } from '../thread/thread-
 import { decodeThreadMessagePage } from '../thread/thread-decode';
 import { isDeliveryMessage } from '../thread/block-view';
 import { t } from '../i18n/i18n';
+import { formatThreadSeparator } from '../i18n/dates';
 
 /** A transcript row: a day separator or a message (delivery messages never become rows). */
 export class ThreadRow {
@@ -38,19 +39,9 @@ function dayKey(iso: string): string {
 }
 
 function dayLabel(iso: string, now: number): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-  const startOfDay = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const diff = Math.round((startOfDay(new Date(now)) - startOfDay(date)) / 86_400_000);
-  if (diff <= 0) {
-    return t('Today');
-  }
-  if (diff === 1) {
-    return t('Yesterday');
-  }
-  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+  // The product's day separator (core formatTimeSeparator): Today/Yesterday + clock, the past
+  // week a weekday, older a localized short date with the year only when it differs.
+  return formatThreadSeparator(iso, now, t('Today'), t('Yesterday'));
 }
 
 /** The visible transcript: day separators between messages, delivery messages hidden whole. */

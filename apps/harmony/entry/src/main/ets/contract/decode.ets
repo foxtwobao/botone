@@ -318,3 +318,40 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
   };
   return result;
 }
+
+/** One models/list entry (M4 read-only display): the four whitelisted fields. providerName is
+ * optional (older servers and ordinary chat connections omit it); a non-string is a failure. */
+export interface ModelCatalogEntryView {
+  provider: string;
+  id: string;
+  label: string;
+  providerName: string | null;
+}
+
+export function decodeModelCatalogEntry(json: Object | null): ModelCatalogEntryView | null {
+  const record = asRecord(json);
+  if (record === null) {
+    return null;
+  }
+  const provider = readString(record, 'provider');
+  const id = readString(record, 'id');
+  const label = readString(record, 'label');
+  // providerName is OPTIONAL (older servers and ordinary chat connections omit it): absent or
+  // null both read as null; only a non-string non-null value is a decode failure.
+  const rawName = record['providerName'];
+  const providerName: string | null | undefined = rawName === undefined || rawName === null
+    ? null
+    : typeof rawName === 'string' ? rawName as string : undefined;
+  if (provider === null || !provider || id === null || !id || label === null || providerName === undefined) {
+    return null;
+  }
+  const result: ModelCatalogEntryView = {
+    provider: provider, id: id, label: label, providerName: providerName,
+  };
+  return result;
+}
+
+/** models/list: a non-array fails; an entry that cannot decode is dropped, not fatal (per-entry). */
+export function decodeModelCatalog(json: Object | null): ModelCatalogEntryView[] | null {
+  return decodeRows(json, decodeModelCatalogEntry);
+}

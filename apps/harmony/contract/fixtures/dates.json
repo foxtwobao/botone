@@ -1,0 +1,355 @@
+{
+  "cases": [
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-08-13T06:44:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "14:44"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-08-12T16:05:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "00:05"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-08-12T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "Wednesday"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-08-11T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "Tuesday"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-08-07T15:59:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "Friday"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-08-06T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "Aug 6"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2026-07-24T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "Jul 24"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "2025-07-09T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "Jul 9"
+    },
+    {
+      "kind": "row",
+      "locale": "en",
+      "iso": "not-a-date",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": ""
+    },
+    {
+      "kind": "separator",
+      "locale": "en",
+      "iso": "2026-08-13T06:44:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "expected": "Today 2:44 PM"
+    },
+    {
+      "kind": "separator",
+      "locale": "en",
+      "iso": "2026-08-12T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "expected": "Yesterday 10:00 AM"
+    },
+    {
+      "kind": "separator",
+      "locale": "en",
+      "iso": "2026-08-10T01:30:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "expected": "Monday 9:30 AM"
+    },
+    {
+      "kind": "separator",
+      "locale": "en",
+      "iso": "2026-08-03T00:15:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "expected": "Aug 3, 8:15 AM"
+    },
+    {
+      "kind": "separator",
+      "locale": "en",
+      "iso": "2025-07-08T23:05:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "expected": "Jul 9, 2025, 7:05 AM"
+    },
+    {
+      "kind": "separator",
+      "locale": "en",
+      "iso": "not-a-date",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "expected": ""
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-08-13T06:44:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "14:44"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-08-12T16:05:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "00:05"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-08-12T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "星期三"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-08-11T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "星期二"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-08-07T15:59:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "星期五"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-08-06T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "8月6日"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2026-07-24T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "7月24日"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "2025-07-09T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "7月9日"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-CN",
+      "iso": "not-a-date",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": ""
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-CN",
+      "iso": "2026-08-13T06:44:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "今天 14:44"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-CN",
+      "iso": "2026-08-12T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "昨天 10:00"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-CN",
+      "iso": "2026-08-10T01:30:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "星期一 9:30"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-CN",
+      "iso": "2026-08-03T00:15:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "8月3日 8:15"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-CN",
+      "iso": "2025-07-08T23:05:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "2025年7月9日 7:05"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-CN",
+      "iso": "not-a-date",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": ""
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-08-13T06:44:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "14:44"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-08-12T16:05:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "00:05"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-08-12T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "星期三"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-08-11T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "星期二"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-08-07T15:59:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "星期五"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-08-06T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "8月6日"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2026-07-24T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "7月24日"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "2025-07-09T01:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": "7月9日"
+    },
+    {
+      "kind": "row",
+      "locale": "zh-TW",
+      "iso": "not-a-date",
+      "now": "2026-08-13T13:53:00.000Z",
+      "expected": ""
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-TW",
+      "iso": "2026-08-13T06:44:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "今天 下午2:44"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-TW",
+      "iso": "2026-08-12T02:00:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "昨天 上午10:00"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-TW",
+      "iso": "2026-08-10T01:30:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "星期一 上午9:30"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-TW",
+      "iso": "2026-08-03T00:15:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "8月3日 上午8:15"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-TW",
+      "iso": "2025-07-08T23:05:00.000Z",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": "2025年7月9日 上午7:05"
+    },
+    {
+      "kind": "separator",
+      "locale": "zh-TW",
+      "iso": "not-a-date",
+      "now": "2026-08-13T13:53:00.000Z",
+      "today": "今天",
+      "yesterday": "昨天",
+      "expected": ""
+    }
+  ]
+}

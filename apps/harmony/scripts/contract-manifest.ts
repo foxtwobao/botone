@@ -1,4 +1,4 @@
-// The Phase 1 consumption whitelist (design §4.3.1), as far as M3 decodes it. Every RPC view
+// The Phase 1 consumption whitelist (design §4.3.1), as far as M4 decodes it. Every RPC view
 // projects its consumed fields from the REAL appContract procedure's output schema — never a
 // hand-written copy — so both a type mutation and a procedure rebind go red in the layer-1
 // snapshot. Fields outside a view are ignored on device, so upstream changes there must not
@@ -398,6 +398,20 @@ export const blockImageView = blockVariant("image").pick({ kind: true, name: tru
 export const blockFileView = blockVariant("file").pick({ kind: true, name: true });
 export const blockDeliveryView = blockVariant("delivery");
 
+// ── M4: the settings surface (design §4.3.1 models/list, §4.3.4/Q6 read-only model display) ──
+
+/** models/list: ONLY the four fields the read-only model display reads (design §4.3.1 — the model
+ * area is under upstream refactor, so the rest of ModelCatalogEntrySchema stays out of the
+ * whitelist). The display matches me.defaultProvider/defaultModel against provider/id and shows
+ * the server's label; providerName is the maker's own name for the row. */
+export const modelCatalogEntryView = procedureOutput(appContract.models.list).element.pick({
+  provider: true,
+  id: true,
+  label: true,
+  providerName: true,
+});
+export const modelsListView = zod.array(modelCatalogEntryView);
+
 /** Every snapshot the layer-1 test pins, keyed by the file name under snapshots/. */
 export const snapshotViews: Record<string, z.ZodType> = {
   health: healthView,
@@ -461,4 +475,7 @@ export const snapshotViews: Record<string, z.ZodType> = {
   "block-image": blockImageView,
   "block-file": blockFileView,
   "block-delivery": blockDeliveryView,
+  // M4 settings surface
+  "models-list": modelsListView,
+  "model-catalog-entry": modelCatalogEntryView,
 };

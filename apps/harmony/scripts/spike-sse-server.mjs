@@ -26,9 +26,37 @@ const ME = {
   name: "Ada",
   spaceId: "space-fake",
   needsModel: false,
-  defaultProvider: null,
-  defaultModel: null,
+  defaultProvider: "fake-provider",
+  defaultModel: "fake-model",
 };
+
+// M4: the read-only model display's catalog. The default names the first entry, so the settings
+// row shows the SERVER label; /__models lets a test move the default off the catalog to prove the
+// generic fallback (no raw id ever reaches the screen). Every id here is a fake probe.
+let MODELS = [
+  {
+    provider: "fake-provider",
+    id: "fake-model",
+    label: "Fake Fast Model",
+    providerName: "Fake Maker",
+    billing: "credits",
+  },
+  { provider: "fake-provider", id: "fake-slow", label: "Fake Slow Model", billing: "credits" },
+];
+function resetModels() {
+  MODELS = [
+    {
+      provider: "fake-provider",
+      id: "fake-model",
+      label: "Fake Fast Model",
+      providerName: "Fake Maker",
+      billing: "credits",
+    },
+    { provider: "fake-provider", id: "fake-slow", label: "Fake Slow Model", billing: "credits" },
+  ];
+  ME.defaultProvider = "fake-provider";
+  ME.defaultModel = "fake-model";
+}
 
 // ---- M2 roster state -------------------------------------------------------
 // A mutable fake roster so archive/restore and signal-driven re-reads have something to change.
@@ -83,6 +111,7 @@ let groups = [];
 let offline = false;
 const OFFLINE_READS = new Set([
   "/rpc/spaces/list",
+  "/rpc/models/list",
   "/rpc/bots/list",
   "/rpc/bots/listArchived",
   "/rpc/groups/listArchived",
@@ -618,6 +647,10 @@ function handleRpc(req, res, body) {
     if (space === "space-stale") return rpcError(res, 401, "UNAUTHORIZED", "Space inaccessible");
     return json(res, 200, { json: navigation() });
   }
+  if (path === "/rpc/models/list") {
+    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+    return json(res, 200, { json: MODELS });
+  }
   if (path === "/rpc/bots/list") {
     if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     return json(res, 200, { json: activeBots() });
@@ -817,6 +850,15 @@ createServer((req, res) => {
       }
       return json(res, 200, { ok: true });
     }
+    if (req.url === "/__models") {
+      // Move the account default / catalog so the settings model row can be driven to either
+      // branch: {defaultProvider?, defaultModel?, catalog?: [...]}.
+      const input = body ? JSON.parse(body) : {};
+      if ("defaultProvider" in input) ME.defaultProvider = input.defaultProvider;
+      if ("defaultModel" in input) ME.defaultModel = input.defaultModel;
+      if (Array.isArray(input.catalog)) MODELS = input.catalog;
+      return json(res, 200, { ok: true });
+    }
     if (req.url === "/__offline") {
       const input = body ? JSON.parse(body) : {};
       offline = input.on === true;
@@ -852,6 +894,27 @@ createServer((req, res) => {
         sendSignal("roster");
       }
       return json(res, 200, { ok: true, threadId: state.threadId, count });
+    }
+    if (req.url === "/__inboxSeed") {
+      // Bulk-inbox load for the M4 long-list measurement: {count} bots with staggered times,
+      // rotating previews and every 7th unread — one roster signal at the end (not per row).
+      const input = body ? JSON.parse(body) : {};
+      const count = Math.max(0, Math.min(5000, Number(input.count) || 0));
+      const now = Date.now();
+      for (let i = 0; i < count; i++) {
+        const id = `seed-${i}`;
+        if (!bots.some((b) => b.id === id)) {
+          bots.push(
+            makeBot(id, `Load ${i + 1}`, {
+              updatedAt: new Date(now - i * 61_000).toISOString(),
+              preview: `Preview line ${i + 1}`,
+              unread: i % 7 === 0,
+            }),
+          );
+        }
+      }
+      sendSignal("roster");
+      return json(res, 200, { ok: true, added: count, total: bots.length });
     }
     if (req.url === "/__threadCut") {
       // End every open stream for a thread without an HTTP answer (a deploy closing connections).
@@ -889,6 +952,7 @@ createServer((req, res) => {
       THREAD_SCRIPTS.clear();
       threadRefusals = 0;
       threadStall = null;
+      resetModels();
       resetConsent();
       consentScript = [];
       consentScriptIndex = 0;

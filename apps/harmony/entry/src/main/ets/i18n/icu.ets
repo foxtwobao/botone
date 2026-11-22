@@ -6,13 +6,31 @@
 
 const pluralRulesCache: Map<string, Intl.PluralRules> = new Map();
 
-function pluralRules(locale: string): Intl.PluralRules {
-  let rules = pluralRulesCache.get(locale);
+function pluralRules(locale: string, ordinal: boolean): Intl.PluralRules {
+  const key = ordinal ? `${locale}/ordinal` : locale;
+  let rules = pluralRulesCache.get(key);
   if (rules === undefined) {
-    rules = new Intl.PluralRules(locale);
-    pluralRulesCache.set(locale, rules);
+    if (ordinal) {
+      const options: Intl.PluralRulesOptions = { type: 'ordinal' };
+      rules = new Intl.PluralRules(locale, options);
+    } else {
+      rules = new Intl.PluralRules(locale);
+    }
+    pluralRulesCache.set(key, rules);
   }
   return rules;
+}
+
+const numberFormatCache: Map<string, Intl.NumberFormat> = new Map();
+
+/** lingui renders the plural # with locale number grouping (en 1,000; de 1.000). */
+function numberFormat(locale: string): Intl.NumberFormat {
+  let format = numberFormatCache.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale);
+    numberFormatCache.set(locale, format);
+  }
+  return format;
 }
 
 class IcuParser {
@@ -20,8 +38,9 @@ class IcuParser {
   private pos: number = 0;
   private values: Record<string, Object>;
   private locale: string;
-  /** The # value of the innermost plural branch; -1 outside any plural. */
-  private hashValue: number = -1;
+  /** The # value of the innermost plural branch; null outside any plural (a negative count is a
+   * real value, so -1 cannot be the sentinel). */
+  private hashValue: number | null = null;
 
   constructor(text: string, values: Record<string, Object>, locale: string) {
     this.text = text;
@@ -54,8 +73,9 @@ class IcuParser {
         out += this.quote();
         continue;
       }
-      if (ch === '#' && this.hashValue >= 0) {
-        out += String(this.hashValue);
+      const hash = this.hashValue;
+      if (ch === '#' && hash !== null) {
+        out += numberFormat(this.locale).format(hash);
         this.pos += 1;
         continue;
       }
@@ -65,7 +85,10 @@ class IcuParser {
     return out;
   }
 
-  /** ICU quoting: '' is a literal quote; '{ '}' '# escape the next character. */
+  /** ICU quoting: '' is a literal quote; a quote before { } # escapes that one character.
+   * shortcut: only single-character escapes, not full ICU quoted sections — no shipped catalog
+   * message quotes a special (all 85 apostrophes are ordinary contractions like "can't"); upgrade
+   * to section quoting if a future catalog entry needs "'{name}'" to render literally. */
   private quote(): string {
     const next = this.pos + 1 < this.text.length ? this.text.charAt(this.pos + 1) : '';
     if (next === "'") {
@@ -116,7 +139,7 @@ class IcuParser {
       return `{${name}, ${type}}`;
     }
     this.pos += 1;
-    return this.branches(name, type === 'plural' || type === 'selectordinal');
+    return this.branches(name, type === 'plural' || type === 'selectordinal', type === 'selectordinal');
   }
 
   private valueText(name: string): string {
@@ -129,7 +152,7 @@ class IcuParser {
   }
 
   /** Branch list of a plural/select: pick one, evaluate it, skip the rest structurally. */
-  private branches(name: string, plural: boolean): string {
+  private branches(name: string, plural: boolean, ordinal: boolean): string {
     const raw: Object | undefined = this.values[name];
     const count = typeof raw === 'number' ? raw as number : Number(raw);
     let offset = 0;
@@ -139,7 +162,9 @@ class IcuParser {
       this.pos += 'offset:'.length;
       offset = Number(this.token(' \t\n{,}')) || 0;
     }
-    const selected = plural ? this.pluralCategory(count) : raw === undefined ? '' : String(raw);
+    // ICU picks the category on the OFFSET count; an exact =N key still matches the raw count.
+    const selected = plural ? this.pluralCategory(count - offset, ordinal)
+      : raw === undefined ? '' : String(raw);
     let chosen = '';
     let other = '';
     let hasChosen = false;
@@ -156,7 +181,7 @@ class IcuParser {
       }
       this.pos += 1;
       const isMatch = plural ? key === `=${count}` || key === selected : key === selected;
-      const previousHash = this.hashValue;
+      const previousHash: number | null = this.hashValue;
       let braceConsumed = false;
       if (isMatch && !hasChosen) {
         if (plural) {
@@ -183,11 +208,11 @@ class IcuParser {
     return hasChosen ? chosen : other;
   }
 
-  private pluralCategory(count: number): string {
+  private pluralCategory(count: number, ordinal: boolean): string {
     if (!Number.isFinite(count)) {
       return 'other';
     }
-    return pluralRules(this.locale).select(count);
+    return pluralRules(this.locale, ordinal).select(count);
   }
 
   private skipSpace(): void {

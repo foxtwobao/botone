@@ -9,6 +9,7 @@ import { i18n } from "@lingui/core";
 import { isPrivateNetworkHost } from "@rakazo/contracts";
 import {
   chatSnoozed,
+  formatTimeSeparator,
   groupBotsForSidebar,
   IDLE_TIMEOUT_MS,
   isRetryableError,
@@ -23,6 +24,8 @@ import {
 import { MAX_MOBILE_RPC_RESPONSE_BYTES } from "@rakazo/mobile/lib/api/api.js";
 import { subscribeThread } from "@rakazo/mobile/lib/api/api-live.js";
 import { normalizeApiBase, probeApiBase } from "@rakazo/mobile/lib/api/endpoint.js";
+import { activateUiLocale } from "@rakazo/mobile/lib/i18n/i18n.js";
+import { formatThreadTime } from "@rakazo/mobile/lib/inbox/inbox.js";
 import { vi } from "vitest";
 import { generateThreadFixture } from "./gen-thread-fixtures.ts";
 import { readCatalog as readPoCatalog } from "./po.ts";
@@ -462,9 +465,16 @@ interface IcuFixture {
   cases: IcuCase[];
 }
 
-/** Placeholder names a message reads at the top level, e.g. {host} or {0, plural, …}. */
+/** Every placeholder name a message reads, including names nested inside plural/select branches
+ * (e.g. the {peer} in "{count, plural, one {# message with {peer}} …}"). */
 function placeholders(msgid: string): string[] {
-  const names = [...msgid.matchAll(/\{([a-zA-Z0-9_]+)(?=[,}])/g)].map((match) => match[1]!);
+  const names = [...msgid.matchAll(/\{([a-zA-Z0-9_]+)\s*[,}]/g)].map((match) => match[1]!);
+  return [...new Set(names)];
+}
+
+/** The argument names a message pluralizes on ({name, plural, …}). */
+function pluralArgs(msgid: string): string[] {
+  const names = [...msgid.matchAll(/\{([a-zA-Z0-9_]+),\s*plural,/g)].map((match) => match[1]!);
   return [...new Set(names)];
 }
 
@@ -477,6 +487,72 @@ const SAMPLE_VALUES: Record<string, string | number> = {
   0: 3,
 };
 
+/** A sample value for a placeholder: plural args and UPPER_SNAKE constants read as numbers,
+ * everything else as a short string. The point is to exercise every branch, not realism. */
+function sampleValue(name: string, isPluralArg: boolean): string | number {
+  if (name in SAMPLE_VALUES) return SAMPLE_VALUES[name]!;
+  if (isPluralArg || /^[A-Z][A-Z0-9_]*$/.test(name) || /^\d+$/.test(name)) return 3;
+  return "value";
+}
+
+/** Synthetic edge cases the real catalogs do not contain but the parser claims to support:
+ * offset, exact =N matches, select, selectordinal, ordinary apostrophes, missing values, and
+ * large-count # grouping. Quoted-section literals ('{name}') are out of scope: no shipped catalog
+ * message uses them (see the shortcut note in icu.ets). Expected values come from @lingui/core, so the ArkTS port must match. */
+const ICU_EDGES: { msgid: string; values: Record<string, string | number> }[] = [
+  { msgid: "{count, plural, offset:1 one {# item} other {# items}}", values: { count: 2 } },
+  { msgid: "{count, plural, offset:1 one {# item} other {# items}}", values: { count: 1 } },
+  { msgid: "{count, plural, =0 {none} one {# item} other {# items}}", values: { count: 0 } },
+  { msgid: "{count, plural, =0 {none} one {# item} other {# items}}", values: { count: 1 } },
+  { msgid: "{count, plural, =1 {exactly one} one {# item} other {# items}}", values: { count: 1 } },
+  { msgid: "{gender, select, male {He} female {She} other {They}}", values: { gender: "male" } },
+  { msgid: "{gender, select, male {He} female {She} other {They}}", values: { gender: "female" } },
+  { msgid: "{gender, select, male {He} female {She} other {They}}", values: { gender: "x" } },
+  { msgid: "{gender, select, male {He} female {She} other {They}}", values: {} },
+  {
+    msgid: "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 1 },
+  },
+  {
+    msgid: "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 2 },
+  },
+  {
+    msgid: "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 3 },
+  },
+  {
+    msgid: "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 4 },
+  },
+  {
+    msgid: "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 11 },
+  },
+  {
+    msgid: "{count, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 21 },
+  },
+  {
+    msgid: "{count, selectordinal, offset:1 one {#st} two {#nd} few {#rd} other {#th}}",
+    values: { count: 2 },
+  },
+  { msgid: "{count, plural, one {# {name}} other {# {name}s}}", values: { count: 1, name: "bot" } },
+  { msgid: "{count, plural, one {# {name}} other {# {name}s}}", values: { count: 3, name: "bot" } },
+  {
+    msgid: "{name} and {count, plural, one {# bot} other {# bots}}",
+    values: { name: "Ada", count: 2 },
+  },
+  { msgid: "It's a {name}", values: { name: "test" } },
+  { msgid: "{a} {b} {c}", values: { a: 1, b: 2 } },
+  { msgid: "{name}", values: {} },
+  { msgid: "{count, plural, one {# item} other {# items}}", values: { count: 1000000 } },
+  { msgid: "{count, plural, one {# item} other {# items}}", values: { count: 1234567 } },
+  { msgid: "{count, plural, one {# item} other {# items}}", values: { count: -1 } },
+  { msgid: "{count, plural, one {# item} other {# items}}", values: {} },
+  { msgid: "{n, plural, one {#} other {#}}", values: { n: 1.5 } },
+];
+
 export function generateIcuFixture(): IcuFixture {
   const cases: IcuCase[] = [];
   for (const locale of ["en", "zh-CN", "zh-TW"]) {
@@ -485,8 +561,8 @@ export function generateIcuFixture(): IcuFixture {
     i18n.activate(locale);
     const msgids = Object.keys(catalog);
     // Every plural message, at the counts that pick different categories.
-    for (const msgid of msgids.filter((id) => /\{[^}]*,\s*plural,/.test(id))) {
-      const name = placeholders(msgid)[0] ?? "count";
+    for (const msgid of msgids.filter((id) => id.includes(", plural,"))) {
+      const name = pluralArgs(msgid)[0] ?? "count";
       for (const count of [0, 1, 2, 5]) {
         cases.push({
           locale,
@@ -497,38 +573,108 @@ export function generateIcuFixture(): IcuFixture {
         });
       }
     }
-    // A fixed set of interpolation messages: the M1 screens' strings, apostrophes, several
-    // placeholders, and a nested plural inside surrounding text.
-    const interpolation = [
-      "Custom server {host}",
-      "Continue with {name}",
-      "Account menu for {name}",
-      "Password must be {max} characters or fewer",
-      "Don’t have an account?",
-      "Already have an account?",
-      "Did you mean {email}?",
-      "Connect MCP server {name}",
-      "{count} spaces",
-      "1 bot now uses the space default.",
-      "Sign in to Rakazo",
-      "Enter a server URL",
-      "Public servers need https://. HTTP only works on your local network.",
-      "Something went wrong. Try again.",
-      "Could not reach the server",
-      "Invalid code",
-      "Request a new code",
-      "Too many attempts. Try again in a few minutes.",
-    ];
-    for (const msgid of interpolation) {
-      if (!(msgid in catalog)) continue;
+    // FULL catalog validation (M4): every message that contains a placeholder, evaluated with a
+    // sample value for each name it reads. This covers all 459 brace messages per locale — the
+    // interpolation set, the apostrophes, and the nested plural branches — not just a fixed list.
+    for (const msgid of msgids.filter((id) => id.includes("{"))) {
+      const args = new Set(pluralArgs(msgid));
       const values: Record<string, string | number> = {};
-      for (const name of placeholders(msgid)) values[name] = SAMPLE_VALUES[name] ?? "value";
+      for (const name of placeholders(msgid)) values[name] = sampleValue(name, args.has(name));
       cases.push({
         locale,
         msgid,
         message: catalog[msgid]!,
         values,
         expected: i18n._(msgid, values),
+      });
+    }
+    // Synthetic parser edges (offset / =N / select / selectordinal / quoting / missing / grouping).
+    for (const edge of ICU_EDGES) {
+      cases.push({
+        locale,
+        msgid: edge.msgid,
+        message: edge.msgid,
+        values: edge.values,
+        expected: i18n._(edge.msgid, edge.values),
+      });
+    }
+  }
+  return { cases };
+}
+
+// ---------------------------------------------------------------- dates
+
+interface DateCase {
+  kind: "row" | "separator";
+  locale: string;
+  iso: string;
+  now: string;
+  /** Separator cases only: the localized labels the reference consumed. */
+  today?: string;
+  yesterday?: string;
+  expected: string;
+}
+interface DatesFixture {
+  cases: DateCase[];
+}
+
+/** Localized dates (M4): drive the REAL references under each shipped UI locale — mobile's
+ * formatThreadTime for inbox rows, core's formatTimeSeparator for thread day separators. Today
+ * reads a clock, the past week a weekday name, older a short date — all in the active locale,
+ * which is what the ArkTS port (i18n/dates.ets) must reproduce. */
+export function generateDatesFixture(): DatesFixture {
+  const cases: DateCase[] = [];
+  // A fixed local-time "now" so day boundaries are deterministic on any host timezone.
+  const now = new Date(2026, 7, 13, 21, 53, 0);
+  const local = (dayOffset: number, hour: number, minute: number): string =>
+    new Date(2026, 7, 13 - dayOffset, hour, minute, 0).toISOString();
+  const samples: { iso: string }[] = [
+    { iso: local(0, 14, 44) }, // today → clock
+    { iso: local(0, 0, 5) }, // today, padded hour/minute
+    { iso: local(1, 10, 0) }, // yesterday → weekday
+    { iso: local(2, 10, 0) }, // within the week → weekday
+    { iso: local(6, 23, 59) }, // last day of the weekday window
+    { iso: local(7, 9, 0) }, // a week ago → short date
+    { iso: local(20, 9, 0) }, // older → short date
+    { iso: local(400, 9, 0) }, // previous year
+    { iso: "not-a-date" }, // invalid → empty
+  ];
+  const separatorSamples: { iso: string }[] = [
+    { iso: local(0, 14, 44) }, // today → label + clock
+    { iso: local(1, 10, 0) }, // yesterday → label + clock
+    { iso: local(3, 9, 30) }, // within the week → weekday + clock
+    { iso: local(10, 8, 15) }, // older, same year → short date + clock
+    { iso: local(400, 7, 5) }, // previous year → date gains the year
+    { iso: "not-a-date" }, // invalid → empty
+  ];
+  for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
+    activateUiLocale(locale);
+    const dateLocale = locale === "en" ? "en-US" : locale;
+    const catalog = readCatalog(locale);
+    const labels = {
+      today: catalog["Today"] ?? "Today",
+      yesterday: catalog["Yesterday"] ?? "Yesterday",
+    };
+    for (const sample of samples) {
+      cases.push({
+        kind: "row",
+        locale,
+        iso: sample.iso,
+        now: now.toISOString(),
+        expected: formatThreadTime(sample.iso, now),
+      });
+    }
+    for (const sample of separatorSamples) {
+      cases.push({
+        kind: "separator",
+        locale,
+        iso: sample.iso,
+        now: now.toISOString(),
+        // The localized Today/Yesterday labels ride with the case: the device replay has no
+        // loaded catalog, and the labels are inputs the app passes from its own t().
+        today: labels.today,
+        yesterday: labels.yesterday,
+        expected: formatTimeSeparator(sample.iso, dateLocale, labels, now),
       });
     }
   }
@@ -717,5 +863,6 @@ export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>>
   sse: generateSseFixture,
   icu: generateIcuFixture,
   inbox: generateInboxFixture,
+  dates: generateDatesFixture,
   thread: generateThreadFixture,
 };

@@ -1,5 +1,6 @@
-// Replays the committed ICU fixture: every en/zh-CN/zh-TW plural message at four counts plus
-// the interpolation set, expected values evaluated by @lingui/core over the real catalogs.
+// Replays the committed ICU fixture: every en/zh-CN/zh-TW plural message at four counts, every
+// brace message in the full catalog, and the synthetic parser edges — expected values evaluated
+// by @lingui/core over the real catalogs (1698 cases).
 import { describe, expect, it } from '@ohos/hypium';
 import { fixtureIcu } from './fixtures.generated';
 import { formatIcu } from '../../../main/ets/i18n/icu';
@@ -27,7 +28,7 @@ export default function icuTest() {
         }
         checked += 1;
       }
-      expect(checked > 100).assertTrue();
+      expect(checked).assertEqual(1698);
     });
   });
 }

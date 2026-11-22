@@ -6,6 +6,7 @@ import { blockView, isDeliveryMessage, messageBlockViews, TIER_FULL, TIER_TEXT, 
 import { markdownPlainText, parseInline, parseMarkdownLite } from '../../../main/ets/thread/markdown-lite';
 import type { InlineSpan } from '../../../main/ets/thread/markdown-lite';
 import { messageKey, projectRows } from '../../../main/ets/stores/thread-store';
+import { t } from '../../../main/ets/i18n/i18n';
 import type { LiveMessage, ThreadSnapshot } from '../../../main/ets/thread/thread-snapshot';
 
 function block(json: string): Record<string, Object> {
@@ -163,7 +164,9 @@ export default function threadRenderTest() {
       expect(rows[1].type).assertEqual('message');
       expect(rows[1].message!.id).assertEqual('m1');
       expect(rows[2].type).assertEqual('day');
-      expect(rows[2].label).assertEqual('Today');
+      // The day label is the product separator (Today/Yesterday + clock, locale-formatted); the
+      // fixture-aligned format itself is covered by DatesFixture. Here: the day RULE.
+      expect(rows[2].label.startsWith(t('Today'))).assertEqual(true);
       expect(rows[3].message!.id).assertEqual('m2');
       expect(rows[4].message!.id).assertEqual('m4');
       // A null snapshot projects no rows.

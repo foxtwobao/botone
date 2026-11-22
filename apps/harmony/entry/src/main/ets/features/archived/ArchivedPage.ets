@@ -4,7 +4,8 @@
 // re-reads them. A failed read keeps the last rows under an offline banner. Copy reuses msgids.
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
-import { ChatAvatar, formatRowTime, previewSnippet } from '../../uikit/avatar';
+import { ChatAvatar, previewSnippet } from '../../uikit/avatar';
+import { formatRowTime } from '../../i18n/dates';
 import { ListSource } from '../../uikit/list-source';
 import { ActionButton, ErrorText } from '../../uikit/controls';
 import { t } from '../../i18n/i18n';

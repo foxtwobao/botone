@@ -24,6 +24,8 @@ import {
   groupView,
   messageBlockKindsView,
   meView,
+  modelCatalogEntryView,
+  modelsListView,
   notificationsSubscribeView,
   runView,
   snapshotViews,
@@ -153,6 +155,12 @@ describe("harmony layer-1 contract snapshots", () => {
     expect(messageBlockKindsView.options).toEqual(
       MessageBlock.options.map((option) => option.shape.kind.value),
     );
+
+    // M4: the model catalog view projects the REAL models/list element's own field schemas, and
+    // the list view reuses that same projected element (a rebind or field mutation goes red).
+    const modelsSource = appContract.models.list["~orpc"].outputSchema!.element;
+    expectFields(modelCatalogEntryView, modelsSource, "models.list");
+    expect(modelsListView.element).toBe(modelCatalogEntryView);
   });
 
   for (const [name, schema] of Object.entries(snapshotViews)) {

@@ -187,6 +187,7 @@ class ChangedAreasTests(unittest.TestCase):
             ("packages/contracts/src/threads/threads-rpc.ts", expect(*EVERY_BROWSER_AREA)),
             ("packages/core/src/threads/thread-snapshot-events.ts", expect(*EVERY_BROWSER_AREA)),
             ("packages/core/src/messages/events.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/core/src/messages/time-separators.ts", expect(*EVERY_BROWSER_AREA)),
             ("packages/core/src/runs/run-state.ts", expect(*EVERY_BROWSER_AREA)),
             ("packages/core/src/primitives/retry-policy.ts", expect(*EVERY_BROWSER_AREA)),
             ("packages/core/src/account/ai-consent.ts", expect(*EVERY_BROWSER_AREA)),

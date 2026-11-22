@@ -6,7 +6,8 @@
 // msgids; the account and server entries stay reachable from the header.
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
-import { ChatAvatar, UnreadDot, formatRowTime, previewSnippet } from '../../uikit/avatar';
+import { ChatAvatar, UnreadDot, previewSnippet } from '../../uikit/avatar';
+import { formatRowTime } from '../../i18n/dates';
 import { ListSource } from '../../uikit/list-source';
 import { ActionButton, ErrorText } from '../../uikit/controls';
 import { t } from '../../i18n/i18n';
@@ -191,9 +192,9 @@ export struct InboxPage {
         }
         .width(32)
         .height(32)
-        .accessibilityText(t('Account'))
+        .accessibilityText(t('Settings'))
         .onClick((): void => {
-          this.stack.pushPathByName('account', null);
+          this.stack.pushPathByName('settings', null);
         })
       }
       .width('100%')
