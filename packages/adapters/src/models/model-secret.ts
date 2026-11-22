@@ -16,6 +16,8 @@ import {
   ThinkingLevelSchema,
 } from "@rakazo/contracts";
 
+import { modelAccountReasoningIds } from "./model-account-reasoning.js";
+
 const CORRUPT_MODEL_SECRET_MESSAGE =
   "Stored model credential is corrupt. Connect the provider again.";
 
@@ -88,6 +90,8 @@ export type StoredModelSecret =
       thinkingLevel?: ThinkingLevel | null;
       maxTokens?: number;
       contextWindow?: number;
+      /** Derived from the bundled catalog on read, never written to the secret. */
+      defaultReasoningModelIds?: string[];
       visionModelIds?: string[];
       enabledModelIds?: string[];
       maxImagesPerPrompt?: number;
@@ -182,6 +186,9 @@ export function parseModelSecret(plaintext: string): StoredModelSecret {
       ...(contextWindow !== undefined ? { contextWindow } : {}),
       ...(visionModelIds ? { visionModelIds } : {}),
       ...(enabledModelIds ? { enabledModelIds } : {}),
+      ...(parsed.externalAccount && enabledModelIds?.length
+        ? { defaultReasoningModelIds: modelAccountReasoningIds(enabledModelIds) }
+        : {}),
       ...(maxImagesPerPrompt !== undefined ? { maxImagesPerPrompt } : {}),
       ...modelLimits(parsed),
       ...parsedModelSettings(parsed.models),

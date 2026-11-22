@@ -16,6 +16,12 @@ export function connectionModelSettings(
   credential?: LegacyCredential,
 ): ModelSettings {
   const settings = savedModelSettings(secret, modelId, credential);
+  if (
+    secret.kind === "openai_compatible" &&
+    secret.defaultReasoningModelIds?.includes(modelId) &&
+    secret.models?.[modelId]?.reasoning === undefined
+  )
+    return { ...settings, reasoning: true };
   if (!catalogKnowsModel(provider, modelId)) return settings;
   const { images: _images, reasoning: _reasoning, ...limits } = settings;
   return limits;

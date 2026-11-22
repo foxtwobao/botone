@@ -399,6 +399,9 @@ export function modelCredentialDto(
     ...(parsed.apiProtocol !== undefined ? { apiProtocol: parsed.apiProtocol } : {}),
     ...(parsed.headers !== undefined ? { headerNames: Object.keys(parsed.headers) } : {}),
     reasoning: parsed.reasoning ?? false,
+    ...(parsed.defaultReasoningModelIds?.length
+      ? { defaultReasoningModelIds: parsed.defaultReasoningModelIds }
+      : {}),
     ...(parsed.maxTokens !== undefined ? { maxTokens: parsed.maxTokens } : {}),
     ...(parsed.contextWindow !== undefined ? { contextWindow: parsed.contextWindow } : {}),
     cacheCapabilities: parsed.cacheCapabilities,

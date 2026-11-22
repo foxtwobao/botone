@@ -1,4 +1,8 @@
-import type { ModelAccountErrorCode, ModelAccountStatus } from "@rakazo/contracts";
+import type {
+  ModelAccountErrorCode,
+  ModelAccountLimits,
+  ModelAccountStatus,
+} from "@rakazo/contracts";
 import {
   modelAccountBalanceSchema,
   modelAccountConfigSchema,
@@ -11,11 +15,11 @@ import {
 } from "@rakazo/contracts";
 import { readBoundedJsonResponse } from "../primitives/http-response.js";
 
-export function parseAccountModelLimits(context: string, output: string) {
+export function parseAccountModelLimits(context: string, output: string, reasoning?: boolean) {
   const contextWindow = parseModelContextWindow(context.trim());
   const maxTokens = parseModelMaxTokens(output.trim());
   if ((context.trim() && !contextWindow) || (output.trim() && !maxTokens)) return null;
-  const result = modelAccountLimitsSchema.safeParse({ contextWindow, maxTokens });
+  const result = modelAccountLimitsSchema.safeParse({ contextWindow, maxTokens, reasoning });
   return result.success ? result.data : null;
 }
 
@@ -83,11 +87,7 @@ export function createModelAccountClient(
     settings: async (apiProtocol: "chat-completions" | "responses", signal?: AbortSignal) => {
       await request("settings", "POST", signal, { apiProtocol });
     },
-    saveLimits: async (
-      credentialId: string,
-      modelId: string,
-      limits: { contextWindow?: number; maxTokens?: number },
-    ) => {
+    saveLimits: async (credentialId: string, modelId: string, limits: ModelAccountLimits) => {
       await request("settings", "POST", undefined, { credentialId, modelId, limits });
     },
     revoke: async (signal?: AbortSignal) =>
