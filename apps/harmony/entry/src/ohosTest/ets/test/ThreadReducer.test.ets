@@ -19,6 +19,7 @@ import type {
   LiveRun,
   SendReceipt,
   ThreadEvent,
+  ThreadMember,
   ThreadSnapshot,
 } from '../../../main/ets/thread/thread-snapshot';
 
@@ -116,6 +117,20 @@ function messageOf(json: Object): LiveMessage {
   if (author !== null && author !== undefined && typeof author === 'object') {
     message.author = author as Record<string, Object>;
   }
+  const replyToMessageId = optString(r, 'replyToMessageId');
+  if (replyToMessageId !== undefined) {
+    message.replyToMessageId = replyToMessageId;
+  }
+  const replyQuote = optString(r, 'replyQuote');
+  if (replyQuote !== undefined) {
+    message.replyQuote = replyQuote;
+  }
+  const replyPreview = r['replyPreview'];
+  if (replyPreview === null) {
+    message.replyPreview = null;
+  } else if (replyPreview !== undefined && typeof replyPreview === 'object') {
+    message.replyPreview = replyPreview as Record<string, Object>;
+  }
   return message;
 }
 
@@ -152,6 +167,22 @@ function snapshotOf(json: Object | null): ThreadSnapshot | null {
   const groupId = optString(r, 'groupId');
   if (groupId !== undefined) {
     snapshot.groupId = groupId;
+  }
+  const membersRaw = r['members'];
+  if (membersRaw !== null && membersRaw !== undefined && Array.isArray(membersRaw)) {
+    const members: ThreadMember[] = [];
+    for (const item of membersRaw as Object[]) {
+      const m = item as Record<string, Object>;
+      const member: ThreadMember = {
+        botId: stringField(m, 'botId'), name: stringField(m, 'name'), color: stringField(m, 'color'),
+      };
+      const status = optString(m, 'status');
+      if (status !== undefined) {
+        member.status = status;
+      }
+      members.push(member);
+    }
+    snapshot.members = members;
   }
   return snapshot;
 }
@@ -207,6 +238,9 @@ function normalized(snapshot: ThreadSnapshot | null): string {
   parts.push(`"cursor":${snapshot.cursor}`);
   if (snapshot.groupId !== undefined) {
     parts.push(`"groupId":${JSON.stringify(snapshot.groupId)}`);
+  }
+  if (snapshot.members !== undefined) {
+    parts.push(`"members":${canonical(snapshot.members)}`);
   }
   parts.push(`"messages":${canonical(snapshot.messages)}`);
   parts.push(`"olderCursor":${snapshot.olderCursor === null ? 'null' : `${snapshot.olderCursor}`}`);

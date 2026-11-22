@@ -141,6 +141,42 @@ call) — recorded here so M4's real-device pass checks it explicitly.
   (hilog evidence captured in the run log).
 - `pnpm checks`: run at stage E (full gate before push).
 
-## Stages B–E
+## Stage B — full reducer cluster port (done)
+
+Per the stage-A decision, the whole client cluster is ported on the same types:
+
+- `run.waiting_input` / `computer.takeover.requested`: settle a known run (status + userId),
+  insert an unknown peer run (the first wait event is how an open thread learns a busy peer needs
+  ask/takeover UI), promote unless a waiting card already holds the primary slot, drop the run's
+  live progress bubble (both pauses delete its progress events server-side).
+- `computer.takeover.released`: waiting_takeover → queued, members follow; a second release is a
+  no-op. `reconcileRefreshedThread` keeps the event-sourced waiting_takeover at an equal-cursor
+  refresh and lets a newer cursor replace it.
+- `thread.subagent`: live rows order before the streamed answer; a pause/terminal settles running
+  cards to failed/stopped (`settleRunSubagents`); a saved card replaces the live placeholder by
+  agentId. `thread.cloud_agent`: in-place card update with the https-only URL filter.
+- Helper semantics: an answered helper ask card ends the chat's waiting state without a
+  run.started; a helper wait never promotes over a waiting card.
+- Group member status follows the run lifecycle (running/waiting/idle) via `updateMemberStatus`;
+  the group-failure banner survives late member starts (already in the slice).
+- `runFailureError` carries the model-fallback envelope: each model's diagnostic clamped to 300
+  chars and re-serialized (the UI reads the envelope, not a truncated blob).
+- Reply metadata (`replyToMessageId`/`replyQuote`/`replyPreview`) and author survive updates that
+  omit them; the decoders read them and the group members row.
+- `live-blocks.ets` split out of the reducer file (the 1,000-line cap): the block folding helpers
+  are their own module, re-exported for the existing import path.
+
+The thread fixture grew to **38 reduce scenarios + 11 refresh-race** (plus receipt/merge/terminal/
+blocks), all regenerated from the real core and replayed green on the FIRST device run after the
+port — the stage-A patterns held; the only new constraint was `URL` (ArkTS uses
+`url.URL.parseURL`, not the global constructor).
+
+Not ported, as decided: projectMessages, window/search paging, tool-history split/replay, secret
+redaction, durable subscription, computer status, identity-display provenance (Symbol, never on
+the JSON wire — documented in the reducer header).
+
+Tests: vitest 32/32; hypium **112/112** (fixture servers), full-cluster replay 6/6.
+
+## Stages C–E
 
 (in progress — this section grows as each stage lands)

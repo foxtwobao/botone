@@ -3,7 +3,7 @@
 // the render layer decodes each block and degrades unknown kinds to a placeholder. The layer-1
 // snapshots pin exactly these consumed views to the real contract schemas.
 import { asRecord } from '../contract/decode';
-import type { LiveMessage, LiveRun, ThreadSnapshot } from './thread-snapshot';
+import type { LiveMessage, LiveRun, ThreadMember, ThreadSnapshot } from './thread-snapshot';
 
 function readString(record: Record<string, Object>, key: string): string | null {
   const value = record[key];
@@ -129,6 +129,23 @@ export function decodeThreadMessage(json: Object | null): LiveMessage | null {
   if (author !== null) {
     message.author = author;
   }
+  const replyToMessageId = readOptionalString(record, 'replyToMessageId');
+  if (replyToMessageId !== undefined) {
+    message.replyToMessageId = replyToMessageId;
+  }
+  const replyQuote = readOptionalString(record, 'replyQuote');
+  if (replyQuote !== undefined) {
+    message.replyQuote = replyQuote;
+  }
+  const replyPreviewRaw = record['replyPreview'];
+  if (replyPreviewRaw === null) {
+    message.replyPreview = null;
+  } else {
+    const replyPreview = asRecord(replyPreviewRaw);
+    if (replyPreview !== null) {
+      message.replyPreview = replyPreview;
+    }
+  }
   return message;
 }
 
@@ -189,6 +206,29 @@ export function decodeThreadSnapshot(json: Object | null): ThreadSnapshot | null
   const groupId = readOptionalString(record, 'groupId');
   if (groupId !== undefined) {
     snapshot.groupId = groupId;
+  }
+  const membersRaw = record['members'];
+  if (Array.isArray(membersRaw)) {
+    const members: ThreadMember[] = [];
+    for (const item of membersRaw as Object[]) {
+      const member = asRecord(item);
+      if (member === null) {
+        continue;
+      }
+      const botId = readString(member, 'botId');
+      const name = readString(member, 'name');
+      const color = readString(member, 'color');
+      if (botId === null || !botId || name === null || color === null) {
+        continue;
+      }
+      const row: ThreadMember = { botId: botId, name: name, color: color };
+      const status = readOptionalString(member, 'status');
+      if (status !== undefined) {
+        row.status = status;
+      }
+      members.push(row);
+    }
+    snapshot.members = members;
   }
   return snapshot;
 }

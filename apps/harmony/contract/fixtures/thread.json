@@ -2209,7 +2209,7 @@
       ]
     },
     {
-      "name": "a second run keeps an active earlier run answerable",
+      "name": "second run keeps the waiting card answerable",
       "initial": {
         "threadId": "thread-1",
         "botId": "bot-1",
@@ -2233,21 +2233,23 @@
           "createdAt": "2026-11-21T12:00:00.000Z",
           "botId": "bot-1",
           "threadId": "thread-1",
-          "type": "run.started",
+          "type": "run.waiting_input",
           "seq": 2,
-          "runId": "run-2",
+          "runId": "run-1",
           "payload": {
-            "trigger": "user"
+            "userId": "user-1"
           }
         },
         {
           "createdAt": "2026-11-21T12:00:00.000Z",
           "botId": "bot-1",
           "threadId": "thread-1",
-          "type": "run.completed",
+          "type": "run.started",
           "seq": 3,
           "runId": "run-2",
-          "payload": {}
+          "payload": {
+            "trigger": "user"
+          }
         }
       ],
       "expected": [
@@ -2297,10 +2299,153 @@
           "olderCursor": null,
           "messages": [],
           "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "userId": "user-1"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z",
+              "userId": "user-1"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
             "id": "run-2",
             "botId": "bot-1",
             "threadId": "thread-1",
             "taskId": "run-2",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z",
+              "userId": "user-1"
+            },
+            {
+              "id": "run-2",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "waiting_input settles a known run and drops its progress",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "working"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.waiting_input",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "userId": "user-1"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
             "status": "running",
             "trigger": "user",
             "routineId": null,
@@ -2326,12 +2471,51 @@
               "startedAt": "2026-11-21T12:00:00.000Z",
               "completedAt": null,
               "createdAt": "2026-11-21T12:00:00.000Z"
-            },
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
             {
-              "id": "run-2",
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "working"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
               "botId": "bot-1",
               "threadId": "thread-1",
-              "taskId": "run-2",
+              "taskId": "run-1",
               "status": "running",
               "trigger": "user",
               "routineId": null,
@@ -2348,6 +2532,592 @@
           "threadId": "thread-1",
           "botId": "bot-1",
           "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "userId": "user-1"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z",
+              "userId": "user-1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "waiting_input inserts an unknown peer run",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:01.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.waiting_input",
+          "seq": 1,
+          "runId": "run-peer",
+          "payload": {
+            "userId": "user-1"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 2,
+          "runId": "run-peer",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-peer",
+            "botId": "bot-2",
+            "threadId": "thread-1",
+            "taskId": "run-peer",
+            "userId": "user-1",
+            "status": "waiting_input",
+            "trigger": "bot_message",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-peer",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-peer",
+              "userId": "user-1",
+              "status": "waiting_input",
+              "trigger": "bot_message",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "waiting_input on a helper run does not promote over a waiting card",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-0",
+          "status": "waiting_input",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-0"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-0",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-0"
+          }
+        ]
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:01.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.waiting_input",
+          "seq": 2,
+          "runId": "run-helper",
+          "payload": {
+            "trigger": "helper",
+            "userId": "user-1"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-0",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-0"
+          },
+          "activeRuns": [
+            {
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-0",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z",
+              "id": "run-0"
+            },
+            {
+              "id": "run-helper",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-helper",
+              "userId": "user-1",
+              "status": "waiting_input",
+              "trigger": "helper",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "takeover requested then released",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "working"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "computer.takeover.requested",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "computer.takeover.released",
+          "seq": 4,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "computer.takeover.released",
+          "seq": 5,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "working"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_takeover",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_takeover",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "queued",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "queued",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 5,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "queued",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "queued",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "takeover release leaves a non-waiting run alone",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "computer.takeover.released",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
           "olderCursor": null,
           "messages": [],
           "run": {
@@ -2990,6 +3760,1499 @@
             }
           ],
           "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "member status follows run lifecycle in a group",
+      "initial": {
+        "threadId": "thread-1",
+        "groupId": "group-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": [],
+        "members": [
+          {
+            "botId": "bot-1",
+            "name": "Alpha",
+            "color": "#3EC5A8",
+            "status": "idle"
+          },
+          {
+            "botId": "bot-2",
+            "name": "Beta",
+            "color": "#F5A03C",
+            "status": "idle"
+          }
+        ]
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 2,
+          "runId": "run-2",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.waiting_input",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 4,
+          "runId": "run-2",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 5,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "members": [
+            {
+              "botId": "bot-1",
+              "name": "Alpha",
+              "color": "#3EC5A8",
+              "status": "running"
+            },
+            {
+              "botId": "bot-2",
+              "name": "Beta",
+              "color": "#F5A03C",
+              "status": "idle"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-2",
+            "botId": "bot-2",
+            "threadId": "thread-1",
+            "taskId": "run-2",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "run-2",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "members": [
+            {
+              "botId": "bot-1",
+              "name": "Alpha",
+              "color": "#3EC5A8",
+              "status": "running"
+            },
+            {
+              "botId": "bot-2",
+              "name": "Beta",
+              "color": "#F5A03C",
+              "status": "running"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-2",
+            "botId": "bot-2",
+            "threadId": "thread-1",
+            "taskId": "run-2",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "run-2",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "members": [
+            {
+              "botId": "bot-1",
+              "name": "Alpha",
+              "color": "#3EC5A8",
+              "status": "waiting_input"
+            },
+            {
+              "botId": "bot-2",
+              "name": "Beta",
+              "color": "#F5A03C",
+              "status": "running"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "members": [
+            {
+              "botId": "bot-1",
+              "name": "Alpha",
+              "color": "#3EC5A8",
+              "status": "waiting_input"
+            },
+            {
+              "botId": "bot-2",
+              "name": "Beta",
+              "color": "#F5A03C",
+              "status": "idle"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 5,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": [],
+          "members": [
+            {
+              "botId": "bot-1",
+              "name": "Alpha",
+              "color": "#3EC5A8",
+              "status": "idle"
+            },
+            {
+              "botId": "bot-2",
+              "name": "Beta",
+              "color": "#F5A03C",
+              "status": "idle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "subagent rows order before the streamed answer and settle on pause",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Main answer"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.subagent",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "agentId": "agent-1",
+            "name": "Researcher",
+            "task": "find sources",
+            "status": "running",
+            "progress": "searching"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.subagent",
+          "seq": 4,
+          "runId": "run-1",
+          "payload": {
+            "agentId": "agent-1",
+            "name": "Researcher",
+            "task": "find sources",
+            "status": "completed",
+            "result": "3 sources"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 5,
+          "runId": "run-1",
+          "payload": {
+            "delta": " continues"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.waiting_input",
+          "seq": 6,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Main answer"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Researcher",
+                  "task": "find sources",
+                  "status": "running",
+                  "progress": "searching"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Main answer"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Researcher",
+                  "task": "find sources",
+                  "status": "completed",
+                  "result": "3 sources"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Main answer"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 5,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Researcher",
+                  "task": "find sources",
+                  "status": "completed",
+                  "result": "3 sources"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Main answer continues"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 6,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Researcher",
+                  "task": "find sources",
+                  "status": "completed",
+                  "result": "3 sources"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "waiting_input",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "running subagent settles to stopped when its run ends",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.subagent",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "agentId": "agent-1",
+            "name": "Helper",
+            "task": "work",
+            "status": "running"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.cancelled",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Helper",
+                  "task": "work",
+                  "status": "running"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Helper",
+                  "task": "work",
+                  "status": "failed",
+                  "result": "stopped"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "saved subagent card replaces the live placeholder",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.subagent",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "agentId": "agent-1",
+            "name": "Helper",
+            "task": "work",
+            "status": "running"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.created",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "messageId": "msg-sub",
+            "seq": 5,
+            "blocks": [
+              {
+                "kind": "subagent",
+                "agentId": "agent-1",
+                "name": "Helper",
+                "task": "work",
+                "status": "completed",
+                "result": "done"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "subagent:agent-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Helper",
+                  "task": "work",
+                  "status": "running"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-sub",
+              "threadId": "thread-1",
+              "seq": 5,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "subagent",
+                  "agentId": "agent-1",
+                  "name": "Helper",
+                  "task": "work",
+                  "status": "completed",
+                  "result": "done"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "cloud agent card updates in place",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "cloud_agent",
+                "agentId": "ca-1",
+                "title": "Cloud agent",
+                "status": "running",
+                "url": "https://example.com/a"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-cloud",
+            "seq": 1
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.cloud_agent",
+          "seq": 2,
+          "payload": {
+            "agentId": "ca-1",
+            "messageId": "msg-cloud",
+            "title": "Fix bug",
+            "status": "finished",
+            "url": "https://example.com/a",
+            "prUrl": "https://example.com/pr/1",
+            "branch": "fix"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.cloud_agent",
+          "seq": 3,
+          "payload": {
+            "agentId": "ca-1",
+            "status": "failed",
+            "url": "http://insecure.example.com"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "cloud_agent",
+                  "agentId": "ca-1",
+                  "title": "Fix bug",
+                  "status": "finished",
+                  "url": "https://example.com/a",
+                  "branch": "fix",
+                  "prUrl": "https://example.com/pr/1"
+                }
+              ],
+              "createdAt": "2026-11-21T12:00:00.000Z",
+              "id": "msg-cloud",
+              "seq": 1
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "cloud_agent",
+                  "agentId": "ca-1",
+                  "title": "Cloud agent",
+                  "status": "failed",
+                  "url": ""
+                }
+              ],
+              "createdAt": "2026-11-21T12:00:00.000Z",
+              "id": "msg-cloud",
+              "seq": 1
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "answered helper card ends the chat waiting state",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 2,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-helper",
+          "status": "waiting_input",
+          "trigger": "helper",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-helper"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-helper",
+            "status": "waiting_input",
+            "trigger": "helper",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-helper"
+          }
+        ]
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.updated",
+          "seq": 3,
+          "runId": "run-helper",
+          "payload": {
+            "messageId": "msg-ask",
+            "blocks": [
+              {
+                "kind": "ask",
+                "text": "Proceed?",
+                "status": "answered",
+                "answer": "allow"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-ask",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "ask",
+                  "text": "Proceed?",
+                  "status": "answered",
+                  "answer": "allow"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-helper",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "reply metadata is kept across updates that omit it",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.created",
+          "seq": 1,
+          "payload": {
+            "messageId": "msg-r",
+            "seq": 3,
+            "role": "user",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "reply"
+              }
+            ],
+            "replyToMessageId": "msg-parent",
+            "replyQuote": "quoted line",
+            "replyPreview": {
+              "role": "bot",
+              "text": "parent text"
+            }
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.updated",
+          "seq": 2,
+          "payload": {
+            "messageId": "msg-r",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "edited reply"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-r",
+              "threadId": "thread-1",
+              "seq": 3,
+              "role": "user",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "reply"
+                }
+              ],
+              "botId": "bot-1",
+              "replyToMessageId": "msg-parent",
+              "replyQuote": "quoted line",
+              "replyPreview": {
+                "role": "bot",
+                "text": "parent text"
+              },
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-r",
+              "threadId": "thread-1",
+              "seq": 3,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "edited reply"
+                }
+              ],
+              "botId": "bot-1",
+              "replyToMessageId": "msg-parent",
+              "replyQuote": "quoted line",
+              "replyPreview": {
+                "role": "bot",
+                "text": "parent text"
+              },
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "fallback failure envelope clamps each model diagnostic",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.failed",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "error": "{\"modelFallbackVersion\":1,\"primaryError\":\"pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp\",\"backups\":[{\"provider\":\"prov-a\",\"modelId\":\"model-a\",\"reason\":\"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr\",\"status\":\"failed\"},{\"provider\":\"prov-b\",\"modelId\":\"model-b\",\"reason\":\"quota\",\"status\":\"skipped\"}]}"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "failed",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": "{\"modelFallbackVersion\":1,\"primaryError\":\"pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp…\",\"backups\":[{\"provider\":\"prov-a\",\"modelId\":\"model-a\",\"reason\":\"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr…\",\"status\":\"failed\"},{\"provider\":\"prov-b\",\"modelId\":\"model-b\",\"reason\":\"quota\",\"status\":\"skipped\"}]}",
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
           "activeRuns": []
         }
       ]
@@ -4233,6 +6496,248 @@
         "messages": [],
         "run": null,
         "activeRuns": []
+      }
+    },
+    {
+      "name": "equal-cursor refresh keeps the event-sourced waiting_takeover",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "waiting_takeover",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_takeover",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "waiting_takeover",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_takeover",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "newer-cursor refresh replaces the waiting_takeover",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "waiting_takeover",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_takeover",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
       }
     },
     {
