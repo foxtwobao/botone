@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  DEFAULT_MODEL_CONTEXT_WINDOW,
+  DEFAULT_MODEL_MAX_TOKENS,
+  ModelSettingsSaveSchema,
+  ModelSettingsSchema,
+  modelOutputLeavesInputRoom,
+} from "./models/model-connections.js";
 
 const link = z.url().refine((value) => {
   const url = new URL(value);
@@ -55,6 +62,22 @@ export const modelAccountErrorCodeSchema = z.enum([
 ]);
 export type ModelAccountErrorCode = z.infer<typeof modelAccountErrorCodeSchema>;
 
-export const modelAccountSettingsSchema = z
-  .object({ apiProtocol: z.enum(["chat-completions", "responses"]) })
-  .strict();
+export const modelAccountLimitsSchema = z
+  .strictObject({
+    contextWindow: ModelSettingsSchema.shape.contextWindow,
+    maxTokens: ModelSettingsSchema.shape.maxTokens,
+  })
+  .refine((limits) =>
+    modelOutputLeavesInputRoom(
+      limits.maxTokens ?? DEFAULT_MODEL_MAX_TOKENS,
+      limits.contextWindow ?? DEFAULT_MODEL_CONTEXT_WINDOW,
+    ),
+  );
+export const modelAccountSettingsSchema = z.union([
+  z.strictObject({ apiProtocol: z.enum(["chat-completions", "responses"]) }),
+  z.strictObject({
+    credentialId: ModelSettingsSaveSchema.shape.credentialId,
+    modelId: ModelSettingsSaveSchema.shape.modelId,
+    limits: modelAccountLimitsSchema,
+  }),
+]);

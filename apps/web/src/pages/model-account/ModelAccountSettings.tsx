@@ -18,6 +18,7 @@ import { useSpaceRpc } from "../../lib/query/space-rpc";
 import { errorText } from "../../lib/query/user-error";
 import { SpaceBotsModelButton } from "../model-settings/space-bots-model";
 import { AccountI18n } from "./AccountI18n";
+import { AccountModelLimits } from "./AccountModelLimits";
 import { AccountModelRoleSettings as ModelRoleSettings } from "./AccountModelRoleSettings";
 import { modelAccountConfigQuery, modelAccountStatusQuery } from "./queries";
 import { useAuthorizationReturn } from "./use-authorization-return";
@@ -98,6 +99,13 @@ function ModelAccountSettingsContent({
             defaultLabel={t`Choose a model`}
             onChanged={() => void refresh()}
           />
+          {scope === "account" && managedCredentials[0] && !status.data.recovery ? (
+            <AccountModelLimits
+              key={managedCredentials[0].id}
+              credential={managedCredentials[0]}
+              refresh={refresh}
+            />
+          ) : null}
         </>
       ) : null}
     </div>

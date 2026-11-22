@@ -615,6 +615,23 @@ test("account-only settings retain model choices without ordinary connection con
   await expect(settings.getByText("Approval model", { exact: true })).toBeVisible();
   await expect(settings.getByTestId("settings-nav-voice")).toBeVisible();
   await captureScreenshot(page, testInfo, "model-account-only-settings");
+  const modelLimits = settings.getByRole("combobox", { name: "Model limits" });
+  await modelLimits.click();
+  await page.getByRole("option", { name: "fixture-model", exact: true }).click();
+  await settings.getByLabel("Context limit", { exact: true }).fill("32768");
+  await settings.getByLabel("Maximum output tokens", { exact: true }).fill("1024");
+  await settings.getByRole("button", { name: "Save", exact: true }).scrollIntoViewIfNeeded();
+  await captureScreenshot(page, testInfo, "model-account-limits");
+  await page.route("**/api/model-account/settings", (route) =>
+    route.fulfill({ json: { ok: true } }),
+  );
+  const write = page.waitForRequest("**/api/model-account/settings");
+  await settings.getByRole("button", { name: "Save", exact: true }).click();
+  expect((await write).postDataJSON()).toEqual({
+    credentialId: choice.credentialId,
+    modelId: choice.modelId,
+    limits: { contextWindow: 32768, maxTokens: 1024 },
+  });
   await settings.getByRole("button", { name: "Add fallback", exact: true }).first().click();
   await expect(page.getByRole("option", { name: /Fixture backup/ })).toBeVisible();
   await expect(page.getByRole("option").filter({ hasText: "Connect" })).toHaveCount(0);

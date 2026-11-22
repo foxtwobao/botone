@@ -4,6 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AccountModelLimits } from "../../components/account-model-limits";
 import { ModelRoleSettings } from "../../components/account-model-role-settings";
 import { ModelAccount } from "../../components/model-account";
 import { SpaceBotsModel } from "../../components/settings/space-bots-model";
@@ -95,6 +96,13 @@ export default function ModelAccountPage() {
               <SpaceBotsModel bots={bots.data ?? []} spaceId={spaceId} onSwitched={refresh} />
             )}
             <ModelRoleSettings {...shared} modelRole="approval" title={t("Approval model")} />
+            {target.scope === "account" && managedCredentials[0] && !status.data.recovery ? (
+              <AccountModelLimits
+                key={managedCredentials[0].id}
+                credential={managedCredentials[0]}
+                refresh={refresh}
+              />
+            ) : null}
           </>
         ) : null}
       </ScrollView>
