@@ -376,3 +376,11 @@ same rule as mobile `preserveHistory`). A page read merges onto the live snapsho
 that arrives mid-read is not dropped. Composer and ask-card fields use two-way text so a restored
 draft reaches the control. Not now is `AiConsentBlocked` with `refusedByUser`, so the composer
 keeps the text and shows no error.
+
+Fix-round checks, counted from Hypium's own summary (not the shell exit code): vitest
+`apps/harmony/contract` 77/77; `pnpm checks` 152/152; emulator hypium against fixture servers
+8787+8788, 140 tests. The first pass was 139 pass / 1 failure / 0 error — `rpc_deadline_times_out`
+saw the 500ms deadline elapse but the kit rejected before the client's timeout flag was set,
+while another job was loading the machine. The immediate re-run, with that load gone, was
+140 pass / 0 failure / 0 error, including the two new history-page cases. A detached checkout of
+this commit regenerated codegen with no diff and built unsigned app and ohosTest HAPs.
