@@ -1,0 +1,5175 @@
+{
+  "reduce": [
+    {
+      "name": "progress deltas accumulate into one live bubble",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Hel"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "lo"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "delta": " world"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Hel"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Hello"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Hello world"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "text payload replaces, delta appends",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "text": "draft"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": " more"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "text": "replaced"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "draft"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "draft more"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "replaced"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "reset drops streamed text and keeps waiting tools",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "delta": "half a clause"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "agent.tool.called",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "name": "web_search"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "reset": true,
+            "delta": "New start."
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 4,
+          "runId": "run-1",
+          "payload": {
+            "delta": " Continues."
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "half a clause"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "half a clause",
+                  "pendingToolNames": [
+                    "web_search"
+                  ]
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "steps",
+                  "steps": [
+                    {
+                      "label": "Web search",
+                      "count": 1
+                    }
+                  ]
+                },
+                {
+                  "kind": "progress",
+                  "text": "New start."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "steps",
+                  "steps": [
+                    {
+                      "label": "Web search",
+                      "count": 1
+                    }
+                  ]
+                },
+                {
+                  "kind": "progress",
+                  "text": "New start. Continues."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "tool call flushes the sentence and becomes a step",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Let me check."
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "agent.tool.called",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "name": "web_search"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "agent.tool.called",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "name": "web_search"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "agent.tool.completed",
+          "seq": 4,
+          "runId": "run-1",
+          "payload": {
+            "name": "web_search"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 5,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Found it."
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Let me check."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "Let me check."
+                },
+                {
+                  "kind": "steps",
+                  "steps": [
+                    {
+                      "label": "Web search",
+                      "count": 1
+                    }
+                  ]
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "Let me check."
+                },
+                {
+                  "kind": "steps",
+                  "steps": [
+                    {
+                      "label": "Web search",
+                      "count": 2
+                    }
+                  ]
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "Let me check."
+                },
+                {
+                  "kind": "steps",
+                  "steps": [
+                    {
+                      "label": "Web search",
+                      "count": 2
+                    }
+                  ]
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 5,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "Let me check."
+                },
+                {
+                  "kind": "steps",
+                  "steps": [
+                    {
+                      "label": "Web search",
+                      "count": 2
+                    }
+                  ]
+                },
+                {
+                  "kind": "progress",
+                  "text": "Found it."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "ask_user never joins the live step line",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Working."
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "agent.tool.called",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "name": "ask_user"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "delta": " Still."
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Working."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Working."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Working. Still."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "activity progress keeps its flag and replaces narration",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Thinking about it"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "activity": true,
+            "text": "Searching the web: cats"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "delta": " answer."
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Thinking about it"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Searching the web: cats",
+                  "activity": true
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Searching the web: cats answer."
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "shown flag survives on the growing tail",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "shown": true,
+            "delta": "Hi"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": " there"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Hi",
+                  "shown": true
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Hi there"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "message.created replaces the live bubble and upserts by id",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "delta": "streamed"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.created",
+          "seq": 2,
+          "runId": "run-1",
+          "id": "evt-2",
+          "payload": {
+            "messageId": "msg-1",
+            "seq": 7,
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "streamed answer"
+              }
+            ]
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.updated",
+          "seq": 3,
+          "runId": "run-1",
+          "id": "evt-3",
+          "payload": {
+            "messageId": "msg-1",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "edited answer"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "streamed"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-1",
+              "threadId": "thread-1",
+              "seq": 7,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "streamed answer"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-1",
+              "threadId": "thread-1",
+              "seq": 7,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "edited answer"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "user echo keeps author and its own seq",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.created",
+          "seq": 1,
+          "id": "evt-1",
+          "payload": {
+            "messageId": "msg-u",
+            "seq": 4,
+            "role": "user",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "hello bot"
+              }
+            ],
+            "author": {
+              "id": "user-1",
+              "name": "Ada"
+            }
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-u",
+              "threadId": "thread-1",
+              "seq": 4,
+              "role": "user",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "hello bot"
+                }
+              ],
+              "botId": "bot-1",
+              "author": {
+                "id": "user-1",
+                "name": "Ada"
+              },
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "update keeps the known callId and createdAt",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 2,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "a"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:01.000Z",
+            "id": "msg-c",
+            "seq": 2,
+            "callId": "call-9"
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:03.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.updated",
+          "seq": 3,
+          "id": "evt-3",
+          "payload": {
+            "messageId": "msg-c",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "b"
+              }
+            ]
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-c",
+              "threadId": "thread-1",
+              "seq": 2,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "b"
+                }
+              ],
+              "botId": "bot-1",
+              "callId": "call-9",
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "duplicate and out-of-order seq are dropped",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 5,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 5,
+          "runId": "run-1",
+          "payload": {
+            "delta": "dup"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "delta": "old"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 6,
+          "runId": "run-1",
+          "payload": {
+            "delta": "new"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 5,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 5,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 6,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "new"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "unknown event types leave the snapshot unchanged",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "routine.fired",
+          "seq": 1,
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "something.new",
+          "seq": 2,
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "delta": "after"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 0,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 0,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "after"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "event without seq keeps the cursor",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "runId": "run-1",
+          "payload": {
+            "delta": "no seq"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "no seq"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "run.started builds the running record and activeRuns",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:01.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {
+            "trigger": "user"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:02.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "send receipt then started then progress then completed",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:01.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "Hi"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.message.created",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "messageId": "msg-1",
+            "seq": 2,
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "Hi"
+              }
+            ]
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 4,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "Hi"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-1",
+              "threadId": "thread-1",
+              "seq": 2,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "Hi"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "msg-1",
+              "threadId": "thread-1",
+              "seq": 2,
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "text",
+                  "text": "Hi"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "run.failed keeps the clamped error in run",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.failed",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "error": "  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  "
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "failed",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "run.failed without a usable error clears the primary run",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.failed",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "error": "   "
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "run.cancelled drops the live bubble and the run",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "half"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.cancelled",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "half"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "background ticket run stays invisible",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-t",
+          "payload": {
+            "trigger": "tickets"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "visible"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "visible"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "a second run keeps an active earlier run answerable",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 2,
+          "runId": "run-2",
+          "payload": {
+            "trigger": "user"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 3,
+          "runId": "run-2",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-2",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-2",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "run-2",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "group failure banner survives a late member start",
+      "initial": {
+        "threadId": "thread-1",
+        "groupId": "group-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.failed",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "error": "member blew up"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 3,
+          "runId": "run-2",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 4,
+          "runId": "run-2",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "failed",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": "member blew up",
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "failed",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": "member blew up",
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-2",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 4,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "failed",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": "member blew up",
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "member run failure is found in activeRuns",
+      "initial": {
+        "threadId": "thread-1",
+        "groupId": "group-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-2",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 2,
+          "runId": "run-2",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.failed",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {
+            "error": "primary failed"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-2",
+            "botId": "bot-2",
+            "threadId": "thread-1",
+            "taskId": "run-2",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            },
+            {
+              "id": "run-2",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "groupId": "group-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "failed",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": "primary failed",
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-2",
+              "botId": "bot-2",
+              "threadId": "thread-1",
+              "taskId": "run-2",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "terminal event drops the run's live progress bubble",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 1,
+          "runId": "run-1",
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "delta": "working"
+          }
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 3,
+          "runId": "run-1",
+          "payload": {}
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 1,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-1",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "working"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-1",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z"
+          },
+          "activeRuns": [
+            {
+              "id": "run-1",
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "run-1",
+              "status": "running",
+              "trigger": "user",
+              "routineId": null,
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:00.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ]
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 3,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "thread.cleared empties the transcript and runs",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 9,
+        "olderCursor": 3,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-1",
+            "seq": 1
+          }
+        ],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.cleared",
+          "seq": 10,
+          "payload": {}
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 11,
+          "runId": "run-2",
+          "payload": {
+            "delta": "fresh"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 10,
+          "olderCursor": null,
+          "messages": [],
+          "run": null,
+          "activeRuns": []
+        },
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 11,
+          "olderCursor": null,
+          "messages": [
+            {
+              "id": "progress:run-2",
+              "threadId": "thread-1",
+              "role": "bot",
+              "blocks": [
+                {
+                  "kind": "progress",
+                  "text": "fresh"
+                }
+              ],
+              "botId": "bot-1",
+              "runId": "run-2",
+              "createdAt": "2026-11-21T12:00:00.000Z"
+            }
+          ],
+          "run": null,
+          "activeRuns": []
+        }
+      ]
+    },
+    {
+      "name": "started keeps the previous userId and routine fields",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "task-9",
+          "status": "running",
+          "trigger": "user",
+          "routineId": "routine-1",
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:01.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:01.000Z",
+          "id": "run-1",
+          "userId": "user-9",
+          "routineName": "Morning"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "task-9",
+            "status": "running",
+            "trigger": "user",
+            "routineId": "routine-1",
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z",
+            "id": "run-1",
+            "userId": "user-9",
+            "routineName": "Morning"
+          }
+        ]
+      },
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:02.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.started",
+          "seq": 2,
+          "runId": "run-1",
+          "payload": {
+            "trigger": "resume"
+          }
+        }
+      ],
+      "expected": [
+        {
+          "threadId": "thread-1",
+          "botId": "bot-1",
+          "cursor": 2,
+          "olderCursor": null,
+          "messages": [],
+          "run": {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "task-9",
+            "status": "running",
+            "trigger": "resume",
+            "routineId": "routine-1",
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:01.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z",
+            "id": "run-1",
+            "userId": "user-9",
+            "routineName": "Morning"
+          },
+          "activeRuns": [
+            {
+              "botId": "bot-1",
+              "threadId": "thread-1",
+              "taskId": "task-9",
+              "status": "running",
+              "trigger": "resume",
+              "routineId": "routine-1",
+              "modelProvider": null,
+              "modelId": null,
+              "error": null,
+              "startedAt": "2026-11-21T12:00:01.000Z",
+              "completedAt": null,
+              "createdAt": "2026-11-21T12:00:01.000Z",
+              "id": "run-1",
+              "userId": "user-9",
+              "routineName": "Morning"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "receipt": [
+    {
+      "name": "receipt shows the queued run at once",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "id": "run-1",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "task-1",
+          "status": "queued",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:01.000Z"
+        },
+        "activeRuns": [
+          {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "task-1",
+            "status": "queued",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": null,
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "receipt createdAt is carried into the queued run",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "id": "run-1",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "task-1",
+          "status": "queued",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:01.000Z"
+        },
+        "activeRuns": [
+          {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "task-1",
+            "status": "queued",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": null,
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a matching live run wins",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a queue-holding run refuses the receipt",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-0",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-0"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-0",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-0"
+          }
+        ]
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-0",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-0"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-0",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-0"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a waiting card holds no compute; the receipt queues behind it",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-0",
+          "status": "waiting_input",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-0"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-0",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-0"
+          }
+        ]
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "id": "run-1",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "task-1",
+          "status": "queued",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:01.000Z"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-0",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-0"
+          },
+          {
+            "id": "run-1",
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "task-1",
+            "status": "queued",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": null,
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:01.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a terminal run never shows as queued again",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [
+        "run-1"
+      ],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "another bot's receipt is ignored",
+      "initial": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "receipt": {
+        "botId": "bot-2",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "a group thread takes no direct receipt",
+      "initial": {
+        "threadId": "thread-1",
+        "groupId": "group-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": {
+        "threadId": "thread-1",
+        "groupId": "group-1",
+        "cursor": 0,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "null snapshot stays null",
+      "initial": null,
+      "receipt": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "taskId": "task-1",
+        "createdAt": "2026-11-21T12:00:01.000Z"
+      },
+      "terminalRunIds": [],
+      "now": "2026-11-21T12:00:02.000Z",
+      "expected": null
+    }
+  ],
+  "refresh": [
+    {
+      "name": "newer refresh replaces the snapshot",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 5,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-1",
+            "seq": 2
+          }
+        ],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 5,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-1",
+            "seq": 2
+          }
+        ],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "older refresh cannot roll the live cursor back",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "progress",
+                "text": "streaming"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "progress:run-1",
+            "runId": "run-1"
+          }
+        ],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "queued",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "queued",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "progress",
+                "text": "streaming"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "progress:run-1",
+            "runId": "run-1"
+          }
+        ],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "older refresh hydrates the matching live run after optimistic stop",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "progress",
+                "text": "streaming"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "progress:run-1",
+            "runId": "run-1"
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "progress",
+                "text": "streaming"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "progress:run-1",
+            "runId": "run-1"
+          }
+        ],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "older refresh without matching progress keeps prev whole",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-1",
+            "seq": 2
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-2",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-2"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-2",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-2"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 6,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-1",
+            "seq": 2
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "equal cursor refresh commits (ownership reconcile)",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "running",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "running",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "waiting_input",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 4,
+        "olderCursor": null,
+        "messages": [],
+        "run": {
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "taskId": "run-1",
+          "status": "waiting_input",
+          "trigger": "user",
+          "routineId": null,
+          "modelProvider": null,
+          "modelId": null,
+          "error": null,
+          "startedAt": "2026-11-21T12:00:00.000Z",
+          "completedAt": null,
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "id": "run-1"
+        },
+        "activeRuns": [
+          {
+            "botId": "bot-1",
+            "threadId": "thread-1",
+            "taskId": "run-1",
+            "status": "waiting_input",
+            "trigger": "user",
+            "routineId": null,
+            "modelProvider": null,
+            "modelId": null,
+            "error": null,
+            "startedAt": "2026-11-21T12:00:00.000Z",
+            "completedAt": null,
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "run-1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "another thread's refresh replaces wholesale",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 9,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-2",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-2",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "null prev takes the refresh",
+      "prev": null,
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 2,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 2,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "preserveLoadedHistory keeps older pages under the recent one",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 8,
+        "olderCursor": 1,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "old-1",
+            "seq": 1
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "old-2",
+            "seq": 2
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-3",
+            "seq": 3
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 8,
+        "olderCursor": 2,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "new"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-3",
+            "seq": 3
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-4",
+            "seq": 4
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": true,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 8,
+        "olderCursor": 1,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "old-1",
+            "seq": 1
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "old-2",
+            "seq": 2
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [
+              {
+                "kind": "text",
+                "text": "new"
+              }
+            ],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-3",
+            "seq": 3
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-4",
+            "seq": 4
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "without preserveLoadedHistory the recent page stands alone",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 8,
+        "olderCursor": 1,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "old-1",
+            "seq": 1
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-3",
+            "seq": 3
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 8,
+        "olderCursor": 2,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-3",
+            "seq": 3
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-4",
+            "seq": 4
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 8,
+        "olderCursor": 2,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-3",
+            "seq": 3
+          },
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "msg-4",
+            "seq": 4
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      }
+    }
+  ],
+  "merge": [
+    {
+      "name": "merge keeps prev when its cursor is ahead",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 7,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 3,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 7,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "merge takes next at equal cursor",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 3,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 3,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "m",
+            "seq": 1
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 3,
+        "olderCursor": null,
+        "messages": [
+          {
+            "threadId": "thread-1",
+            "role": "bot",
+            "blocks": [],
+            "createdAt": "2026-11-21T12:00:00.000Z",
+            "id": "m",
+            "seq": 1
+          }
+        ],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "merge across threads takes next",
+      "prev": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 9,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "next": {
+        "threadId": "thread-2",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-2",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    },
+    {
+      "name": "merge with null prev takes next",
+      "prev": null,
+      "next": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      },
+      "preserveLoadedHistory": false,
+      "expected": {
+        "threadId": "thread-1",
+        "botId": "bot-1",
+        "cursor": 1,
+        "olderCursor": null,
+        "messages": [],
+        "run": null,
+        "activeRuns": []
+      }
+    }
+  ],
+  "terminal": [
+    {
+      "name": "terminal events remember their run",
+      "initial": [],
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 1,
+          "runId": "run-1"
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.failed",
+          "seq": 2,
+          "runId": "run-2"
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.cancelled",
+          "seq": 3,
+          "runId": "run-3"
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "thread.progress",
+          "seq": 4,
+          "runId": "run-4"
+        },
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 5
+        }
+      ],
+      "expected": [
+        "run-1",
+        "run-2",
+        "run-3"
+      ]
+    },
+    {
+      "name": "the memory caps at 100 runs, oldest first",
+      "initial": [
+        "old-0",
+        "old-1",
+        "old-2",
+        "old-3",
+        "old-4",
+        "old-5",
+        "old-6",
+        "old-7",
+        "old-8",
+        "old-9",
+        "old-10",
+        "old-11",
+        "old-12",
+        "old-13",
+        "old-14",
+        "old-15",
+        "old-16",
+        "old-17",
+        "old-18",
+        "old-19",
+        "old-20",
+        "old-21",
+        "old-22",
+        "old-23",
+        "old-24",
+        "old-25",
+        "old-26",
+        "old-27",
+        "old-28",
+        "old-29",
+        "old-30",
+        "old-31",
+        "old-32",
+        "old-33",
+        "old-34",
+        "old-35",
+        "old-36",
+        "old-37",
+        "old-38",
+        "old-39",
+        "old-40",
+        "old-41",
+        "old-42",
+        "old-43",
+        "old-44",
+        "old-45",
+        "old-46",
+        "old-47",
+        "old-48",
+        "old-49",
+        "old-50",
+        "old-51",
+        "old-52",
+        "old-53",
+        "old-54",
+        "old-55",
+        "old-56",
+        "old-57",
+        "old-58",
+        "old-59",
+        "old-60",
+        "old-61",
+        "old-62",
+        "old-63",
+        "old-64",
+        "old-65",
+        "old-66",
+        "old-67",
+        "old-68",
+        "old-69",
+        "old-70",
+        "old-71",
+        "old-72",
+        "old-73",
+        "old-74",
+        "old-75",
+        "old-76",
+        "old-77",
+        "old-78",
+        "old-79",
+        "old-80",
+        "old-81",
+        "old-82",
+        "old-83",
+        "old-84",
+        "old-85",
+        "old-86",
+        "old-87",
+        "old-88",
+        "old-89",
+        "old-90",
+        "old-91",
+        "old-92",
+        "old-93",
+        "old-94",
+        "old-95",
+        "old-96",
+        "old-97",
+        "old-98",
+        "old-99"
+      ],
+      "events": [
+        {
+          "createdAt": "2026-11-21T12:00:00.000Z",
+          "botId": "bot-1",
+          "threadId": "thread-1",
+          "type": "run.completed",
+          "seq": 1,
+          "runId": "new-1"
+        }
+      ],
+      "expected": [
+        "old-1",
+        "old-2",
+        "old-3",
+        "old-4",
+        "old-5",
+        "old-6",
+        "old-7",
+        "old-8",
+        "old-9",
+        "old-10",
+        "old-11",
+        "old-12",
+        "old-13",
+        "old-14",
+        "old-15",
+        "old-16",
+        "old-17",
+        "old-18",
+        "old-19",
+        "old-20",
+        "old-21",
+        "old-22",
+        "old-23",
+        "old-24",
+        "old-25",
+        "old-26",
+        "old-27",
+        "old-28",
+        "old-29",
+        "old-30",
+        "old-31",
+        "old-32",
+        "old-33",
+        "old-34",
+        "old-35",
+        "old-36",
+        "old-37",
+        "old-38",
+        "old-39",
+        "old-40",
+        "old-41",
+        "old-42",
+        "old-43",
+        "old-44",
+        "old-45",
+        "old-46",
+        "old-47",
+        "old-48",
+        "old-49",
+        "old-50",
+        "old-51",
+        "old-52",
+        "old-53",
+        "old-54",
+        "old-55",
+        "old-56",
+        "old-57",
+        "old-58",
+        "old-59",
+        "old-60",
+        "old-61",
+        "old-62",
+        "old-63",
+        "old-64",
+        "old-65",
+        "old-66",
+        "old-67",
+        "old-68",
+        "old-69",
+        "old-70",
+        "old-71",
+        "old-72",
+        "old-73",
+        "old-74",
+        "old-75",
+        "old-76",
+        "old-77",
+        "old-78",
+        "old-79",
+        "old-80",
+        "old-81",
+        "old-82",
+        "old-83",
+        "old-84",
+        "old-85",
+        "old-86",
+        "old-87",
+        "old-88",
+        "old-89",
+        "old-90",
+        "old-91",
+        "old-92",
+        "old-93",
+        "old-94",
+        "old-95",
+        "old-96",
+        "old-97",
+        "old-98",
+        "old-99",
+        "new-1"
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "name": "empty text update produces no tail",
+      "current": [],
+      "updates": [
+        {
+          "type": "progress",
+          "payload": {
+            "delta": ""
+          }
+        }
+      ],
+      "expected": [
+        []
+      ]
+    },
+    {
+      "name": "pending tool waits for the sentence end",
+      "current": [],
+      "updates": [
+        {
+          "type": "progress",
+          "payload": {
+            "delta": "Checking the"
+          }
+        },
+        {
+          "type": "tool",
+          "name": "read_file"
+        },
+        {
+          "type": "progress",
+          "payload": {
+            "delta": " file now."
+          }
+        }
+      ],
+      "expected": [
+        [
+          {
+            "kind": "progress",
+            "text": "Checking the"
+          }
+        ],
+        [
+          {
+            "kind": "progress",
+            "text": "Checking the",
+            "pendingToolNames": [
+              "read_file"
+            ]
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "Checking the file now."
+          },
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Read file",
+                "count": 1
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "activity flush drops the narration",
+      "current": [],
+      "updates": [
+        {
+          "type": "progress",
+          "payload": {
+            "delta": "Let me look."
+          }
+        },
+        {
+          "type": "progress",
+          "payload": {
+            "activity": true,
+            "text": "Reading: notes.txt"
+          }
+        },
+        {
+          "type": "tool",
+          "name": "read_file"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "kind": "progress",
+            "text": "Let me look."
+          }
+        ],
+        [
+          {
+            "kind": "progress",
+            "text": "Reading: notes.txt",
+            "activity": true
+          }
+        ],
+        [
+          {
+            "kind": "progress",
+            "text": "Reading: notes.txt",
+            "activity": true,
+            "pendingToolNames": [
+              "read_file"
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "reset re-appends waiting tools as steps",
+      "current": [
+        {
+          "kind": "text",
+          "text": "Earlier answer."
+        },
+        {
+          "kind": "progress",
+          "text": "unfinished clause",
+          "pendingToolNames": [
+            "web_search",
+            "web_search"
+          ]
+        }
+      ],
+      "updates": [
+        {
+          "type": "progress",
+          "payload": {
+            "reset": true
+          }
+        }
+      ],
+      "expected": [
+        [
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Web search",
+                "count": 2
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "steps merge consecutive same-tool calls",
+      "current": [
+        {
+          "kind": "steps",
+          "steps": [
+            {
+              "label": "Web search",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "updates": [
+        {
+          "type": "tool",
+          "name": "web_search"
+        },
+        {
+          "type": "tool",
+          "name": "read_file"
+        },
+        {
+          "type": "tool",
+          "name": "read_file"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Web search",
+                "count": 3
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Web search",
+                "count": 3
+              },
+              {
+                "label": "Read file",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Web search",
+                "count": 3
+              },
+              {
+                "label": "Read file",
+                "count": 2
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "name": "text segments merge across flushes",
+      "current": [
+        {
+          "kind": "text",
+          "text": "First."
+        }
+      ],
+      "updates": [
+        {
+          "type": "progress",
+          "payload": {
+            "delta": " Second."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "echo"
+        },
+        {
+          "type": "progress",
+          "payload": {
+            "delta": "Third."
+          }
+        },
+        {
+          "type": "tool",
+          "name": "echo"
+        }
+      ],
+      "expected": [
+        [
+          {
+            "kind": "text",
+            "text": "First."
+          },
+          {
+            "kind": "progress",
+            "text": " Second."
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "First. Second."
+          },
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Echo",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "First. Second."
+          },
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Echo",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "kind": "progress",
+            "text": "Third."
+          }
+        ],
+        [
+          {
+            "kind": "text",
+            "text": "First. Second."
+          },
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Echo",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": "Third."
+          },
+          {
+            "kind": "steps",
+            "steps": [
+              {
+                "label": "Echo",
+                "count": 1
+              }
+            ]
+          }
+        ]
+      ]
+    }
+  ]
+}

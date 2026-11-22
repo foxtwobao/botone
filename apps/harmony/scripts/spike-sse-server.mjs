@@ -86,6 +86,11 @@ const OFFLINE_READS = new Set([
   "/rpc/bots/list",
   "/rpc/bots/listArchived",
   "/rpc/groups/listArchived",
+  // M3: the thread reads and stream are reads too — offline drops them the same way.
+  "/rpc/threads/get",
+  "/rpc/threads/head",
+  "/rpc/threads/messages",
+  "/rpc/threads/subscribe",
 ]);
 function resetRoster() {
   bots = [
@@ -140,6 +145,233 @@ function sendSignal(type) {
   for (const res of notificationClients) {
     res.write(frame);
   }
+}
+
+// ---- M3 thread state -------------------------------------------------------
+// A scripted thread per target: threads/get returns its snapshot, threads/subscribe replays
+// events after the requested cursor then stays open, threads/send appends the durable events
+// (user echo + run.started) and answers the receipt, /__threadEvent injects one event (another
+// device's activity), /__threadReset restores the script. Every id here is a fake probe.
+const THREAD_SCRIPTS = new Map();
+const threadClients = new Map(); // threadId -> Set<res>
+let threadRefusals = 0;
+let threadStall = null;
+
+function threadEvent(threadId, seq, type, extra = {}) {
+  return {
+    id: `evt-${threadId}-${seq}`,
+    spaceId: SPACE,
+    threadId,
+    botId: "bot-1",
+    seq,
+    type,
+    createdAt: new Date().toISOString(),
+    payload: {},
+    ...extra,
+  };
+}
+
+function scriptThread(threadId, botId) {
+  const events = [
+    threadEvent(threadId, 1, "thread.message.created", {
+      payload: { messageId: `${threadId}-m1`, seq: 1, role: "user", blocks: [{ kind: "text", text: "hello" }] },
+    }),
+    threadEvent(threadId, 2, "run.started", { runId: `${threadId}-r1`, payload: { trigger: "user" } }),
+    threadEvent(threadId, 3, "thread.progress", { runId: `${threadId}-r1`, payload: { delta: "Hi" } }),
+    threadEvent(threadId, 4, "thread.progress", { runId: `${threadId}-r1`, payload: { delta: " there." } }),
+    threadEvent(threadId, 5, "thread.message.created", {
+      runId: `${threadId}-r1`,
+      payload: { messageId: `${threadId}-m2`, seq: 2, role: "bot", blocks: [{ kind: "text", text: "Hi there." }] },
+    }),
+    threadEvent(threadId, 6, "run.completed", { runId: `${threadId}-r1` }),
+  ];
+  const state = { threadId, botId, events, sends: 0 };
+  THREAD_SCRIPTS.set(threadId, state);
+  return state;
+}
+
+function threadState(target) {
+  const threadId = target.groupId ? `thread-${target.groupId}` : `thread-${target.botId}`;
+  return THREAD_SCRIPTS.get(threadId) ?? scriptThread(threadId, target.botId ?? threadId);
+}
+
+/** The snapshot threads/get returns: durable messages plus the latest run record. */
+function threadSnapshotOf(state) {
+  const messages = [];
+  let run = null;
+  let cursor = 0;
+  for (const event of state.events) {
+    cursor = Math.max(cursor, event.seq);
+    if (event.type === "thread.message.created" || event.type === "thread.message.updated") {
+      const payload = event.payload;
+      const row = {
+        id: payload.messageId ?? event.id,
+        threadId: state.threadId,
+        seq: payload.seq ?? event.seq,
+        role: payload.role ?? "bot",
+        blocks: payload.blocks ?? [],
+        botId: event.botId,
+        createdAt: event.createdAt,
+      };
+      if (event.runId) row.runId = event.runId;
+      const index = messages.findIndex((m) => m.id === row.id);
+      if (index >= 0) messages[index] = row;
+      else messages.push(row);
+    }
+    if (event.type === "run.started") {
+      run = {
+        id: event.runId,
+        botId: event.botId,
+        threadId: state.threadId,
+        taskId: event.runId,
+        status: "running",
+        trigger: event.payload.trigger ?? "user",
+        routineId: null,
+        modelProvider: null,
+        modelId: null,
+        error: null,
+        startedAt: event.createdAt,
+        completedAt: null,
+        createdAt: event.createdAt,
+      };
+    }
+    if (event.type === "run.completed" || event.type === "run.cancelled") run = null;
+    if (event.type === "run.failed" && run) run = { ...run, status: "failed", error: event.payload.error ?? null };
+    if (event.type === "run.waiting_input" && run) run = { ...run, status: "waiting_input" };
+  }
+  const snapshot = {
+    threadId: state.threadId,
+    cursor,
+    messages,
+    olderCursor: null,
+    run,
+    activeRuns: run ? [run] : [],
+  };
+  if (state.botId) snapshot.botId = state.botId;
+  return snapshot;
+}
+
+function pushThreadEvent(state, event) {
+  state.events.push(event);
+  const frame = `data: ${JSON.stringify({ json: event })}\n\n`;
+  for (const res of threadClients.get(state.threadId) ?? []) {
+    res.write(frame);
+  }
+  // Chat activity reaches the inbox as a roster signal (the M2 decision).
+  sendSignal("roster");
+}
+
+function handleThreadSubscribe(req, res, body) {
+  // A stream is one connection for its whole life: never share it with unary requests through
+  // the client's connection pool (the kit can hand a pooled stream connection to a unary call,
+  // which then waits forever — observed on the emulator as "Operation timeout", zero transfer).
+  res.setHeader("connection", "close");
+  if (req.headers.accept !== "text/event-stream") {
+    res.writeHead(400).end();
+    return;
+  }
+  if (bearer(req) !== "fake-token") {
+    return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+  }
+  if (threadRefusals > 0) {
+    threadRefusals -= 1;
+    return rpcError(res, 403, "FORBIDDEN", "Thread access refused");
+  }
+  const input = JSON.parse(body || "{}").json ?? {};
+  const state = threadState(input);
+  const cursor = typeof input.cursor === "number" ? input.cursor : -1;
+  if (threadStall === "headers") {
+    threadStall = null;
+    return; // never answer: the client's connect/read deadline must fire
+  }
+  res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
+  if (threadStall === "body") {
+    threadStall = null;
+    return; // headers sent, no frames: the stream stays open but silent
+  }
+  for (const event of state.events) {
+    if (event.seq > cursor) {
+      res.write(`data: ${JSON.stringify({ json: event })}\n\n`);
+    }
+  }
+  if (!threadClients.has(state.threadId)) threadClients.set(state.threadId, new Set());
+  threadClients.get(state.threadId).add(res);
+  res.on("close", () => threadClients.get(state.threadId)?.delete(res));
+}
+
+function handleThreadRpc(req, res, body) {
+  const path = req.url;
+  if (bearer(req) !== "fake-token") {
+    return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+  }
+  const input = JSON.parse(body || "{}").json ?? {};
+  const state = threadState(input);
+  if (path === "/rpc/threads/get") {
+    return json(res, 200, { json: threadSnapshotOf(state) });
+  }
+  if (path === "/rpc/threads/head") {
+    const cursor = state.events.reduce((max, e) => Math.max(max, e.seq), -1);
+    return json(res, 200, { json: { threadId: state.threadId, cursor } });
+  }
+  if (path === "/rpc/threads/messages") {
+    // One page of durable history older than `before`; the script keeps it all on one page.
+    const before = typeof input.before === "number" ? input.before : Number.MAX_SAFE_INTEGER;
+    const snapshot = threadSnapshotOf(state);
+    const messages = snapshot.messages.filter((m) => m.seq < before);
+    return json(res, 200, { json: { threadId: state.threadId, messages, olderCursor: null } });
+  }
+  if (path === "/rpc/threads/send") {
+    state.sends += 1;
+    const runId = `${state.threadId}-send-${state.sends}`;
+    const messageId = `${state.threadId}-user-${state.sends}`;
+    const seq = state.events.reduce((max, e) => Math.max(max, e.seq), 0);
+    const messageSeq = snapshotMessageSeq(state) + 1;
+    pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "thread.message.created", {
+      payload: {
+        messageId,
+        seq: messageSeq,
+        role: "user",
+        blocks: [{ kind: "text", text: input.text ?? "" }],
+        author: { id: ME.userId, name: ME.name },
+      },
+    }));
+    pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "run.started", {
+      runId,
+      payload: { trigger: "user", userId: ME.userId },
+    }));
+    return json(res, 200, { json: { taskId: runId, runId, seq: messageSeq } });
+  }
+  if (path === "/rpc/threads/answer") {
+    const seq = state.events.reduce((max, e) => Math.max(max, e.seq), 0);
+    pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "thread.message.updated", {
+      runId: input.runId,
+      payload: {
+        messageId: input.messageId,
+        blocks: [{ kind: "ask", text: "Proceed?", status: "answered", answer: input.answer }],
+      },
+    }));
+    pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "run.started", {
+      runId: input.runId,
+      payload: { trigger: "resume" },
+    }));
+    return json(res, 200, { json: { ok: true } });
+  }
+  if (path === "/rpc/threads/stop") {
+    const snapshot = threadSnapshotOf(state);
+    if (snapshot.run) {
+      const seq = state.events.reduce((max, e) => Math.max(max, e.seq), 0);
+      pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "run.cancelled", { runId: snapshot.run.id }));
+    }
+    return json(res, 200, { json: { ok: true } });
+  }
+  if (path === "/rpc/threads/markRead") {
+    return json(res, 200, { json: { ok: true, unreadAfterSeq: null } });
+  }
+  return rpcError(res, 404, "NOT_FOUND", "Not found");
+}
+
+function snapshotMessageSeq(state) {
+  return threadSnapshotOf(state).messages.reduce((max, m) => Math.max(max, m.seq ?? 0), 0);
 }
 
 function json(res, status, value, headers = {}) {
@@ -314,6 +546,7 @@ function handleSse(req, res) {
 // notifications/subscribe: the roster signal stream. Opens with each signal once (reconnect
 // catches up), then stays open; /__signal pushes a frame so a test can drive a re-read on demand.
 function handleNotifications(req, res) {
+  res.setHeader("connection", "close");
   if (req.headers.accept !== "text/event-stream") {
     res.writeHead(400).end();
     return;
@@ -347,6 +580,9 @@ createServer((req, res) => {
   });
   req.on("end", () => {
     console.log(`${req.method} ${req.url}`);
+    if (req.url.startsWith('/rpc/threads/')) {
+      res.on('close', () => console.log(`CLOSE ${req.url} writable=${res.writableEnded}`));
+    }
     const clientBuild = req.headers["x-rakazo-client-build"];
     if (clientBuild) clientBuilds.push(clientBuild);
     if (req.url.startsWith("/rpc/")) {
@@ -381,6 +617,45 @@ createServer((req, res) => {
       offline = input.on === true;
       return json(res, 200, { ok: true, offline });
     }
+    if (req.url === "/__threadEvent") {
+      // Inject one thread event (another device's activity): {botId|groupId, type, runId?, payload?}.
+      const input = body ? JSON.parse(body) : {};
+      const state = threadState(input);
+      const nextSeq = state.events.reduce((max, e) => Math.max(max, e.seq), 0) + 1;
+      const event = threadEvent(state.threadId, nextSeq, input.type || "thread.progress", {
+        ...(input.runId ? { runId: input.runId } : {}),
+        ...(input.botId && input.groupId ? { botId: input.botId } : {}),
+        payload: input.payload ?? {},
+      });
+      pushThreadEvent(state, event);
+      return json(res, 200, { ok: true, seq: nextSeq });
+    }
+    if (req.url === "/__threadCut") {
+      // End every open stream for a thread without an HTTP answer (a deploy closing connections).
+      const input = body ? JSON.parse(body) : {};
+      const state = threadState(input);
+      for (const res of threadClients.get(state.threadId) ?? []) {
+        res.destroy();
+      }
+      return json(res, 200, { ok: true });
+    }
+    if (req.url === "/__threadRefuse") {
+      // The next N threads/subscribe attempts answer 403 (a non-retryable refusal).
+      const input = body ? JSON.parse(body) : {};
+      threadRefusals = typeof input.count === "number" ? input.count : 1;
+      return json(res, 200, { ok: true });
+    }
+    if (req.url === "/__threadStall") {
+      // Hold the next threads/subscribe open without answering (headers or body), so the
+      // client's request deadline fires. mode: "headers" (default) or "body".
+      const input = body ? JSON.parse(body) : {};
+      threadStall = input.mode === "body" ? "body" : "headers";
+      return json(res, 200, { ok: true });
+    }
+    if (req.url === "/__threadReset") {
+      THREAD_SCRIPTS.clear();
+      return json(res, 200, { ok: true });
+    }
     if (req.url === "/__reset") {
       signOuts.length = 0;
       clientBuilds.length = 0;
@@ -388,6 +663,9 @@ createServer((req, res) => {
       seq = 0;
       offline = false;
       resetRoster();
+      THREAD_SCRIPTS.clear();
+      threadRefusals = 0;
+      threadStall = null;
       return json(res, 200, {});
     }
     if (offline && OFFLINE_READS.has(req.url)) {
@@ -395,6 +673,8 @@ createServer((req, res) => {
       return;
     }
     if (req.url === "/rpc/notifications/subscribe") return handleNotifications(req, res);
+    if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);
+    if (req.url.startsWith("/rpc/threads/")) return handleThreadRpc(req, res, body);
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);
     if (req.url.startsWith("/api/auth/")) return handleAuth(req, res, body);
     if (req.url.startsWith("/sse")) {
