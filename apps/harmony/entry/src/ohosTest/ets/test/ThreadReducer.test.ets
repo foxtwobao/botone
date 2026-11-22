@@ -8,12 +8,11 @@ import { fixtureThread } from './fixtures.generated';
 import { recordOf, arrayOf, stringField } from './test-utils';
 import {
   applyThreadSendReceipt,
-  mergeThreadSnapshot,
-  reconcileRefreshedThread,
   reduceLiveMessageBlocks,
   reduceThreadSnapshot,
   rememberTerminalRun,
 } from '../../../main/ets/thread/thread-snapshot';
+import { mergeThreadSnapshot, reconcileRefreshedThread } from '../../../main/ets/thread/thread-merge';
 import type {
   LiveMessage,
   LiveRun,

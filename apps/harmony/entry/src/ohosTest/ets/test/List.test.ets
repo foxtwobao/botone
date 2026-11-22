@@ -16,6 +16,7 @@ import rosterStreamTest from './RosterStream.test';
 import saveControllerTest from './SaveController.test';
 import rosterRealtimeTest from './RosterRealtime.test';
 import threadReducerTest from './ThreadReducer.test';
+import threadRenderTest from './ThreadRender.test';
 import threadStreamTest from './ThreadStream.test';
 import threadRealtimeTest from './ThreadRealtime.test';
 import consentGateTest from './ConsentGate.test';
@@ -29,6 +30,7 @@ export default function testsuite() {
   decodeTest();
   inboxProjectionTest();
   threadReducerTest();
+  threadRenderTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();

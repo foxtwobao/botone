@@ -224,6 +224,46 @@ Tests: vitest 34/34 (32 + consent fixture + privacy invariant); hypium **126/126
 consent), and 126/126 with the real-backend smokes (the spike account's consent is pre-allowed, so
 the real send dispatches through the gate's all-allowed path).
 
-## Stages D–E
+## Stage D — ThreadPage (done)
 
-(in progress — this section grows as each stage lands)
+The screen (`features/chat/ThreadPage.ets`) paints the store's observable rows through
+`List` + `LazyForEach` (day separators, message bubbles, the live progress bubble), history paging
+on top-reach, the composer with send/retry, stop while a run works, ask answers through the same
+consent gate, and markRead on open/foreground/new-message. `MessageBubble.ets` renders the
+three-tier block degradation, markdown-lite, ask cards (approval actions + text answer) and
+read-only choice; `block-view.ets` classifies raw blocks into the tiers; `markdown-lite.ets` is the
+pure parser (fixture-replayable). `stores/thread-store.ets` owns the snapshot + stream + writes
+(SaveController send/answer/stop, prepend history, day projection, content-carrying row keys).
+
+**The blank-render root cause (cost the stage most of its debugging time):** a pushed Navigation
+destination MUST root its `build()` in a `NavDestination()` node. Every existing page (MePage,
+ArchivedPage, ServerPage) does `NavDestination() { … }.hideTitleBar(true)` with its own header;
+ThreadPage initially rooted at a bare `Column()`, so Navigation painted only the system back button
+and an empty body — no error, no crash, just blank. The fix is the `NavDestination()` wrapper, not
+anything in the store/stream/bubble code. (Two red herrings ruled out first: the destination name
+`thread` is reserved by ArkUI — renamed to `chat`; and the shell cwd resets between calls, so
+edit+build+install+drive must be ONE command from the harmony dir or a stale HAP gets tested.)
+
+Verified on the emulator against the real backend (3110, spike account): open Spike Bot → history
+renders (day separator "今天", user/bot bubbles, markdown-lite) → type + send → user bubble appears,
+composer clears, header shows 停止 (run working) → bot reply streams in live → run ends (停止 gone,
+connection dot returns). Screenshots committed in stage E: `screenshots/m3-thread.png`,
+`m3-thread-live.png`.
+
+`ThreadRender.test.ets` (12 cases) pins the pure render logic: the three-tier table mirrors the
+design §6.4 whitelist, a **fabricated unknown kind degrades to a placeholder without crashing**
+(the M3 DoD case), ask approval/text answerable vs secret→T3, answered ask shows its answer,
+read-only choice with answerId, delivery hides the whole message, progress activity flag,
+markdown-lite segments + inline spans + plain text, day-separator projection, and the
+content-carrying row key (a changed message re-renders alone). One test-input fix along the way:
+markdown-lite pairs a lone `*` with the next `*` (so `a * b ** c` italicizes ` b `) — the explicit
+Phase 1 literal-fidelity limit, not a bug; the test pins unpaired markers staying literal instead.
+
+Build note: `devecocli` resolves DevEco only from `~/Applications` or `/Applications`; on this
+machine the studio lives elsewhere, so builds need `DEVECO_CLI_STUDIO_PATH=<studio.app>` exported
+(the CLI also accepts `DEVECO_CLI_CLT_PATH` for a Command Line Tools install).
+
+File-cap note: the full-cluster port left `thread-snapshot.ets` at 1,013 lines (the repo's
+`max-file-lines` cap is 1,000). The refresh/live-race cluster (mergeThreadSnapshot /
+reconcileRefreshedThread and their page-merge helpers) moved verbatim to `thread/thread-merge.ets`;
+thread-stream and the reducer test import it from there (no re-export cycle). 902 + 117 lines.

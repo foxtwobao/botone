@@ -16,10 +16,10 @@ import { currentSessionGeneration } from '../net/session';
 import { decodeThreadSnapshot } from '../thread/thread-decode';
 import {
   isRunTerminalEvent,
-  reconcileRefreshedThread,
   reduceThreadSnapshot,
   rememberTerminalRun,
 } from '../thread/thread-snapshot';
+import { reconcileRefreshedThread } from '../thread/thread-merge';
 import type { ThreadEvent, ThreadSnapshot } from '../thread/thread-snapshot';
 
 /** Opens one threads/subscribe stream; injectable so the state machine replays offline. */

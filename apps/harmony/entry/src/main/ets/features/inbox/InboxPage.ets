@@ -16,6 +16,8 @@ import type { RosterStore } from '../../stores/roster-store';
 import { rowKey } from '../../stores/roster-projection';
 import type { InboxRow } from '../../stores/roster-projection';
 import { RosterHolder } from '../../realtime/roster-holder';
+import { setThreadRoute } from '../chat/thread-route';
+import type { ThreadRoute } from '../chat/thread-route';
 
 /** A list entry: the optional Pinned heading, or a chat row. */
 class DisplayItem {
@@ -132,6 +134,15 @@ export struct InboxPage {
     .padding({ left: 16, right: 16, top: 10, bottom: 10 })
     .accessibilityText(`${row.name}${row.working ? `, ${t('Working…')}` : ''}${row.unread ? `, ${t('unread')}` : ''}`)
     .bindContextMenu(this.archiveMenu(row), ResponseType.LongPress)
+    .onClick((): void => {
+      const route: ThreadRoute = {
+        botId: row.kind === 'bot' ? row.id : '',
+        groupId: row.kind === 'group' ? row.id : '',
+        title: row.name,
+      };
+      setThreadRoute(route);
+      this.stack.pushPathByName('chat', null);
+    })
   }
 
   @Builder

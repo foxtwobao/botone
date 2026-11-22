@@ -29,3 +29,6 @@ export function consentSummary(use: string): string {
 export function consentTitle(name: string): string {
   return `Send data to ${name}?`;
 }
+
+/** The T3 placeholder for a block this device cannot render (design §6.4; no catalog msgid yet). */
+export const UNSUPPORTED_BLOCK = 'This content is not supported on this device yet.';
