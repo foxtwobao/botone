@@ -40,10 +40,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -113,18 +110,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -134,9 +126,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           },
@@ -212,19 +202,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true,
-        false
-      ],
+      "promptAnswers": [true, false],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -234,9 +218,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           }
@@ -285,18 +267,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        false
-      ],
+      "promptAnswers": [false],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -332,10 +309,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -371,10 +345,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -414,18 +385,13 @@
           "status": 500
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -435,9 +401,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           }
@@ -529,18 +493,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -548,10 +507,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -561,9 +517,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           },
@@ -641,18 +595,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        false
-      ],
+      "promptAnswers": [false],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -660,10 +609,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -711,18 +657,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -784,18 +725,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -805,9 +741,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           }
@@ -851,18 +785,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -920,10 +849,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -995,18 +921,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1016,9 +937,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           },
@@ -1096,19 +1015,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true,
-        false
-      ],
+      "promptAnswers": [true, false],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1118,9 +1031,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           }
@@ -1170,18 +1081,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        false
-      ],
+      "promptAnswers": [false],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1218,10 +1124,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1258,10 +1161,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1302,18 +1202,13 @@
           "status": 500
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1323,9 +1218,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           }
@@ -1418,18 +1311,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1437,10 +1325,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1450,9 +1335,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           },
@@ -1533,18 +1416,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        false
-      ],
+      "promptAnswers": [false],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1552,10 +1430,7 @@
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1604,18 +1479,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1678,18 +1548,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"
@@ -1699,9 +1564,7 @@
             "body": {
               "scope": "account-space",
               "version": "2026-11-12",
-              "keys": [
-                "k1"
-              ]
+              "keys": ["k1"]
             },
             "base": "https://consent-a.example"
           }
@@ -1746,18 +1609,13 @@
           }
         }
       ],
-      "promptAnswers": [
-        true
-      ],
+      "promptAnswers": [true],
       "expected": {
         "transport": [
           {
             "path": "/rpc/aiConsent/status",
             "body": {
-              "uses": [
-                "model",
-                "memory"
-              ],
+              "uses": ["model", "memory"],
               "botId": "bot-1"
             },
             "base": "https://consent-a.example"

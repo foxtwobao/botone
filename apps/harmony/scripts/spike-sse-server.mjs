@@ -174,14 +174,33 @@ function threadEvent(threadId, seq, type, extra = {}) {
 function scriptThread(threadId, botId) {
   const events = [
     threadEvent(threadId, 1, "thread.message.created", {
-      payload: { messageId: `${threadId}-m1`, seq: 1, role: "user", blocks: [{ kind: "text", text: "hello" }] },
+      payload: {
+        messageId: `${threadId}-m1`,
+        seq: 1,
+        role: "user",
+        blocks: [{ kind: "text", text: "hello" }],
+      },
     }),
-    threadEvent(threadId, 2, "run.started", { runId: `${threadId}-r1`, payload: { trigger: "user" } }),
-    threadEvent(threadId, 3, "thread.progress", { runId: `${threadId}-r1`, payload: { delta: "Hi" } }),
-    threadEvent(threadId, 4, "thread.progress", { runId: `${threadId}-r1`, payload: { delta: " there." } }),
+    threadEvent(threadId, 2, "run.started", {
+      runId: `${threadId}-r1`,
+      payload: { trigger: "user" },
+    }),
+    threadEvent(threadId, 3, "thread.progress", {
+      runId: `${threadId}-r1`,
+      payload: { delta: "Hi" },
+    }),
+    threadEvent(threadId, 4, "thread.progress", {
+      runId: `${threadId}-r1`,
+      payload: { delta: " there." },
+    }),
     threadEvent(threadId, 5, "thread.message.created", {
       runId: `${threadId}-r1`,
-      payload: { messageId: `${threadId}-m2`, seq: 2, role: "bot", blocks: [{ kind: "text", text: "Hi there." }] },
+      payload: {
+        messageId: `${threadId}-m2`,
+        seq: 2,
+        role: "bot",
+        blocks: [{ kind: "text", text: "Hi there." }],
+      },
     }),
     threadEvent(threadId, 6, "run.completed", { runId: `${threadId}-r1` }),
   ];
@@ -218,7 +237,8 @@ function seedThread(threadId, botId, count, tail = []) {
     threadEvent(threadId, count + index + 1, spec.type, {
       ...(spec.runId ? { runId: spec.runId } : {}),
       payload: spec.payload ?? {},
-    }));
+    }),
+  );
   const state = { threadId, botId, events, sends: 0, history };
   THREAD_SCRIPTS.set(threadId, state);
   return state;
@@ -280,7 +300,8 @@ function threadSnapshotOf(state) {
       };
     }
     if (event.type === "run.completed" || event.type === "run.cancelled") run = null;
-    if (event.type === "run.failed" && run) run = { ...run, status: "failed", error: event.payload.error ?? null };
+    if (event.type === "run.failed" && run)
+      run = { ...run, status: "failed", error: event.payload.error ?? null };
     if (event.type === "run.waiting_input" && run) run = { ...run, status: "waiting_input" };
   }
   const page = messagePage(state, Number.MAX_SAFE_INTEGER);
@@ -454,32 +475,45 @@ function handleThreadRpc(req, res, body) {
     const snapshot = threadSnapshotOf(state);
     const waiting = snapshot.run && snapshot.run.status === "waiting_input" ? snapshot.run : null;
     const runId = waiting ? waiting.id : `${state.threadId}-send-${state.sends}`;
-    pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "thread.message.created", {
-      runId,
-      payload: {
-        messageId,
-        seq: messageSeq,
-        role: "user",
-        blocks: [{ kind: "text", text: input.text ?? "" }],
-        author: { id: ME.userId, name: ME.name },
-      },
-    }));
+    pushThreadEvent(
+      state,
+      threadEvent(state.threadId, seq + 1, "thread.message.created", {
+        runId,
+        payload: {
+          messageId,
+          seq: messageSeq,
+          role: "user",
+          blocks: [{ kind: "text", text: input.text ?? "" }],
+          author: { id: ME.userId, name: ME.name },
+        },
+      }),
+    );
     if (waiting) {
-      const asked = durableMessages(state).find((m) => m.runId === waiting.id
-        && (m.blocks ?? []).some((b) => b.kind === "ask" && b.status !== "answered"));
+      const asked = durableMessages(state).find(
+        (m) =>
+          m.runId === waiting.id &&
+          (m.blocks ?? []).some((b) => b.kind === "ask" && b.status !== "answered"),
+      );
       if (asked) {
         const blocks = asked.blocks.map((b) =>
-          b.kind === "ask" ? { ...b, status: "answered", answer: input.text ?? "" } : b);
-        pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "thread.message.updated", {
-          runId,
-          payload: { messageId: asked.id, seq: asked.seq, role: asked.role, blocks },
-        }));
+          b.kind === "ask" ? { ...b, status: "answered", answer: input.text ?? "" } : b,
+        );
+        pushThreadEvent(
+          state,
+          threadEvent(state.threadId, seq + 2, "thread.message.updated", {
+            runId,
+            payload: { messageId: asked.id, seq: asked.seq, role: asked.role, blocks },
+          }),
+        );
       }
     }
-    pushThreadEvent(state, threadEvent(state.threadId, seq + (waiting ? 3 : 2), "run.started", {
-      runId,
-      payload: { trigger: waiting ? "resume" : "user", userId: ME.userId },
-    }));
+    pushThreadEvent(
+      state,
+      threadEvent(state.threadId, seq + (waiting ? 3 : 2), "run.started", {
+        runId,
+        payload: { trigger: waiting ? "resume" : "user", userId: ME.userId },
+      }),
+    );
     return json(res, 200, { json: { taskId: runId, runId, seq: messageSeq } });
   }
   if (path === "/rpc/threads/answer") {
@@ -488,24 +522,42 @@ function handleThreadRpc(req, res, body) {
     // updates the stored block, it does not replace the card). The run resumes (queued → the
     // worker's run.started); no user message is created — only a composer SEND records one.
     const asked = durableMessages(state).find((m) => m.id === input.messageId);
-    const askBlock = (asked?.blocks ?? []).find((b) => b.kind === "ask") ?? { kind: "ask", text: "Proceed?" };
+    const askBlock = (asked?.blocks ?? []).find((b) => b.kind === "ask") ?? {
+      kind: "ask",
+      text: "Proceed?",
+    };
     const blocks = (asked?.blocks ?? [askBlock]).map((b) =>
-      b.kind === "ask" ? { ...b, status: "answered", answer: input.answer } : b);
-    pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "thread.message.updated", {
-      runId: input.runId,
-      payload: { messageId: input.messageId, seq: asked?.seq, role: asked?.role ?? "bot", blocks },
-    }));
-    pushThreadEvent(state, threadEvent(state.threadId, seq + 2, "run.started", {
-      runId: input.runId,
-      payload: { trigger: "resume" },
-    }));
+      b.kind === "ask" ? { ...b, status: "answered", answer: input.answer } : b,
+    );
+    pushThreadEvent(
+      state,
+      threadEvent(state.threadId, seq + 1, "thread.message.updated", {
+        runId: input.runId,
+        payload: {
+          messageId: input.messageId,
+          seq: asked?.seq,
+          role: asked?.role ?? "bot",
+          blocks,
+        },
+      }),
+    );
+    pushThreadEvent(
+      state,
+      threadEvent(state.threadId, seq + 2, "run.started", {
+        runId: input.runId,
+        payload: { trigger: "resume" },
+      }),
+    );
     return json(res, 200, { json: { ok: true } });
   }
   if (path === "/rpc/threads/stop") {
     const snapshot = threadSnapshotOf(state);
     if (snapshot.run) {
       const seq = nextEventSeq(state);
-      pushThreadEvent(state, threadEvent(state.threadId, seq + 1, "run.cancelled", { runId: snapshot.run.id }));
+      pushThreadEvent(
+        state,
+        threadEvent(state.threadId, seq + 1, "run.cancelled", { runId: snapshot.run.id }),
+      );
     }
     return json(res, 200, { json: { ok: true } });
   }
@@ -733,8 +785,8 @@ createServer((req, res) => {
   });
   req.on("end", () => {
     console.log(`${req.method} ${req.url}`);
-    if (req.url.startsWith('/rpc/threads/')) {
-      res.on('close', () => console.log(`CLOSE ${req.url} writable=${res.writableEnded}`));
+    if (req.url.startsWith("/rpc/threads/")) {
+      res.on("close", () => console.log(`CLOSE ${req.url} writable=${res.writableEnded}`));
     }
     const clientBuild = req.headers["x-rakazo-client-build"];
     if (clientBuild) clientBuilds.push(clientBuild);
@@ -789,7 +841,12 @@ createServer((req, res) => {
       const input = body ? JSON.parse(body) : {};
       const botId = input.botId || "bot-1";
       const count = Math.max(0, Math.min(20_000, Number(input.count) || 0));
-      const state = seedThread(`thread-${botId}`, botId, count, Array.isArray(input.tail) ? input.tail : []);
+      const state = seedThread(
+        `thread-${botId}`,
+        botId,
+        count,
+        Array.isArray(input.tail) ? input.tail : [],
+      );
       if (!bots.some((b) => b.id === botId)) {
         bots.push(makeBot(botId, input.name || `Seeded ${botId}`));
         sendSignal("roster");
