@@ -299,6 +299,86 @@ function handleThreadSubscribe(req, res, body) {
   res.on("close", () => threadClients.get(state.threadId)?.delete(res));
 }
 
+// ---- M3 consent state ------------------------------------------------------
+// The fake deployment's AI data recipients: two providers (model + memory), neither allowed
+// until aiConsent/allow saves the key. /__consentReset restores the unallowed state.
+const CONSENT_SCOPE = "fake-consent-scope";
+const CONSENT_VERSION = "2026-11-12";
+let consentRecipients = [];
+function resetConsent() {
+  consentRecipients = [
+    { key: "model-key", name: "Fake Model Provider", use: "model", detail: "", allowed: false },
+    { key: "memory-key", name: "Fake Memory Provider", use: "memory", detail: "", allowed: false },
+  ];
+}
+resetConsent();
+
+// A scripted consent response queue (/__consentScript): each entry answers the next aiConsent
+// request in order — {status?, body?, fail?} — so the device replay reproduces the exact transport
+// conditions the TS fixture recorded (404, failed allow, …). Empty queue = the live fake state.
+let consentScript = [];
+let consentScriptIndex = 0;
+
+function handleConsentRpc(req, res, body) {
+  const path = req.url;
+  if (bearer(req) !== "fake-token") {
+    return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
+  }
+  if (consentScriptIndex < consentScript.length) {
+    const spec = consentScript[consentScriptIndex];
+    // A fail spec answers every retry of the same request (the kit may retry a dropped
+    // connection); only a real answer advances the queue.
+    if (!spec.fail) {
+      consentScriptIndex += 1;
+    }
+    if (spec.fail) {
+      res.destroy();
+      return;
+    }
+    const answer = () => {
+      if (spec.body !== undefined) {
+        // Only a successful allow updates the live state; a scripted failure leaves it unallowed.
+        if (path === "/rpc/aiConsent/allow" && (spec.status ?? 200) < 300) {
+          const input = JSON.parse(body || "{}").json ?? {};
+          const keys = Array.isArray(input.keys) ? input.keys : [];
+          for (const recipient of consentRecipients) {
+            if (keys.includes(recipient.key)) recipient.allowed = true;
+          }
+        }
+        return json(res, spec.status ?? 200, spec.body);
+      }
+      return rpcError(res, spec.status ?? 500, "INTERNAL", "Server fault");
+    };
+    if (typeof spec.delayMs === "number" && spec.delayMs > 0) {
+      setTimeout(answer, spec.delayMs);
+      return;
+    }
+    return answer();
+  }
+  const input = JSON.parse(body || "{}").json ?? {};
+  if (path === "/rpc/aiConsent/status") {
+    const uses = Array.isArray(input.uses) ? input.uses : ["model", "memory"];
+    return json(res, 200, {
+      json: {
+        scope: CONSENT_SCOPE,
+        version: CONSENT_VERSION,
+        recipients: consentRecipients.filter((r) => uses.includes(r.use)),
+        privacyUrl: "https://example.com/privacy",
+      },
+    });
+  }
+  if (path === "/rpc/aiConsent/allow") {
+    const keys = Array.isArray(input.keys) ? input.keys : [];
+    for (const recipient of consentRecipients) {
+      if (keys.includes(recipient.key)) recipient.allowed = true;
+    }
+    return json(res, 200, {
+      json: { scope: CONSENT_SCOPE, version: CONSENT_VERSION, recipients: consentRecipients },
+    });
+  }
+  return rpcError(res, 404, "NOT_FOUND", "Not found");
+}
+
 function handleThreadRpc(req, res, body) {
   const path = req.url;
   if (bearer(req) !== "fake-token") {
@@ -666,13 +746,29 @@ createServer((req, res) => {
       THREAD_SCRIPTS.clear();
       threadRefusals = 0;
       threadStall = null;
+      resetConsent();
+      consentScript = [];
+      consentScriptIndex = 0;
       return json(res, 200, {});
     }
     if (offline && OFFLINE_READS.has(req.url)) {
       res.destroy();
       return;
     }
+    if (req.url === "/__consentReset") {
+      resetConsent();
+      consentScript = [];
+      consentScriptIndex = 0;
+      return json(res, 200, { ok: true });
+    }
+    if (req.url === "/__consentScript") {
+      const input = body ? JSON.parse(body) : {};
+      consentScript = Array.isArray(input.responses) ? input.responses : [];
+      consentScriptIndex = 0;
+      return json(res, 200, { ok: true, count: consentScript.length });
+    }
     if (req.url === "/rpc/notifications/subscribe") return handleNotifications(req, res);
+    if (req.url.startsWith("/rpc/aiConsent/")) return handleConsentRpc(req, res, body);
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);
     if (req.url.startsWith("/rpc/threads/")) return handleThreadRpc(req, res, body);
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);

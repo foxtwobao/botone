@@ -14,6 +14,8 @@ import { applyThreadSendReceipt } from '../../../main/ets/thread/thread-snapshot
 import type { ThreadSnapshot } from '../../../main/ets/thread/thread-snapshot';
 import { decodeSendOutput, newClientNonce, sendReceipt } from '../../../main/ets/thread/thread-send';
 import { app } from '../../../main/ets/app/app-state';
+import { setConsentPrompt } from '../../../main/ets/net/consent';
+import type { AiRecipient } from '../../../main/ets/net/consent';
 
 const BASE = 'http://10.0.2.2:8787';
 
@@ -122,9 +124,12 @@ export default function threadRealtimeTest() {
       await resetServer();
       await saveSessionToken('fake-token');
       setSelectedSpace('space-fake');
+      // The consent gate's own suite covers the refusal semantics; this suite's sends allow.
+      setConsentPrompt(async (_r: AiRecipient, _url: string | undefined): Promise<boolean> => true);
     });
 
     afterEach(async () => {
+      setConsentPrompt(null);
       await clearSessionToken();
       setSelectedSpace('');
     });

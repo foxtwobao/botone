@@ -19,6 +19,7 @@ import { clientBuildHeaders } from './client-build';
 import { flushPendingSignOut } from './sign-out';
 import type { SignOutContext } from './sign-out';
 import { t } from '../i18n/i18n';
+import { ensureAiDataConsent } from './consent';
 
 export interface RpcContext {
   apiBase: string;
@@ -101,6 +102,14 @@ async function rejectSession(): Promise<void> {
 /** Calls a procedure; the result is the response's `json` value, decoded by the caller. */
 export async function rpc(proc: string, body: Record<string, Object>, options?: RpcOptions): Promise<Object> {
   const context = options?.context ?? await captureContext();
+  // The AI data consent gate runs before any gated mutation dispatches (design §5.2); it uses
+  // the same pinned context, so a refusal or a stale generation never sends the private body.
+  await ensureAiDataConsent(proc, body, context);
+  // The gate's asks may have outlived the pinned session (mobile api.ts:726): re-check before
+  // dispatch so a stale context never sends the original request.
+  if (context.generation !== currentSessionGeneration()) {
+    throw new RpcError(t('Something went wrong. Try again.'));
+  }
   const requestHeaders: Record<string, string> = {};
   requestHeaders['content-type'] = 'application/json';
   requestHeaders['origin'] = 'rakazo://';

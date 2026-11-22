@@ -18,6 +18,7 @@ import rosterRealtimeTest from './RosterRealtime.test';
 import threadReducerTest from './ThreadReducer.test';
 import threadStreamTest from './ThreadStream.test';
 import threadRealtimeTest from './ThreadRealtime.test';
+import consentGateTest from './ConsentGate.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -40,6 +41,7 @@ export default function testsuite() {
   saveControllerTest();
   threadStreamTest();
   threadRealtimeTest();
+  consentGateTest();
   rosterRealtimeTest();
   // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();

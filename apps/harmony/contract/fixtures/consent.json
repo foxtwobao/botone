@@ -1,0 +1,1778 @@
+{
+  "scenarios": [
+    {
+      "name": "threads/send: all allowed dispatches without a prompt",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "promptAnswers": [],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/send",
+            "body": {
+              "botId": "bot-1",
+              "text": "private content",
+              "clientNonce": "nonce-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": []
+      }
+    },
+    {
+      "name": "threads/send: one unallowed recipient, Allow saves then dispatches",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ],
+              "privacyUrl": "https://example.com/privacy"
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/send",
+            "body": {
+              "botId": "bot-1",
+              "text": "private content",
+              "clientNonce": "nonce-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": "",
+            "privacyUrl": "https://example.com/privacy"
+          }
+        ]
+      }
+    },
+    {
+      "name": "threads/send: two recipients, second refused after the first Allow",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                },
+                {
+                  "key": "k2",
+                  "name": "Provider k2",
+                  "use": "memory",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true,
+        false
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          },
+          {
+            "key": "k2",
+            "name": "Provider k2",
+            "use": "memory",
+            "detail": ""
+          }
+        ],
+        "error": "Review AI data sharing in Account settings before continuing."
+      }
+    },
+    {
+      "name": "threads/send: refusal blocks the dispatch",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        false
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Review AI data sharing in Account settings before continuing."
+      }
+    },
+    {
+      "name": "threads/send: a failed status query blocks the dispatch",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "fail": true
+        }
+      ],
+      "promptAnswers": [],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [],
+        "error": "Could not reach the server"
+      }
+    },
+    {
+      "name": "threads/send: status 404 asks for a server update",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": {
+            "json": {
+              "code": "NOT_FOUND",
+              "status": 404,
+              "message": "Not found"
+            }
+          }
+        }
+      ],
+      "promptAnswers": [],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [],
+        "error": "Update your server to use AI data sharing in this mobile version."
+      }
+    },
+    {
+      "name": "threads/send: a failed allow save blocks the dispatch",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "status": 500
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Server fault"
+      }
+    },
+    {
+      "name": "threads/send: concurrent sends share one prompt and each dispatch once",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "concurrent": true,
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/send",
+            "body": {
+              "botId": "bot-1",
+              "text": "private content",
+              "clientNonce": "nonce-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/send",
+            "body": {
+              "botId": "bot-1",
+              "text": "private content",
+              "clientNonce": "nonce-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "threads/send: concurrent refusal grants nothing and dispatches nothing",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "concurrent": true,
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        false
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "errors": [
+          "Review AI data sharing in Account settings before continuing.",
+          "Review AI data sharing in Account settings before continuing."
+        ]
+      }
+    },
+    {
+      "name": "threads/send: a sign-in during the prompt blocks allow and dispatch",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "sessionEvent": "token-during-prompt",
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Something went wrong. Try again."
+      }
+    },
+    {
+      "name": "threads/send: a sign-in before the allow response blocks the dispatch",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "sessionEvent": "token-before-allow-response",
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Something went wrong. Try again."
+      }
+    },
+    {
+      "name": "threads/send: a server switch during the prompt keeps every request on the old server",
+      "proc": "threads/send",
+      "body": {
+        "botId": "bot-1",
+        "text": "private content",
+        "clientNonce": "nonce-1"
+      },
+      "sessionEvent": "server-during-prompt",
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Something went wrong. Try again."
+      }
+    },
+    {
+      "name": "threads/answer: all allowed dispatches without a prompt",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "promptAnswers": [],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/answer",
+            "body": {
+              "botId": "bot-1",
+              "runId": "run-1",
+              "messageId": "msg-1",
+              "answer": "allow"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": []
+      }
+    },
+    {
+      "name": "threads/answer: one unallowed recipient, Allow saves then dispatches",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ],
+              "privacyUrl": "https://example.com/privacy"
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/answer",
+            "body": {
+              "botId": "bot-1",
+              "runId": "run-1",
+              "messageId": "msg-1",
+              "answer": "allow"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": "",
+            "privacyUrl": "https://example.com/privacy"
+          }
+        ]
+      }
+    },
+    {
+      "name": "threads/answer: two recipients, second refused after the first Allow",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                },
+                {
+                  "key": "k2",
+                  "name": "Provider k2",
+                  "use": "memory",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true,
+        false
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          },
+          {
+            "key": "k2",
+            "name": "Provider k2",
+            "use": "memory",
+            "detail": ""
+          }
+        ],
+        "error": "Review AI data sharing in Account settings before continuing."
+      }
+    },
+    {
+      "name": "threads/answer: refusal blocks the dispatch",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        false
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Review AI data sharing in Account settings before continuing."
+      }
+    },
+    {
+      "name": "threads/answer: a failed status query blocks the dispatch",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "fail": true
+        }
+      ],
+      "promptAnswers": [],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [],
+        "error": "Could not reach the server"
+      }
+    },
+    {
+      "name": "threads/answer: status 404 asks for a server update",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": {
+            "json": {
+              "code": "NOT_FOUND",
+              "status": 404,
+              "message": "Not found"
+            }
+          }
+        }
+      ],
+      "promptAnswers": [],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [],
+        "error": "Update your server to use AI data sharing in this mobile version."
+      }
+    },
+    {
+      "name": "threads/answer: a failed allow save blocks the dispatch",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "status": 500
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Server fault"
+      }
+    },
+    {
+      "name": "threads/answer: concurrent sends share one prompt and each dispatch once",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "concurrent": true,
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/answer",
+            "body": {
+              "botId": "bot-1",
+              "runId": "run-1",
+              "messageId": "msg-1",
+              "answer": "allow"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/threads/answer",
+            "body": {
+              "botId": "bot-1",
+              "runId": "run-1",
+              "messageId": "msg-1",
+              "answer": "allow"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ]
+      }
+    },
+    {
+      "name": "threads/answer: concurrent refusal grants nothing and dispatches nothing",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "concurrent": true,
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        false
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "errors": [
+          "Review AI data sharing in Account settings before continuing.",
+          "Review AI data sharing in Account settings before continuing."
+        ]
+      }
+    },
+    {
+      "name": "threads/answer: a sign-in during the prompt blocks allow and dispatch",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "sessionEvent": "token-during-prompt",
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Something went wrong. Try again."
+      }
+    },
+    {
+      "name": "threads/answer: a sign-in before the allow response blocks the dispatch",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "sessionEvent": "token-before-allow-response",
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        },
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": true
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          },
+          {
+            "path": "/rpc/aiConsent/allow",
+            "body": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "keys": [
+                "k1"
+              ]
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Something went wrong. Try again."
+      }
+    },
+    {
+      "name": "threads/answer: a server switch during the prompt keeps every request on the old server",
+      "proc": "threads/answer",
+      "body": {
+        "botId": "bot-1",
+        "runId": "run-1",
+        "messageId": "msg-1",
+        "answer": "allow"
+      },
+      "sessionEvent": "server-during-prompt",
+      "responses": [
+        {
+          "body": {
+            "json": {
+              "scope": "account-space",
+              "version": "2026-11-12",
+              "recipients": [
+                {
+                  "key": "k1",
+                  "name": "Provider k1",
+                  "use": "model",
+                  "detail": "",
+                  "allowed": false
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "promptAnswers": [
+        true
+      ],
+      "expected": {
+        "transport": [
+          {
+            "path": "/rpc/aiConsent/status",
+            "body": {
+              "uses": [
+                "model",
+                "memory"
+              ],
+              "botId": "bot-1"
+            },
+            "base": "https://consent-a.example"
+          }
+        ],
+        "promptCalls": [
+          {
+            "key": "k1",
+            "name": "Provider k1",
+            "use": "model",
+            "detail": ""
+          }
+        ],
+        "error": "Something went wrong. Try again."
+      }
+    }
+  ]
+}

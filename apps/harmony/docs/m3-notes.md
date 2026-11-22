@@ -177,6 +177,53 @@ the JSON wire — documented in the reducer header).
 
 Tests: vitest 32/32; hypium **112/112** (fixture servers), full-cluster replay 6/6.
 
-## Stages C–E
+## Stage C — minimal AI consent gate (done)
+
+The gate lives in `net/consent.ets` and runs inside `rpc()` before any gated mutation dispatches
+(`threads/send`, `threads/answer` → uses `["model","memory"]`; nothing else is gated). Semantics
+ported line-for-line from core `ai-consent.ts` + mobile `api.ts`'s dispatch flow:
+
+- Query `aiConsent/status {uses, botId|groupId}` with the caller's pinned context; for every
+  unallowed recipient whose use the procedure needs, in server order, ask once; save each explicit
+  Allow via `aiConsent/allow {scope, version, keys:[key]}`; re-check the pinned generation; only
+  then dispatch the original request with the SAME context. No client-side allow cache.
+- Refusal → `AiConsentBlocked(AI_CONSENT_REQUIRED)`, composer keeps the text, no error toast (the
+  user chose). Status/allow failure → blocked with the user-facing copy (`errorText`); status 404 →
+  the "update your server" msgid. A generation change during the prompt refuses the ALLOW itself
+  (the nested request's own re-check, mobile api.ts:726); a change after the allow response refuses
+  the original dispatch with "Something went wrong. Try again." — both never send the private body.
+- Concurrent asks for one (server, space, scope, version, key) share one prompt (the pending map,
+  cleanup on settle). The prompt is injectable; without one every ask refuses (safe default).
+- The native dialog (`features/chat/consent-dialog.ets`): system AlertDialog, server name in the
+  title, server detail or the local per-use summary as body, Not now / Allow, a Privacy policy
+  button only when the server offers a link (recipient's own, else the deployment's; opening it
+  does not answer the ask). Back/outside = Not now. Copy reuses catalog msgids where they exist
+  (Not now / Allow / Privacy policy / update-your-server); the title, one-line summaries and
+  AI_CONSENT_REQUIRED are not in the current catalog, so they live in `i18n/harmony-strings.ets`
+  (English until the translation workflow extracts them — no .po edits, no intl:extract).
+
+**Drift detection at the real transport boundary** (the M1 consent-dispatch pattern, design
+§4.3.3 ⇩v3): `contract/consent-dispatch.test.ts` drives the REAL mobile `rpc()` with a stubbed
+fetch recording every request, across 24 scenarios (send + answer × 12: all-allowed, single
+allow, two recipients with second refusal, refusal, failed status, 404, failed allow, concurrent
+allow/refusal, and the three generation insertion points — sign-in during prompt, sign-in before
+the allow response, server switch during prompt). The committed `consent.json` pins the transport
+sequence, prompt sequence and error copy; a second test asserts the privacy invariant (no refused
+scenario dispatches the original request; no non-gated body carries the private text; the
+server-switch case stays on the pinned old server).
+
+The ArkTS side replays the same cases at its own transport boundary (`ConsentGate.test.ets`, 14
+cases): the real rpc + gate against the fixture server's scripted consent routes, with the request
+log as the transport record and real session events for the generation cases. Two device findings
+fixed along the way: the kit rejects with a plain BusinessError object (not an Error instance) —
+http.ets now reads its message/code fields directly; and the kit may retry a dropped connection
+once, so a scripted failure must answer every retry of the same request (the fixture server's fail
+spec sticks until a real answer advances the queue).
+
+Tests: vitest 34/34 (32 + consent fixture + privacy invariant); hypium **126/126** (112 + 14
+consent), and 126/126 with the real-backend smokes (the spike account's consent is pre-allowed, so
+the real send dispatches through the gate's all-allowed path).
+
+## Stages D–E
 
 (in progress — this section grows as each stage lands)
