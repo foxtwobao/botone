@@ -516,6 +516,47 @@ postgres("external model account isolated PostgreSQL", () => {
     expect(await prisma.userModelCredential.count({ where: { userId } })).toBe(0);
   });
 
+  it("keeps model limits and the binding through refresh, protocol changes and reauthorization", async () => {
+    authorized = true;
+    const post = (path: string, body: unknown = {}) =>
+      request(path, { method: "POST", body: JSON.stringify(body) });
+    expect((await post("/connect")).status).toBe(200);
+    const credentialId = `external-${accountId}`;
+    const limits = { contextWindow: 32768, maxTokens: 1024 };
+    const update = (modelId: string, values: Partial<typeof limits>) =>
+      post("/settings", { credentialId, modelId, limits: values });
+    const storedModels = async () => {
+      const cred = await prisma.userModelCredential.findUniqueOrThrow({
+        where: { id: credentialId },
+      });
+      const row = await prisma.secret.findUniqueOrThrow({ where: { id: cred.secretId } });
+      return parseModelSecret(await secrets.load(row.ciphertext, row.id)).models ?? {};
+    };
+    expect((await update("not-authorized", limits)).status).toBe(400);
+    expect((await update("example-model", { maxTokens: 32768, contextWindow: 32768 })).status).toBe(
+      400,
+    );
+    expect((await update("second-model", limits)).status).toBe(200);
+    modelFetch.mockImplementationOnce(async () => {
+      expect((await update("example-model", limits)).status).toBe(200);
+      return Response.json({ data: [{ id: "example-model" }, { id: "second-model" }] });
+    });
+    expect((await post("/models")).status).toBe(409);
+    for (const [path, body] of [
+      ["/models", {}],
+      ["/settings", { apiProtocol: "responses" }],
+      ["/connect", {}],
+    ] as const)
+      expect((await post(path, body)).status).toBe(200);
+    expect(await storedModels()).toEqual({ "example-model": limits, "second-model": limits });
+    expect((await update("example-model", {})).status).toBe(200);
+    expect(await storedModels()).toEqual({ "second-model": limits });
+    expect(await (await request("/status")).json()).toMatchObject({
+      connected: true,
+      apiProtocol: "responses",
+    });
+  });
+
   it("initializes the configured main model using the authorized key without replacing a later choice", async () => {
     routeOptions.defaultModel = "example-model";
     app = modelAccountRoutes(routeOptions);

@@ -1,0 +1,108 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+import type { ModelCredential } from "@rakazo/contracts";
+import { DEFAULT_MODEL_CONTEXT_WINDOW, DEFAULT_MODEL_MAX_TOKENS } from "@rakazo/contracts";
+import { connectionModels, createModelAccountClient, parseAccountModelLimits } from "@rakazo/core";
+import {
+  Button,
+  ModelSettingsFields,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@rakazo/ui-web";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+
+export function AccountModelLimits({
+  credential,
+  refresh,
+}: {
+  credential: ModelCredential;
+  refresh: () => Promise<void>;
+}) {
+  const { t } = useLingui();
+  const models = connectionModels(credential, []);
+  const [draft, setDraft] = useState<{ id: string; context: string; output: string }>();
+  const limits = draft && parseAccountModelLimits(draft.context, draft.output);
+  const save = useMutation({
+    mutationFn: async (reset: boolean) => {
+      if (draft && (reset || limits))
+        await createModelAccountClient().saveLimits(
+          credential.id,
+          draft.id,
+          limits && !reset ? limits : {},
+        );
+    },
+    onSuccess: async () => {
+      setDraft(undefined);
+      await refresh();
+    },
+  });
+  if (!models.length) return null;
+  const selected = models.find((model) => model.id === draft?.id);
+  return (
+    <div className="grid gap-3">
+      <Select
+        value={selected?.id ?? null}
+        disabled={save.isPending}
+        onValueChange={(id) => {
+          const model = models.find((item) => item.id === id);
+          if (!model) return;
+          save.reset();
+          setDraft({
+            id: model.id,
+            context: model.settings?.contextWindow?.toString() ?? "",
+            output: model.settings?.maxTokens?.toString() ?? "",
+          });
+        }}
+      >
+        <SelectTrigger aria-label={t`Model limits`}>
+          <SelectValue placeholder={t`Model limits`} />
+        </SelectTrigger>
+        <SelectContent>
+          {models.map(({ id }) => (
+            <SelectItem key={id} value={id}>
+              {id}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {selected && draft ? (
+        <>
+          <ModelSettingsFields
+            disabled={save.isPending}
+            contextWindow={draft.context}
+            contextWindowLabel={t`Context limit`}
+            contextWindowPlaceholder={String(DEFAULT_MODEL_CONTEXT_WINDOW)}
+            onContextWindowChange={(context) => setDraft({ ...draft, context })}
+            maxTokens={draft.output}
+            maxTokensLabel={t`Maximum output tokens`}
+            maxTokensPlaceholder={String(DEFAULT_MODEL_MAX_TOKENS)}
+            onMaxTokensChange={(output) => setDraft({ ...draft, output })}
+          />
+          {!limits ? (
+            <p role="alert">
+              <Trans>Enter positive whole numbers. Output must be below the context limit.</Trans>
+            </p>
+          ) : null}
+          {save.isError ? (
+            <p role="alert">
+              <Trans>Could not save model settings</Trans>
+            </p>
+          ) : null}
+          <div className="flex gap-2">
+            <Button disabled={!limits || save.isPending} onClick={() => save.mutate(false)}>
+              <Trans>Save</Trans>
+            </Button>
+            {selected.settings?.contextWindow || selected.settings?.maxTokens ? (
+              <Button variant="ghost" disabled={save.isPending} onClick={() => save.mutate(true)}>
+                <Trans>Restore defaults</Trans>
+              </Button>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
