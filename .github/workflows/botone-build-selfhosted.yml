@@ -85,9 +85,9 @@ jobs:
         if: inputs.platform == 'macos'
         run: |
           set -euo pipefail
-          # electron-builder writes the default arch (arm64/x64 on their native host) to
-          # out/mac and only universal gets a suffix.
-          app="apps/desktop/out/mac${{ matrix.arch == 'universal' && '-universal' || '' }}/BotONE Preview.app"
+          # electron-builder on this ARM64 host: --x64 writes out/mac, --arm64 writes out/mac-arm64,
+          # --universal writes out/mac-universal.
+          app="apps/desktop/out/mac${{ matrix.arch != 'x64' && format('-{0}', matrix.arch) || '' }}/BotONE Preview.app"
           codesign --verify --deep --strict "$app"
           test ! -e "$app/Contents/Resources/app-update.yml"
           test -s "$app/Contents/Resources/web/index.html"
