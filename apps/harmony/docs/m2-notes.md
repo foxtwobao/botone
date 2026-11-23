@@ -127,3 +127,10 @@ verified that way; all three builds pass from the clean checkout.
   500+-row scroll/memory measurement, settings page, full CI runner verification (S5).
 - Real-device acceptance (M0–M2 DoD remains real-device; emulator used here as instructed).
 - Upstream PR: `harmony` client kind in `CLIENT_KINDS` (carried from M1).
+
+## Base synchronization
+
+`pages` and `nativeCalendar` were added to the notification enum on current main. Roster forwards
+both to its readers (safely ignored where Phase 1 has no reader) and the snapshots pin the full
+contract. The ICU fixture is refreshed from the real catalogs; the replay asserts its embedded
+case count instead of the old hard-coded total.

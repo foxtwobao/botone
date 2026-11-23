@@ -11,6 +11,8 @@
         "meetings",
         "artifacts",
         "meetingCalendar",
+        "pages",
+        "nativeCalendar",
         "organizations",
         "heartbeat"
       ],
