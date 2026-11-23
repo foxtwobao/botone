@@ -1,0 +1,40 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "defaultModel": {
+      "type": ["string", "null"]
+    },
+    "defaultProvider": {
+      "type": ["string", "null"]
+    },
+    "email": {
+      "format": "email",
+      "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "needsModel": {
+      "type": "boolean"
+    },
+    "spaceId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "userId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "userId",
+    "email",
+    "name",
+    "spaceId",
+    "needsModel",
+    "defaultProvider",
+    "defaultModel"
+  ],
+  "type": "object"
+}

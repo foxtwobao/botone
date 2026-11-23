@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "emailCode": {
+      "type": "boolean"
+    },
+    "passwordAuth": {
+      "type": "boolean"
+    },
+    "passwordReset": {
+      "type": "boolean"
+    },
+    "providers": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "presentation": {
+            "additionalProperties": false,
+            "properties": {
+              "mark": {
+                "additionalProperties": false,
+                "properties": {
+                  "paths": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "d": {
+                          "maxLength": 4096,
+                          "type": "string"
+                        },
+                        "fill": {
+                          "pattern": "^#[0-9a-fA-F]{6}$",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["d"],
+                      "type": "object"
+                    },
+                    "maxItems": 8,
+                    "type": "array"
+                  },
+                  "viewBox": {
+                    "maxLength": 64,
+                    "type": "string"
+                  }
+                },
+                "required": ["viewBox", "paths"],
+                "type": "object"
+              },
+              "variant": {
+                "enum": ["solid", "outline"],
+                "type": "string"
+              }
+            },
+            "required": ["variant"],
+            "type": "object"
+          }
+        },
+        "required": ["id", "name"],
+        "type": "object"
+      },
+      "maxItems": 8,
+      "type": "array"
+    },
+    "resetUrl": {
+      "anyOf": [
+        {
+          "format": "uri",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sso": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": ["available", "unavailable", "checking"],
+              "type": "string"
+            },
+            "name": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": ["name", "availability"],
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": ["sso", "passwordAuth", "passwordReset", "resetUrl"],
+  "type": "object"
+}

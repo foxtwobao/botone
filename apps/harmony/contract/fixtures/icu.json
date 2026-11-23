@@ -1,0 +1,2584 @@
+{
+  "cases": [
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# connector} other {# connectors}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 connectors"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# connector} other {# connectors}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 connector"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# connector} other {# connectors}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 connectors"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# connector} other {# connectors}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 connectors"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# file} other {# files}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 files"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# file} other {# files}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 file"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# file} other {# files}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 files"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# file} other {# files}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 files"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 free months earned"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 free month earned"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 free months earned"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 free months earned"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, one {# free month} other {# free months}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 free months"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, one {# free month} other {# free months}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 free month"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, one {# free month} other {# free months}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 free months"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, one {# free month} other {# free months}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 free months"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {# more} other {# more}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 more"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {# more} other {# more}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 more"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {# more} other {# more}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 more"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {# more} other {# more}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 more"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# skill} other {# skills}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 skills"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# skill} other {# skills}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 skill"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# skill} other {# skills}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 skills"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# skill} other {# skills}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 skills"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# space} other {# spaces}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 spaces"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# space} other {# spaces}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 space"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# space} other {# spaces}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 spaces"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# space} other {# spaces}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 spaces"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, one {# tool} other {# tools}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, one {# tool} other {# tools}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 tool"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, one {# tool} other {# tools}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, one {# tool} other {# tools}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "Waiting for sign-in — the code expires in about 0 minutes."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "Waiting for sign-in — the code expires in about 1 minute."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "Waiting for sign-in — the code expires in about 2 minutes."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "Waiting for sign-in — the code expires in about 5 minutes."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "Waiting for sign-in — the link expires in about 0 minutes."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "Waiting for sign-in — the link expires in about 1 minute."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "Waiting for sign-in — the link expires in about 2 minutes."
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "Waiting for sign-in — the link expires in about 5 minutes."
+    },
+    {
+      "locale": "en",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "values": {
+        "botCount": 0
+      },
+      "expected": "Delete  and its 0 bots?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "values": {
+        "botCount": 1
+      },
+      "expected": "Delete  and its 1 bot?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "values": {
+        "botCount": 2
+      },
+      "expected": "Delete  and its 2 bots?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "values": {
+        "botCount": 5
+      },
+      "expected": "Delete  and its 5 bots?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "values": {
+        "connectedCount": 0
+      },
+      "expected": "0 connected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "values": {
+        "connectedCount": 1
+      },
+      "expected": "1 connected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "values": {
+        "connectedCount": 2
+      },
+      "expected": "2 connected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "values": {
+        "connectedCount": 5
+      },
+      "expected": "5 connected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 messages with "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 message with "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 messages with "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 messages with "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# row} other {# rows}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 rows"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# row} other {# rows}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 row"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# row} other {# rows}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 rows"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# row} other {# rows}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 rows"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, one {# selected} other {# selected}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 selected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, one {# selected} other {# selected}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 selected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, one {# selected} other {# selected}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 selected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, one {# selected} other {# selected}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 selected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "values": {
+        "hidden": 0
+      },
+      "expected": "+0 earlier steps"
+    },
+    {
+      "locale": "en",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "values": {
+        "hidden": 1
+      },
+      "expected": "+1 earlier step"
+    },
+    {
+      "locale": "en",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "values": {
+        "hidden": 2
+      },
+      "expected": "+2 earlier steps"
+    },
+    {
+      "locale": "en",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "values": {
+        "hidden": 5
+      },
+      "expected": "+5 earlier steps"
+    },
+    {
+      "locale": "en",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "values": {
+        "hiddenSelectedCount": 0
+      },
+      "expected": "0 selected models are hidden by your search."
+    },
+    {
+      "locale": "en",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "values": {
+        "hiddenSelectedCount": 1
+      },
+      "expected": "1 selected model is hidden by your search."
+    },
+    {
+      "locale": "en",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "values": {
+        "hiddenSelectedCount": 2
+      },
+      "expected": "2 selected models are hidden by your search."
+    },
+    {
+      "locale": "en",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "values": {
+        "hiddenSelectedCount": 5
+      },
+      "expected": "5 selected models are hidden by your search."
+    },
+    {
+      "locale": "en",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# seat} other {# seats}}",
+      "values": {
+        "seats": 0
+      },
+      "expected": "0 seats"
+    },
+    {
+      "locale": "en",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# seat} other {# seats}}",
+      "values": {
+        "seats": 1
+      },
+      "expected": "1 seat"
+    },
+    {
+      "locale": "en",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# seat} other {# seats}}",
+      "values": {
+        "seats": 2
+      },
+      "expected": "2 seats"
+    },
+    {
+      "locale": "en",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# seat} other {# seats}}",
+      "values": {
+        "seats": 5
+      },
+      "expected": "5 seats"
+    },
+    {
+      "locale": "en",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# tool} other {# tools}}",
+      "values": {
+        "toolCount": 0
+      },
+      "expected": "0 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# tool} other {# tools}}",
+      "values": {
+        "toolCount": 1
+      },
+      "expected": "1 tool"
+    },
+    {
+      "locale": "en",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# tool} other {# tools}}",
+      "values": {
+        "toolCount": 2
+      },
+      "expected": "2 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# tool} other {# tools}}",
+      "values": {
+        "toolCount": 5
+      },
+      "expected": "5 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "values": {
+        "modelCount": 0
+      },
+      "expected": "Models list OK. 0 models available. Chat was not tested."
+    },
+    {
+      "locale": "en",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "values": {
+        "modelCount": 1
+      },
+      "expected": "Models list OK. 1 model available. Chat was not tested."
+    },
+    {
+      "locale": "en",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "values": {
+        "modelCount": 2
+      },
+      "expected": "Models list OK. 2 models available. Chat was not tested."
+    },
+    {
+      "locale": "en",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "values": {
+        "modelCount": 5
+      },
+      "expected": "Models list OK. 5 models available. Chat was not tested."
+    },
+    {
+      "locale": "en",
+      "msgid": "Custom server {host}",
+      "message": "Custom server {host}",
+      "values": {
+        "host": "chat.example.com"
+      },
+      "expected": "Custom server chat.example.com"
+    },
+    {
+      "locale": "en",
+      "msgid": "Continue with {name}",
+      "message": "Continue with {name}",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "Continue with Ada"
+    },
+    {
+      "locale": "en",
+      "msgid": "Account menu for {name}",
+      "message": "Account menu for {name}",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "Account menu for Ada"
+    },
+    {
+      "locale": "en",
+      "msgid": "Password must be {max} characters or fewer",
+      "message": "Password must be {max} characters or fewer",
+      "values": {
+        "max": 8
+      },
+      "expected": "Password must be 8 characters or fewer"
+    },
+    {
+      "locale": "en",
+      "msgid": "Don’t have an account?",
+      "message": "Don’t have an account?",
+      "values": {},
+      "expected": "Don’t have an account?"
+    },
+    {
+      "locale": "en",
+      "msgid": "Already have an account?",
+      "message": "Already have an account?",
+      "values": {},
+      "expected": "Already have an account?"
+    },
+    {
+      "locale": "en",
+      "msgid": "Did you mean {email}?",
+      "message": "Did you mean {email}?",
+      "values": {
+        "email": "ada@example.com"
+      },
+      "expected": "Did you mean ada@example.com?"
+    },
+    {
+      "locale": "en",
+      "msgid": "Connect MCP server {name}",
+      "message": "Connect MCP server {name}",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "Connect MCP server Ada"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count} spaces",
+      "message": "{count} spaces",
+      "values": {
+        "count": 3
+      },
+      "expected": "3 spaces"
+    },
+    {
+      "locale": "en",
+      "msgid": "1 bot now uses the space default.",
+      "message": "1 bot now uses the space default.",
+      "values": {},
+      "expected": "1 bot now uses the space default."
+    },
+    {
+      "locale": "en",
+      "msgid": "Sign in to Rakazo",
+      "message": "Sign in to BotONE",
+      "values": {},
+      "expected": "Sign in to BotONE"
+    },
+    {
+      "locale": "en",
+      "msgid": "Enter a server URL",
+      "message": "Enter a server URL",
+      "values": {},
+      "expected": "Enter a server URL"
+    },
+    {
+      "locale": "en",
+      "msgid": "Public servers need https://. HTTP only works on your local network.",
+      "message": "Public servers need https://. HTTP only works on your local network.",
+      "values": {},
+      "expected": "Public servers need https://. HTTP only works on your local network."
+    },
+    {
+      "locale": "en",
+      "msgid": "Something went wrong. Try again.",
+      "message": "Something went wrong. Try again.",
+      "values": {},
+      "expected": "Something went wrong. Try again."
+    },
+    {
+      "locale": "en",
+      "msgid": "Could not reach the server",
+      "message": "Could not reach the server",
+      "values": {},
+      "expected": "Could not reach the server"
+    },
+    {
+      "locale": "en",
+      "msgid": "Invalid code",
+      "message": "Invalid code",
+      "values": {},
+      "expected": "Invalid code"
+    },
+    {
+      "locale": "en",
+      "msgid": "Request a new code",
+      "message": "Request a new code",
+      "values": {},
+      "expected": "Request a new code"
+    },
+    {
+      "locale": "en",
+      "msgid": "Too many attempts. Try again in a few minutes.",
+      "message": "Too many attempts. Try again in a few minutes.",
+      "values": {},
+      "expected": "Too many attempts. Try again in a few minutes."
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# 个连接器} other {# 个连接器}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 个连接器"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# 个连接器} other {# 个连接器}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 个连接器"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# 个连接器} other {# 个连接器}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 个连接器"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, one {# 个连接器} other {# 个连接器}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 个连接器"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# 个文件} other {# 个文件}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 个文件"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# 个文件} other {# 个文件}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 个文件"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# 个文件} other {# 个文件}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 个文件"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, one {# 个文件} other {# 个文件}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 个文件"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已获得 # 个月免费} other {已获得 # 个月免费}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "已获得 0 个月免费"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已获得 # 个月免费} other {已获得 # 个月免费}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "已获得 1 个月免费"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已获得 # 个月免费} other {已获得 # 个月免费}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "已获得 2 个月免费"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已获得 # 个月免费} other {已获得 # 个月免费}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "已获得 5 个月免费"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 个月免费使用期}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 个月免费使用期"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 个月免费使用期}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 个月免费使用期"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 个月免费使用期}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 个月免费使用期"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 个月免费使用期}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 个月免费使用期"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {还有 # 个} other {还有 # 个}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "还有 0 个"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {还有 # 个} other {还有 # 个}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "还有 1 个"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {还有 # 个} other {还有 # 个}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "还有 2 个"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, one {还有 # 个} other {还有 # 个}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "还有 5 个"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# 个技能} other {# 个技能}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# 个技能} other {# 个技能}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# 个技能} other {# 个技能}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, one {# 个技能} other {# 个技能}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# 个空间} other {# 个空间}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 个空间"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# 个空间} other {# 个空间}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 个空间"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# 个空间} other {# 个空间}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 个空间"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, one {# 个空间} other {# 个空间}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 个空间"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 个工具}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 个工具}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 个工具}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 个工具}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "正在等待登录，验证码大约 0 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "正在等待登录，验证码大约 1 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "正在等待登录，验证码大约 2 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "正在等待登录，验证码大约 5 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "正在等待登录，链接大约 0 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "正在等待登录，链接大约 1 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "正在等待登录，链接大约 2 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "正在等待登录，链接大约 5 分钟后过期。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, other {删除 {name} 及其 # 个 Bot？}}",
+      "values": {
+        "botCount": 0
+      },
+      "expected": "删除  及其 0 个 Bot？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, other {删除 {name} 及其 # 个 Bot？}}",
+      "values": {
+        "botCount": 1
+      },
+      "expected": "删除  及其 1 个 Bot？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, other {删除 {name} 及其 # 个 Bot？}}",
+      "values": {
+        "botCount": 2
+      },
+      "expected": "删除  及其 2 个 Bot？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, other {删除 {name} 及其 # 个 Bot？}}",
+      "values": {
+        "botCount": 5
+      },
+      "expected": "删除  及其 5 个 Bot？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# 个已连接} other {# 个已连接}}",
+      "values": {
+        "connectedCount": 0
+      },
+      "expected": "0 个已连接"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# 个已连接} other {# 个已连接}}",
+      "values": {
+        "connectedCount": 1
+      },
+      "expected": "1 个已连接"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# 个已连接} other {# 个已连接}}",
+      "values": {
+        "connectedCount": 2
+      },
+      "expected": "2 个已连接"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, one {# 个已连接} other {# 个已连接}}",
+      "values": {
+        "connectedCount": 5
+      },
+      "expected": "5 个已连接"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {与 {peer} 的 # 条消息}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "与  的 0 条消息"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {与 {peer} 的 # 条消息}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "与  的 1 条消息"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {与 {peer} 的 # 条消息}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "与  的 2 条消息"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {与 {peer} 的 # 条消息}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "与  的 5 条消息"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 行} other {# 行}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 行"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 行} other {# 行}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 行"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 行} other {# 行}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 行"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 行} other {# 行}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 行"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已选择 # 项}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "已选择 0 项"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已选择 # 项}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "已选择 1 项"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已选择 # 项}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "已选择 2 项"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已选择 # 项}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "已选择 5 项"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# 个更早的步骤} other {+# 个更早的步骤}}",
+      "values": {
+        "hidden": 0
+      },
+      "expected": "+0 个更早的步骤"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# 个更早的步骤} other {+# 个更早的步骤}}",
+      "values": {
+        "hidden": 1
+      },
+      "expected": "+1 个更早的步骤"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# 个更早的步骤} other {+# 个更早的步骤}}",
+      "values": {
+        "hidden": 2
+      },
+      "expected": "+2 个更早的步骤"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {+# 个更早的步骤} other {+# 个更早的步骤}}",
+      "values": {
+        "hidden": 5
+      },
+      "expected": "+5 个更早的步骤"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜索结果未显示 # 个已选模型。}}",
+      "values": {
+        "hiddenSelectedCount": 0
+      },
+      "expected": "搜索结果未显示 0 个已选模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜索结果未显示 # 个已选模型。}}",
+      "values": {
+        "hiddenSelectedCount": 1
+      },
+      "expected": "搜索结果未显示 1 个已选模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜索结果未显示 # 个已选模型。}}",
+      "values": {
+        "hiddenSelectedCount": 2
+      },
+      "expected": "搜索结果未显示 2 个已选模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜索结果未显示 # 个已选模型。}}",
+      "values": {
+        "hiddenSelectedCount": 5
+      },
+      "expected": "搜索结果未显示 5 个已选模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 个席位} other {# 个席位}}",
+      "values": {
+        "seats": 0
+      },
+      "expected": "0 个席位"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 个席位} other {# 个席位}}",
+      "values": {
+        "seats": 1
+      },
+      "expected": "1 个席位"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 个席位} other {# 个席位}}",
+      "values": {
+        "seats": 2
+      },
+      "expected": "2 个席位"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 个席位} other {# 个席位}}",
+      "values": {
+        "seats": 5
+      },
+      "expected": "5 个席位"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 个工具} other {# 个工具}}",
+      "values": {
+        "toolCount": 0
+      },
+      "expected": "0 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 个工具} other {# 个工具}}",
+      "values": {
+        "toolCount": 1
+      },
+      "expected": "1 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 个工具} other {# 个工具}}",
+      "values": {
+        "toolCount": 2
+      },
+      "expected": "2 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 个工具} other {# 个工具}}",
+      "values": {
+        "toolCount": 5
+      },
+      "expected": "5 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
+      "values": {
+        "modelCount": 0
+      },
+      "expected": "模型列表正常。0 个模型可用。未测试聊天。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
+      "values": {
+        "modelCount": 1
+      },
+      "expected": "模型列表正常。1 个模型可用。未测试聊天。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
+      "values": {
+        "modelCount": 2
+      },
+      "expected": "模型列表正常。2 个模型可用。未测试聊天。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
+      "values": {
+        "modelCount": 5
+      },
+      "expected": "模型列表正常。5 个模型可用。未测试聊天。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Custom server {host}",
+      "message": "自定义服务器 {host}",
+      "values": {
+        "host": "chat.example.com"
+      },
+      "expected": "自定义服务器 chat.example.com"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Continue with {name}",
+      "message": "通过 {name} 继续",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "通过 Ada 继续"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Account menu for {name}",
+      "message": "{name} 的账户菜单",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "Ada 的账户菜单"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Password must be {max} characters or fewer",
+      "message": "密码不能超过 {max} 个字符",
+      "values": {
+        "max": 8
+      },
+      "expected": "密码不能超过 8 个字符"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Don’t have an account?",
+      "message": "还没有账户？",
+      "values": {},
+      "expected": "还没有账户？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Already have an account?",
+      "message": "已有账户？",
+      "values": {},
+      "expected": "已有账户？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Did you mean {email}?",
+      "message": "你是不是想输入 {email}？",
+      "values": {
+        "email": "ada@example.com"
+      },
+      "expected": "你是不是想输入 ada@example.com？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Connect MCP server {name}",
+      "message": "连接 MCP 服务器 {name}",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "连接 MCP 服务器 Ada"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count} spaces",
+      "message": "{count} 个空间",
+      "values": {
+        "count": 3
+      },
+      "expected": "3 个空间"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "1 bot now uses the space default.",
+      "message": "1 个 Bot 已改用空间默认。",
+      "values": {},
+      "expected": "1 个 Bot 已改用空间默认。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Sign in to Rakazo",
+      "message": "登录 BotONE",
+      "values": {},
+      "expected": "登录 BotONE"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Enter a server URL",
+      "message": "请输入服务器地址",
+      "values": {},
+      "expected": "请输入服务器地址"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Public servers need https://. HTTP only works on your local network.",
+      "message": "公共服务器需要 https://。HTTP 仅适用于本地网络。",
+      "values": {},
+      "expected": "公共服务器需要 https://。HTTP 仅适用于本地网络。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Something went wrong. Try again.",
+      "message": "出了点问题。请重试。",
+      "values": {},
+      "expected": "出了点问题。请重试。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Could not reach the server",
+      "message": "无法连接服务器",
+      "values": {},
+      "expected": "无法连接服务器"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Invalid code",
+      "message": "验证码无效",
+      "values": {},
+      "expected": "验证码无效"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Request a new code",
+      "message": "请重新获取验证码",
+      "values": {},
+      "expected": "请重新获取验证码"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Too many attempts. Try again in a few minutes.",
+      "message": "尝试次数过多。请过几分钟再试。",
+      "values": {},
+      "expected": "尝试次数过多。请过几分钟再试。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, other {# 個連接器}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 個連接器"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, other {# 個連接器}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 個連接器"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, other {# 個連接器}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 個連接器"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# connector} other {# connectors}}",
+      "message": "{0, plural, other {# 個連接器}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 個連接器"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, other {# 個檔案}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 個檔案"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, other {# 個檔案}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 個檔案"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, other {# 個檔案}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 個檔案"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# file} other {# files}}",
+      "message": "{0, plural, other {# 個檔案}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 個檔案"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已獲得 # 個月免費} other {已獲得 # 個月免費}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "已獲得 0 個月免費"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已獲得 # 個月免費} other {已獲得 # 個月免費}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "已獲得 1 個月免費"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已獲得 # 個月免費} other {已獲得 # 個月免費}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "已獲得 2 個月免費"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month earned} other {# free months earned}}",
+      "message": "{0, plural, one {已獲得 # 個月免費} other {已獲得 # 個月免費}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "已獲得 5 個月免費"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 個月免費使用期}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 個月免費使用期"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 個月免費使用期}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 個月免費使用期"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 個月免費使用期}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 個月免費使用期"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# free month} other {# free months}}",
+      "message": "{0, plural, other {# 個月免費使用期}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 個月免費使用期"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, other {另有 # 項}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "另有 0 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, other {另有 # 項}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "另有 1 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, other {另有 # 項}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "另有 2 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# more} other {# more}}",
+      "message": "{0, plural, other {另有 # 項}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "另有 5 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, other {# 項技能}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 項技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, other {# 項技能}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 項技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, other {# 項技能}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 項技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# skill} other {# skills}}",
+      "message": "{0, plural, other {# 項技能}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 項技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, other {# 個空間}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 個空間"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, other {# 個空間}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 個空間"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, other {# 個空間}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 個空間"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# space} other {# spaces}}",
+      "message": "{0, plural, other {# 個空間}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 個空間"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 個工具}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 個工具}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 個工具}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# tool} other {# tools}}",
+      "message": "{0, plural, other {# 個工具}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "等待登入中 — 代碼將在約 0 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "等待登入中 — 代碼將在約 1 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "等待登入中 — 代碼將在約 2 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "等待登入中 — 代碼將在約 5 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "等待登入中 — 連結將在約 0 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "等待登入中 — 連結將在約 1 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "等待登入中 — 連結將在約 2 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
+      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "等待登入中 — 連結將在約 5 分鐘後失效。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {要刪除 {name} 及其 # 個機器人嗎？} other {要刪除 {name} 及其 # 個機器人嗎？}}",
+      "values": {
+        "botCount": 0
+      },
+      "expected": "要刪除  及其 0 個機器人嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {要刪除 {name} 及其 # 個機器人嗎？} other {要刪除 {name} 及其 # 個機器人嗎？}}",
+      "values": {
+        "botCount": 1
+      },
+      "expected": "要刪除  及其 1 個機器人嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {要刪除 {name} 及其 # 個機器人嗎？} other {要刪除 {name} 及其 # 個機器人嗎？}}",
+      "values": {
+        "botCount": 2
+      },
+      "expected": "要刪除  及其 2 個機器人嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}",
+      "message": "{botCount, plural, one {要刪除 {name} 及其 # 個機器人嗎？} other {要刪除 {name} 及其 # 個機器人嗎？}}",
+      "values": {
+        "botCount": 5
+      },
+      "expected": "要刪除  及其 5 個機器人嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, other {已連線 # 個}}",
+      "values": {
+        "connectedCount": 0
+      },
+      "expected": "已連線 0 個"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, other {已連線 # 個}}",
+      "values": {
+        "connectedCount": 1
+      },
+      "expected": "已連線 1 個"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, other {已連線 # 個}}",
+      "values": {
+        "connectedCount": 2
+      },
+      "expected": "已連線 2 個"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
+      "message": "{connectedCount, plural, other {已連線 # 個}}",
+      "values": {
+        "connectedCount": 5
+      },
+      "expected": "已連線 5 個"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {與{peer}的 # 則訊息}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "與的 0 則訊息"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {與{peer}的 # 則訊息}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "與的 1 則訊息"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {與{peer}的 # 則訊息}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "與的 2 則訊息"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# message with {peer}} other {# messages with {peer}}}",
+      "message": "{count, plural, other {與{peer}的 # 則訊息}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "與的 5 則訊息"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 列} other {# 列}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 列"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 列} other {# 列}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 列"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 列} other {# 列}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 列"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# row} other {# rows}}",
+      "message": "{count, plural, one {# 列} other {# 列}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 列"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已選取 # 項}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "已選取 0 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已選取 # 項}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "已選取 1 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已選取 # 項}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "已選取 2 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# selected} other {# selected}}",
+      "message": "{count, plural, other {已選取 # 項}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "已選取 5 項"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {還有 # 個先前步驟} other {還有 # 個先前步驟}}",
+      "values": {
+        "hidden": 0
+      },
+      "expected": "還有 0 個先前步驟"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {還有 # 個先前步驟} other {還有 # 個先前步驟}}",
+      "values": {
+        "hidden": 1
+      },
+      "expected": "還有 1 個先前步驟"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {還有 # 個先前步驟} other {還有 # 個先前步驟}}",
+      "values": {
+        "hidden": 2
+      },
+      "expected": "還有 2 個先前步驟"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
+      "message": "{hidden, plural, one {還有 # 個先前步驟} other {還有 # 個先前步驟}}",
+      "values": {
+        "hidden": 5
+      },
+      "expected": "還有 5 個先前步驟"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜尋結果未顯示 # 個已選模型。}}",
+      "values": {
+        "hiddenSelectedCount": 0
+      },
+      "expected": "搜尋結果未顯示 0 個已選模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜尋結果未顯示 # 個已選模型。}}",
+      "values": {
+        "hiddenSelectedCount": 1
+      },
+      "expected": "搜尋結果未顯示 1 個已選模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜尋結果未顯示 # 個已選模型。}}",
+      "values": {
+        "hiddenSelectedCount": 2
+      },
+      "expected": "搜尋結果未顯示 2 個已選模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{hiddenSelectedCount, plural, one {# selected model is hidden by your search.} other {# selected models are hidden by your search.}}",
+      "message": "{hiddenSelectedCount, plural, other {搜尋結果未顯示 # 個已選模型。}}",
+      "values": {
+        "hiddenSelectedCount": 5
+      },
+      "expected": "搜尋結果未顯示 5 個已選模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 個席位} other {# 個席位}}",
+      "values": {
+        "seats": 0
+      },
+      "expected": "0 個席位"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 個席位} other {# 個席位}}",
+      "values": {
+        "seats": 1
+      },
+      "expected": "1 個席位"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 個席位} other {# 個席位}}",
+      "values": {
+        "seats": 2
+      },
+      "expected": "2 個席位"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{seats, plural, one {# seat} other {# seats}}",
+      "message": "{seats, plural, one {# 個席位} other {# 個席位}}",
+      "values": {
+        "seats": 5
+      },
+      "expected": "5 個席位"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 個工具} other {# 個工具}}",
+      "values": {
+        "toolCount": 0
+      },
+      "expected": "0 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 個工具} other {# 個工具}}",
+      "values": {
+        "toolCount": 1
+      },
+      "expected": "1 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 個工具} other {# 個工具}}",
+      "values": {
+        "toolCount": 2
+      },
+      "expected": "2 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{toolCount, plural, one {# tool} other {# tools}}",
+      "message": "{toolCount, plural, one {# 個工具} other {# 個工具}}",
+      "values": {
+        "toolCount": 5
+      },
+      "expected": "5 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
+      "values": {
+        "modelCount": 0
+      },
+      "expected": "模型清單正常。0 個模型可用。未測試聊天。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
+      "values": {
+        "modelCount": 1
+      },
+      "expected": "模型清單正常。1 個模型可用。未測試聊天。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
+      "values": {
+        "modelCount": 2
+      },
+      "expected": "模型清單正常。2 個模型可用。未測試聊天。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
+      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
+      "values": {
+        "modelCount": 5
+      },
+      "expected": "模型清單正常。5 個模型可用。未測試聊天。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Custom server {host}",
+      "message": "自訂伺服器 {host}",
+      "values": {
+        "host": "chat.example.com"
+      },
+      "expected": "自訂伺服器 chat.example.com"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Continue with {name}",
+      "message": "透過 {name} 繼續",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "透過 Ada 繼續"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Account menu for {name}",
+      "message": "{name} 的帳號選單",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "Ada 的帳號選單"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Password must be {max} characters or fewer",
+      "message": "密碼不得超過 {max} 個字元",
+      "values": {
+        "max": 8
+      },
+      "expected": "密碼不得超過 8 個字元"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Don’t have an account?",
+      "message": "還沒有帳號？",
+      "values": {},
+      "expected": "還沒有帳號？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Already have an account?",
+      "message": "已有帳號？",
+      "values": {},
+      "expected": "已有帳號？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Did you mean {email}?",
+      "message": "你是指 {email} 嗎？",
+      "values": {
+        "email": "ada@example.com"
+      },
+      "expected": "你是指 ada@example.com 嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Connect MCP server {name}",
+      "message": "連線 MCP 伺服器 {name}",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "連線 MCP 伺服器 Ada"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count} spaces",
+      "message": "{count} 個空間",
+      "values": {
+        "count": 3
+      },
+      "expected": "3 個空間"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "1 bot now uses the space default.",
+      "message": "1 個機器人已改用空間預設模型。",
+      "values": {},
+      "expected": "1 個機器人已改用空間預設模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Sign in to Rakazo",
+      "message": "登入 BotONE",
+      "values": {},
+      "expected": "登入 BotONE"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Enter a server URL",
+      "message": "請輸入伺服器網址",
+      "values": {},
+      "expected": "請輸入伺服器網址"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Public servers need https://. HTTP only works on your local network.",
+      "message": "公開伺服器需要使用 https://。HTTP 僅適用於區域網路。",
+      "values": {},
+      "expected": "公開伺服器需要使用 https://。HTTP 僅適用於區域網路。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Something went wrong. Try again.",
+      "message": "出了點問題。請重試。",
+      "values": {},
+      "expected": "出了點問題。請重試。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Could not reach the server",
+      "message": "無法連線伺服器",
+      "values": {},
+      "expected": "無法連線伺服器"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Invalid code",
+      "message": "驗證碼無效",
+      "values": {},
+      "expected": "驗證碼無效"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Request a new code",
+      "message": "請重新獲取驗證碼",
+      "values": {},
+      "expected": "請重新獲取驗證碼"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Too many attempts. Try again in a few minutes.",
+      "message": "嘗試次數過多。請過幾分鐘再試。",
+      "values": {},
+      "expected": "嘗試次數過多。請過幾分鐘再試。"
+    }
+  ]
+}
