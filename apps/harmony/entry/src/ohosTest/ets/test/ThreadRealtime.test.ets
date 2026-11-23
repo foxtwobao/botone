@@ -430,7 +430,9 @@ export default function threadRealtimeTest() {
       store.close();
     });
 
-    it('jump_to_latest_keeps_live_progress_and_the_existing_subscription', 0, async () => {
+    // Same-cursor refresh: the server snapshot has no progress row, but its cursor does not pass the live one.
+    // The next case is the ahead-cursor refresh, where the snapshot itself moves the transcript.
+    it('jump_to_latest_keeps_live_progress_and_the_existing_subscription_at_equal_cursor', 0, async () => {
       const seed: Record<string, Object> = {};
       seed['botId'] = 'bot-1';
       seed['count'] = 1_100;
@@ -481,6 +483,68 @@ export default function threadRealtimeTest() {
       }
     });
 
+    it('jump_to_latest_keeps_live_progress_when_the_server_snapshot_is_ahead', 0, async () => {
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 1_100;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      try {
+        await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+          'recent page');
+        for (let page = 0; page < 10; page += 1) {
+          await store.loadOlder();
+        }
+        expect(store.awayFromLatest).assertEqual(true);
+
+        const runId = 'ahead-progress-run';
+        const prefix = 'verify progress before jump';
+        const suffix = ' plus progress after jump';
+        await inject('run.started', runId, {});
+        const progress: Record<string, Object> = {};
+        progress['delta'] = prefix;
+        await inject('thread.progress', runId, progress);
+        await waitFor((): boolean => liveText(store.snapshot) === prefix, 'live progress before jump');
+
+        const hidden: Record<string, Object> = {};
+        hidden['botId'] = 'bot-1';
+        hidden['type'] = 'thread.message.created';
+        const payload: Record<string, Object> = {};
+        payload['messageId'] = 'ahead-durable-message';
+        payload['seq'] = 1_101;
+        payload['role'] = 'user';
+        const block: Record<string, Object> = {};
+        block['kind'] = 'text';
+        block['text'] = 'message from another device';
+        payload['blocks'] = [block];
+        hidden['payload'] = payload;
+        await postJson(`${BASE}/__threadEvent`, {}, JSON.stringify(hidden), 8000, 64 * 1024);
+
+        const getsBefore = await requestCount('/rpc/threads/get');
+        const subscribesBefore = await requestCount('/rpc/threads/subscribe');
+        store.jumpToLatest();
+        await waitFor((): boolean => messageTexts(store.snapshot).includes('message from another device'),
+          'jump refresh merges the newer server snapshot');
+        expect(store.awayFromLatest).assertEqual(false);
+        expect(store.working()).assertEqual(true);
+        expect(await requestCount('/rpc/threads/get')).assertEqual(getsBefore + 1);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+        expect(liveText(store.snapshot)).assertEqual(prefix);
+
+        const delta: Record<string, Object> = {};
+        delta['delta'] = suffix;
+        await inject('thread.progress', runId, delta);
+        await waitFor((): boolean => liveText(store.snapshot).includes(suffix), 'next progress delta');
+        expect(liveText(store.snapshot)).assertEqual(prefix + suffix);
+        expect(store.rows.filter((row): boolean => row.message?.id.startsWith('progress:') === true).length)
+          .assertEqual(1);
+        expect(store.working()).assertEqual(true);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+      } finally {
+        store.close();
+      }
+    });
     it('a_live_message_arriving_during_a_page_read_survives_the_prepend', 0, async () => {
       const seed: Record<string, Object> = {};
       seed['botId'] = 'bot-1';

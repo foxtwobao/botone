@@ -343,3 +343,12 @@ the real backend.
 - `pnpm checks`: **152/152**. Biome clean over `apps/harmony`.
 - smoke.mjs: two consecutive passes on the final build.
 - perf-sample.mjs: the 10k page-by-page traversal re-run above (the R4 window's measured curve).
+
+## Jump-to-latest regression coverage (fix round 3)
+
+A clean rebuild of the app and test HAPs, with only the final `preserveLiveRows` call changed to return the refreshed snapshot, fails the full hypium suite on both jump cases:
+
+- `jump_to_latest_keeps_live_progress_and_the_existing_subscription_at_equal_cursor`: `expect  equals verify progress before jump`
+- `jump_to_latest_keeps_live_progress_when_the_server_snapshot_is_ahead`: `expect  equals verify progress before jump`
+
+The first covers a refresh whose cursor equals the live cursor. The second injects another device's durable message through `/__threadEvent` after live progress, so the refreshed snapshot is ahead, contains that message, and contains no progress row. Restoring the call passes the same clean full suite three times: 154 passed, 0 failed. The existing fixture servers on 8787 and 8788 were reused; the committed signing configuration stays empty.
