@@ -50,11 +50,24 @@ jobs:
         with:
           persist-credentials: false
       # Self-hosted runners have no node preinstalled, so every node step must come
-      # after setup-workspace installs it (unlike GitHub-hosted runners).
-      - uses: ./.github/actions/setup-workspace
+      # after setup-node. No GitHub Actions cache: restoring and saving pnpm stores over
+      # the proxy stalls for many minutes, and the machine keeps its own pnpm store,
+      # node tool cache and electron-builder cache between jobs.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          electron: "true"
-          filter: "*"
+          node-version: 24
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Install dependencies and Electron binary
+        run: |
+          set -euo pipefail
+          export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
+          pnpm install --frozen-lockfile --filter @rakazo/desktop... --filter rakazo
+          install_js="$(pnpm --filter @rakazo/desktop exec node -p "require('path').join(require('path').dirname(require.resolve('electron/package.json')), 'install.js')")"
+          for attempt in 1 2 3 4; do
+            node "$install_js" && break
+            [[ "$attempt" -lt 4 ]] || { echo "Electron binary download failed" >&2; exit 1; }
+            sleep $((attempt * 10))
+          done
       - name: Require a configured desktop server
         run: node -e 'if (!process.env.EXPO_PUBLIC_API_URL?.trim()) throw new Error("Set EXPO_PUBLIC_API_URL before building desktop previews")'
       - name: Generate database client for compilation
