@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
-          pnpm install --frozen-lockfile --filter @rakazo/desktop... --filter rakazo
+          pnpm install --frozen-lockfile
           install_js="$(pnpm --filter @rakazo/desktop exec node -p "require('path').join(require('path').dirname(require.resolve('electron/package.json')), 'install.js')")"
           for attempt in 1 2 3 4; do
             node "$install_js" && break
