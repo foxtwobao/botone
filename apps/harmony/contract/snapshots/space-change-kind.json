@@ -1,4 +1,13 @@
 {
-  "enum": ["computerUpdates", "runs", "routines", "meetings", "artifacts", "meetingCalendar"],
+  "enum": [
+    "computerUpdates",
+    "runs",
+    "routines",
+    "meetings",
+    "artifacts",
+    "meetingCalendar",
+    "pages",
+    "nativeCalendar"
+  ],
   "type": "string"
 }

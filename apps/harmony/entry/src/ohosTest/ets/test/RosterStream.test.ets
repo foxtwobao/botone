@@ -99,12 +99,33 @@ export default function rosterStreamTest() {
       setSelectedSpace('');
     });
 
-    it('space_change_kinds_are_the_six_enum_values', 0, () => {
+    it('space_change_kinds_are_the_eight_enum_values', 0, () => {
       expect(isSpaceChangeKind('runs')).assertTrue();
       expect(isSpaceChangeKind('computerUpdates')).assertTrue();
+      expect(isSpaceChangeKind('pages')).assertTrue();
+      expect(isSpaceChangeKind('nativeCalendar')).assertTrue();
       expect(isSpaceChangeKind('roster')).assertFalse();
       expect(isSpaceChangeKind('organizations')).assertFalse();
       expect(isSpaceChangeKind('heartbeat')).assertFalse();
+    });
+
+    it('forwards_new_space_change_kinds_without_a_reader', 0, async () => {
+      const kinds: string[] = [];
+      const offKind = subscribeSpaceChange((kind: string): void => {
+        kinds.push(kind);
+      });
+      const fx = new OpenFixture((conn: FakeConn): void => {
+        conn.emit('pages');
+        conn.emit('nativeCalendar');
+      });
+      const stream = new RosterStream();
+      const running = stream.follow(fx.open);
+      await waitFor((): boolean => kinds.length === 2, 'new space signals reach their readers');
+      expect(kinds[0]).assertEqual('pages');
+      expect(kinds[1]).assertEqual('nativeCalendar');
+      stream.stop();
+      await running;
+      offKind();
     });
 
     it('dispatches_roster_and_space_changes_not_organizations', 0, async () => {
