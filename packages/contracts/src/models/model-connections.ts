@@ -113,6 +113,7 @@ export const ModelApiProtocolSchema = z.enum([
 export type ModelApiProtocol = z.infer<typeof ModelApiProtocolSchema>;
 
 export const ModelCredentialSchema = z.object({
+  preserveModelOrder: z.boolean().optional(),
   /** Computed space preference order; credentials themselves remain newest first. */
   preferenceRank: z.number().int().nonnegative().optional(),
   ...ModelContextLimitsSchema.shape,
@@ -143,6 +144,8 @@ export const ModelCredentialSchema = z.object({
   enabledModelIds: z.array(z.string()).optional(),
   /** The connection's enabled models that accept images, where it declares them per model. */
   visionModelIds: z.array(z.string()).optional(),
+  /** Models the connection recognizes as supporting thinking by default. */
+  defaultReasoningModelIds: z.array(z.string()).optional(),
   /** Settings saved for individual models on this connection. */
   modelSettings: z.record(z.string(), ModelSettingsSchema).optional(),
   /** Stored secret kind. Absent when the secret could not be read. */
@@ -415,6 +418,9 @@ export const ModelCatalogEntrySchema = z.object({
   creditOfferingId: Id.optional(),
   provider: z.string(),
   providerName: z.string().optional(),
+  /** What a signed-in connection is called, by the plan people pay for. */
+  subscriptionName: z.string().optional(),
+  subscriptionNameId: z.string().optional(),
   id: z.string(),
   label: z.string(),
   billing: z.string(),
@@ -423,6 +429,8 @@ export const ModelCatalogEntrySchema = z.object({
   authHint: z.string().optional(),
   subscription: z.boolean().optional(),
   signIn: ModelOAuthSignInModeSchema.optional(),
+  /** A setting the provider makes the user turn on before its sign-in can work. */
+  signInSetup: z.object({ label: z.string(), url: z.string().url() }).optional(),
   reasoning: z.boolean().optional(),
   thinkingLevels: z.array(ThinkingLevelSchema).optional(),
   /** Uncustomized capabilities for forms on other connections of the same provider. */

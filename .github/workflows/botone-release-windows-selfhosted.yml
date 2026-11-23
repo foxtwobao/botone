@@ -1,0 +1,76 @@
+name: BotONE Windows release (self-hosted)
+
+# Official (unsigned) Windows installer built on a personal Windows x64 runner.
+# Mirrors botone-release-windows.yml with runs-on pointed at the self-hosted machine.
+# Deliberately manual only: never add pull_request or push triggers here, because
+# a public repository must not run untrusted code on a self-hosted machine.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Windows installer on self-hosted runner
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL }}
+      BOTONE_DESKTOP_APP_ID: ${{ vars.BOTONE_DESKTOP_APP_ID }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      # Self-hosted runners have no node preinstalled; setup-workspace provides it before
+      # the release config validation runs its node script.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          electron: "true"
+          filter: "*"
+      - name: Validate Windows release configuration
+        run: node .github/builds/release-config.mjs windows
+      - uses: ./.github/actions/build-client-desktop
+      - name: Package unsigned Windows installer
+        run: |
+          set -euo pipefail
+          pnpm --filter @rakazo/desktop exec electron-builder \
+            --config ../../.github/builds/desktop-release.cjs --win --x64 --publish never \
+            -c.forceCodeSigning=false -c.win.signExecutable=false
+      - name: Verify Windows installer and packaged server
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $executables = @(Get-ChildItem "apps/desktop/out/*.exe"; Get-ChildItem "apps/desktop/out/win-unpacked/BotONE.exe")
+          if ($executables.Count -lt 2) { throw "Missing installer or application." }
+          if (Test-Path "apps/desktop/out/win-unpacked/resources/app-update.yml") { throw "Unexpected automatic update feed." }
+          node .github/builds/verify-desktop-server.mjs apps/desktop/out/win-unpacked/resources/app.asar
+          if ($LASTEXITCODE -ne 0) { throw "Packaged server verification failed." }
+      - name: Retain Windows installer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-windows-release-selfhosted-${{ github.run_number }}
+          path: apps/desktop/out/*.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Publish Windows downloads
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/publish-client-release
+        with:
+          platform: windows
+          artifact: botone-windows-release-selfhosted-${{ github.run_number }}
+          signing: Unsigned installer built on a self-hosted runner. Download updates manually from this repository.

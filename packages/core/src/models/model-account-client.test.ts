@@ -1,5 +1,24 @@
 import { expect, it, vi } from "vitest";
-import { createModelAccountClient, ModelAccountClientError } from "./model-account-client.js";
+import {
+  createModelAccountClient,
+  ModelAccountClientError,
+  parseAccountModelLimits,
+} from "./model-account-client.js";
+
+it("saves or clears one model's limits without starting authorization", async () => {
+  const transport = vi.fn<typeof fetch>(async () => Response.json({ ok: true }));
+  const client = createModelAccountClient(transport);
+  const limits = parseAccountModelLimits("32000", "1000")!;
+  expect(limits).toEqual({ contextWindow: 32000, maxTokens: 1000 });
+  expect(parseAccountModelLimits("", "bad")).toBeNull();
+  expect(parseAccountModelLimits("5000", "5000")).toBeNull();
+  await client.saveLimits("fixture", "model", limits);
+  await client.saveLimits("fixture", "model", parseAccountModelLimits("", "")!);
+  expect(transport.mock.calls.map(([url, init]) => [url, JSON.parse(String(init?.body))])).toEqual([
+    ["/api/model-account/settings", { credentialId: "fixture", modelId: "model", limits }],
+    ["/api/model-account/settings", { credentialId: "fixture", modelId: "model", limits: {} }],
+  ]);
+});
 
 it("preserves structured recovery errors without exposing upstream details", async () => {
   const transport = vi.fn<typeof fetch>(async () =>
