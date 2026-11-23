@@ -353,15 +353,15 @@ export default function consentGateTest() {
       // is delayed so the session event lands while it is in flight.
       const delayed: Record<string, Object> = {};
       delayed['body'] = statusResponse([recipient('model-key', 'model', true)])['body'];
-      delayed['delayMs'] = 200;
+      delayed['delayResponse'] = true;
       await scriptConsent([statusResponse([recipient('model-key', 'model', false)]), delayed]);
-      installPrompt([true], async (): Promise<void> => {
-        // The prompt resolves first; its later token change happens while the allow is in flight.
-        setTimeout((): void => {
-          void saveSessionToken('fake-token-2');
-        }, 100);
-      });
+      installPrompt([true]);
+      const changingSession = (async (): Promise<void> => {
+        await waitForTransport('/rpc/aiConsent/allow', 2_000);
+        await saveSessionToken('fake-token-2');
+      })();
       await expectBlocked((): Promise<Object> => rpc('threads/send', sendBody()), STALE);
+      await changingSession;
       expect((await transportPaths()).join(',')).assertEqual('/rpc/aiConsent/status,/rpc/aiConsent/allow');
       await assertPrivateTextContained('/rpc/threads/send');
     });
