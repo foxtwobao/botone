@@ -35,7 +35,13 @@ export function bodyBytes(body: string): number {
  * One request with a total deadline: the kit's own timeouts are per-phase, so a timer destroys
  * the request at the deadline instead. A destroyed request rejects; the timer flag tells a
  * timeout from a transport failure.
+ *
+ * The kit's per-phase timeouts sit a step behind the timer (KIT_TIMEOUT_GRACE_MS). Set to the same
+ * value, either one may fire first: when the kit wins, the flag is still false and a timeout is
+ * reported as an unreachable server (offline banner, the wrong retry path and copy).
  */
+const KIT_TIMEOUT_GRACE_MS = 250;
+
 export async function requestJson(method: http.RequestMethod, url: string, headers: Record<string, string>,
   body: string | null, timeoutMs: number, maxBytes: number): Promise<HttpResponseView> {
   const request = http.createHttp();
@@ -48,8 +54,8 @@ export async function requestJson(method: http.RequestMethod, url: string, heade
     const options: http.HttpRequestOptions = {
       method: method,
       header: headers,
-      connectTimeout: timeoutMs,
-      readTimeout: timeoutMs,
+      connectTimeout: timeoutMs + KIT_TIMEOUT_GRACE_MS,
+      readTimeout: timeoutMs + KIT_TIMEOUT_GRACE_MS,
       expectDataType: http.HttpDataType.STRING,
       // Mobile rejects redirects wherever it sends credentials; a 3xx answer is never delivery.
       maxRedirects: 0,
