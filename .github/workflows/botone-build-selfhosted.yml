@@ -36,6 +36,11 @@ jobs:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
       RAKAZO_ALLOW_DEV_SECRETS: "1"
       EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL }}
+      # Direct connections to GitHub download hosts time out from this runner's network;
+      # route builds through the machine's local proxy (override via RUNNER_PROXY_URL var).
+      HTTPS_PROXY: ${{ vars.RUNNER_PROXY_URL || 'http://127.0.0.1:7897' }}
+      HTTP_PROXY: ${{ vars.RUNNER_PROXY_URL || 'http://127.0.0.1:7897' }}
+      NO_PROXY: localhost,127.0.0.1
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
