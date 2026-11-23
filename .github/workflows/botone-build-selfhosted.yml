@@ -35,12 +35,14 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
-      - name: Require a configured desktop server
-        run: node -e 'if (!process.env.EXPO_PUBLIC_API_URL?.trim()) throw new Error("Set EXPO_PUBLIC_API_URL before building desktop previews")'
+      # Self-hosted runners have no node preinstalled, so every node step must come
+      # after setup-workspace installs it (unlike GitHub-hosted runners).
       - uses: ./.github/actions/setup-workspace
         with:
           electron: "true"
           filter: "*"
+      - name: Require a configured desktop server
+        run: node -e 'if (!process.env.EXPO_PUBLIC_API_URL?.trim()) throw new Error("Set EXPO_PUBLIC_API_URL before building desktop previews")'
       - name: Generate database client for compilation
         run: pnpm db:generate
         env:
