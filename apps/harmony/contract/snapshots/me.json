@@ -2,10 +2,16 @@
   "additionalProperties": false,
   "properties": {
     "defaultModel": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "defaultProvider": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "email": {
       "format": "email",

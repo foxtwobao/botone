@@ -290,75 +290,39 @@
     },
     {
       "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
       "values": {
         "0": 0
       },
-      "expected": "Waiting for sign-in — the code expires in about 0 minutes."
+      "expected": "The code expires in about 0 minutes."
     },
     {
       "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
       "values": {
         "0": 1
       },
-      "expected": "Waiting for sign-in — the code expires in about 1 minute."
+      "expected": "The code expires in about 1 minute."
     },
     {
       "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
       "values": {
         "0": 2
       },
-      "expected": "Waiting for sign-in — the code expires in about 2 minutes."
+      "expected": "The code expires in about 2 minutes."
     },
     {
       "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
       "values": {
         "0": 5
       },
-      "expected": "Waiting for sign-in — the code expires in about 5 minutes."
-    },
-    {
-      "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "values": {
-        "0": 0
-      },
-      "expected": "Waiting for sign-in — the link expires in about 0 minutes."
-    },
-    {
-      "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "values": {
-        "0": 1
-      },
-      "expected": "Waiting for sign-in — the link expires in about 1 minute."
-    },
-    {
-      "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "values": {
-        "0": 2
-      },
-      "expected": "Waiting for sign-in — the link expires in about 2 minutes."
-    },
-    {
-      "locale": "en",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "values": {
-        "0": 5
-      },
-      "expected": "Waiting for sign-in — the link expires in about 5 minutes."
+      "expected": "The code expires in about 5 minutes."
     },
     {
       "locale": "en",
@@ -431,6 +395,78 @@
         "connectedCount": 5
       },
       "expected": "5 connected"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "values": {
+        "count": 0
+      },
+      "expected": " keep their own model"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "values": {
+        "count": 1
+      },
+      "expected": " keeps its own model"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "values": {
+        "count": 2
+      },
+      "expected": " keep their own model"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "values": {
+        "count": 5
+      },
+      "expected": " keep their own model"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 bots have their own model: "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 bot has its own model: "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 bots have their own model: "
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 bots have their own model: "
     },
     {
       "locale": "en",
@@ -542,6 +578,78 @@
     },
     {
       "locale": "en",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, one {# skill} other {# skills}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 skills"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, one {# skill} other {# skills}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 skill"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, one {# skill} other {# skills}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 skills"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, one {# skill} other {# skills}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 skills"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "Switch 0 bots to the space default?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "Switch 1 bot to the space default?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "Switch 2 bots to the space default?"
+    },
+    {
+      "locale": "en",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "Switch 5 bots to the space default?"
+    },
+    {
+      "locale": "en",
       "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
       "message": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
       "values": {
@@ -611,6 +719,42 @@
         "hiddenSelectedCount": 5
       },
       "expected": "5 selected models are hidden by your search."
+    },
+    {
+      "locale": "en",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "values": {
+        "moved": 0
+      },
+      "expected": "0 bots now use the space default."
+    },
+    {
+      "locale": "en",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "values": {
+        "moved": 1
+      },
+      "expected": "1 bot now uses the space default."
+    },
+    {
+      "locale": "en",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "values": {
+        "moved": 2
+      },
+      "expected": "2 bots now use the space default."
+    },
+    {
+      "locale": "en",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "values": {
+        "moved": 5
+      },
+      "expected": "5 bots now use the space default."
     },
     {
       "locale": "en",
@@ -686,42 +830,6 @@
     },
     {
       "locale": "en",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "values": {
-        "modelCount": 0
-      },
-      "expected": "Models list OK. 0 models available. Chat was not tested."
-    },
-    {
-      "locale": "en",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "values": {
-        "modelCount": 1
-      },
-      "expected": "Models list OK. 1 model available. Chat was not tested."
-    },
-    {
-      "locale": "en",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "values": {
-        "modelCount": 2
-      },
-      "expected": "Models list OK. 2 models available. Chat was not tested."
-    },
-    {
-      "locale": "en",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "values": {
-        "modelCount": 5
-      },
-      "expected": "Models list OK. 5 models available. Chat was not tested."
-    },
-    {
-      "locale": "en",
       "msgid": "Custom server {host}",
       "message": "Custom server {host}",
       "values": {
@@ -787,22 +895,6 @@
         "name": "Ada"
       },
       "expected": "Connect MCP server Ada"
-    },
-    {
-      "locale": "en",
-      "msgid": "{count} spaces",
-      "message": "{count} spaces",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 spaces"
-    },
-    {
-      "locale": "en",
-      "msgid": "1 bot now uses the space default.",
-      "message": "1 bot now uses the space default.",
-      "values": {},
-      "expected": "1 bot now uses the space default."
     },
     {
       "locale": "en",
@@ -1150,75 +1242,39 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {验证码约 # 分钟后过期。}}",
       "values": {
         "0": 0
       },
-      "expected": "正在等待登录，验证码大约 0 分钟后过期。"
+      "expected": "验证码约 0 分钟后过期。"
     },
     {
       "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {验证码约 # 分钟后过期。}}",
       "values": {
         "0": 1
       },
-      "expected": "正在等待登录，验证码大约 1 分钟后过期。"
+      "expected": "验证码约 1 分钟后过期。"
     },
     {
       "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {验证码约 # 分钟后过期。}}",
       "values": {
         "0": 2
       },
-      "expected": "正在等待登录，验证码大约 2 分钟后过期。"
+      "expected": "验证码约 2 分钟后过期。"
     },
     {
       "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，验证码大约 # 分钟后过期。} other {正在等待登录，验证码大约 # 分钟后过期。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {验证码约 # 分钟后过期。}}",
       "values": {
         "0": 5
       },
-      "expected": "正在等待登录，验证码大约 5 分钟后过期。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
-      "values": {
-        "0": 0
-      },
-      "expected": "正在等待登录，链接大约 0 分钟后过期。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
-      "values": {
-        "0": 1
-      },
-      "expected": "正在等待登录，链接大约 1 分钟后过期。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
-      "values": {
-        "0": 2
-      },
-      "expected": "正在等待登录，链接大约 2 分钟后过期。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {正在等待登录，链接大约 # 分钟后过期。} other {正在等待登录，链接大约 # 分钟后过期。}}",
-      "values": {
-        "0": 5
-      },
-      "expected": "正在等待登录，链接大约 5 分钟后过期。"
+      "expected": "验证码约 5 分钟后过期。"
     },
     {
       "locale": "zh-CN",
@@ -1291,6 +1347,78 @@
         "connectedCount": 5
       },
       "expected": "5 个已连接"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 0
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 1
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 2
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 5
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 个 Bot 使用各自的模型：{names}}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 个 Bot 使用各自的模型："
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 个 Bot 使用各自的模型：{names}}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 个 Bot 使用各自的模型："
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 个 Bot 使用各自的模型：{names}}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 个 Bot 使用各自的模型："
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 个 Bot 使用各自的模型：{names}}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 个 Bot 使用各自的模型："
     },
     {
       "locale": "zh-CN",
@@ -1402,6 +1530,78 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 个技能}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 个技能}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 个技能}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 个技能}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 个技能"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {将 # 个 Bot 切换为空间默认模型？}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "将 0 个 Bot 切换为空间默认模型？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {将 # 个 Bot 切换为空间默认模型？}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "将 1 个 Bot 切换为空间默认模型？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {将 # 个 Bot 切换为空间默认模型？}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "将 2 个 Bot 切换为空间默认模型？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {将 # 个 Bot 切换为空间默认模型？}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "将 5 个 Bot 切换为空间默认模型？"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
       "message": "{hidden, plural, one {+# 个更早的步骤} other {+# 个更早的步骤}}",
       "values": {
@@ -1471,6 +1671,42 @@
         "hiddenSelectedCount": 5
       },
       "expected": "搜索结果未显示 5 个已选模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 个 Bot 现已使用空间默认模型。}}",
+      "values": {
+        "moved": 0
+      },
+      "expected": "0 个 Bot 现已使用空间默认模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 个 Bot 现已使用空间默认模型。}}",
+      "values": {
+        "moved": 1
+      },
+      "expected": "1 个 Bot 现已使用空间默认模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 个 Bot 现已使用空间默认模型。}}",
+      "values": {
+        "moved": 2
+      },
+      "expected": "2 个 Bot 现已使用空间默认模型。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 个 Bot 现已使用空间默认模型。}}",
+      "values": {
+        "moved": 5
+      },
+      "expected": "5 个 Bot 现已使用空间默认模型。"
     },
     {
       "locale": "zh-CN",
@@ -1546,42 +1782,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
-      "values": {
-        "modelCount": 0
-      },
-      "expected": "模型列表正常。0 个模型可用。未测试聊天。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
-      "values": {
-        "modelCount": 1
-      },
-      "expected": "模型列表正常。1 个模型可用。未测试聊天。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
-      "values": {
-        "modelCount": 2
-      },
-      "expected": "模型列表正常。2 个模型可用。未测试聊天。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型列表正常。{modelCount, plural, one {# 个模型} other {# 个模型}}可用。未测试聊天。",
-      "values": {
-        "modelCount": 5
-      },
-      "expected": "模型列表正常。5 个模型可用。未测试聊天。"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "Custom server {host}",
       "message": "自定义服务器 {host}",
       "values": {
@@ -1647,22 +1847,6 @@
         "name": "Ada"
       },
       "expected": "连接 MCP 服务器 Ada"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{count} spaces",
-      "message": "{count} 个空间",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 个空间"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "1 bot now uses the space default.",
-      "message": "1 个 Bot 已改用空间默认。",
-      "values": {},
-      "expected": "1 个 Bot 已改用空间默认。"
     },
     {
       "locale": "zh-CN",
@@ -2010,75 +2194,39 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {驗證碼約 # 分鐘後過期。}}",
       "values": {
         "0": 0
       },
-      "expected": "等待登入中 — 代碼將在約 0 分鐘後失效。"
+      "expected": "驗證碼約 0 分鐘後過期。"
     },
     {
       "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {驗證碼約 # 分鐘後過期。}}",
       "values": {
         "0": 1
       },
-      "expected": "等待登入中 — 代碼將在約 1 分鐘後失效。"
+      "expected": "驗證碼約 1 分鐘後過期。"
     },
     {
       "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {驗證碼約 # 分鐘後過期。}}",
       "values": {
         "0": 2
       },
-      "expected": "等待登入中 — 代碼將在約 2 分鐘後失效。"
+      "expected": "驗證碼約 2 分鐘後過期。"
     },
     {
       "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the code expires in about # minute.} other {Waiting for sign-in — the code expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 代碼將在約 # 分鐘後失效。} other {等待登入中 — 代碼將在約 # 分鐘後失效。}}",
+      "msgid": "{0, plural, one {The code expires in about # minute.} other {The code expires in about # minutes.}}",
+      "message": "{0, plural, other {驗證碼約 # 分鐘後過期。}}",
       "values": {
         "0": 5
       },
-      "expected": "等待登入中 — 代碼將在約 5 分鐘後失效。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
-      "values": {
-        "0": 0
-      },
-      "expected": "等待登入中 — 連結將在約 0 分鐘後失效。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
-      "values": {
-        "0": 1
-      },
-      "expected": "等待登入中 — 連結將在約 1 分鐘後失效。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
-      "values": {
-        "0": 2
-      },
-      "expected": "等待登入中 — 連結將在約 2 分鐘後失效。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{0, plural, one {Waiting for sign-in — the link expires in about # minute.} other {Waiting for sign-in — the link expires in about # minutes.}}",
-      "message": "{0, plural, one {等待登入中 — 連結將在約 # 分鐘後失效。} other {等待登入中 — 連結將在約 # 分鐘後失效。}}",
-      "values": {
-        "0": 5
-      },
-      "expected": "等待登入中 — 連結將在約 5 分鐘後失效。"
+      "expected": "驗證碼約 5 分鐘後過期。"
     },
     {
       "locale": "zh-TW",
@@ -2151,6 +2299,78 @@
         "connectedCount": 5
       },
       "expected": "已連線 5 個"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 0
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 1
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 2
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {{names} keeps its own model} other {{names} keep their own model}}",
+      "message": "{count, plural, other {{names} 使用各自的模型}}",
+      "values": {
+        "count": 5
+      },
+      "expected": " 使用各自的模型"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 個機器人使用各自的模型：{names}}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 個機器人使用各自的模型："
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 個機器人使用各自的模型：{names}}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 個機器人使用各自的模型："
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 個機器人使用各自的模型：{names}}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 個機器人使用各自的模型："
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# bot has its own model: {names}} other {# bots have their own model: {names}}}",
+      "message": "{count, plural, other {# 個機器人使用各自的模型：{names}}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 個機器人使用各自的模型："
     },
     {
       "locale": "zh-TW",
@@ -2262,6 +2482,78 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 個技能}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "0 個技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 個技能}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "1 個技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 個技能}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "2 個技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {# skill} other {# skills}}",
+      "message": "{count, plural, other {# 個技能}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "5 個技能"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {要將 # 個機器人切換為空間預設模型嗎？}}",
+      "values": {
+        "count": 0
+      },
+      "expected": "要將 0 個機器人切換為空間預設模型嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {要將 # 個機器人切換為空間預設模型嗎？}}",
+      "values": {
+        "count": 1
+      },
+      "expected": "要將 1 個機器人切換為空間預設模型嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {要將 # 個機器人切換為空間預設模型嗎？}}",
+      "values": {
+        "count": 2
+      },
+      "expected": "要將 2 個機器人切換為空間預設模型嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{count, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}",
+      "message": "{count, plural, other {要將 # 個機器人切換為空間預設模型嗎？}}",
+      "values": {
+        "count": 5
+      },
+      "expected": "要將 5 個機器人切換為空間預設模型嗎？"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "{hidden, plural, one {+# earlier step} other {+# earlier steps}}",
       "message": "{hidden, plural, one {還有 # 個先前步驟} other {還有 # 個先前步驟}}",
       "values": {
@@ -2331,6 +2623,42 @@
         "hiddenSelectedCount": 5
       },
       "expected": "搜尋結果未顯示 5 個已選模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 個機器人現已使用空間預設模型。}}",
+      "values": {
+        "moved": 0
+      },
+      "expected": "0 個機器人現已使用空間預設模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 個機器人現已使用空間預設模型。}}",
+      "values": {
+        "moved": 1
+      },
+      "expected": "1 個機器人現已使用空間預設模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 個機器人現已使用空間預設模型。}}",
+      "values": {
+        "moved": 2
+      },
+      "expected": "2 個機器人現已使用空間預設模型。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}",
+      "message": "{moved, plural, other {# 個機器人現已使用空間預設模型。}}",
+      "values": {
+        "moved": 5
+      },
+      "expected": "5 個機器人現已使用空間預設模型。"
     },
     {
       "locale": "zh-TW",
@@ -2406,42 +2734,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
-      "values": {
-        "modelCount": 0
-      },
-      "expected": "模型清單正常。0 個模型可用。未測試聊天。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
-      "values": {
-        "modelCount": 1
-      },
-      "expected": "模型清單正常。1 個模型可用。未測試聊天。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
-      "values": {
-        "modelCount": 2
-      },
-      "expected": "模型清單正常。2 個模型可用。未測試聊天。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Models list OK. {modelCount, plural, one {# model} other {# models}} available. Chat was not tested.",
-      "message": "模型清單正常。{modelCount, plural, one {# 個模型} other {# 個模型}}可用。未測試聊天。",
-      "values": {
-        "modelCount": 5
-      },
-      "expected": "模型清單正常。5 個模型可用。未測試聊天。"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "Custom server {host}",
       "message": "自訂伺服器 {host}",
       "values": {
@@ -2507,22 +2799,6 @@
         "name": "Ada"
       },
       "expected": "連線 MCP 伺服器 Ada"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{count} spaces",
-      "message": "{count} 個空間",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 個空間"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "1 bot now uses the space default.",
-      "message": "1 個機器人已改用空間預設模型。",
-      "values": {},
-      "expected": "1 個機器人已改用空間預設模型。"
     },
     {
       "locale": "zh-TW",
