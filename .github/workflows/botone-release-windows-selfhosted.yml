@@ -25,6 +25,12 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+      # Self-hosted runners have no node preinstalled; setup-workspace provides it before
+      # the release config validation runs its node script.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          electron: "true"
+          filter: "*"
       - name: Validate Windows release configuration
         run: node .github/builds/release-config.mjs windows
       - uses: ./.github/actions/build-client-desktop
