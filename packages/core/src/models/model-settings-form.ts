@@ -14,7 +14,7 @@ import {
   parseModelMaxImagesPerPrompt,
   parseModelMaxTokens,
 } from "@rakazo/contracts";
-import { compatibleThinkingLevels } from "./model-providers.js";
+import { compatibleThinkingLevels, newestModelsFirst } from "./model-providers.js";
 
 type SettingsCredential = Pick<
   ModelCredential,
@@ -23,6 +23,7 @@ type SettingsCredential = Pick<
   | "maxTokens"
   | "contextWindow"
   | "reasoning"
+  | "defaultReasoningModelIds"
   | "visionModelIds"
   | "maxImagesPerPrompt"
 >;
@@ -161,29 +162,6 @@ export function connectionModels(
   ];
 }
 
-/**
- * The version a model id starts with, such as `[6, 1]` for `gpt-6.1-sol` or `[4, 5]` for
- * `x-4-5`. A part followed by letters is a size or variant, as in `llama-3-8b`, not a version.
- */
-function modelVersion(id: string): number[] {
-  const match = /\d+(?:[.-]\d{1,2}(?![\da-z]))*/i.exec(id);
-  return match ? match[0].split(/[.-]/).map(Number) : [];
-}
-
-/** Models with a higher version in their id first; the catalog's order otherwise stays. */
-export function newestModelsFirst<T extends { id: string }>(models: readonly T[]): T[] {
-  const versions = new Map(models.map((model) => [model.id, modelVersion(model.id)]));
-  return [...models].sort((left, right) => {
-    const a = versions.get(left.id) ?? [];
-    const b = versions.get(right.id) ?? [];
-    for (let index = 0; index < Math.max(a.length, b.length); index++) {
-      const difference = (b[index] ?? -1) - (a[index] ?? -1);
-      if (difference) return difference;
-    }
-    return 0;
-  });
-}
-
 /** The values a model runs with when its fields are left empty. */
 export function modelSettingsDefaults(
   provider: string,
@@ -203,12 +181,14 @@ export function credentialModelSettings(
   modelId: string,
 ): ModelSettings {
   const own = credential.modelSettings?.[modelId];
-  if (own) return own;
+  const catalogReasoning = credential.defaultReasoningModelIds?.includes(modelId);
+  if (own)
+    return catalogReasoning && own.reasoning === undefined ? { ...own, reasoning: true } : own;
   const compatible = credential.provider === OPENAI_COMPATIBLE_PROVIDER_ID;
   return {
     ...(credential.maxTokens !== undefined ? { maxTokens: credential.maxTokens } : {}),
     ...(credential.contextWindow !== undefined ? { contextWindow: credential.contextWindow } : {}),
-    ...(compatible && credential.reasoning ? { reasoning: true } : {}),
+    ...(compatible && (catalogReasoning || credential.reasoning) ? { reasoning: true } : {}),
     ...(compatible && credential.visionModelIds?.includes(modelId) ? { images: true } : {}),
     ...(compatible && credential.maxImagesPerPrompt !== undefined
       ? { maxImagesPerPrompt: credential.maxImagesPerPrompt }

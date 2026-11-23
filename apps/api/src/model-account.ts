@@ -27,6 +27,7 @@ import {
   initializeRunningModelComputers,
   mountComputerModelInitialization,
 } from "./computer-model-initialization.js";
+import { applyModelAccountLimits } from "./model-account-limits.js";
 import { parseModelAccountSecret, serializeModelAccountSecret } from "./model-account-secret.js";
 
 type Connection = NonNullable<ReturnType<typeof configuredModelAccount>>;
@@ -133,6 +134,7 @@ export function modelAccountRoutes(deps: {
     const plaintext = serializeModelAccountSecret(
       {
         ...connection.model,
+        models: configured.models,
         apiProtocol: configured.apiProtocol ?? "chat-completions",
         enabledModelIds: models,
         apiKey,
@@ -375,17 +377,24 @@ export function modelAccountRoutes(deps: {
       binding.accountId !== current.accountId
     )
       return c.json({ error: "authorization_required" }, 403);
-    const stored = await secrets.put(
-      serializeModelAccountSecret({ ...secret, apiProtocol: input.apiProtocol }, binding),
-      {
-        userId: signed.user.id,
-        spaceId: owner.spaceId,
-        operationId: "model-account",
-        traceId: "model-account",
-        signal: c.req.raw.signal,
-      },
-    );
+    if ("limits" in input && input.credentialId !== credential.id)
+      return c.json({ error: "invalid_request" }, 400);
+    const next =
+      "limits" in input
+        ? applyModelAccountLimits(secret, input.modelId, input.limits)
+        : { ...secret, apiProtocol: input.apiProtocol };
+    if (!next) return c.json({ error: "invalid_request" }, 400);
+    const stored = await secrets.put(serializeModelAccountSecret(next, binding), {
+      userId: signed.user.id,
+      spaceId: owner.spaceId,
+      operationId: "model-account",
+      traceId: "model-account",
+      signal: c.req.raw.signal,
+    });
     await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT "id" FROM "account" WHERE "id" = ${current.accountId} FOR UPDATE`,
+      );
       await tx.secret.create({
         data: {
           id: stored.id,
@@ -406,7 +415,7 @@ export function modelAccountRoutes(deps: {
         secretId: row.id,
       });
     });
-    return c.json({ apiProtocol: input.apiProtocol });
+    return c.json("apiProtocol" in input ? { apiProtocol: input.apiProtocol } : { ok: true });
   });
   app.post("/models", async (c) => {
     if (!connection) return c.json({ error: "disabled" }, 404);

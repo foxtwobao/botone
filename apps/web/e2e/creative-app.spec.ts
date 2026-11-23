@@ -68,7 +68,7 @@ test("connects and removes a configured creative app through the existing catalo
   await page.getByRole("textbox", { name: "Search apps", exact: true }).fill("CreativeOne");
   await expect(page.getByText("CreativeOne", { exact: true })).toBeVisible();
   await captureScreenshot(page, testInfo, "creative-app-catalog");
-  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.getByRole("button", { name: "Add CreativeOne", exact: true }).click();
   await expect(page.getByRole("button", { name: "Added", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Added", exact: true }).click();
   const detail = page.getByTestId("connection-detail");
@@ -80,5 +80,5 @@ test("connects and removes a configured creative app through the existing catalo
   await detail.getByRole("button", { name: "Remove", exact: true }).click();
   await expect(detail.getByRole("textbox", { name: "Account label" })).toHaveCount(0);
   await detail.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Add", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add CreativeOne", exact: true })).toBeVisible();
 });

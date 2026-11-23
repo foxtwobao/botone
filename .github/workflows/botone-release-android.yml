@@ -14,7 +14,7 @@ permissions:
 jobs:
   build:
     name: Signed Android APK and AAB
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, ubuntu-24.04]
     timeout-minutes: 90
     env:
       CI: "1"
