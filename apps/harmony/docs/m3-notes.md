@@ -384,3 +384,11 @@ saw the 500ms deadline elapse but the kit rejected before the client's timeout f
 while another job was loading the machine. The immediate re-run, with that load gone, was
 140 pass / 0 failure / 0 error, including the two new history-page cases. A detached checkout of
 this commit regenerated codegen with no diff and built unsigned app and ohosTest HAPs.
+
+## Base synchronization
+
+The current notification enum adds `pages` and `nativeCalendar`; roster forwards both to its
+readers and the two snapshots are regenerated from the real contract. The ICU fixture reflects
+upstream catalog copy changes. The consent fixture's delayed response timer now attaches to the
+response close (Node closes the request as soon as its body completes) and is bounded to 60s;
+without this correction the generation-in-flight replay times out before its response is sent.

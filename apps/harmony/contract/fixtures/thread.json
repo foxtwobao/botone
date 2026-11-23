@@ -339,7 +339,9 @@
                 {
                   "kind": "progress",
                   "text": "half a clause",
-                  "pendingToolNames": ["web_search"]
+                  "pendingToolNames": [
+                    "web_search"
+                  ]
                 }
               ],
               "botId": "bot-1",
@@ -5778,7 +5780,9 @@
         "taskId": "task-1",
         "createdAt": "2026-11-21T12:00:01.000Z"
       },
-      "terminalRunIds": ["run-1"],
+      "terminalRunIds": [
+        "run-1"
+      ],
       "now": "2026-11-21T12:00:02.000Z",
       "expected": {
         "threadId": "thread-1",
@@ -7116,7 +7120,11 @@
           "seq": 5
         }
       ],
-      "expected": ["run-1", "run-2", "run-3"]
+      "expected": [
+        "run-1",
+        "run-2",
+        "run-3"
+      ]
     },
     {
       "name": "the memory caps at 100 runs, oldest first",
@@ -7348,7 +7356,9 @@
           }
         }
       ],
-      "expected": [[]]
+      "expected": [
+        []
+      ]
     },
     {
       "name": "pending tool waits for the sentence end",
@@ -7382,7 +7392,9 @@
           {
             "kind": "progress",
             "text": "Checking the",
-            "pendingToolNames": ["read_file"]
+            "pendingToolNames": [
+              "read_file"
+            ]
           }
         ],
         [
@@ -7443,7 +7455,9 @@
             "kind": "progress",
             "text": "Reading: notes.txt",
             "activity": true,
-            "pendingToolNames": ["read_file"]
+            "pendingToolNames": [
+              "read_file"
+            ]
           }
         ]
       ]
@@ -7458,7 +7472,10 @@
         {
           "kind": "progress",
           "text": "unfinished clause",
-          "pendingToolNames": ["web_search", "web_search"]
+          "pendingToolNames": [
+            "web_search",
+            "web_search"
+          ]
         }
       ],
       "updates": [
