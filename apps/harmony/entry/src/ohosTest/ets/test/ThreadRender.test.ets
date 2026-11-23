@@ -5,7 +5,7 @@ import { describe, expect, it } from '@ohos/hypium';
 import { blockView, isDeliveryMessage, messageBlockViews, TIER_FULL, TIER_TEXT, TIER_PLACEHOLDER } from '../../../main/ets/thread/block-view';
 import { markdownPlainText, parseInline, parseMarkdownLite } from '../../../main/ets/thread/markdown-lite';
 import type { InlineSpan } from '../../../main/ets/thread/markdown-lite';
-import { messageKey, projectRows } from '../../../main/ets/stores/thread-store';
+import { daySeparatorLabel, messageKey, projectRows } from '../../../main/ets/stores/thread-store';
 import { t } from '../../../main/ets/i18n/i18n';
 import type { LiveMessage, ThreadSnapshot } from '../../../main/ets/thread/thread-snapshot';
 
@@ -157,20 +157,24 @@ export default function threadRenderTest() {
         ],
         run: null, activeRuns: [],
       };
-      const rows = projectRows(snapshot, new Date('2026-11-22T13:00:00Z').getTime());
+      const rows = projectRows(snapshot);
       // day(yesterday) + m1 + day(today) + m2 + m4 — m3 (delivery) hidden whole.
       expect(rows.length).assertEqual(5);
       expect(rows[0].type).assertEqual('day');
       expect(rows[1].type).assertEqual('message');
       expect(rows[1].message!.id).assertEqual('m1');
       expect(rows[2].type).assertEqual('day');
+      // Rows carry the timestamp, not a baked label: the separator renders at build time, so a
+      // hot locale switch re-translates it (the M4 Pinned-heading bug class).
+      expect(rows[2].dayAt).assertEqual('2026-11-22T10:00:00Z');
       // The day label is the product separator (Today/Yesterday + clock, locale-formatted); the
       // fixture-aligned format itself is covered by DatesFixture. Here: the day RULE.
-      expect(rows[2].label.startsWith(t('Today'))).assertEqual(true);
+      const now = new Date('2026-11-22T13:00:00Z').getTime();
+      expect(daySeparatorLabel(rows[2].dayAt, now).startsWith(t('Today'))).assertEqual(true);
       expect(rows[3].message!.id).assertEqual('m2');
       expect(rows[4].message!.id).assertEqual('m4');
       // A null snapshot projects no rows.
-      expect(projectRows(null, 0).length).assertEqual(0);
+      expect(projectRows(null).length).assertEqual(0);
     });
 
     it('message_key_carries_content_for_rerender', 0, () => {

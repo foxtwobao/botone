@@ -17,14 +17,15 @@ import type { LiveMessage, ThreadSnapshot } from '../thread/thread-snapshot';
 import { decodeSendOutput, newClientNonce, sendReceipt } from '../thread/thread-send';
 import { decodeThreadMessagePage } from '../thread/thread-decode';
 import { isDeliveryMessage } from '../thread/block-view';
+import { historyGapAtEnd } from '../thread/thread-window';
 import { t } from '../i18n/i18n';
 import { formatThreadSeparator } from '../i18n/dates';
 
 /** A transcript row: a day separator or a message (delivery messages never become rows). */
 export class ThreadRow {
   type: string = 'message';
-  /** The day label for a separator. */
-  label: string = '';
+  /** The separator's first message timestamp; the label renders from it at build time. */
+  dayAt: string = '';
   message: LiveMessage | null = null;
   /** The row's render key: content changes force a LazyForEach re-render (the M2 lesson). */
   key: string = '';
@@ -38,14 +39,16 @@ function dayKey(iso: string): string {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
-function dayLabel(iso: string, now: number): string {
-  // The product's day separator (core formatTimeSeparator): Today/Yesterday + clock, the past
-  // week a weekday, older a localized short date with the year only when it differs.
+/** The day separator label (core formatTimeSeparator): Today/Yesterday + clock, the past week a
+ * weekday, older a localized short date. Called from build(), never baked into a projected row —
+ * a hot locale switch must re-render separators in the new language (the M4 Pinned-heading bug). */
+export function daySeparatorLabel(iso: string, now: number): string {
   return formatThreadSeparator(iso, now, t('Today'), t('Yesterday'));
 }
 
-/** The visible transcript: day separators between messages, delivery messages hidden whole. */
-export function projectRows(snapshot: ThreadSnapshot | null, now: number): ThreadRow[] {
+/** The visible transcript: day separators between messages, delivery messages hidden whole.
+ * Pure — rows carry data (timestamps, messages, keys), no translated text. */
+export function projectRows(snapshot: ThreadSnapshot | null): ThreadRow[] {
   const rows: ThreadRow[] = [];
   if (snapshot === null) {
     return rows;
@@ -59,7 +62,7 @@ export function projectRows(snapshot: ThreadSnapshot | null, now: number): Threa
     if (day && day !== lastDay) {
       const separator = new ThreadRow();
       separator.type = 'day';
-      separator.label = dayLabel(message.createdAt, now);
+      separator.dayAt = message.createdAt;
       separator.key = `day:${day}`;
       rows.push(separator);
       lastDay = day;
@@ -82,7 +85,8 @@ export function messageKey(message: LiveMessage): string {
   return `${message.id}|${message.role}|${blocks}`;
 }
 
-/** Prepend an older history page without losing live state (core prependThreadHistoryPage). */
+/** Prepend an older history page without losing live state (core prependThreadHistoryPage).
+ * The history window is applied by the stream's commit (trimHistoryWindow). */
 function prependPage(snapshot: ThreadSnapshot, page: ThreadSnapshot): ThreadSnapshot {
   const seen: Set<string> = new Set();
   const messages: LiveMessage[] = [];
@@ -118,6 +122,9 @@ export class ThreadStore {
   @Trace connected: boolean = false;
   @Trace olderCursor: number | null = null;
   @Trace loadingOlder: boolean = false;
+  /** The transcript ends before the newest message this chat showed (history window eviction):
+   * the screen offers "Jump to latest" back to the live page. */
+  @Trace awayFromLatest: boolean = false;
   /** The text of a failed send, so the composer can restore it for retry. */
   @Trace sendFailedText: string = '';
   readonly send: SaveController;
@@ -131,6 +138,8 @@ export class ThreadStore {
   private offForeground: (() => void) | null = null;
   private started: boolean = false;
   private visible: boolean = false;
+  /** The newest message seq this window ever painted (the awayFromLatest floor). */
+  private newestSeenSeq: number = -1;
 
   constructor() {
     this.send = new SaveController({
@@ -153,8 +162,8 @@ export class ThreadStore {
           const next = applyThreadSendReceipt(this.stream.current(),
             sendReceipt(this.botId, output), this.stream.terminalRunIds, new Date().toISOString());
           if (next !== this.stream.current()) {
+            // commit paints through deps.commit with the window applied.
             this.stream.commit(next);
-            this.paint(next);
           }
         }
       },
@@ -220,8 +229,17 @@ export class ThreadStore {
 
   private paint(snapshot: ThreadSnapshot | null): void {
     this.snapshot = snapshot;
-    this.rows = projectRows(snapshot, Date.now());
+    this.rows = projectRows(snapshot);
     this.olderCursor = snapshot?.olderCursor ?? null;
+    if (snapshot !== null) {
+      for (const message of snapshot.messages) {
+        if (message.seq !== undefined && !message.id.startsWith('progress:')
+          && !message.id.startsWith('subagent:')) {
+          this.newestSeenSeq = Math.max(this.newestSeenSeq, message.seq);
+        }
+      }
+    }
+    this.awayFromLatest = historyGapAtEnd(snapshot, this.newestSeenSeq);
     this.notifyChanges();
   }
 
@@ -388,14 +406,32 @@ export class ThreadStore {
       if (this.stream !== null) {
         this.stream.historyExpanded = true;
       }
+      // commit applies the history window and paints through deps.commit — painting the raw
+      // merge here would flash (and keep) the untrimmed snapshot.
       this.stream?.commit(merged);
-      this.paint(merged);
     } catch (err) {
       const error = err instanceof RpcError ? err as RpcError : null;
       this.error = errorText(error);
     } finally {
       this.loadingOlder = false;
     }
+  }
+
+  /** Back to the live page after the history window evicted the newest side: drop the loaded
+   * history and let the stream's refresh re-read the recent page (core leaveThreadWindow's role;
+   * the live cursor and run state survive — this is a refresh, not a reopen). */
+  jumpToLatest(): void {
+    if (this.stream === null || this.snapshot === null) {
+      return;
+    }
+    this.stream.historyExpanded = false;
+    const input: Record<string, Object> = {};
+    if (this.groupId) {
+      input['groupId'] = this.groupId;
+    } else {
+      input['botId'] = this.botId;
+    }
+    void this.stream.refreshNow(input);
   }
 
   /** Retry after a failed open (the offline banner's entry). */
@@ -414,6 +450,8 @@ export class ThreadStore {
     this.snapshot = null;
     this.rows = [];
     this.olderCursor = null;
+    this.awayFromLatest = false;
+    this.newestSeenSeq = -1;
     this.error = '';
     this.offline = false;
     this.connected = false;

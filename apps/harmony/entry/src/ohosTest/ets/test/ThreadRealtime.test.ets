@@ -375,6 +375,61 @@ export default function threadRealtimeTest() {
       store.close();
     });
 
+    it('history_window_caps_loaded_pages_and_jump_returns_to_latest', 0, async () => {
+      // Design §9 R4: memory must not grow linearly with history. The window caps loaded history
+      // at 1,000 durable messages, keeping the old end (the reading position) and evicting the
+      // newest side; "Jump to latest" re-reads the recent page without a reopen (the live cursor
+      // and stream survive).
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 10_000;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+        'recent page');
+      expect(store.awayFromLatest).assertEqual(false);
+      // Nine older pages fill the window exactly: 1,000 messages, nothing evicted yet.
+      for (let page = 0; page < 9; page += 1) {
+        await store.loadOlder();
+      }
+      await waitFor((): boolean => store.snapshot!.messages.length === 1000, 'window full');
+      expect(messageTexts(store.snapshot)[0]).assertEqual('history 9001');
+      expect(store.awayFromLatest).assertEqual(false);
+      expect(store.olderCursor).assertEqual(9001);
+      // The tenth page: the window keeps the OLD end (the reading position) and evicts the
+      // newest 100 — it slides, it never grows, and the freshly loaded page survives.
+      await store.loadOlder();
+      await waitFor((): boolean => store.snapshot!.messages.length === 1000
+        && messageTexts(store.snapshot)[0] === 'history 8901', 'window slides');
+      const texts = messageTexts(store.snapshot);
+      expect(texts[999]).assertEqual('history 9900');
+      expect(store.olderCursor).assertEqual(8901);
+      expect(store.awayFromLatest).assertEqual(true);
+      // A settle refresh keeps the window (preserveHistory inside the cap), never re-inflates it.
+      const runPayload: Record<string, Object> = {};
+      runPayload['trigger'] = 'user';
+      await inject('run.started', 'run-window', runPayload);
+      await waitFor((): boolean => store.working(), 'run working');
+      await inject('run.completed', 'run-window', {});
+      await waitFor((): boolean => !store.working(), 'run settled');
+      await pause(400);
+      expect(store.snapshot!.messages.length).assertEqual(1000);
+      expect(messageTexts(store.snapshot)[0]).assertEqual('history 8901');
+      // Jump to latest: one threads/get re-reads the recent page without a reopen — the stream
+      // survives (a reopen would re-subscribe AND re-get with a new open read first).
+      const getsBefore = await requestCount('/rpc/threads/get');
+      const subscribesBefore = await requestCount('/rpc/threads/subscribe');
+      store.jumpToLatest();
+      await waitFor((): boolean => store.snapshot!.messages.length === 100
+        && messageTexts(store.snapshot)[99] === 'history 10000', 'back at latest');
+      expect(await requestCount('/rpc/threads/get')).assertEqual(getsBefore + 1);
+      expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+      expect(store.awayFromLatest).assertEqual(false);
+      expect(store.olderCursor).assertEqual(9901);
+      store.close();
+    });
+
     it('a_live_message_arriving_during_a_page_read_survives_the_prepend', 0, async () => {
       const seed: Record<string, Object> = {};
       seed['botId'] = 'bot-1';

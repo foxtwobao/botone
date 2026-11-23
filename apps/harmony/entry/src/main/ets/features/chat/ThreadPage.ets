@@ -9,7 +9,7 @@ import { ListSource } from '../../uikit/list-source';
 import { ErrorText } from '../../uikit/controls';
 import { t } from '../../i18n/i18n';
 import { app } from '../../app/app-state';
-import { ThreadStore } from '../../stores/thread-store';
+import { ThreadStore, daySeparatorLabel } from '../../stores/thread-store';
 import type { ThreadRow } from '../../stores/thread-store';
 import { RosterHolder } from '../../realtime/roster-holder';
 import { MessageBubble } from './MessageBubble';
@@ -90,7 +90,9 @@ export struct ThreadPage {
   @Builder
   rowEntry(row: ThreadRow) {
     if (row.type === 'day') {
-      this.daySeparator(row.label)
+      // The label resolves here (build-time t()), never baked into the row: a hot locale switch
+      // re-renders separators in the new language.
+      this.daySeparator(daySeparatorLabel(row.dayAt, Date.now()))
     } else {
       MessageBubble({
         message: row.message,
@@ -221,6 +223,23 @@ export struct ThreadPage {
         .onReachStart((): void => {
           void this.store.loadOlder();
         })
+
+        if (this.store.awayFromLatest) {
+          ListItem() {
+            Row() {
+              Text(t('Jump to latest'))
+                .fontSize(typeScale.secondary.fontSize)
+                .fontColor(appearance.tokens().link)
+            }
+            .width('100%')
+            .justifyContent(FlexAlign.Center)
+            .padding(10)
+            .onClick((): void => {
+              this.atBottom = true;
+              this.store.jumpToLatest();
+            })
+          }
+        }
       }
 
       if (this.store.send.error) {

@@ -13,12 +13,14 @@ import sseTransportTest from './SseTransport.test';
 import realBackendSmoke from './RealBackendSmoke.test';
 import realThreadSmoke from './RealThreadSmoke.test';
 import inboxProjectionTest from './InboxProjection.test';
+import hotLocaleTest from './HotLocale.test';
 import queryCacheTest from './QueryCache.test';
 import rosterStreamTest from './RosterStream.test';
 import saveControllerTest from './SaveController.test';
 import rosterRealtimeTest from './RosterRealtime.test';
 import threadReducerTest from './ThreadReducer.test';
 import threadRenderTest from './ThreadRender.test';
+import threadWindowTest from './ThreadWindow.test';
 import threadStreamTest from './ThreadStream.test';
 import threadRealtimeTest from './ThreadRealtime.test';
 import consentGateTest from './ConsentGate.test';
@@ -35,6 +37,8 @@ export default function testsuite() {
   inboxProjectionTest();
   threadReducerTest();
   threadRenderTest();
+  threadWindowTest();
+  hotLocaleTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();

@@ -3,9 +3,16 @@
 Stacked on `harmony/m3-chat` (M3, dbdabac31, PR #55). Scope: design §7.2 M4 — SettingsPage, the
 i18n/ICU close-out, performance calibration (font scale + long lists), the repeatable emulator
 smoke, the offline/error-copy and ux-declutter walkthroughs, and the Phase 1 acceptance checklist.
+**Fix round (same branch):** the independent verification's two blockers — the hot-locale
+Pinned-heading residue (fixed, `HotLocale.test.ets` + device walkthrough) and the 10k memory
+claim (redone as the design-R4 history window, `perf-sample.mjs` + the measured curve below) —
+plus the four documentation corrections (hypium re-run timeout, smoke coverage wording, the
+SP_daemon real-display precondition, the changed-areas budget note and screenshot dedup).
 All product code lives under `apps/harmony/` plus one line in `.github/scripts/changed-areas.test.py`
-(the trigger assertion for the newly consumed reference); the committed `build-profile.json5` keeps
-`signingConfigs: []` (signing material is injected locally for emulator installs only).
+(the trigger assertion for the newly consumed reference — an M0-approved budget file; the
+coordinator ruled it stays in this milestone, the verifier's boundary exception is accepted);
+the committed `build-profile.json5` keeps `signingConfigs: []` (signing material is injected
+locally for emulator installs only).
 
 Environment: same as M1–M3 (DevEco 26.0.1.290 / API 26 Beta1, `devphone` emulator at
 127.0.0.1:5557, guest reaches host at 10.0.2.2). Fixture servers on host 8787/8788; every
@@ -102,6 +109,25 @@ feature PRs never run `intl:extract`).
 re-resolves the locale only when the choice is System and the device locale actually moved. The
 catalog reload bumps a `revision` trace so a same-locale reload still re-renders.
 
+**Fix round — the hot-locale blocker (verifier 4b).** A locale switch with the Inbox open left
+the Pinned heading in the previous language: `items()` baked `t('Pinned')` into the list item at
+projection time, and the render read the stored string — the revision trace re-rendered the
+header but never the stored label. The rule now: **projections carry data, translations resolve
+in `build()`**. The inbox projection (`inboxDisplayItems`) is pure — the heading item holds no
+text, the entry builder renders `t('Pinned')`, and the LazyForEach key is locale-independent
+(`heading`, not `heading-<translated>`). The same class was fixed preemptively in the thread:
+day-separator rows carry the timestamp (`dayAt`), and `daySeparatorLabel` resolves at build time.
+Pinned by `HotLocale.test.ets`: the projection carries no baked text, and a real catalog switch
+re-translates `t('Pinned')` and the separator in **both directions** (zh-TW → en and en → zh-TW,
+the two the verifier reproduced); device walkthrough below re-checked both first-return screens.
+
+Device walkthrough (fixture 8787, layout-tree assertions at every step): en inbox shows
+`Chats / Archived / Pinned`; switch 繁體中文 in settings, first Back lands on `聊天 / 已封存 /
+置頂` — no `Pinned` residue; switch back to English, first Back shows `Chats / Archived / Pinned`
+— no `置頂` residue; a second en → zh-TW pass returns to `置頂` again, and the open thread's day
+separator renders `今天 上午10:35` live. The old code reproduced the bug in both directions
+before the fix (verifier 4b captures); the same two directions now pass on the fixed build.
+
 ## Performance calibration
 
 **Font scale / accessibility.** `AppScope/resources/base/profile/configuration.json` opts into
@@ -131,18 +157,61 @@ Per-traversal deltas 44 → 15 → 7 → 2 → −2 MB: the allocator's high-wat
 and one traversal went down — the LazyForEach window (List + `LazyForEach` + `cachedCount(8)`) is
 not building 500 rows, and there is no per-traversal leak.
 
-10k-message thread (100-message recent page, older pages fetched on scroll):
+10k-message thread — **the history window (design §9 R4)**. The original M4 claim ("full
+traversal, memory flat") did not survive independent verification: 40 flings only reached
+`history 9501`, and paging entry-by-entry to `history 1` grew PSS ~81% over the open point —
+every loaded page stayed in the store, so memory grew linearly with history, exactly what R4
+forbids. The fix is the paging window R4 names: **at most 1,000 durable messages stay loaded**
+(`thread/thread-window.ets`, applied at the stream's single commit point, so open/settle/
+disconnect refreshes and prepends all pass through it). Paging back moves the reading position
+to the OLD end, so the window keeps the oldest loaded messages and evicts the NEWEST side —
+evicting the old end would drop the page the reader just loaded. `olderCursor` keeps pointing
+below the oldest loaded message (the next page reads on), and live progress/subagent rows always
+survive. When the newest side was evicted the transcript offers **Jump to latest** (existing
+catalog msgid, mobile's `JumpToLatestButton` pattern): one `threads/get` re-reads the recent page
+without a reopen — the live cursor, run state and stream survive (`historyExpanded` clears, so
+the refresh replaces instead of preserving).
+
+**Why 1,000 (ten server pages of 100):** ~10× a screenful of bubbles, so eviction never fires
+near the reading position; the 500-row inbox calibration above showed the render/allocator
+high-water mark converges around that scale; and the measured plateau below confirms the budget
+holds. The window is a count of messages, not pages, so a short final page cannot shrink it.
+
+Repeatable measurement: **`node apps/harmony/scripts/perf-sample.mjs`** (committed; preconditions
+in its header — fixture 8787, connected emulator, installed app). It seeds 10k, signs in, opens
+the thread, pages to `history 1` through the paging entry (the verifier's route — flings stop
+wherever the window lands; the list's own onReachStart may absorb a page, progress is measured
+by the loaded floor moving older), samples `SP_daemon -r -PID <pid> -print` total PSS (raw kB)
+at open, every 10 pages, at the end, and after Jump to latest; it asserts the traversal really
+reached `history 1` and prints the curve. Re-run numbers (emulator, debug-signed HAP, final
+build of this branch):
+
+| point | PSS (kB) |
+| --- | --- |
+| open + settle (recent 100) | 98,020 |
+| page 10 (window full — 1,000 loaded) | 114,113 |
+| page 20 / 30 / 40 | 105,402 / 114,069 / 114,281 |
+| page 50 / 60 / 70 | 115,111 / 94,893 / 104,776 |
+| page 80 / 90 | 109,027 / 110,337 |
+| end — `history 1` painted, no older entry (98 pages) | 113,643 |
+| after Jump to latest (recent page again) | 114,171 |
+
+Reading: the first ten pages (open → window full) cost ~16 MB; from there to the very first
+message the curve is **flat** (94.9–115.1 MB band, no upward trend across 88 more pages) —
+memory no longer grows with history depth (design R4's goal). Budget: **≤ ~125 MB PSS
+(open + ~28%) for any depth**; the pre-fix build measured +81% over open at the same endpoint.
+The jump back to latest costs nothing (+0.5 MB) and re-reads exactly one page.
+
+The earlier 40-fling numbers are kept only as the record of what the claim was based on; they
+are NOT a full traversal and must not be cited as one:
 
 | point | value |
 | --- | --- |
 | open latency (tap → composer visible, 0.5 s poll bound) | ≤ 1.5 s |
 | PSS after open + settle | 122.5 MB |
-| PSS mid-traversal (20 flings) | 106.0 MB |
-| PSS after full traversal (40 flings, newest → oldest, ~10,000 messages) | 105.5 MB |
+| PSS mid-traversal (20 flings, reached `history 9601`) | 106.0 MB |
+| PSS after 40 flings (reached `history 9501`, NOT the end) | 105.5 MB |
 | per-fling injection cadence | 0.22 s — identical to the inbox's 0.21 s |
-
-End-to-end traversal of all 10k messages, memory **flat and below the post-open point**: paging
-loads history into the store while the render tree stays windowed.
 
 **Frame rate, and why the number is not an fps.** This emulator's composer exposes no frame
 statistics: `SP_daemon -f` reads `fps=0` through every mode (`-print`, `-start/-stop` csv,
@@ -150,18 +219,23 @@ statistics: `SP_daemon -f` reads `fps=0` through every mode (`-print`, `-start/-
 `displaySync` probe delivered zero callbacks even while host-driven flings ran (that probe was
 tried and removed — it cannot work from the test runner's context). The repeatable replacements,
 recorded above: open latency, full-traversal cadence (flat vs the small-list control), and the PSS
-curve. The S5 CI runner (real display) is where `SP_daemon -f` works; the recipe is simply
+curve. The S5 CI runner (real display) is where `SP_daemon -f` works; the recipe is
 `SP_daemon -start -f -PKG com.botone.app -OUT …` around the same fling loop, in the harmony job
-once the runner variables exist.
+once the runner variables exist. **Precondition: a connectable Harmony device with a real
+display** — the recipe is unverified until S5 provides one; the current hosted workflow only
+configures build and upload, and the emulator cannot stand in for it (`fps=0` above).
 
 ## Repeatable emulator smoke — `scripts/smoke.mjs`
 
-`node apps/harmony/scripts/smoke.mjs` walks the whole Phase 1 flow with a loud-failure assertion
+`node apps/harmony/scripts/smoke.mjs` walks the Phase 1 flow with a loud-failure assertion
 at every step: fixture reset → launch → (clean a leftover session) → server page → sign in →
 inbox → open chat → send through the AI-consent gate (waits for the dialog, taps Allow, verifies
 the echo) → receive a fixture-injected bot reply → settings (asserts the model row's server label)
-→ sign out → sign-in page. Preconditions and the run-twice recipe are in the file header; every
-assertion accepts the zh-CN and en strings of the same msgid.
+→ sign out → sign-in page. **Coverage, precisely:** send, the consent gate, the user echo and an
+injected reply — NOT live streaming progress, ask cards or a user-initiated Stop; those ride the
+hypium suites (ThreadRealtime/ConsentGate) and the M3 real-backend runs. Preconditions and the
+run-twice recipe are in the file header; every assertion accepts the zh-CN and en strings of the
+same msgid.
 
 Proven repeatable: **two consecutive full passes on an unchanged build** (plus the passes during
 bring-up). Three timing facts it encodes, all found the hard way:
@@ -175,9 +249,10 @@ bring-up). Three timing facts it encodes, all found the hard way:
 
 ## Offline/error-copy walkthrough
 
-- All 81 msgids the app passes to `t()` exist in the shared catalog (checked mechanically against
-  `packages/i18n/locales/en/messages.po`): no invented strings, no lookups that would silently
-  render English on a zh screen — except the six declared `harmony-strings` above.
+- All 82 msgids the app passes to `t()` exist in the shared catalog (checked mechanically against
+  `packages/i18n/locales/en/messages.po`; the fix round added `Jump to latest`, already cataloged
+  for all three locales): no invented strings, no lookups that would silently render English on a
+  zh screen — except the six declared `harmony-strings` above.
 - No raw ids on error paths: `errorText` shows either the server's message (user copy by contract)
   or catalog copy; the decode sentinel "Unexpected response from the server" — an internal marker
   thrown by ten call sites — used to pass through to the screen in English; it is now classified
@@ -190,7 +265,9 @@ bring-up). Three timing facts it encodes, all found the hard way:
 
 Every Phase 1 screen reviewed from a screenshot (`m4-ux-*.png`): sign-in, server, inbox, archived,
 chat, consent dialog, settings. Per the skill: inventory → remove/merge/disclose → order → one
-accent → newcomer read.
+accent → newcomer read. (`m4-settings-system.png` in the appearance section and
+`m4-ux-settings.png` here are deliberately the same capture — one settings screen, two walkthrough
+references, not two screens.)
 
 - **sign-in** — title, server row + one link, tab pair, two labeled fields, one primary button,
   one secondary, one footer link. Colors: ink, gray, one blue accent. No change.
@@ -237,9 +314,9 @@ The TS alignment path runs in the required unit-tests job, not this workflow: th
 | M2 | offline/recover, kill+reopen, foreground catch-up | hypium ✓ + on-device offline banner (M2 notes) |
 | M2 | archive/restore loop | hypium + on-device ✓ |
 | M2 | 500+ conversations scroll smoothly | measured above (converging memory, flat cadence) ✓ |
-| M3 | full chat loop: send → streaming reply → ask → stop | M3 notes (fixture + real Ollama run) ✓; re-proven by smoke.mjs each run ✓ |
+| M3 | full chat loop: send → streaming reply → ask → stop | M3 notes (fixture + real Ollama run) ✓; smoke.mjs re-proves send/consent/echo/injected reply each run; progress, ask and Stop ride hypium + the M3 runs ✓ |
 | M3 | consent loop (disclose → Allow → send; Not now keeps input) | hypium ConsentGate ✓ + on-device dialog (this milestone's screenshot) ✓ |
-| M3 | 10k thread paging + scrolling | measured above ✓ |
+| M3 | 10k thread paging + scrolling | history window + perf-sample.mjs re-run above ✓ |
 | M3 | unknown block renders a placeholder | M3 notes + hypium ✓ |
 | M4 | SettingsPage (server/model/appearance/language/version/sign-out) | verification matrix above ✓ |
 | M4 | i18n ICU-lite + three catalogs | 1,698 ICU cases + 45 date cases on device ✓ |
@@ -258,7 +335,11 @@ the real backend.
 
 - vitest `apps/harmony/contract`: **83/83** (workspace alignment, layer-1 snapshots incl. the new
   models/list views, layer-2 fixtures incl. the 45-case dates and 1,698-case ICU sets, codegen).
-- hypium full suite (fixture servers on 8787+8788): **145/145** (final build, after the last code
-  change).
+- hypium full suite (fixture servers on 8787+8788): **152/152** after the fix round (145 + 3
+  HotLocale + 3 ThreadWindow + 1 history-window integration case). **Re-run recipe — use a 90 s
+  per-case timeout**, not the M0 example's 30 s: the SSE idle case legitimately waits 45 s, so
+  30 s reports a false 144/145:
+  `hdc shell aa test -b com.botone.app -m entry_test -s unittest OpenHarmonyTestRunner -s timeout 90000`.
 - `pnpm checks`: **152/152**. Biome clean over `apps/harmony`.
 - smoke.mjs: two consecutive passes on the final build.
+- perf-sample.mjs: the 10k page-by-page traversal re-run above (the R4 window's measured curve).
