@@ -1,0 +1,4 @@
+{
+  "enum": ["computerUpdates", "runs", "routines", "meetings", "artifacts", "meetingCalendar"],
+  "type": "string"
+}

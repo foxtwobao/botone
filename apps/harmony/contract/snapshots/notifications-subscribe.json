@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "enum": [
+        "alert",
+        "roster",
+        "computerUpdates",
+        "runs",
+        "routines",
+        "meetings",
+        "artifacts",
+        "meetingCalendar",
+        "organizations",
+        "heartbeat"
+      ],
+      "type": "string"
+    }
+  },
+  "required": ["type"],
+  "type": "object"
+}

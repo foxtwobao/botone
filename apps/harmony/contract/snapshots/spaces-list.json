@@ -4,6 +4,85 @@
     "current": {
       "additionalProperties": false,
       "properties": {
+        "bots": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "color": {
+                "type": "string"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "pinned": {
+                "type": "boolean"
+              },
+              "preview": {
+                "type": "string"
+              },
+              "snoozedUntil": {
+                "type": ["string", "null"]
+              },
+              "status": {
+                "type": "string"
+              },
+              "unread": {
+                "type": "boolean"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "color",
+              "pinned",
+              "unread",
+              "preview",
+              "status",
+              "updatedAt"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "groups": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "pinned": {
+                "type": "boolean"
+              },
+              "preview": {
+                "type": "string"
+              },
+              "snoozedUntil": {
+                "type": ["string", "null"]
+              },
+              "unread": {
+                "type": "boolean"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "name", "pinned", "unread", "preview", "updatedAt"],
+            "type": "object"
+          },
+          "type": "array"
+        },
         "id": {
           "minLength": 1,
           "type": "string"
@@ -12,7 +91,7 @@
           "type": "string"
         }
       },
-      "required": ["id", "name"],
+      "required": ["id", "name", "bots", "groups"],
       "type": "object"
     }
   },

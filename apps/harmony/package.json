@@ -11,6 +11,7 @@
   "devDependencies": {
     "@lingui/core": "6.12.0",
     "@lingui/format-po": "6.12.0",
+    "@orpc/contract": "1.16.2",
     "@rakazo/contracts": "workspace:*",
     "@rakazo/core": "workspace:*",
     "@rakazo/i18n": "workspace:*",

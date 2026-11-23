@@ -1,0 +1,11 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["botId"],
+  "type": "object"
+}
