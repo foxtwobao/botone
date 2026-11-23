@@ -352,3 +352,18 @@ A clean rebuild of the app and test HAPs, with only the final `preserveLiveRows`
 - `jump_to_latest_keeps_live_progress_when_the_server_snapshot_is_ahead`: `expect  equals verify progress before jump`
 
 The first covers a refresh whose cursor equals the live cursor. The second injects another device's durable message through `/__threadEvent` after live progress, so the refreshed snapshot is ahead, contains that message, and contains no progress row. Restoring the call passes the same clean full suite three times: 154 passed, 0 failed. The existing fixture servers on 8787 and 8788 were reused; the committed signing configuration stays empty.
+
+## Base synchronization and fixture isolation
+
+The dependency audit failure on M0 was already fixed on current main by the `effect` override; the
+stack merges that override instead of duplicating it. The required Harmony alignment suite caught
+two new notification kinds, `pages` and `nativeCalendar`. Their snapshots are refreshed from the
+real contract and roster forwards them to their readers (an ignored signal must never block the
+stream); the device replay covers both. The latest catalogs also changed existing ICU fixtures;
+the device replay now checks the number of embedded cases rather than a hard-coded old total.
+
+The consent fixture's delayed-answer timer was originally attached to `req.close`, which Node
+fires when the request body finishes. That cancelled the answer and left the kit waiting until
+its timeout. The timer now attaches to the response close, is bounded to 60 seconds, and is
+`unref()`ed. No product transport or consent semantics changed. The full device replay,
+including the generation-change-in-flight case, passes after the fixture correction.

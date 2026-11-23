@@ -444,8 +444,11 @@ function handleConsentRpc(req, res, body) {
       }
       return rpcError(res, spec.status ?? 500, "INTERNAL", "Server fault");
     };
-    if (typeof spec.delayMs === "number" && spec.delayMs > 0) {
-      setTimeout(answer, spec.delayMs);
+    if (typeof spec.delayMs === "number" && Number.isFinite(spec.delayMs) && spec.delayMs > 0) {
+      // Bound every input-driven delay, and release it when this fixture client disconnects.
+      const timer = setTimeout(answer, Math.min(spec.delayMs, 60_000));
+      timer.unref();
+      res.once("close", () => clearTimeout(timer));
       return;
     }
     return answer();

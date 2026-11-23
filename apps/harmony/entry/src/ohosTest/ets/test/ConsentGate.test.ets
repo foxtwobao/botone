@@ -48,6 +48,18 @@ async function transportPaths(): Promise<string[]> {
   return paths;
 }
 
+/** Wait for a request to actually arrive at the fixture before changing a session or server. */
+async function waitForTransport(expected: string, timeoutMs: number): Promise<void> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if ((await transportPaths()).includes(expected)) return;
+    await new Promise<void>((resolve: () => void): void => {
+      setTimeout(resolve, 10);
+    });
+  }
+  throw new Error(`transport did not reach ${expected}`);
+}
+
 /** No non-gated request body carries the private text (the privacy invariant). */
 async function assertPrivateTextContained(gatedPath: string): Promise<void> {
   const response = await getJson(`${BASE}/__requests`, {}, 8000, 256 * 1024);
@@ -341,10 +353,10 @@ export default function consentGateTest() {
       // is delayed so the session event lands while it is in flight.
       const delayed: Record<string, Object> = {};
       delayed['body'] = statusResponse([recipient('model-key', 'model', true)])['body'];
-      delayed['delayMs'] = 400;
+      delayed['delayMs'] = 200;
       await scriptConsent([statusResponse([recipient('model-key', 'model', false)]), delayed]);
       installPrompt([true], async (): Promise<void> => {
-        // The prompt resolves; the allow fetch is now in flight. Bump the generation mid-flight.
+        // The prompt resolves first; its later token change happens while the allow is in flight.
         setTimeout((): void => {
           void saveSessionToken('fake-token-2');
         }, 100);
