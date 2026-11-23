@@ -216,3 +216,9 @@ arrived on a real RPC.
   consent fixtures grow there. Automatic SSE reconnect after a network fault is the M2/M3 stream
   state machine, not M1.
 - The me page is minimal by design; M2 replaces it with the inbox.
+
+## Base synchronization
+
+Current main's dependency override is merged via M0. The ICU fixture is refreshed from the real
+catalogs (including upstream copy changes). No new procedure or schema is consumed by this layer;
+formatting-only snapshot differences were normalized by the committed generator.
