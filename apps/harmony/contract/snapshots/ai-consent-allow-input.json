@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "keys": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "type": "array"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": ["scope", "version", "keys"],
+  "type": "object"
+}

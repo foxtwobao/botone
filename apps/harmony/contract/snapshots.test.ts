@@ -6,7 +6,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getEventIteratorSchemaDetails } from "@orpc/contract";
-import { appContract, SpaceChangeKind } from "@rakazo/contracts";
+import {
+  appContract,
+  MessageBlock,
+  MessageRole,
+  ProductEventType,
+  RunStatus,
+  SpaceChangeKind,
+} from "@rakazo/contracts";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
@@ -15,10 +22,17 @@ import {
   botView,
   groupsListArchivedView,
   groupView,
+  messageBlockKindsView,
   meView,
   notificationsSubscribeView,
+  runView,
   snapshotViews,
   spacesListView,
+  threadEventView,
+  threadMemberView,
+  threadMessageView,
+  threadSendOutputView,
+  threadSnapshotView,
 } from "../scripts/contract-manifest";
 
 const snapshotDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "snapshots");
@@ -99,6 +113,46 @@ describe("harmony layer-1 contract snapshots", () => {
     )!.yields as z.ZodObject;
     expect(notificationsSubscribeView.shape.type).toBe(yields.shape.type);
     expect(snapshotViews["space-change-kind"]).toBe(SpaceChangeKind);
+
+    // M3: the thread views project the real schemas' own field objects, so a rebind or a field
+    // type mutation goes red even where the view rebuilds a refined input (pickRefined).
+    const snapshotSource = appContract.threads.get["~orpc"].outputSchema!;
+    // The picked scalar fields keep the source's own schemas; messages/members/run/activeRuns
+    // are .extend()ed to the projected element schemas (asserted separately below).
+    for (const key of ["threadId", "cursor", "olderCursor", "botId", "groupId"]) {
+      expect(threadSnapshotView.shape[key], `thread.snapshot.${key}`).toBe(
+        snapshotSource.shape[key],
+      );
+    }
+    expectFields(threadMessageView, snapshotSource.shape.messages.element, "thread.message");
+    expectFields(runView, snapshotSource.shape.run.unwrap(), "thread.run");
+    expectFields(threadMemberView, snapshotSource.shape.members.unwrap().element, "thread.member");
+    // The nested arrays reuse the SAME projected element schemas (not fresh copies).
+    expect(threadSnapshotView.shape.messages.element).toBe(threadMessageView);
+    expect(threadSnapshotView.shape.run.unwrap()).toBe(runView);
+    expect(threadSnapshotView.shape.activeRuns.unwrap().element).toBe(runView);
+    expect(threadSnapshotView.shape.members.unwrap().element).toBe(threadMemberView);
+    expect(snapshotViews["thread-message-page"].shape.messages.element).toBe(threadMessageView);
+    // blocks stays the full MessageBlock union (the render layer degrades unknown kinds).
+    expect(threadMessageView.shape.blocks.element).toBe(MessageBlock);
+    // The send receipt projects the real output's fields.
+    expectFields(
+      threadSendOutputView,
+      appContract.threads.send["~orpc"].outputSchema!,
+      "thread.send",
+    );
+    // The event view IS the real eventIterator yields schema (consumed whole).
+    const threadYields = getEventIteratorSchemaDetails(
+      appContract.threads.subscribe["~orpc"].outputSchema,
+    )!.yields;
+    expect(threadEventView).toBe(threadYields);
+    // The dispatch enums are the real enums, and the kind list covers every MessageBlock variant.
+    expect(snapshotViews["product-event-type"]).toBe(ProductEventType);
+    expect(snapshotViews["run-status"]).toBe(RunStatus);
+    expect(snapshotViews["message-role"]).toBe(MessageRole);
+    expect(messageBlockKindsView.options).toEqual(
+      MessageBlock.options.map((option) => option.shape.kind.value),
+    );
   });
 
   for (const [name, schema] of Object.entries(snapshotViews)) {

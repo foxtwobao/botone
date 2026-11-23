@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "subagent",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "string"
+    },
+    "result": {
+      "type": "string"
+    },
+    "task": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "name", "task"],
+  "type": "object"
+}

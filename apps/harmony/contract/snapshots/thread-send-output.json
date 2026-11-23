@@ -1,0 +1,20 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "runId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "seq": {
+      "maximum": 9007199254740991,
+      "minimum": -9007199254740991,
+      "type": "integer"
+    },
+    "taskId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["taskId", "runId", "seq"],
+  "type": "object"
+}

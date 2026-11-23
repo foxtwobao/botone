@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "card",
+      "type": "string"
+    },
+    "lines": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "k": {
+            "type": "string"
+          },
+          "v": {
+            "type": "string"
+          }
+        },
+        "required": ["k", "v"],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": ["kind", "lines"],
+  "type": "object"
+}

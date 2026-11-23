@@ -24,6 +24,7 @@ import { MAX_MOBILE_RPC_RESPONSE_BYTES } from "@rakazo/mobile/lib/api/api.js";
 import { subscribeThread } from "@rakazo/mobile/lib/api/api-live.js";
 import { normalizeApiBase, probeApiBase } from "@rakazo/mobile/lib/api/endpoint.js";
 import { vi } from "vitest";
+import { generateThreadFixture } from "./gen-thread-fixtures.ts";
 import { readCatalog as readPoCatalog } from "./po.ts";
 
 const localesDir = path.resolve(
@@ -716,4 +717,5 @@ export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>>
   sse: generateSseFixture,
   icu: generateIcuFixture,
   inbox: generateInboxFixture,
+  thread: generateThreadFixture,
 };

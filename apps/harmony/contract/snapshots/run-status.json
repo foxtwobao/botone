@@ -1,0 +1,13 @@
+{
+  "enum": [
+    "queued",
+    "leased",
+    "running",
+    "waiting_input",
+    "waiting_takeover",
+    "completed",
+    "failed",
+    "cancelled"
+  ],
+  "type": "string"
+}

@@ -1,0 +1,17 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "fromBotName": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "bot_message_received",
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "fromBotName", "text"],
+  "type": "object"
+}

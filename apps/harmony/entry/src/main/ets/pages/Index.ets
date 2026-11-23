@@ -8,6 +8,8 @@ import { InboxPage } from '../features/inbox/InboxPage';
 import { MePage } from '../features/me/MePage';
 import { ArchivedPage } from '../features/archived/ArchivedPage';
 import { ServerPage } from '../features/server/ServerPage';
+import { ThreadPage } from '../features/chat/ThreadPage';
+import { takeThreadRoute } from '../features/chat/thread-route';
 
 @Entry
 @ComponentV2
@@ -22,6 +24,13 @@ struct Index {
       ArchivedPage({ stack: this.stack })
     } else if (name === 'account') {
       MePage({ stack: this.stack })
+    } else if (name === 'chat') {
+      ThreadPage({
+        stack: this.stack,
+        botId: takeThreadRoute().botId,
+        groupId: takeThreadRoute().groupId,
+        title: takeThreadRoute().title,
+      })
     }
   }
 

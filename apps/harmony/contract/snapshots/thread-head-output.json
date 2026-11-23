@@ -1,0 +1,16 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "maximum": 9007199254740991,
+      "minimum": -1,
+      "type": "integer"
+    },
+    "threadId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["threadId", "cursor"],
+  "type": "object"
+}
