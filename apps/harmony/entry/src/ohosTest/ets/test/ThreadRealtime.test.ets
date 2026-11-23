@@ -430,6 +430,57 @@ export default function threadRealtimeTest() {
       store.close();
     });
 
+    it('jump_to_latest_keeps_live_progress_and_the_existing_subscription', 0, async () => {
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 1_100;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      try {
+        await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+          'recent page');
+        for (let page = 0; page < 10; page += 1) {
+          await store.loadOlder();
+        }
+        expect(store.awayFromLatest).assertEqual(true);
+
+        const runId = 'jump-progress-run';
+        const prefix = 'verify progress before jump';
+        const suffix = ' plus progress after jump';
+        await inject('run.started', runId, {});
+        const progress: Record<string, Object> = {};
+        progress['delta'] = prefix;
+        await inject('thread.progress', runId, progress);
+        await waitFor((): boolean => liveText(store.snapshot) === prefix, 'live progress before jump');
+        expect(store.working()).assertEqual(true);
+        expect(messageTexts(store.snapshot).includes('history 1100')).assertEqual(false);
+
+        const getsBefore = await requestCount('/rpc/threads/get');
+        const subscribesBefore = await requestCount('/rpc/threads/subscribe');
+        store.jumpToLatest();
+        await waitFor((): boolean => messageTexts(store.snapshot).includes('history 1100'),
+          'jump refresh restores the latest durable page');
+        expect(store.awayFromLatest).assertEqual(false);
+        expect(store.working()).assertEqual(true); // ThreadPage shows Stop while working.
+        expect(await requestCount('/rpc/threads/get')).assertEqual(getsBefore + 1);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+        expect(liveText(store.snapshot)).assertEqual(prefix);
+
+        const delta: Record<string, Object> = {};
+        delta['delta'] = suffix;
+        await inject('thread.progress', runId, delta);
+        await waitFor((): boolean => liveText(store.snapshot).includes(suffix), 'next progress delta');
+        expect(liveText(store.snapshot)).assertEqual(prefix + suffix);
+        expect(store.rows.filter((row): boolean => row.message?.id.startsWith('progress:') === true).length)
+          .assertEqual(1);
+        expect(store.working()).assertEqual(true);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+      } finally {
+        store.close();
+      }
+    });
+
     it('a_live_message_arriving_during_a_page_read_survives_the_prepend', 0, async () => {
       const seed: Record<string, Object> = {};
       seed['botId'] = 'bot-1';
