@@ -13,19 +13,24 @@ on:
         default: macos
         options: [macos, windows]
       arch:
-        description: Architecture (macOS only)
+        description: Architecture (macOS only, all = arm64 + x64)
         type: choice
-        default: arm64
-        options: [arm64, x64, universal]
+        default: all
+        options: [all, arm64, x64, universal]
 
 permissions:
   contents: read
 
 jobs:
   build:
-    name: ${{ inputs.platform }} preview on self-hosted runner
+    name: ${{ inputs.platform }} ${{ matrix.arch }} preview on self-hosted runner
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        # One job per architecture; the single runner executes them one after another.
+        arch: ${{ fromJSON(inputs.platform != 'macos' && '["none"]' || (inputs.arch == 'all' && '["arm64","x64"]' || format('["{0}"]', inputs.arch))) }}
     env:
       CI: "1"
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -51,20 +56,16 @@ jobs:
         run: pnpm --filter @rakazo/web build && pnpm --filter @rakazo/desktop build
       - name: Package macOS app
         if: inputs.platform == 'macos'
-        # icon.png override: the Icon Composer .icon format needs actool from a full Xcode
-        # install; the png-built icns works with Command Line Tools only. Remove the override
-        # after installing Xcode 26+ on the runner machine.
         run: >-
           pnpm --filter @rakazo/desktop exec electron-builder
-          --config ../../.github/builds/desktop.cjs --mac --${{ inputs.arch }} --publish never
-          -c.mac.icon=assets/icon.png
+          --config ../../.github/builds/desktop.cjs --mac --${{ matrix.arch }} --publish never
       - name: Verify macOS app and disabled updater
         if: inputs.platform == 'macos'
         run: |
           set -euo pipefail
           # electron-builder writes the default arch (arm64/x64 on their native host) to
           # out/mac and only universal gets a suffix.
-          app="apps/desktop/out/mac${{ inputs.arch == 'universal' && '-universal' || '' }}/BotONE Preview.app"
+          app="apps/desktop/out/mac${{ matrix.arch == 'universal' && '-universal' || '' }}/BotONE Preview.app"
           codesign --verify --deep --strict "$app"
           test ! -e "$app/Contents/Resources/app-update.yml"
           test -s "$app/Contents/Resources/web/index.html"
@@ -83,12 +84,22 @@ jobs:
           test -s apps/desktop/out/win-unpacked/resources/web/index.html
           node .github/builds/verify-desktop-server.mjs apps/desktop/out/win-unpacked/resources/app.asar
       - name: Retain installers
+        if: inputs.platform == 'macos'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: botone-${{ inputs.platform }}-selfhosted-${{ github.run_number }}
+          name: botone-macos-selfhosted-${{ github.run_number }}-${{ matrix.arch }}
           path: |
             apps/desktop/out/*.dmg
             apps/desktop/out/*.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+      - name: Retain installers
+        if: inputs.platform == 'windows'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-windows-selfhosted-${{ github.run_number }}
+          path: |
             apps/desktop/out/*.exe
           if-no-files-found: error
           compression-level: 0
