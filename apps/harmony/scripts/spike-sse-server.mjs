@@ -444,9 +444,10 @@ function handleConsentRpc(req, res, body) {
       }
       return rpcError(res, spec.status ?? 500, "INTERNAL", "Server fault");
     };
-    if (typeof spec.delayMs === "number" && Number.isFinite(spec.delayMs) && spec.delayMs > 0) {
-      // Bound every input-driven delay, and release it when this fixture client disconnects.
-      const timer = setTimeout(answer, Math.min(spec.delayMs, 60_000));
+    if (spec.delayResponse === true) {
+      // Fixed, short in-flight window for the session-generation case; never a caller-controlled
+      // timer. Release it if this fixture connection closes before its answer is sent.
+      const timer = setTimeout(answer, 1_000);
       timer.unref();
       res.once("close", () => clearTimeout(timer));
       return;
