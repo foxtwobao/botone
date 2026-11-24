@@ -53,11 +53,17 @@ jobs:
     # manual harmony-build-selfhosted workflow uses — because the hosted macOS runners are
     # capacity-starved (queued out and cancelled after 15 minutes). It keeps DevEco Studio
     # installed, so no command-line-tools download either.
-    # Trust boundary: this job must only run repository code — a branch pushed to this
-    # repository, or a pull request whose head branch also lives in this repository (both
-    # require write access). PRs from other forks are skipped, like their deployments; a
-    # public repository must not run untrusted code on a self-hosted machine.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    # Trust boundary: this job runs arbitrary repository code on a persistent personal machine,
+    # so a pull request only reaches it from a hand-pushed development branch (`harmony/*`,
+    # `t3/*`). "Head branch in this repository" is not enough on its own: the dependency-update,
+    # catalog and translation automations open their pull requests from branches here under the
+    # maintainer's own token, and `pnpm install` would run their lifecycle scripts here. Fork
+    # pull requests and every other branch are skipped; the manual workflow remains the way to
+    # build one of those on purpose.
+    if: >-
+      github.event_name == 'push'
+      || startsWith(github.head_ref, 'harmony/')
+      || startsWith(github.head_ref, 't3/')
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 30
     steps:
