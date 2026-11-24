@@ -12,8 +12,25 @@ const biome = path.resolve(
   "../../../node_modules/.bin/biome",
 );
 
-export function writeGenerated(file: string, value: unknown): void {
+export type GeneratedFormatter = (file: string, text: string) => string;
+
+/** Formats `text` the way Biome would format the file at `file`; throws when Biome cannot. */
+export const formatWithBiome: GeneratedFormatter = (file, text) =>
+  execFileSync(biome, ["format", `--stdin-file-path=${file}`], {
+    input: text,
+    encoding: "utf8",
+  });
+
+/**
+ * Writes `value` as the JSON file at `file`, formatted. The file is replaced only once
+ * formatting succeeded, so a failing formatter leaves what was there untouched.
+ */
+export function writeGenerated(
+  file: string,
+  value: unknown,
+  format: GeneratedFormatter = formatWithBiome,
+): void {
+  const formatted = format(file, `${JSON.stringify(value, null, 2)}\n`);
   mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
-  execFileSync(biome, ["format", "--write", file], { stdio: "pipe" });
+  writeFileSync(file, formatted);
 }
