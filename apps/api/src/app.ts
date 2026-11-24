@@ -130,8 +130,8 @@ import { lifecycleEmailScheduler } from "./email/lifecycle-email.js";
 import { marketingEmailRoutes, sendWelcomeEmail } from "./email/marketing-email.js";
 import { sendReferralEmails } from "./email/referral-email.js";
 import type { AppEnv } from "./env.js";
-import { loadEnv, withEnvOverrides } from "./env.js";
-import { createAccountModelSandbox, startForkFeatures } from "./fork-features.js";
+import { withEnvOverrides } from "./env.js";
+import { createAccountModelSandbox, loadForkEnv, startForkFeatures } from "./fork-features.js";
 import { mountAppAssociation } from "./http/app-association.js";
 import {
   clientIpMiddleware,
@@ -253,7 +253,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     now,
     ...envOverrides
   } = overrides;
-  const env = withEnvOverrides(loadEnv(process.env), envOverrides);
+  const env = withEnvOverrides(loadForkEnv(), envOverrides);
   const runtimeEnv: RunRuntimeEnv = { ...env, inboundEmailDomain: env.inboundEmail?.domain };
   const logger = loggerOverride ?? createServiceLogger({ service: SERVICE_NAMES.api });
   installLogger(logger);
