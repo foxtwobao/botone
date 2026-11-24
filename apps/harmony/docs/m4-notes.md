@@ -382,3 +382,16 @@ fires when the request body finishes. That cancelled the answer and left the kit
 its timeout. The timer now attaches to the response close, is bounded to 60 seconds, and is
 `unref()`ed. No product transport or consent semantics changed. The full device replay,
 including the generation-change-in-flight case, passes after the fixture correction.
+
+### S5 hosted verification (final)
+
+The two repository variables are set (26.0.1.290, macOS ARM64 command-line-tools; the signed CDN
+link is valid for ten years, so it is stable as a variable). First hosted run at head `d43743cf1`:
+`Unsigned HAP` in 13m37s including the 2.5 GB download; the toolchain cache was saved, so later
+runs restore it. Artifact `harmony-unsigned-hap` verified locally: 1,460,047-byte unsigned HAP,
+`com.botone.app`, no signature entries. Two fixes the first pass needed, both found by simulating
+a Studio-less machine locally before spending hosted minutes: `DEVECO_CLI_CLT_PATH` must point at
+the tools (otherwise the CLI errors "DevEco Studio installation not found"), and `JAVA_HOME` is
+pinned to the tools' bundled JRE so the packing step's `java` never depends on the runner image.
+The same commit was cherry-picked to all five stacked branches so every PR check runs the fixed
+workflow.
