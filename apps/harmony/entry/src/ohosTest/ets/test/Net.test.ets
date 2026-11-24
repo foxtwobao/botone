@@ -111,8 +111,8 @@ export default function netTest() {
       const body = parseJsonObject(response.body);
       const builds = body!['clientBuilds'] as Object[];
       expect(builds.length > 0).assertTrue();
-      // Phase 1 reuses the mobile build series: kind mobile, a 14-digit UTC build id.
-      expect(/^mobile\/\d{14}$/.test(builds[builds.length - 1] as string)).assertTrue();
+      // The client's own kind: harmony, and a 14-digit UTC build id.
+      expect(/^harmony\/\d{14}$/.test(builds[builds.length - 1] as string)).assertTrue();
     });
 
     it('rpc_401_without_space_clears_the_session', 0, async () => {
