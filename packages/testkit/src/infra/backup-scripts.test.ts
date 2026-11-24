@@ -297,8 +297,9 @@ if (!matches) {
   process.exit(system.status ?? 1);
 }
 const regex = new RegExp("^(?:" + rest[9] + ")$");
+// lstat, like find's default -P: a symlink to a directory is not a directory entry.
 for (const name of fs.readdirSync(root)) {
-  if (regex.test(root + "/" + name) && fs.statSync(root + "/" + name).isDirectory()) console.log(root + "/" + name);
+  if (regex.test(root + "/" + name) && fs.lstatSync(root + "/" + name).isDirectory()) console.log(root + "/" + name);
 }
 `,
     );
