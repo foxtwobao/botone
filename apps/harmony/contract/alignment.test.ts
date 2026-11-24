@@ -2,7 +2,13 @@
 // ArkTS code ports from is reachable by name. The layer-1 snapshots and layer-2 behavior
 // fixtures (design §4.3) grow from these imports in M1/M3; keeping them real is what the
 // import-boundaries unused rule and the changed-areas devDep assertion pin.
-import { CLIENT_UPDATE_REQUIRED_STATUS } from "@rakazo/contracts";
+import {
+  buildIdAt,
+  CLIENT_BUILD_HEADER,
+  CLIENT_UPDATE_REQUIRED_STATUS,
+  formatClientBuild,
+  parseClientBuild,
+} from "@rakazo/contracts";
 import { IDLE_TIMEOUT_MS } from "@rakazo/core";
 import { messages as en } from "@rakazo/i18n/locales/en/messages.po";
 import { normalizeApiBase } from "@rakazo/mobile/lib/api/endpoint.js";
@@ -12,6 +18,15 @@ import { describe, expect, it } from "vitest";
 describe("harmony workspace alignment", () => {
   it("pins the update-required status the rpc layer ports", () => {
     expect(CLIENT_UPDATE_REQUIRED_STATUS).toBe(426);
+  });
+
+  it("names the build in the shape the server's handshake accepts", () => {
+    // Phase 1 reuses the mobile build series: gen-client-build.ts stamps buildIdAt(new Date())
+    // and the ArkTS net layer sends `mobile/<id>` under this header on every RPC.
+    const build = buildIdAt(new Date());
+    const header = formatClientBuild("mobile", build);
+    expect(CLIENT_BUILD_HEADER).toBe("x-rakazo-client-build");
+    expect(parseClientBuild(header)).toEqual({ kind: "mobile", build });
   });
 
   it("pins the half-open idle timeout the realtime layer ports", () => {
