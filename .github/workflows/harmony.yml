@@ -72,8 +72,14 @@ jobs:
       - name: Build unsigned HAP
         env:
           DEVECO_SDK_HOME: ${{ runner.temp }}/command-line-tools/sdk
+          # Without a DevEco Studio on the runner, the CLI must be pointed at the tools
+          # (verified locally: it errors "DevEco Studio installation not found" otherwise).
+          DEVECO_CLI_CLT_PATH: ${{ runner.temp }}/command-line-tools
+          # The packing step spawns `java`; pin it to the JRE bundled with the tools so it
+          # never depends on whatever java the runner image happens to put on PATH.
+          JAVA_HOME: ${{ runner.temp }}/command-line-tools/tool/jre.app/Contents/Home
         run: |
-          export PATH="$RUNNER_TEMP/command-line-tools/bin:$PATH"
+          export PATH="$JAVA_HOME/bin:$RUNNER_TEMP/command-line-tools/bin:$PATH"
           npm install -g @deveco/deveco-cli@1.3.0-stable
           cd apps/harmony
           ohpm install
