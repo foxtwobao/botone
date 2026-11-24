@@ -1,0 +1,80 @@
+name: BotONE HarmonyOS build (self-hosted)
+
+# Manual-only build of the unsigned HarmonyOS HAP on the personal macOS ARM64 runner
+# registered to this repository, using the DevEco Studio installed on that machine
+# (HARMONY_DEVECO_STUDIO_PATH repository variable, default ~/Applications/DevEco-Studio.app).
+# Deliberately manual only: never add pull_request or push triggers here, because
+# a public repository must not run untrusted code on a self-hosted machine.
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+# Workflow-level so `uses:` actions inherit them too: direct connections to GitHub and
+# nodejs.org download hosts time out from this runner's network (same as the desktop workflow).
+env:
+  HTTPS_PROXY: ${{ vars.RUNNER_PROXY_URL || 'http://127.0.0.1:7897' }}
+  HTTP_PROXY: ${{ vars.RUNNER_PROXY_URL || 'http://127.0.0.1:7897' }}
+  NO_PROXY: localhost,127.0.0.1
+
+jobs:
+  build:
+    name: Build unsigned HAP
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      # Fail at once, before the long dependency install, when the toolchain or the app is absent.
+      - name: Locate DevEco Studio and its bundled SDK
+        id: deveco
+        env:
+          STUDIO_PATH: ${{ vars.HARMONY_DEVECO_STUDIO_PATH }}
+        run: |
+          set -euo pipefail
+          studio="${STUDIO_PATH:-$HOME/Applications/DevEco-Studio.app}"
+          if [ ! -d "$studio/Contents/sdk" ]; then
+            echo "::error::DevEco Studio with its bundled SDK was not found at $studio. Install it there (a symlink to another volume works), or set the HARMONY_DEVECO_STUDIO_PATH repository variable."
+            exit 1
+          fi
+          if [ ! -d apps/harmony ]; then
+            echo "::error::This ref has no apps/harmony. Choose a branch that carries the HarmonyOS app."
+            exit 1
+          fi
+          # Resolve symlinks so every tool reports one toolchain root.
+          echo "path=$(cd "$studio" && pwd -P)" >> "$GITHUB_OUTPUT"
+      # Self-hosted runners have no node preinstalled, so every node step must come
+      # after setup-node. No GitHub Actions cache: the machine keeps its own pnpm store.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          # The HarmonyOS package needs no Electron binary, so skip its download entirely.
+          export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
+          pnpm install --frozen-lockfile
+      - name: Generate tokens, catalogs and fixture constants
+        run: pnpm --filter @rakazo/harmony harmony:codegen
+      # The committed build profile has no signing configuration, so this package is unsigned,
+      # exactly like the pull-request build in harmony.yml. Signing stays a separate workflow.
+      - name: Build unsigned HAP
+        env:
+          DEVECO_CLI_STUDIO_PATH: ${{ steps.deveco.outputs.path }}
+          DEVECO_CLI_DISABLE_TELEMETRY: "1"
+        run: |
+          set -euo pipefail
+          npm install -g @deveco/deveco-cli@1.3.0-stable
+          cd apps/harmony
+          devecocli build
+          test -s entry/build/default/outputs/default/entry-default-unsigned.hap
+      - name: Retain HarmonyOS package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: botone-harmony-hap-${{ github.run_number }}
+          path: apps/harmony/entry/build/default/outputs/default/entry-default-unsigned.hap
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
