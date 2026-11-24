@@ -116,9 +116,7 @@ def handler(path: str):
             response = upstream.getresponse()
             self.send_response(response.status)
             for name, value in response.getheaders():
-                if name.lower() not in ("connection", "content-length", "transfer-encoding") and not any(
-                    c in name + value for c in "\r\n"
-                ):
+                if name.lower() not in ("connection", "content-length", "transfer-encoding") and "\r" not in name + value and "\n" not in name + value:
                     self.send_header(name, value)
             self.send_header("transfer-encoding", "chunked")
             self.end_headers()
