@@ -1,0 +1,14 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "farewell": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "voice_call",
+      "type": "string"
+    }
+  },
+  "required": ["kind", "title", "farewell"],
+  "type": "object"
+}

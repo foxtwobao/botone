@@ -1,0 +1,14 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "meta",
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "text"],
+  "type": "object"
+}

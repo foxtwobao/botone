@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "change": {
+      "enum": ["created", "updated", "enabled", "disabled", "deleted"],
+      "type": "string"
+    },
+    "kind": {
+      "const": "routine_event",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "type": "string"
+    }
+  },
+  "required": ["kind", "change", "name"],
+  "type": "object"
+}

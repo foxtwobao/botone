@@ -6,7 +6,7 @@ import { describe, expect, it, beforeAll, beforeEach, afterEach } from '@ohos/hy
 import { abilityDelegatorRegistry } from '@kit.TestKit';
 import { rosterStore } from '../../../main/ets/stores/roster-store';
 import { archivedStore } from '../../../main/ets/stores/archived-store';
-import { holdRoster } from '../../../main/ets/realtime/roster';
+import { activeRosterStream, holdRoster } from '../../../main/ets/realtime/roster';
 import { foreground } from '../../../main/ets/realtime/foreground';
 import { queryCache } from '../../../main/ets/query/query-cache';
 import { initServerStore, switchServer } from '../../../main/ets/net/server-store';
@@ -102,6 +102,9 @@ export default function rosterRealtimeTest() {
 
     afterEach(async () => {
       foreground.set(true);
+      // Stop the stream even when a case failed before its release() — a leaked notifications
+      // stream keeps the session's connection pool busy and starves the next suite's requests.
+      activeRosterStream()?.stop();
       await clearSessionToken();
       setSelectedSpace('');
       queryCache.clear();

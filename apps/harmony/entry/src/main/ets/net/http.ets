@@ -72,8 +72,12 @@ export async function requestJson(method: http.RequestMethod, url: string, heade
     if (err instanceof RpcError) {
       throw err;
     }
-    const message = err instanceof Error ? (err as Error).message : String(err);
-    const code = err instanceof Error ? String((err as BusinessError).code ?? '') : '';
+    // The kit rejects with a plain BusinessError object ({code, message}), not an Error instance;
+    // read its fields directly so the user copy survives ("Operation timeout", not [object Object]).
+    const record = err !== null && typeof err === 'object' ? err as Record<string, Object> : null;
+    const rawMessage = record !== null && typeof record['message'] === 'string' ? record['message'] as string : '';
+    const message = err instanceof Error ? (err as Error).message : rawMessage || String(err);
+    const code = record !== null && record['code'] !== undefined ? String(record['code']) : '';
     throw new RpcError(message || code, 0, '', -1, !timedOut, timedOut);
   } finally {
     clearTimeout(timer);

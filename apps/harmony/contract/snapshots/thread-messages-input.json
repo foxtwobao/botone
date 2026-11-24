@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "before": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "type": "object"
+}

@@ -1,0 +1,17 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "fromLabel": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "channel_message",
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "fromLabel", "text"],
+  "type": "object"
+}

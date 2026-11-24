@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "type": "string"
+    },
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "messageId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "runId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["runId", "messageId", "answer"],
+  "type": "object"
+}

@@ -9,11 +9,17 @@ import sessionTest from './Session.test';
 import netTest from './Net.test';
 import sseTransportTest from './SseTransport.test';
 import realBackendSmoke from './RealBackendSmoke.test';
+import realThreadSmoke from './RealThreadSmoke.test';
 import inboxProjectionTest from './InboxProjection.test';
 import queryCacheTest from './QueryCache.test';
 import rosterStreamTest from './RosterStream.test';
 import saveControllerTest from './SaveController.test';
 import rosterRealtimeTest from './RosterRealtime.test';
+import threadReducerTest from './ThreadReducer.test';
+import threadRenderTest from './ThreadRender.test';
+import threadStreamTest from './ThreadStream.test';
+import threadRealtimeTest from './ThreadRealtime.test';
+import consentGateTest from './ConsentGate.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -23,6 +29,8 @@ export default function testsuite() {
   icuTest();
   decodeTest();
   inboxProjectionTest();
+  threadReducerTest();
+  threadRenderTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();
@@ -33,7 +41,11 @@ export default function testsuite() {
   queryCacheTest();
   rosterStreamTest();
   saveControllerTest();
+  threadStreamTest();
+  threadRealtimeTest();
+  consentGateTest();
   rosterRealtimeTest();
-  // Opt-in real-backend smoke; skips loudly without -s realBase.
+  // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();
+  realThreadSmoke();
 }

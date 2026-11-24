@@ -1,0 +1,18 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "activity": {
+      "const": true,
+      "type": "boolean"
+    },
+    "kind": {
+      "const": "progress",
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "text"],
+  "type": "object"
+}

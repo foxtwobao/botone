@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "ok": {
+      "const": true,
+      "type": "boolean"
+    },
+    "unreadAfterSeq": {
+      "anyOf": [
+        {
+          "maximum": 9007199254740991,
+          "minimum": -9007199254740991,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": ["ok", "unreadAfterSeq"],
+  "type": "object"
+}

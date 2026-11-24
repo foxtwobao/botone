@@ -1,0 +1,93 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": {},
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "runId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "seq": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "spaceId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "threadId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "thread.message.created",
+        "thread.cleared",
+        "thread.message.updated",
+        "thread.message.reaction",
+        "thread.progress",
+        "thread.artifact",
+        "thread.ask",
+        "thread.choice",
+        "thread.meta",
+        "thread.computer",
+        "thread.subagent",
+        "thread.cloud_agent",
+        "thread.call.ended",
+        "run.started",
+        "run.steering.claimed",
+        "run.checkpointed",
+        "run.waiting_input",
+        "run.completed",
+        "run.failed",
+        "run.cancelled",
+        "computer.status",
+        "computer.takeover.requested",
+        "computer.takeover.granted",
+        "computer.takeover.released",
+        "computer.command",
+        "memory.revised",
+        "routine.created",
+        "routine.updated",
+        "routine.fired",
+        "skill.teaching.started",
+        "skill.teaching.stopped",
+        "skill.draft.created",
+        "skill.saved",
+        "effect.recorded",
+        "agent.tool.called",
+        "agent.tool.completed",
+        "effect.reconciled",
+        "usage.recorded",
+        "bot.spawned",
+        "bot.updated",
+        "bot.archived",
+        "bot.deleted",
+        "group.created",
+        "group.updated",
+        "group.handoff",
+        "heartbeat"
+      ],
+      "type": "string"
+    }
+  },
+  "required": ["id", "spaceId", "threadId", "botId", "seq", "type", "createdAt", "payload"],
+  "type": "object"
+}
