@@ -1,9 +1,35 @@
+import path from "node:path";
 import { DesktopHarness, hostIpcSchemas } from "@rakazo/adapters/host-harness";
 import type { BrowserWindow } from "electron";
 import { app, dialog, net } from "electron";
+import { desktop } from "./desktop-state.js";
 import { t } from "./i18n.js";
 import type { IpcCaller } from "./ipc/ipc.js";
 import { handleIpc } from "./ipc/ipc.js";
+
+let stopBeforeQuit: ((event: { preventDefault(): void }) => boolean) | undefined;
+
+/** The local agent routes of the running app, stopped before it quits. */
+export function startDesktopHarness(
+  userDataDir: string,
+  currentOrigin: () => string | null,
+  originForEvent: (event: IpcCaller) => string | null,
+) {
+  stopBeforeQuit = prepareDesktopHarness({
+    root: path.join(userDataDir, "harness"),
+    currentOrigin,
+    originForEvent,
+    mainWindow: () => desktop.mainWindow,
+    onQuitFailure: () => {
+      desktop.quitting = false;
+    },
+  });
+}
+
+/** True while a local task holds the quit until it has stopped. */
+export function stopDesktopHarnessBeforeQuit(event: { preventDefault(): void }) {
+  return stopBeforeQuit?.(event) ?? false;
+}
 
 /** Electron supplies trusted IPC, session cookies, native consent and quit ordering. */
 export function prepareDesktopHarness(options: {

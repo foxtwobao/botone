@@ -1,9 +1,14 @@
+import path from "node:path";
 import type * as HarnessModule from "@rakazo/adapters/host-harness";
 import { DesktopHarness } from "@rakazo/adapters/host-harness";
 import type { BrowserWindow, WebContents } from "electron";
 import { app, dialog, net } from "electron";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { prepareDesktopHarness } from "./host-harness.js";
+import {
+  prepareDesktopHarness,
+  startDesktopHarness,
+  stopDesktopHarnessBeforeQuit,
+} from "./host-harness.js";
 import type { IpcCaller } from "./ipc/ipc.js";
 import { handleIpc } from "./ipc/ipc.js";
 
@@ -194,5 +199,25 @@ describe("desktop harness boundary", () => {
     await vi.waitFor(() => expect(f.onQuitFailure).toHaveBeenCalledOnce());
     expect(dialog.showErrorBox).toHaveBeenCalledOnce();
     expect(app.quit).not.toHaveBeenCalled();
+  });
+
+  it("starts under the user data folder and holds quit from the app's before-quit", async () => {
+    startDesktopHarness(
+      "fixture-user-data",
+      () => "https://product.example.test",
+      () => null,
+    );
+    const options = vi.mocked(DesktopHarness).mock.calls.at(-1)![0];
+    expect(options.root).toBe(path.join("fixture-user-data", "harness"));
+    expect(options.currentOrigin()).toBe("https://product.example.test");
+    const profiles = vi
+      .mocked(handleIpc)
+      .mock.calls.find(([name]) => name === "desktop.harness.profiles")![1];
+    expect(await profiles({} as IpcCaller, null)).toEqual([]);
+    expect(harness.profiles).not.toHaveBeenCalled();
+    harness.hasRuns.mockReturnValue(true);
+    const event = { preventDefault: vi.fn() };
+    expect(stopDesktopHarnessBeforeQuit(event)).toBe(true);
+    expect(event.preventDefault).toHaveBeenCalledOnce();
   });
 });

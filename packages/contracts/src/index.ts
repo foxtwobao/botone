@@ -62,6 +62,8 @@ export * from "./labs.js";
 export * from "./meetings/calendar.js";
 export * from "./meetings/meetings.js";
 export * from "./model-account.js";
+export * from "./models/deployment-model.js";
+export * from "./models/media-models.js";
 export * from "./models/model-backups.js";
 export * from "./models/model-connections.js";
 export * from "./models/model-headers.js";

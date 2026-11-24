@@ -16,7 +16,7 @@ vi.mock("@lingui/react/macro", () => ({
 vi.mock("@rakazo/chat-ui/web", () => ({
   ChatMarkdown: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
-vi.mock("../../lib/routines/cron", () => ({ cronLabels: () => ({}) }));
+vi.mock("@rakazo/i18n/cron", () => ({ cronLabels: () => ({}) }));
 
 import { BotMarketplaceDetail } from "./bot-marketplace-detail";
 

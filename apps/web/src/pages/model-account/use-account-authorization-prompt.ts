@@ -7,12 +7,10 @@ import { modelAccountConfigQuery, modelAccountStatusQuery } from "./queries";
 const prompted = new Set<string>();
 
 /** Show required setup once per session and state, preserving the current conversation. */
-export function useAccountAuthorizationPrompt(
-  userId: string | undefined,
-  open: () => void,
-  visible = false,
-) {
-  const sessionId = authClient.useSession().data?.session?.id;
+export function useAccountAuthorizationPrompt(open: () => void, visible = false) {
+  const session = authClient.useSession().data;
+  const userId = session?.user.id;
+  const sessionId = session?.session?.id;
   const config = useQuery({ ...modelAccountConfigQuery, enabled: Boolean(userId) });
   const accountMode = Boolean(userId && config.data?.enabled && config.data.modelAccountOnly);
   const status = useQuery({

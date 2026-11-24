@@ -41,7 +41,7 @@ vi.mock("../../lib/query/query", () => ({
   }),
 }));
 vi.mock("../../lib/query/user-error", () => ({ errorText: (error: Error) => error.message }));
-vi.mock("../../lib/routines/cron", () => ({ cronLabels: () => ({}) }));
+vi.mock("@rakazo/i18n/cron", () => ({ cronLabels: () => ({}) }));
 vi.mock("@rakazo/core", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@rakazo/core")>()),
   formatCron: (cron: string) => `at ${cron}`,

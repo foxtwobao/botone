@@ -1,13 +1,15 @@
 {
   "enum": [
     "computerUpdates",
+    "deploymentModel",
     "runs",
     "routines",
     "meetings",
     "artifacts",
     "meetingCalendar",
     "pages",
-    "nativeCalendar"
+    "nativeCalendar",
+    "preferences"
   ],
   "type": "string"
 }

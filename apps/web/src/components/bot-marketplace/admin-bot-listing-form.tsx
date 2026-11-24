@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { MarketplaceBotAdminRow, MarketplaceBotSource } from "@rakazo/contracts";
 import { formatCron } from "@rakazo/core";
+import { cronLabels } from "@rakazo/i18n/cron";
 import {
   Button,
   Checkbox,
@@ -19,7 +20,6 @@ import { useId, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSave, useSpaceQueries } from "../../lib/query/query";
 import { errorText } from "../../lib/query/user-error";
-import { cronLabels } from "../../lib/routines/cron";
 import type { ListingForm } from "./admin-bot-form";
 import {
   BOT_CATEGORIES,

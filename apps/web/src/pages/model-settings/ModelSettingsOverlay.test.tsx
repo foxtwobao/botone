@@ -33,6 +33,8 @@ const models = vi.hoisted(() => ({
   role: vi.fn(),
   forRole: vi.fn(),
   setRole: vi.fn(),
+  media: vi.fn(),
+  setMedia: vi.fn(),
   credentials: vi.fn(),
   connect: vi.fn(),
   disconnect: vi.fn(),
@@ -370,6 +372,8 @@ beforeEach(() => {
   vi.mocked(rpc.me).mockResolvedValue(account("deepseek", "deepseek-chat"));
   models.list.mockResolvedValue([deepseekEntry]);
   models.credentials.mockResolvedValue([]);
+  const noMedia = { options: [], selected: null };
+  models.media.mockResolvedValue({ image: noMedia, video: noMedia });
   autoReview.get.mockResolvedValue({
     mode: "ask",
     enabled: false,

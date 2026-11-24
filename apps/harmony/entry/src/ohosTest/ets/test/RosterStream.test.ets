@@ -99,11 +99,13 @@ export default function rosterStreamTest() {
       setSelectedSpace('');
     });
 
-    it('space_change_kinds_are_the_eight_enum_values', 0, () => {
+    it('space_change_kinds_are_the_ten_enum_values', 0, () => {
       expect(isSpaceChangeKind('runs')).assertTrue();
       expect(isSpaceChangeKind('computerUpdates')).assertTrue();
       expect(isSpaceChangeKind('pages')).assertTrue();
       expect(isSpaceChangeKind('nativeCalendar')).assertTrue();
+      expect(isSpaceChangeKind('deploymentModel')).assertTrue();
+      expect(isSpaceChangeKind('preferences')).assertTrue();
       expect(isSpaceChangeKind('roster')).assertFalse();
       expect(isSpaceChangeKind('organizations')).assertFalse();
       expect(isSpaceChangeKind('heartbeat')).assertFalse();
@@ -117,12 +119,16 @@ export default function rosterStreamTest() {
       const fx = new OpenFixture((conn: FakeConn): void => {
         conn.emit('pages');
         conn.emit('nativeCalendar');
+        conn.emit('deploymentModel');
+        conn.emit('preferences');
       });
       const stream = new RosterStream();
       const running = stream.follow(fx.open);
-      await waitFor((): boolean => kinds.length === 2, 'new space signals reach their readers');
+      await waitFor((): boolean => kinds.length === 4, 'new space signals reach their readers');
       expect(kinds[0]).assertEqual('pages');
       expect(kinds[1]).assertEqual('nativeCalendar');
+      expect(kinds[2]).assertEqual('deploymentModel');
+      expect(kinds[3]).assertEqual('preferences');
       stream.stop();
       await running;
       offKind();

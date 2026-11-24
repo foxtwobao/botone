@@ -15,6 +15,7 @@ import {
   OPENAI_COMPATIBLE_PROVIDER_ID,
 } from "@rakazo/contracts";
 import { createAccountModelRole } from "@rakazo/core";
+import { thinkingLevelLabel } from "@rakazo/i18n/thinking-level";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { AccessibilityInfo, StyleSheet, Text } from "react-native";
 import type { RpcArgs } from "../lib/api/api";
@@ -22,7 +23,6 @@ import { captureApiRequestContext, currentApiBase, rpc } from "../lib/api/api";
 import { mobileTokens } from "../lib/appearance/appearance";
 import { useI18n } from "../lib/model-account-i18n";
 import type { ModelPickerRequest } from "../lib/models/model-picker-selection";
-import { thinkingLevelLabel } from "../lib/models/thinking-level";
 import { useThemedStyles } from "../lib/native/native";
 import { RowMenu } from "./models/model-role-settings";
 import { SettingsGroup, SettingsRow } from "./settings/settings-group";
