@@ -30,7 +30,7 @@ const run = (file, args, opts = {}) =>
 const sh = (cmd) => run("/bin/sh", ["-c", cmd]);
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-function dumpTexts() {
+function dumpNodes() {
   let raw = "";
   try {
     raw = sh("devecocli ui layout --format json 2>/dev/null");
@@ -52,23 +52,24 @@ function dumpTexts() {
       return;
     }
     const text = typeof node.text === "string" ? node.text : "";
-    if (text) out.push({ text, bounds: node.bounds ?? [] });
+    if (text || node.id) out.push({ text, id: node.id, bounds: node.bounds ?? [] });
     for (const child of node.children ?? []) walk(child);
   };
   walk(parsed);
   return out;
 }
 
-const findText = (...variants) =>
-  dumpTexts().find((entry) => variants.some((v) => entry.text.includes(v))) ?? null;
+const findNode = (...variants) =>
+  dumpNodes().find((entry) => variants.some((v) => entry.id === v || entry.text.includes(v))) ??
+  null;
 
 function waitFor(label, variants, timeoutMs = 15_000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const hit = findText(...variants);
+    const hit = findNode(...variants);
     if (hit) return hit;
     if (Date.now() > deadline) {
-      const seen = dumpTexts()
+      const seen = dumpNodes()
         .map((e) => e.text)
         .join(" | ");
       throw new Error(`waitFor(${label}) timed out; screen: ${seen.slice(0, 400)}`);
@@ -137,7 +138,7 @@ function launch() {
 /** The oldest `history N` text currently painted (the transcript's floor). */
 function oldestHistoryOnScreen() {
   let oldest = null;
-  for (const entry of dumpTexts()) {
+  for (const entry of dumpNodes()) {
     const match = entry.text.match(/^history (\d+)$/);
     if (match) {
       const seq = Number(match[1]);
@@ -155,7 +156,7 @@ try {
   launch();
 
   // A leftover session would land on the inbox; sign out first so every pass starts clean.
-  if (findText("聊天", "Chats")) {
+  if (findNode("聊天", "Chats")) {
     tap(1168, 234);
     tapText("退出登录", "Sign out");
     waitFor("sign-in", ["欢迎回来", "Welcome back"]);
@@ -164,7 +165,7 @@ try {
   typeAt(300, 1560, PASSWORD);
   sh('hdc shell "uitest uiInput keyEvent Back"');
   sleep(500);
-  const submit = dumpTexts()
+  const submit = dumpNodes()
     .filter((e) => e.text === "登录" || e.text === "Sign in" || e.text === "登入")
     .sort((a, b) => a.bounds[1] - b.bounds[1])
     .pop();
@@ -173,7 +174,7 @@ try {
   waitFor("inbox", ["聊天", "Chats"]);
 
   tapText("Alpha");
-  waitFor("composer", ["发送", "Send"]);
+  waitFor("composer", ["thread-send"]);
   sleep(1500); // settle: the recent page painted, stream open
   const pid = appPid();
   const openKb = sample(pid, "open");
@@ -185,7 +186,7 @@ try {
   let pages = 0;
   const expectedPages = Math.ceil(COUNT / PAGE) - 1;
   for (;;) {
-    const load = findText("加载更早的消息", "載入更早的訊息", "Load earlier messages");
+    const load = findNode("加载更早的消息", "載入更早的訊息", "Load earlier messages");
     if (!load) break; // the first message is painted; no older page exists
     const floorBefore = oldestHistoryOnScreen();
     tap(...center(load.bounds));
@@ -193,7 +194,7 @@ try {
     const deadline = Date.now() + 15_000;
     for (;;) {
       const floor = oldestHistoryOnScreen();
-      const entryGone = !findText("加载更早的消息", "載入更早的訊息", "Load earlier messages");
+      const entryGone = !findNode("加载更早的消息", "載入更早的訊息", "Load earlier messages");
       const movedOlder = floor !== null && floorBefore !== null && floor < floorBefore;
       if (movedOlder || (entryGone && floor !== null && floor <= PAGE)) break;
       if (Date.now() > deadline) {
