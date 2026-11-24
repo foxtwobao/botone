@@ -355,6 +355,27 @@ importers:
         specifier: 2.9.1
         version: 2.9.1
 
+  apps/harmony:
+    devDependencies:
+      '@rakazo/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@rakazo/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@rakazo/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@rakazo/mobile':
+        specifier: workspace:*
+        version: link:../mobile
+      '@rakazo/ui-tokens':
+        specifier: workspace:*
+        version: link:../../packages/ui-tokens
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   apps/mobile:
     dependencies:
       '@expo/metro-runtime':

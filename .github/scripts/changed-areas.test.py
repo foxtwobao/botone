@@ -177,6 +177,44 @@ class ChangedAreasTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(areas(write(path)), expected)
 
+    def test_harmony_alignment_sources_select_every_unit_shard(self):
+        # The harmony contract tests consume these sources, so a change to any of them must
+        # select the unit shards that execute those tests. changed-areas.sh needs no edit:
+        # its apps/*/* and packages/*/* globs already cover every path below.
+        cases = [
+            ("apps/harmony/entry/src/main/ets/pages/Index.ets", expect(*PRODUCT)),
+            ("apps/harmony/contract/snapshots/health.json", expect(*PRODUCT)),
+            ("packages/contracts/src/threads/threads-rpc.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/core/src/threads/thread-snapshot-events.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/core/src/messages/events.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/core/src/runs/run-state.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/core/src/primitives/retry-policy.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/core/src/account/ai-consent.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/ui-tokens/src/index.ts", expect(*EVERY_BROWSER_AREA)),
+            ("packages/i18n/locales/en/messages.po", expect(*PRODUCT)),
+            ("apps/mobile/lib/api/api.ts", expect()),
+            ("apps/mobile/lib/api/api-live.ts", expect()),
+            ("vitest.config.ts", expect(*EVERY_BROWSER_AREA, "all_packages")),
+        ]
+        for path, expected in cases:
+            with self.subTest(path=path):
+                self.assertEqual(areas(write(path)), expected)
+
+    def test_harmony_devdeps_cover_the_packages_its_alignment_tests_consume(self):
+        # These devDep edges are what make turbo ls --affected select apps/harmony for a pure
+        # i18n or mobile change, so shard selection reaches the alignment tests themselves.
+        repo = SCRIPT.parents[2]
+        data = json.loads((repo / "apps/harmony/package.json").read_text())
+        deps = {
+            name
+            for name, spec in data.get("devDependencies", {}).items()
+            if str(spec).startswith("workspace:")
+        }
+        self.assertLessEqual(
+            {"@rakazo/contracts", "@rakazo/core", "@rakazo/ui-tokens", "@rakazo/i18n", "@rakazo/mobile"},
+            deps,
+        )
+
     def test_repo_checks_and_unrelated_workflows_skip_the_product_suites(self):
         # Lint and typecheck runs the repo checks' own tests on every pull request.
         cases = [

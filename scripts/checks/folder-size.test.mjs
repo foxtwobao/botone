@@ -32,6 +32,8 @@ test("counts direct children and skips tests, evals, generated files and vendor 
     "a/test_capture.py",
     "a/notes.md",
     "a/capture.c",
+    "a/four.ets",
+    "a/four.test.ets",
     "a/b/three.ts",
     "db/generated/client.ts",
     "packages/testkit/src/cli/evals.ts",
@@ -40,7 +42,7 @@ test("counts direct children and skips tests, evals, generated files and vendor 
     "packages/testkit/src/evals/suites/recall.ts",
     "packages/ui-web/src/components/ui/button.tsx",
   ]);
-  assert.deepEqual(Object.fromEntries(counts), { a: 2, "a/b": 1, "packages/testkit/src/cli": 1 });
+  assert.deepEqual(Object.fromEntries(counts), { a: 3, "a/b": 1, "packages/testkit/src/cli": 1 });
   assert.deepEqual(oversized(new Map([["a", LIMIT + 2]]), { a: LIMIT + 5 }), []);
   assert.deepEqual(oversized(new Map([["a", LIMIT + 2]]), {}), [
     { folder: "a", count: LIMIT + 2, allowed: LIMIT },
