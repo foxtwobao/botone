@@ -375,6 +375,176 @@ export default function threadRealtimeTest() {
       store.close();
     });
 
+    it('history_window_caps_loaded_pages_and_jump_returns_to_latest', 0, async () => {
+      // Design §9 R4: memory must not grow linearly with history. The window caps loaded history
+      // at 1,000 durable messages, keeping the old end (the reading position) and evicting the
+      // newest side; "Jump to latest" re-reads the recent page without a reopen (the live cursor
+      // and stream survive).
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 10_000;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+        'recent page');
+      expect(store.awayFromLatest).assertEqual(false);
+      // Nine older pages fill the window exactly: 1,000 messages, nothing evicted yet.
+      for (let page = 0; page < 9; page += 1) {
+        await store.loadOlder();
+      }
+      await waitFor((): boolean => store.snapshot!.messages.length === 1000, 'window full');
+      expect(messageTexts(store.snapshot)[0]).assertEqual('history 9001');
+      expect(store.awayFromLatest).assertEqual(false);
+      expect(store.olderCursor).assertEqual(9001);
+      // The tenth page: the window keeps the OLD end (the reading position) and evicts the
+      // newest 100 — it slides, it never grows, and the freshly loaded page survives.
+      await store.loadOlder();
+      await waitFor((): boolean => store.snapshot!.messages.length === 1000
+        && messageTexts(store.snapshot)[0] === 'history 8901', 'window slides');
+      const texts = messageTexts(store.snapshot);
+      expect(texts[999]).assertEqual('history 9900');
+      expect(store.olderCursor).assertEqual(8901);
+      expect(store.awayFromLatest).assertEqual(true);
+      // A settle refresh keeps the window (preserveHistory inside the cap), never re-inflates it.
+      const runPayload: Record<string, Object> = {};
+      runPayload['trigger'] = 'user';
+      await inject('run.started', 'run-window', runPayload);
+      await waitFor((): boolean => store.working(), 'run working');
+      await inject('run.completed', 'run-window', {});
+      await waitFor((): boolean => !store.working(), 'run settled');
+      await pause(400);
+      expect(store.snapshot!.messages.length).assertEqual(1000);
+      expect(messageTexts(store.snapshot)[0]).assertEqual('history 8901');
+      // Jump to latest: one threads/get re-reads the recent page without a reopen — the stream
+      // survives (a reopen would re-subscribe AND re-get with a new open read first).
+      const getsBefore = await requestCount('/rpc/threads/get');
+      const subscribesBefore = await requestCount('/rpc/threads/subscribe');
+      store.jumpToLatest();
+      await waitFor((): boolean => store.snapshot!.messages.length === 100
+        && messageTexts(store.snapshot)[99] === 'history 10000', 'back at latest');
+      expect(await requestCount('/rpc/threads/get')).assertEqual(getsBefore + 1);
+      expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+      expect(store.awayFromLatest).assertEqual(false);
+      expect(store.olderCursor).assertEqual(9901);
+      store.close();
+    });
+
+    // Same-cursor refresh: the server snapshot has no progress row, but its cursor does not pass the live one.
+    // The next case is the ahead-cursor refresh, where the snapshot itself moves the transcript.
+    it('jump_to_latest_keeps_live_progress_and_the_existing_subscription_at_equal_cursor', 0, async () => {
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 1_100;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      try {
+        await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+          'recent page');
+        for (let page = 0; page < 10; page += 1) {
+          await store.loadOlder();
+        }
+        expect(store.awayFromLatest).assertEqual(true);
+
+        const runId = 'jump-progress-run';
+        const prefix = 'verify progress before jump';
+        const suffix = ' plus progress after jump';
+        await inject('run.started', runId, {});
+        const progress: Record<string, Object> = {};
+        progress['delta'] = prefix;
+        await inject('thread.progress', runId, progress);
+        await waitFor((): boolean => liveText(store.snapshot) === prefix, 'live progress before jump');
+        expect(store.working()).assertEqual(true);
+        expect(messageTexts(store.snapshot).includes('history 1100')).assertEqual(false);
+
+        const getsBefore = await requestCount('/rpc/threads/get');
+        const subscribesBefore = await requestCount('/rpc/threads/subscribe');
+        store.jumpToLatest();
+        await waitFor((): boolean => messageTexts(store.snapshot).includes('history 1100'),
+          'jump refresh restores the latest durable page');
+        expect(store.awayFromLatest).assertEqual(false);
+        expect(store.working()).assertEqual(true); // ThreadPage shows Stop while working.
+        expect(await requestCount('/rpc/threads/get')).assertEqual(getsBefore + 1);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+        expect(liveText(store.snapshot)).assertEqual(prefix);
+
+        const delta: Record<string, Object> = {};
+        delta['delta'] = suffix;
+        await inject('thread.progress', runId, delta);
+        await waitFor((): boolean => liveText(store.snapshot).includes(suffix), 'next progress delta');
+        expect(liveText(store.snapshot)).assertEqual(prefix + suffix);
+        expect(store.rows.filter((row): boolean => row.message?.id.startsWith('progress:') === true).length)
+          .assertEqual(1);
+        expect(store.working()).assertEqual(true);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+      } finally {
+        store.close();
+      }
+    });
+
+    it('jump_to_latest_keeps_live_progress_when_the_server_snapshot_is_ahead', 0, async () => {
+      const seed: Record<string, Object> = {};
+      seed['botId'] = 'bot-1';
+      seed['count'] = 1_100;
+      await postJson(`${BASE}/__threadSeed`, {}, JSON.stringify(seed), 8000, 64 * 1024);
+      const store = new ThreadStore();
+      store.open('bot-1', '', ME_USER);
+      try {
+        await waitFor((): boolean => store.snapshot !== null && store.snapshot!.messages.length === 100,
+          'recent page');
+        for (let page = 0; page < 10; page += 1) {
+          await store.loadOlder();
+        }
+        expect(store.awayFromLatest).assertEqual(true);
+
+        const runId = 'ahead-progress-run';
+        const prefix = 'verify progress before jump';
+        const suffix = ' plus progress after jump';
+        await inject('run.started', runId, {});
+        const progress: Record<string, Object> = {};
+        progress['delta'] = prefix;
+        await inject('thread.progress', runId, progress);
+        await waitFor((): boolean => liveText(store.snapshot) === prefix, 'live progress before jump');
+
+        const hidden: Record<string, Object> = {};
+        hidden['botId'] = 'bot-1';
+        hidden['type'] = 'thread.message.created';
+        const payload: Record<string, Object> = {};
+        payload['messageId'] = 'ahead-durable-message';
+        payload['seq'] = 1_101;
+        payload['role'] = 'user';
+        const block: Record<string, Object> = {};
+        block['kind'] = 'text';
+        block['text'] = 'message from another device';
+        payload['blocks'] = [block];
+        hidden['payload'] = payload;
+        await postJson(`${BASE}/__threadEvent`, {}, JSON.stringify(hidden), 8000, 64 * 1024);
+
+        const getsBefore = await requestCount('/rpc/threads/get');
+        const subscribesBefore = await requestCount('/rpc/threads/subscribe');
+        store.jumpToLatest();
+        await waitFor((): boolean => messageTexts(store.snapshot).includes('message from another device'),
+          'jump refresh merges the newer server snapshot');
+        expect(store.awayFromLatest).assertEqual(false);
+        expect(store.working()).assertEqual(true);
+        expect(await requestCount('/rpc/threads/get')).assertEqual(getsBefore + 1);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+        expect(liveText(store.snapshot)).assertEqual(prefix);
+
+        const delta: Record<string, Object> = {};
+        delta['delta'] = suffix;
+        await inject('thread.progress', runId, delta);
+        await waitFor((): boolean => liveText(store.snapshot).includes(suffix), 'next progress delta');
+        expect(liveText(store.snapshot)).assertEqual(prefix + suffix);
+        expect(store.rows.filter((row): boolean => row.message?.id.startsWith('progress:') === true).length)
+          .assertEqual(1);
+        expect(store.working()).assertEqual(true);
+        expect(await requestCount('/rpc/threads/subscribe')).assertEqual(subscribesBefore);
+      } finally {
+        store.close();
+      }
+    });
     it('a_live_message_arriving_during_a_page_read_survives_the_prepend', 0, async () => {
       const seed: Record<string, Object> = {};
       seed['botId'] = 'bot-1';

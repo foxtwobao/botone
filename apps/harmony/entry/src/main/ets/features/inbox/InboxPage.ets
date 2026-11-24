@@ -6,7 +6,8 @@
 // msgids; the account and server entries stay reachable from the header.
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
-import { ChatAvatar, UnreadDot, formatRowTime, previewSnippet } from '../../uikit/avatar';
+import { ChatAvatar, UnreadDot, previewSnippet } from '../../uikit/avatar';
+import { formatRowTime } from '../../i18n/dates';
 import { ListSource } from '../../uikit/list-source';
 import { ActionButton, ErrorText } from '../../uikit/controls';
 import { t } from '../../i18n/i18n';
@@ -20,10 +21,33 @@ import { setThreadRoute } from '../chat/thread-route';
 import type { ThreadRoute } from '../chat/thread-route';
 
 /** A list entry: the optional Pinned heading, or a chat row. */
-class DisplayItem {
+export class DisplayItem {
   type: string = 'row';
-  title: string = '';
   row: InboxRow | null = null;
+}
+
+/** The list projection: the heading when any row is pinned, then every row in server order.
+ * Pure — no translation is baked into the items (a hot locale switch must not leave the old
+ * language on screen); the heading renders t('Pinned') inside build(), which i18n re-traces. */
+export function inboxDisplayItems(rows: InboxRow[]): DisplayItem[] {
+  const items: DisplayItem[] = [];
+  if (rows.some((row: InboxRow): boolean => row.pinned)) {
+    const heading = new DisplayItem();
+    heading.type = 'heading';
+    items.push(heading);
+  }
+  for (const row of rows) {
+    const item = new DisplayItem();
+    item.type = 'row';
+    item.row = row;
+    items.push(item);
+  }
+  return items;
+}
+
+/** The LazyForEach key: locale-independent, so a locale switch re-renders the heading in place. */
+export function inboxItemKey(item: DisplayItem): string {
+  return item.type === 'heading' ? 'heading' : rowKey(item.row!);
 }
 
 @ComponentV2
@@ -35,9 +59,9 @@ export struct InboxPage {
   private offChanges: (() => void) | null = null;
 
   aboutToAppear(): void {
-    this.source.reload(this.items());
+    this.source.reload(inboxDisplayItems(this.store.rows));
     this.offChanges = this.store.subscribeChanges((): void => {
-      this.source.reload(this.items());
+      this.source.reload(inboxDisplayItems(this.store.rows));
     });
     this.holder.start();
     void this.store.load();
@@ -47,24 +71,6 @@ export struct InboxPage {
     this.offChanges?.();
     this.offChanges = null;
     this.holder.stop();
-  }
-
-  private items(): DisplayItem[] {
-    const rows = this.store.rows;
-    const items: DisplayItem[] = [];
-    if (rows.some((row: InboxRow): boolean => row.pinned)) {
-      const heading = new DisplayItem();
-      heading.type = 'heading';
-      heading.title = t('Pinned');
-      items.push(heading);
-    }
-    for (const row of rows) {
-      const item = new DisplayItem();
-      item.type = 'row';
-      item.row = row;
-      items.push(item);
-    }
-    return items;
   }
 
   private archiveTarget(row: InboxRow): Record<string, Object> {
@@ -89,7 +95,7 @@ export struct InboxPage {
   @Builder
   entry(item: DisplayItem) {
     if (item.type === 'heading') {
-      Text(item.title)
+      Text(t('Pinned'))
         .fontSize(typeScale.secondary.fontSize)
         .fontColor(appearance.tokens().mutedForeground)
         .width('100%')
@@ -191,9 +197,9 @@ export struct InboxPage {
         }
         .width(32)
         .height(32)
-        .accessibilityText(t('Account'))
+        .accessibilityText(t('Settings'))
         .onClick((): void => {
-          this.stack.pushPathByName('account', null);
+          this.stack.pushPathByName('settings', null);
         })
       }
       .width('100%')
@@ -257,8 +263,7 @@ export struct InboxPage {
             ListItem() {
               this.entry(item)
             }
-          }, (item: DisplayItem): string =>
-            item.type === 'heading' ? `heading-${item.title}` : rowKey(item.row!))
+          }, (item: DisplayItem): string => inboxItemKey(item))
         }
         .layoutWeight(1)
         .width('100%')

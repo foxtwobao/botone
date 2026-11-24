@@ -289,7 +289,7 @@
         "body": "{\"json\":{\"ok\":false}}"
       },
       "ok": false,
-      "error": "That URL did not look like a Rakazo server"
+      "error": "That URL did not look like a BotONE server"
     },
     {
       "input": "https://error.example",
@@ -298,7 +298,7 @@
         "body": "{\"error\":{\"message\":\"nope\"}}"
       },
       "ok": false,
-      "error": "That URL did not look like a Rakazo server"
+      "error": "That URL did not look like a BotONE server"
     },
     {
       "input": "https://html.example",
@@ -307,7 +307,7 @@
         "body": "<html>proxy</html>"
       },
       "ok": false,
-      "error": "That URL did not look like a Rakazo server"
+      "error": "That URL did not look like a BotONE server"
     },
     {
       "input": "https://404.example",
@@ -316,7 +316,7 @@
         "body": "{\"json\":{}}"
       },
       "ok": false,
-      "error": "That URL did not look like a Rakazo server"
+      "error": "That URL did not look like a BotONE server"
     },
     {
       "input": "https://down.example",

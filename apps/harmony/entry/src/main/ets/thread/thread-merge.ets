@@ -2,6 +2,7 @@
 // thread-snapshot-events.ts (mergeThreadSnapshot / reconcileRefreshedThread): a threads/get refresh
 // behind the live cursor must not wipe newer event-sourced state, and a stale equal-cursor refresh
 // must not clobber a local waiting_takeover. Split out of thread-snapshot.ets (the 1,000-line cap).
+import { blockKind } from './live-blocks';
 import { copyRun, isActive, withSnapshot } from './thread-snapshot';
 import type { LiveMessage, LiveRun, ThreadSnapshot } from './thread-snapshot';
 
@@ -20,6 +21,39 @@ function mergeMessagesById(first: LiveMessage[], second: LiveMessage[]): LiveMes
 
 function isDurableMessage(message: LiveMessage): boolean {
   return !message.id.startsWith('progress:') && !message.id.startsWith('subagent:');
+}
+
+/** A recent page can omit SSE rows even while their runs are still streaming. */
+function preserveLiveRows(previous: ThreadSnapshot, refreshed: ThreadSnapshot): ThreadSnapshot {
+  const runningIds = new Set<string>();
+  for (const run of refreshed.activeRuns) {
+    if (run.status === 'running') {
+      runningIds.add(run.id);
+    }
+  }
+  if (runningIds.size === 0) {
+    return refreshed;
+  }
+  const live = previous.messages.filter((message: LiveMessage): boolean =>
+    !isDurableMessage(message) && message.runId !== undefined && runningIds.has(message.runId));
+  if (live.length === 0) {
+    return refreshed;
+  }
+  const refreshedIds: Set<string> = new Set();
+  for (const message of refreshed.messages) {
+    refreshedIds.add(message.id);
+    for (const block of message.blocks) {
+      if (blockKind(block) === 'subagent' && typeof block['agentId'] === 'string') {
+        refreshedIds.add(`subagent:${block['agentId']}`);
+      }
+    }
+  }
+  const missing = live.filter((message: LiveMessage): boolean => !refreshedIds.has(message.id));
+  if (missing.length === 0) {
+    return refreshed;
+  }
+  return withSnapshot(refreshed, refreshed.cursor, [...refreshed.messages, ...missing],
+    refreshed.run, refreshed.activeRuns, refreshed.members);
 }
 
 /** Keep loaded history older than the recent page, then the recent page (core mergeMessagePages). */
@@ -113,5 +147,6 @@ export function reconcileRefreshedThread(prev: ThreadSnapshot | null, snap: Thre
     snapshot = withSnapshot(snapshot, snapshot.cursor, snapshot.messages, waitingRun, activeRuns,
       snapshot.members);
   }
-  return snapshot;
+  // Jump to latest replaces the history page, but the open stream still owns its live rows.
+  return sameThread && prev !== null ? preserveLiveRows(prev, snapshot) : snapshot;
 }

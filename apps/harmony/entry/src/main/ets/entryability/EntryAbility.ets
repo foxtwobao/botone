@@ -13,28 +13,27 @@
  * limitations under the License.
  */
 
-import { AbilityConstant, Configuration, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
+import { AbilityConstant, Configuration, UIAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { app } from '../app/app-state';
 import { appearance } from '../uikit/theme';
 import { foreground } from '../realtime/foreground';
+import { i18nStore } from '../i18n/i18n';
 
 const DOMAIN = 0x0000;
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
-    try {
-      // System controls (dialogs, pickers) follow the system mode; the palette resolves it too.
-      this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
-    } catch (err) {
-      hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
-    }
+    // The appearance preference (system/light/dark) is applied by AppearanceStore.init once the
+    // window exists; setting a color mode here would override a saved manual choice.
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
   }
 
   onConfigurationUpdate(newConfig: Configuration): void {
     appearance.update(newConfig.colorMode);
+    // A system language change re-resolves the catalog when the locale choice is System.
+    void i18nStore.systemLocaleChanged();
   }
 
   onDestroy(): void {

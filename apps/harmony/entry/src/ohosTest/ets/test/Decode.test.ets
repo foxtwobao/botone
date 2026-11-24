@@ -9,6 +9,8 @@ import {
   decodeGroupList,
   decodeHealth,
   decodeMe,
+  decodeModelCatalog,
+  decodeModelCatalogEntry,
   decodeOk,
   decodeRoster,
   decodeSpaceNavigation,
@@ -154,6 +156,41 @@ export default function decodeTest() {
       expect(decodeOk(JSON.parse('{"ok":false}'))).assertFalse();
       expect(decodeOk(JSON.parse('{}'))).assertFalse();
       expect(decodeOk(null)).assertFalse();
+    });
+
+    it('model_catalog_reads_the_four_whitelisted_fields', 0, () => {
+      const entry = decodeModelCatalogEntry(JSON.parse(
+        '{"provider":"p1","id":"m1","label":"Fast Model","providerName":"Maker",'
+        + '"billing":"credits","managed":true,"unknownExtra":{"x":1}}'));
+      expect(entry !== null).assertTrue();
+      expect(entry!.provider).assertEqual('p1');
+      expect(entry!.id).assertEqual('m1');
+      expect(entry!.label).assertEqual('Fast Model');
+      expect(entry!.providerName).assertEqual('Maker');
+      // providerName is optional: absent and null both read as null, a non-string fails.
+      expect(decodeModelCatalogEntry(JSON.parse('{"provider":"p","id":"m","label":"L"}'))!.providerName)
+        .assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse(
+        '{"provider":"p","id":"m","label":"L","providerName":null}'))!.providerName).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse(
+        '{"provider":"p","id":"m","label":"L","providerName":7}'))).assertNull();
+    });
+
+    it('model_catalog_rejects_missing_consumed_fields_and_drops_bad_rows', 0, () => {
+      expect(decodeModelCatalogEntry(JSON.parse('{"id":"m","label":"L"}'))).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse('{"provider":"p","label":"L"}'))).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse('{"provider":"p","id":"m"}'))).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse('{"provider":"","id":"m","label":"L"}'))).assertNull();
+      expect(decodeModelCatalogEntry(null)).assertNull();
+      // A bad row is dropped, not fatal; a non-array fails whole.
+      const list = decodeModelCatalog(JSON.parse(
+        '[{"provider":"p","id":"m1","label":"L1"},{"id":"bad"},{"provider":"p","id":"m2","label":"L2"}]'));
+      expect(list !== null).assertTrue();
+      expect(list!.length).assertEqual(2);
+      expect(list![0].id).assertEqual('m1');
+      expect(list![1].id).assertEqual('m2');
+      expect(decodeModelCatalog(JSON.parse('{}'))).assertNull();
+      expect(decodeModelCatalog(null)).assertNull();
     });
   });
 }

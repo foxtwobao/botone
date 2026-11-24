@@ -10,6 +10,7 @@ import { setConsentPrompt } from '../../net/consent';
 import { t } from '../../i18n/i18n';
 import { consentTitle } from '../../i18n/harmony-strings';
 import { app } from '../../app/app-state';
+import { appearance } from '../../uikit/theme';
 
 /** One ask: resolves true only on an explicit Allow; every other exit is Not now. */
 function askOnce(recipient: AiRecipient, privacyUrl: string | undefined): Promise<boolean> {
@@ -22,15 +23,20 @@ function askOnce(recipient: AiRecipient, privacyUrl: string | undefined): Promis
       settled = true;
       resolve(allowed);
     };
+    // One ink action (Allow) and one quiet way out; the policy stays a link. Three
+    // same-colored text buttons read as three equal choices (ux-declutter M4).
     const buttons: AlertDialogButtonOptions[] = [
       {
         value: t('Not now'),
+        fontColor: appearance.tokens().mutedForeground,
         action: (): void => {
           finish(false);
         },
       },
       {
         value: t('Allow'),
+        fontColor: appearance.tokens().foreground,
+        primary: true,
         action: (): void => {
           finish(true);
         },
@@ -39,6 +45,7 @@ function askOnce(recipient: AiRecipient, privacyUrl: string | undefined): Promis
     if (privacyUrl !== undefined && privacyUrl.length > 0) {
       const link: AlertDialogButtonOptions = {
         value: t('Privacy policy'),
+        fontColor: appearance.tokens().link,
         action: (): void => {
           // Opening the policy is not an answer; the dialog stays for the decision.
           void app.openExternal(privacyUrl);

@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "providerName": {
+      "type": "string"
+    }
+  },
+  "required": ["provider", "id", "label"],
+  "type": "object"
+}

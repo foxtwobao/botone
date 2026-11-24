@@ -86,27 +86,6 @@ export struct UnreadDot {
   }
 }
 
-/** Row time: today as HH:mm, otherwise a numeric date (localized dates arrive with M4). */
-export function formatRowTime(iso: string, now: number): string {
-  const date = new Date(iso);
-  const time = date.getTime();
-  if (Number.isNaN(time)) {
-    return '';
-  }
-  const pad = (value: number): string => value < 10 ? `0${value}` : `${value}`;
-  const startOfDay = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const dayDiff = Math.round((startOfDay(new Date(now)) - startOfDay(date)) / 86_400_000);
-  if (dayDiff <= 0) {
-    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  }
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  if (date.getFullYear() !== new Date(now).getFullYear()) {
-    return `${date.getFullYear()}/${month}/${day}`;
-  }
-  return `${month}/${day}`;
-}
-
 /** A one-line preview snippet; an empty preview reads as the shared "No messages yet" msgid. */
 export function previewSnippet(preview: string, max: number): string {
   const flat = preview.replace(/\s+/g, ' ').trim();

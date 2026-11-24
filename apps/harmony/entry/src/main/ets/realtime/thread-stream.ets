@@ -20,6 +20,7 @@ import {
   rememberTerminalRun,
 } from '../thread/thread-snapshot';
 import { reconcileRefreshedThread } from '../thread/thread-merge';
+import { trimHistoryWindow } from '../thread/thread-window';
 import type { ThreadEvent, ThreadSnapshot } from '../thread/thread-snapshot';
 
 /** Opens one threads/subscribe stream; injectable so the state machine replays offline. */
@@ -119,10 +120,13 @@ export class ThreadStream {
     return this.snapshot;
   }
 
-  /** Commit a snapshot built outside the stream (the send receipt), keeping the cursor. */
+  /** Commit a snapshot built outside the stream (the send receipt), keeping the cursor. The
+   * history window (design §9 R4) is applied here — the one point every snapshot passes through
+   * (refresh, live reduce, receipt, prepend), so loaded history never exceeds the cap. */
   commit(snapshot: ThreadSnapshot | null): void {
-    this.snapshot = snapshot;
-    this.deps.commit(snapshot);
+    const windowed = snapshot === null ? null : trimHistoryWindow(snapshot);
+    this.snapshot = windowed;
+    this.deps.commit(windowed);
   }
 
   private delay(ms: number): Promise<void> {
@@ -181,6 +185,16 @@ export class ThreadStream {
     return this.refreshRunning;
   }
 
+  /** One user-driven refresh (the store's jumpToLatest): same coalesced read the settle events
+   * use; a failure only delays the jump — the live events already carry the state. */
+  async refreshNow(input: Record<string, Object>): Promise<void> {
+    const context = await captureContext();
+    if (this.stopped || context.generation !== currentSessionGeneration()) {
+      return;
+    }
+    await this.refreshOnce(context, input);
+  }
+
   /** threads/get → reconcile against the live snapshot; a stale answer never rolls state back. */
   private async refresh(context: RpcContext, input: Record<string, Object>): Promise<void> {
     const value = await this.fetch(context, input);
@@ -191,7 +205,7 @@ export class ThreadStream {
     if (next === null) {
       throw new RpcError('Unexpected response from the server');
     }
-    const merged = reconcileRefreshedThread(this.snapshot, next, this.historyExpanded);
+    const merged = trimHistoryWindow(reconcileRefreshedThread(this.snapshot, next, this.historyExpanded));
     this.snapshot = merged;
     // The live cursor is the replay position; a refresh behind it must not rewind the stream.
     this.cursor = Math.max(this.cursor, merged.cursor);
@@ -292,8 +306,7 @@ export class ThreadStream {
     const previous = this.snapshot;
     const reduced = reduceThreadSnapshot(previous, event);
     if (reduced !== previous) {
-      this.snapshot = reduced;
-      this.deps.commit(reduced);
+      this.commit(reduced);
     }
     if (event.type === 'thread.message.created') {
       this.deps.onUnread?.(event);
