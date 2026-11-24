@@ -184,13 +184,17 @@ Decision: **Phase 1 reuses the mobile build series.** `scripts/gen-client-build.
 mobile sends it. Rationale: zero upstream contract changes — the server's existing
 `RAKAZO_MIN_CLIENT_BUILD` mobile gate applies to harmony builds immediately, and an unnamed
 client would never be refused. Trade-off accepted for Phase 1: harmony cannot be gated
-separately from mobile. A harmony-specific kind needs an upstream `CLIENT_KINDS` entry —
-**Phase 2 upstream PR list: add `harmony` to `CLIENT_KINDS` in
-`packages/contracts/src/clients/client-build.ts` (+ its parse/format/minimum tests), then switch
-the generator and header to it.** Coverage: the alignment test pins the header name and that
-`parseClientBuild` accepts the generated shape; the fixture server records every
-`x-rakazo-client-build` it receives and `rpc_names_the_client_build` asserts `mobile/<14 digits>`
-arrived on a real RPC.
+separately from mobile.
+
+**Phase 2 update (PR #60, done):** `harmony` is now a `CLIENT_KINDS` entry in
+`packages/contracts/src/clients/client-build.ts` (with its parse/format/minimum tests), and the
+generator and header switched to it: every RPC, pinned SSE context and sign-out delivery carries
+`harmony/<id>`, and `RAKAZO_MIN_CLIENT_BUILD` accepts `harmony=YYYYMMDDHHMMSS`. Deploy order:
+upgrade the API before shipping a build that sends `harmony/` (an older API treats it as an
+unnamed client and never gates it, and refuses to start if `harmony=` is already set); while old
+and new HarmonyOS builds coexist, configure both `mobile=` and `harmony=`. Coverage is unchanged
+except the pinned value: the alignment test and `rpc_names_the_client_build` (hypium `Net.test.ets`)
+assert `harmony/<14 digits>` arrived on a real RPC.
 
 ## Upstream files
 
@@ -211,7 +215,6 @@ arrived on a real RPC.
   `HARMONY_CMDLINE_TOOLS_*` repository variables; the codegen step is wired but the hosted build
   has not produced an artifact yet.
 - Real-device acceptance (M0/M1 DoD remains real-device; emulator used here as instructed).
-- Upstream PR: `harmony` client kind in `CLIENT_KINDS` (see the client-build decision).
 - M2 roster stream + QueryCache + inbox; M3 reducer port + consent gate; the layer-2 reducer and
   consent fixtures grow there. Automatic SSE reconnect after a network fault is the M2/M3 stream
   state machine, not M1.

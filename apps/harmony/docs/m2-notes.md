@@ -126,7 +126,7 @@ verified that way; all three builds pass from the clean checkout.
 - M4: localized row dates (currently today=HH:mm else numeric date), snooze wake clock,
   500+-row scroll/memory measurement, settings page, full CI runner verification (S5).
 - Real-device acceptance (M0–M2 DoD remains real-device; emulator used here as instructed).
-- Upstream PR: `harmony` client kind in `CLIENT_KINDS` (carried from M1).
+- Upstream PR: `harmony` client kind in `CLIENT_KINDS` (carried from M1) — done in Phase 2 (PR #60).
 
 ## Base synchronization
 

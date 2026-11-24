@@ -110,7 +110,9 @@ To retire old clients immediately, set `RAKAZO_MIN_CLIENT_BUILD` on the API, for
 get HTTP 426 `CLIENT_UPDATE_REQUIRED`: the web app reloads, and the mobile app offers its update.
 Read the current build from the `x-rakazo-build` header of any `/rpc` response. Requests that name
 no build, such as webhooks and API tools, are never refused. A malformed value stops the API from
-starting rather than being ignored.
+starting rather than being ignored. The HarmonyOS app sends `harmony/` and the time its package was
+built, so `harmony=` gates those builds; upgrade the API before releasing one, because an older API
+treats `harmony/` as an unnamed build and refuses to start when `harmony=` is set.
 
 ## Content-Security-Policy
 
