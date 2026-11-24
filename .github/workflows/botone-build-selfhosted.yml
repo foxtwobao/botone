@@ -78,7 +78,14 @@ jobs:
         with:
           node-version: 24
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - name: Install dependencies and Electron binary
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
+          pnpm install --frozen-lockfile
+      # The HarmonyOS package needs no Electron: a failed Electron download must not fail it.
+      - name: Install Electron binary
+        if: inputs.platform != 'harmony'
         run: |
           set -euo pipefail
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
