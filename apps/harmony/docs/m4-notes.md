@@ -293,6 +293,21 @@ verification is still blocked** on the repo variables `HARMONY_CMDLINE_TOOLS_URL
 unset (by design). To unblock: pick the release on the download center, set both variables, run
 the workflow once on a branch touching `apps/harmony/**`.
 
+**S5 on the self-hosted runner.** The owner chose the repository's manual self-hosted macOS ARM64
+runner for now: `botone-build-selfhosted.yml` gained `platform: harmony`. It is `workflow_dispatch`
+only, like the rest of that workflow (a public repository must not run pull-request code on a
+personal machine), finds the DevEco Studio installed on the runner (`HARMONY_DEVECO_STUDIO_PATH`
+repository variable, default `~/Applications/DevEco-Studio.app`), runs the codegen and
+`devecocli build`, and uploads the unsigned HAP for 7 days. Desktop-only steps (the Electron
+binary, the web/desktop build, packaging) are skipped. Evidence: run 45324006653 on `fcf27a41c`
+— "harmony preview on self-hosted runner" in 4m35s, artifact `botone-harmony-selfhosted-12`
+(1,460,047-byte `entry-default-unsigned.hap`, bundle `com.botone.app`, no signature entries). A
+first run (45323021878) failed in the shared install step on the Electron binary download, which
+the HarmonyOS package does not use; that step is now split so it cannot recur. Not covered here:
+the hosted `macos-26` path (still behind the two variables), hypium on CI (needs a device), and the
+real-display fps recipe. The runner is persistent, which differs from design B-4's short-lived
+isolated-runner condition; that is the owner's decision for this repository.
+
 The TS alignment path runs in the required unit-tests job, not this workflow: the vitest include
 (`apps/harmony/contract`), the devDep edges (contracts, core, ui-tokens, i18n, mobile) that make
 `turbo ls --affected` select `apps/harmony` for a pure i18n/mobile change, and the
@@ -305,7 +320,7 @@ The TS alignment path runs in the required unit-tests job, not this workflow: th
 | --- | --- | --- |
 | M0 | debug-signed HAP installs and starts on a device | emulator ✓ (debug-signed install + launch, every session); **real device ✗ — no device/account exists (§9 R3), the known Phase 1 leftover** |
 | M0 | S1–S6 written conclusions | m0-spike.md ✓ (S5: CI loud-fail design; blocked on repo variables, see CI above) |
-| M0 | CI can produce an unsigned HAP | harmony.yml ✓ (blocked on S5 variables, not on code) |
+| M0 | CI can produce an unsigned HAP | ✓ on the self-hosted runner (CI section); the hosted harmony.yml path stays behind the S5 variables, not on code |
 | M1 | login → me → sign-out → re-login against a real server | fixture ✓ (hypium + smoke, both servers); real backend ✓ (M1/M3 runs, API_PORT=3110); **real device ✗ (same leftover)** |
 | M1 | token survives restart; server switch rolls back | hypium SessionAndSignOut ✓ + on-emulator restart checks ✓ |
 | M1 | 401/426/timeout/unreachable copy; retry/endpoint fixtures | hypium Net/Retry/Endpoint ✓; catalog copy audit above ✓ |
