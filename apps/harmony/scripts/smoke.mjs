@@ -39,7 +39,7 @@ const step = (name, fn) => {
 };
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-function dumpTexts() {
+function dumpNodes() {
   let raw = "";
   try {
     raw = sh("devecocli ui layout --format json 2>/dev/null");
@@ -61,25 +61,28 @@ function dumpTexts() {
       return;
     }
     const text = typeof node.text === "string" ? node.text : "";
-    if (text) out.push({ text, bounds: node.bounds ?? [] });
+    if (text || node.id) out.push({ text, id: node.id, bounds: node.bounds ?? [] });
     for (const child of node.children ?? []) walk(child);
   };
   walk(parsed);
   return out;
 }
 
-/** Any of the given strings, present on screen. */
-function findText(...variants) {
-  return dumpTexts().find((entry) => variants.some((v) => entry.text.includes(v))) ?? null;
+/** A node matching any given id or text fragment. */
+function findNode(...variants) {
+  return (
+    dumpNodes().find((entry) => variants.some((v) => entry.id === v || entry.text.includes(v))) ??
+    null
+  );
 }
 
 function waitFor(label, variants, timeoutMs = 12_000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const hit = findText(...variants);
+    const hit = findNode(...variants);
     if (hit) return hit;
     if (Date.now() > deadline) {
-      const seen = dumpTexts()
+      const seen = dumpNodes()
         .map((e) => e.text)
         .join(" | ");
       throw new Error(`waitFor(${label}) timed out; screen: ${seen.slice(0, 400)}`);
@@ -129,7 +132,7 @@ try {
 
   // A leftover session would land on the inbox; sign out first so every pass starts clean.
   step("clean session if present", () => {
-    if (findText("聊天", "Chats")) {
+    if (findNode("聊天", "Chats")) {
       tap(1168, 234); // the account avatar opens settings
       tapText("退出登录", "Sign out");
       waitFor("sign-in", ["欢迎回来", "Welcome back"]);
@@ -144,14 +147,14 @@ try {
   });
 
   step("sign in", () => {
-    const inputs = dumpTexts().length; // screen settled
+    const inputs = dumpNodes().length; // screen settled
     if (inputs < 0) throw new Error("unreachable");
     typeAt(300, 1250, EMAIL);
     typeAt(300, 1560, PASSWORD);
     sh('hdc shell "uitest uiInput keyEvent Back"');
     sleep(500);
     // The form's submit button (not the 登录 tab): the lowest matching text on screen.
-    const submit = dumpTexts()
+    const submit = dumpNodes()
       .filter((e) => e.text === "登录" || e.text === "Sign in")
       .sort((a, b) => a.bounds[1] - b.bounds[1])
       .pop();
@@ -163,7 +166,7 @@ try {
 
   step("open chat", () => {
     tapText("Alpha");
-    waitFor("composer", ["发送", "Send"]);
+    waitFor("composer", ["thread-send"]);
   });
 
   step("send through the consent gate", () => {
@@ -172,25 +175,32 @@ try {
     // tree, so the echo cannot be verified, and the send button sits at a moving position.
     sh('hdc shell "uitest uiInput keyEvent Back"');
     sleep(800);
-    tapText("发送", "Send");
+    const { bounds } = waitFor("send button", ["thread-send"]);
+    const [left, top, right, bottom] = bounds;
+    const width = right - left;
+    const height = bottom - top;
+    if (!(height > 0 && Math.abs(width - height) <= 1)) {
+      throw new Error(`send button is not square (${width} × ${height})`);
+    }
+    tap(...center(bounds));
     // First send in a fresh Space trips AI_CONSENT_REQUIRED; allow it and the send continues.
     // The dialog follows the failed RPC, so poll briefly for it (absent = consent already given).
     const deadline = Date.now() + 5000;
     let consent = null;
     while (Date.now() < deadline && !consent) {
-      consent = findText("允许", "Allow");
+      consent = findNode("允许", "Allow");
       if (!consent) sleep(300);
     }
     if (consent) {
       // The sheet swallows clicks during its opening takeover: tap, verify it took, retry.
       for (let attempt = 0; attempt < 6; attempt++) {
-        const button = findText("允许", "Allow");
+        const button = findNode("允许", "Allow");
         if (!button) break;
         const [x, y] = center(button.bounds);
         tap(x, y);
         sleep(1000);
       }
-      if (findText("暂不", "Not now")) throw new Error("consent dialog did not close");
+      if (findNode("暂不", "Not now")) throw new Error("consent dialog did not close");
     }
     waitFor("sent echo", [MESSAGE]);
   });
@@ -216,7 +226,7 @@ try {
     sleep(1200);
     tap(1168, 234); // the account avatar opens settings
     waitFor("settings", ["退出登录", "Sign out"]);
-    const model = findText("Fake Fast Model");
+    const model = findNode("Fake Fast Model");
     if (!model) throw new Error("model row missing its server label");
   });
 

@@ -16,6 +16,8 @@ import { MessageBubble } from './MessageBubble';
 import { installConsentDialog } from './consent-dialog';
 import type { LiveMessage } from '../../thread/thread-snapshot';
 
+const COMPOSER_CONTROL_SIZE = 46;
+
 @ComponentV2
 export struct ThreadPage {
   @Param stack: NavPathStack = new NavPathStack();
@@ -266,7 +268,7 @@ export struct ThreadPage {
         // $$ two-way: a programmatic draft restore (failed send / Not now) must reach the field.
         TextInput({ text: $$this.draft, placeholder: t('Message…') })
           .layoutWeight(1)
-          .height(46)
+          .height(COMPOSER_CONTROL_SIZE)
           .fontSize(typeScale.body.fontSize)
           .fontColor(appearance.tokens().foreground)
           .placeholderColor(appearance.tokens().faintForeground)
@@ -278,20 +280,22 @@ export struct ThreadPage {
           .onSubmit((): void => {
             this.sendDraft();
           })
-        Button({ type: ButtonType.Capsule }) {
+        Button({ type: ButtonType.Circle }) {
           if (this.store.send.pending) {
             LoadingProgress()
               .width(22)
               .height(22)
               .color(appearance.tokens().primaryForeground)
           } else {
-            Text(t('Send'))
-              .fontSize(typeScale.secondary.fontSize)
-              .fontWeight(FontWeight.Medium)
-              .fontColor(appearance.tokens().primaryForeground)
+            SymbolGlyph($r('sys.symbol.arrow_up'))
+              .fontSize('20vp')
+              .fontColor([appearance.tokens().primaryForeground])
           }
         }
-        .height(46)
+        .id('thread-send')
+        .width(COMPOSER_CONTROL_SIZE)
+        .height(COMPOSER_CONTROL_SIZE)
+        .accessibilityText(t('Send'))
         .backgroundColor(appearance.tokens().primary)
         .enabled(this.draft.trim().length > 0 && !this.store.send.pending)
         .opacity(this.draft.trim().length > 0 ? 1 : 0.5)
