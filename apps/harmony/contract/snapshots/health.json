@@ -9,9 +9,6 @@
       "type": "string"
     }
   },
-  "required": [
-    "ok",
-    "version"
-  ],
+  "required": ["ok", "version"],
   "type": "object"
 }
