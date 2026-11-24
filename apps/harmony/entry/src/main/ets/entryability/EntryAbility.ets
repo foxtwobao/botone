@@ -18,6 +18,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { app } from '../app/app-state';
 import { appearance } from '../uikit/theme';
+import { foreground } from '../realtime/foreground';
 
 const DOMAIN = 0x0000;
 
@@ -58,9 +59,11 @@ export default class EntryAbility extends UIAbility {
 
   onForeground(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onForeground');
+    foreground.set(true);
   }
 
   onBackground(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onBackground');
+    foreground.set(false);
   }
 }
