@@ -2,8 +2,6 @@ name: BotONE desktop build (self-hosted)
 
 # Runs on a personal macOS ARM64 runner registered to this repository.
 # Windows NSIS installers are cross-built from macOS (unsigned preview).
-# HarmonyOS: the unsigned HAP, built with the DevEco Studio installed on the runner
-# (HARMONY_DEVECO_STUDIO_PATH repository variable, default ~/Applications/DevEco-Studio.app).
 # Deliberately manual only: never add pull_request or push triggers here, because
 # a public repository must not run untrusted code on a self-hosted machine.
 on:
@@ -13,7 +11,7 @@ on:
         description: Platform
         type: choice
         default: macos
-        options: [macos, windows, harmony]
+        options: [macos, windows]
       arch:
         description: Architecture (macOS only, all = arm64 + x64)
         type: choice
@@ -34,7 +32,7 @@ env:
 
 jobs:
   build:
-    name: ${{ inputs.platform }}${{ matrix.arch != 'none' && format(' {0}', matrix.arch) || '' }} preview on self-hosted runner
+    name: ${{ inputs.platform }} ${{ matrix.arch }} preview on self-hosted runner
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 120
     strategy:
@@ -51,25 +49,6 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
-      # Before the long dependency install: fail at once when the toolchain or the app is absent.
-      - name: Locate DevEco Studio and its bundled SDK
-        if: inputs.platform == 'harmony'
-        id: deveco
-        env:
-          STUDIO_PATH: ${{ vars.HARMONY_DEVECO_STUDIO_PATH }}
-        run: |
-          set -euo pipefail
-          studio="${STUDIO_PATH:-$HOME/Applications/DevEco-Studio.app}"
-          if [ ! -d "$studio/Contents/sdk" ]; then
-            echo "::error::DevEco Studio with its bundled SDK was not found at $studio. Install it there (a symlink to another volume works), or set the HARMONY_DEVECO_STUDIO_PATH repository variable."
-            exit 1
-          fi
-          if [ ! -d apps/harmony ]; then
-            echo "::error::This ref has no apps/harmony. Choose a branch that carries the HarmonyOS app."
-            exit 1
-          fi
-          # Resolve symlinks so every tool reports one toolchain root.
-          echo "path=$(cd "$studio" && pwd -P)" >> "$GITHUB_OUTPUT"
       # Self-hosted runners have no node preinstalled, so every node step must come
       # after setup-node. No GitHub Actions cache: restoring and saving pnpm stores over
       # the proxy stalls for many minutes, and the machine keeps its own pnpm store,
@@ -78,14 +57,7 @@ jobs:
         with:
           node-version: 24
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-      - name: Install dependencies
-        run: |
-          set -euo pipefail
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
-          pnpm install --frozen-lockfile
-      # The HarmonyOS package needs no Electron: a failed Electron download must not fail it.
-      - name: Install Electron binary
-        if: inputs.platform != 'harmony'
+      - name: Install dependencies and Electron binary
         run: |
           set -euo pipefail
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1 pnpm_config_prefer_offline=true
@@ -97,32 +69,13 @@ jobs:
             sleep $((attempt * 10))
           done
       - name: Require a configured desktop server
-        if: inputs.platform != 'harmony'
         run: node -e 'if (!process.env.EXPO_PUBLIC_API_URL?.trim()) throw new Error("Set EXPO_PUBLIC_API_URL before building desktop previews")'
       - name: Generate database client for compilation
-        if: inputs.platform != 'harmony'
         run: pnpm db:generate
         env:
           DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
       - name: Build web renderer and desktop main process
-        if: inputs.platform != 'harmony'
         run: pnpm --filter @rakazo/web build && pnpm --filter @rakazo/desktop build
-      - name: Generate tokens, catalogs and fixture constants
-        if: inputs.platform == 'harmony'
-        run: pnpm --filter @rakazo/harmony harmony:codegen
-      # The committed build profile has no signing configuration, so this package is unsigned,
-      # exactly like the pull-request build in harmony.yml. Signing stays a separate workflow.
-      - name: Build unsigned HarmonyOS package
-        if: inputs.platform == 'harmony'
-        env:
-          DEVECO_CLI_STUDIO_PATH: ${{ steps.deveco.outputs.path }}
-          DEVECO_CLI_DISABLE_TELEMETRY: "1"
-        run: |
-          set -euo pipefail
-          npm install -g @deveco/deveco-cli@1.3.0-stable
-          cd apps/harmony
-          devecocli build
-          test -s entry/build/default/outputs/default/entry-default-unsigned.hap
       - name: Package macOS app
         if: inputs.platform == 'macos'
         run: >-
@@ -170,15 +123,6 @@ jobs:
           name: botone-windows-selfhosted-${{ github.run_number }}
           path: |
             apps/desktop/out/*.exe
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 7
-      - name: Retain HarmonyOS package
-        if: inputs.platform == 'harmony'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: botone-harmony-selfhosted-${{ github.run_number }}
-          path: apps/harmony/entry/build/default/outputs/default/entry-default-unsigned.hap
           if-no-files-found: error
           compression-level: 0
           retention-days: 7

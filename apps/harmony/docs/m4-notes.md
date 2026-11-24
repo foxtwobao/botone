@@ -294,9 +294,12 @@ unset (by design). To unblock: pick the release on the download center, set both
 the workflow once on a branch touching `apps/harmony/**`.
 
 **S5 on the self-hosted runner.** The owner chose the repository's manual self-hosted macOS ARM64
-runner for now: `botone-build-selfhosted.yml` gained `platform: harmony`. It is `workflow_dispatch`
-only, like the rest of that workflow (a public repository must not run pull-request code on a
-personal machine), finds the DevEco Studio installed on the runner (`HARMONY_DEVECO_STUDIO_PATH`
+runner for now: `harmony-build-selfhosted.yml` ("BotONE HarmonyOS build (self-hosted)") is a
+dedicated `workflow_dispatch`-only workflow for it — it first landed as a `harmony` platform
+option inside the desktop self-hosted workflow and then moved to its own file for a clear
+Actions-list name, and the desktop workflow's copy is reverted in this branch. Like the rest of
+that workflow it is manual only (a public repository must not run pull-request code on a
+personal machine); it finds the DevEco Studio installed on the runner (`HARMONY_DEVECO_STUDIO_PATH`
 repository variable, default `~/Applications/DevEco-Studio.app`), runs the codegen and
 `devecocli build`, and uploads the unsigned HAP for 7 days. Desktop-only steps (the Electron
 binary, the web/desktop build, packaging) are skipped. Evidence: run 45324006653 on `fcf27a41c`
