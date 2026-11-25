@@ -3,10 +3,10 @@ import type { ModelCredential, ThinkingLevel } from "@rakazo/contracts";
 import { DEFAULT_MODEL_CONTEXT_WINDOW, DEFAULT_MODEL_MAX_TOKENS } from "@rakazo/contracts";
 import {
   accountModelThinkingLevel,
-  compatibleThinkingLevels,
   connectionModels,
   createModelAccountClient,
   credentialModelSettings,
+  modelSettingsThinkingLevels,
   parseAccountModelLimits,
 } from "@rakazo/core";
 import { thinkingLevelLabel } from "@rakazo/i18n/thinking-level";
@@ -49,10 +49,11 @@ export function AccountModelLimits({
   const save = useMutation({
     mutationFn: async (reset: boolean) => {
       if (draft && (reset || limits))
+        // Servers that predate the level refuse its key; a null switch clears the level on both.
         await createModelAccountClient().saveLimits(
           credential.id,
           draft.id,
-          limits && !reset ? limits : { thinkingLevel: null },
+          limits && !reset ? limits : { reasoning: null },
         );
     },
     onSuccess: async () => {
@@ -71,7 +72,8 @@ export function AccountModelLimits({
           const model = models.find((item) => item.id === id);
           if (!model) return;
           const settings = credentialModelSettings(credential, model.id);
-          const thinkingLevel = accountModelThinkingLevel(model.settings) ?? null;
+          const thinkingLevel =
+            accountModelThinkingLevel(model.settings, credential, model.id) ?? null;
           save.reset();
           setDraft({
             id: model.id,
@@ -109,7 +111,7 @@ export function AccountModelLimits({
             thinkingLevel={draft.thinkingLevel ?? "default"}
             thinkingLevels={[
               { value: "default", label: t`Default` },
-              ...compatibleThinkingLevels(credential.apiProtocol).map((level) => ({
+              ...modelSettingsThinkingLevels(credential, undefined).map((level) => ({
                 value: level,
                 label: thinkingLevelLabel(level),
               })),

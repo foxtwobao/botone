@@ -1,3 +1,6 @@
+import { modelCredentialDto, serializeModelSecret } from "@rakazo/adapters";
+import { OPENAI_COMPATIBLE_PROVIDER_ID } from "@rakazo/contracts";
+import { accountModelThinkingLevel, connectionModels } from "@rakazo/core";
 import { expect, it } from "vitest";
 import { applyModelAccountLimits } from "./model-account-limits.js";
 
@@ -71,4 +74,26 @@ it("sets the level an account model thinks at by default, until it follows the c
   expect(
     applyModelAccountLimits(high, "first", { maxTokens: 2048, thinkingLevel: null })?.models,
   ).toEqual({ first: { maxTokens: 2048 } });
+});
+
+it("keeps a model following a connection that thinks by default once Default is saved", () => {
+  const secret = {
+    kind: "openai_compatible" as const,
+    baseUrl: "https://models.example.test",
+    enabledModelIds: ["first"],
+    // An older connection's switch, which a model follows until it has settings of its own.
+    reasoning: true,
+  };
+  const saved = applyModelAccountLimits(secret, "first", {
+    maxTokens: 2048,
+    thinkingLevel: null,
+  })!;
+  // A model's own settings replace the connection's, so its row keeps the switch it follows.
+  expect(saved.models.first).toEqual({ maxTokens: 2048, reasoning: true });
+  const credential = modelCredentialDto(
+    { id: "external-fixture", provider: OPENAI_COMPATIBLE_PROVIDER_ID, label: "Model account" },
+    serializeModelSecret(saved),
+  );
+  const model = connectionModels(credential, [])[0]!;
+  expect(accountModelThinkingLevel(model.settings, credential, model.id)).toBeNull();
 });

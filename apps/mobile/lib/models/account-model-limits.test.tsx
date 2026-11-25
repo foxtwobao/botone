@@ -127,6 +127,16 @@ it("shows an older app's thinking switch as the default level", async () => {
   expect(choice("Thinking", "Medium").getAttribute("aria-pressed")).toBe("true");
 });
 
+it("shows the switch an older app turned off as Off", async () => {
+  const switchedOff = {
+    ...credential,
+    modelSettings: { ...credential.modelSettings, "fresh-model": { reasoning: false } },
+  } as ModelCredential;
+  await open(switchedOff, async () => undefined);
+  await act(async () => choice("Model options", "fresh-model").click());
+  expect(choice("Thinking", "Off").getAttribute("aria-pressed")).toBe("true");
+});
+
 it("saves the thinking level chosen for a model in place of the connection's default", async () => {
   const refresh = vi.fn(async () => undefined);
   await open(credential, refresh);

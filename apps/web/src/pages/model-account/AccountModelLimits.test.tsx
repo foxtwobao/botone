@@ -145,3 +145,27 @@ it("saves the level chosen for a model in place of the connection's default", as
     thinkingLevel: "high",
   });
 });
+
+it("shows the switch an older app turned off as Off", async () => {
+  const switchedOff = {
+    ...credential,
+    modelSettings: { ...credential.modelSettings, "fresh-model": { reasoning: false } },
+  } as ModelCredential;
+  await act(async () =>
+    root.render(<AccountModelLimits credential={switchedOff} refresh={async () => {}} />),
+  );
+  await chooseModel("fresh-model");
+  expect(host.querySelector("output")?.textContent).toBe("Off");
+});
+
+it("restores defaults with the switch, which a server that predates levels accepts", async () => {
+  await act(async () =>
+    root.render(<AccountModelLimits credential={credential} refresh={async () => {}} />),
+  );
+  await chooseModel("legacy-model");
+  await act(async () => button("Restore defaults")!.click());
+  await vi.waitFor(() => expect(client.saveLimits).toHaveBeenCalledOnce());
+  expect(client.saveLimits).toHaveBeenLastCalledWith("external-fixture", "legacy-model", {
+    reasoning: null,
+  });
+});
