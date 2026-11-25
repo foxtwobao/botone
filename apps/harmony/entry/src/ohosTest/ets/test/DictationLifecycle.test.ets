@@ -15,6 +15,7 @@
 // recognizer on scripted hardware here, so its send is followed through the engine's own finish.
 import { afterEach, describe, expect, it } from '@ohos/hypium';
 import type { speechRecognizer } from '@kit.CoreSpeechKit';
+import { FINISH_GRACE_MS } from '../../../main/ets/voice/dictation';
 import * as dictationPort from '../../../main/ets/voice/dictation';
 import type { DictationError, DictationResult, RecognizerEvents } from '../../../main/ets/voice/dictation';
 import { DeviceRecognizer, recognitionLanguage } from '../../../main/ets/voice/device-recognizer';
@@ -501,6 +502,37 @@ export default function dictationLifecycleTest(): void {
       });
       // Same for a finish the engine throws back: nothing answers it, so the send runs at once.
       expect(run.engine.calls.includes(`finish ${segment}`)).assertTrue();
+      expect(sent).assertTrue();
+      expect(controller.status).assertEqual('idle');
+      expect(words).assertDeepEquals(['你好', '你好']);
+      await settle();
+      expect(run.mic.calls).assertDeepEquals(['stop', 'release']);
+    });
+
+    it('a_finish_the_engine_never_answers_still_sends_what_was_heard', 0, async () => {
+      const run = new ScriptedRun(new GrantedRecognizer());
+      await run.prepare();
+      const words: string[] = [];
+      const controller = await hardwareController(run, words);
+      const segment = run.engine.sessionIds[0] ?? '';
+      const interim: speechRecognizer.SpeechRecognitionResult = { isFinal: false, isLast: false, result: '你好' };
+      run.engine.listener?.onResult(segment, interim);
+      let sent = false;
+      controller.finish((): void => {
+        sent = true;
+      });
+      expect(run.engine.calls.includes(`finish ${segment}`)).assertTrue();
+      // A wedged engine answers a finish with nothing at all: no last words, no refusal, no
+      // completion. The send waits FINISH_GRACE_MS for them, then goes out with what was heard
+      // instead of hanging on the silence limit.
+      await new Promise<void>((resolve: () => void): void => {
+        setTimeout(resolve, FINISH_GRACE_MS / 2);
+      });
+      expect(sent).assertFalse();
+      expect(controller.status).assertEqual('listening');
+      await new Promise<void>((resolve: () => void): void => {
+        setTimeout(resolve, FINISH_GRACE_MS);
+      });
       expect(sent).assertTrue();
       expect(controller.status).assertEqual('idle');
       expect(words).assertDeepEquals(['你好', '你好']);

@@ -27,6 +27,13 @@ const RESTART_MAX_MS = 2_000;
 /** Restarts in a row that hear nothing: the recognizer is wedged, stop churning the mic. */
 const MAX_DEAD_RESTARTS = 5;
 export const QUIET_RESTART_MS = 15_000;
+/**
+ * How long a caller's finish waits for the recognizer's end. The engine settles its last words
+ * in milliseconds; an engine that neither completes nor refuses is wedged, and the caller's
+ * send must not hang on it. Well under the composer's pause limit, its only caller's, and well
+ * over a settled engine.
+ */
+export const FINISH_GRACE_MS = 2_000;
 /** Errors that mean this turn cannot recover; the rest are routine and `end` restarts. */
 const FATAL_ERRORS: Set<string> = new Set<string>([
   'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported', 'bad-grammar',
@@ -128,6 +135,8 @@ interface Session {
   silence: number;
   /** The shorter gap that runs once the recognizer reports both of the above. */
   grace: number;
+  /** The caller's finish, waiting for the recognizer's end. */
+  finishingTimer: number;
   restart: number;
   quiet: number;
   backoff: number;
@@ -199,6 +208,7 @@ export function stop(): void {
   }
   disarm(session.silence);
   disarm(session.grace);
+  disarm(session.finishingTimer);
   disarm(session.restart);
   disarm(session.quiet);
   session.off?.();
@@ -219,8 +229,12 @@ export function finishListening(): void {
     finish(session, 'idle');
     return;
   }
-  // The recognizer's own last words come with its end: the turn ends once they are in.
+  // The recognizer's own last words come with its end: the turn ends once they are in. An
+  // engine that never reports that end is wedged; the turn then ends with what was heard.
   session.finishing = true;
+  session.finishingTimer = arm(session.finishingTimer, (): void => {
+    finish(session, 'idle');
+  }, FINISH_GRACE_MS);
   session.recognizer.finish();
 }
 
@@ -264,6 +278,7 @@ export async function listen(opts: DictationListenOptions): Promise<void> {
     finalized: false,
     silence: -1,
     grace: -1,
+    finishingTimer: -1,
     restart: -1,
     quiet: -1,
     backoff: RESTART_MIN_MS,
@@ -423,6 +438,8 @@ function onEnd(session: Session): void {
     finish(session, 'idle');
     return;
   }
+  disarm(session.finishingTimer);
+  session.finishingTimer = -1;
   disarm(session.quiet);
   session.quiet = -1;
   // Until the restart the recognizer cannot hear the caller start again.
