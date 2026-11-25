@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import type { Me } from "@rakazo/contracts";
 import {
   captureScreenshot,
+  chooseOption,
   completeOnboarding,
   openUserSettings,
   rpc,
@@ -618,7 +619,10 @@ test("account-only settings retain model choices without ordinary connection con
   const modelLimits = settings.getByRole("combobox", { name: "Model options" });
   await modelLimits.click();
   await page.getByRole("option", { name: "fixture-model", exact: true }).click();
-  await settings.getByRole("checkbox", { name: "Supports thinking" }).check();
+  // A model follows the connection's thinking level until one is chosen for it.
+  const thinking = settings.getByRole("combobox", { name: "Thinking", exact: true });
+  await expect(thinking).toHaveText("Default");
+  await chooseOption(thinking, "High");
   await settings.getByLabel("Context limit", { exact: true }).fill("32768");
   await settings.getByLabel("Maximum output tokens", { exact: true }).fill("1024");
   await settings.getByRole("button", { name: "Save", exact: true }).scrollIntoViewIfNeeded();
@@ -631,7 +635,7 @@ test("account-only settings retain model choices without ordinary connection con
   expect((await write).postDataJSON()).toEqual({
     credentialId: choice.credentialId,
     modelId: choice.modelId,
-    limits: { contextWindow: 32768, maxTokens: 1024, reasoning: true },
+    limits: { contextWindow: 32768, maxTokens: 1024, thinkingLevel: "high" },
   });
   await settings.getByRole("button", { name: "Add fallback", exact: true }).first().click();
   await expect(page.getByRole("option", { name: /Fixture backup/ })).toBeVisible();

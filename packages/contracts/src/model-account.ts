@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ThinkingLevelSchema } from "./ids.js";
 import {
   DEFAULT_MODEL_CONTEXT_WINDOW,
   DEFAULT_MODEL_MAX_TOKENS,
@@ -66,6 +67,9 @@ export const modelAccountLimitsSchema = z
   .strictObject({
     // Omitted by older clients. Null restores the connection default.
     reasoning: ModelSettingsSchema.shape.reasoning.nullable(),
+    // The level a model thinks at when nobody picks one. Omitted leaves it alone, null follows
+    // the connection, and it wins over the boolean an older client sends.
+    thinkingLevel: ThinkingLevelSchema.nullable().optional(),
     contextWindow: ModelSettingsSchema.shape.contextWindow,
     maxTokens: ModelSettingsSchema.shape.maxTokens,
   })
