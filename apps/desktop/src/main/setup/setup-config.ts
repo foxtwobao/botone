@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import type { DesktopSetup, DesktopStackProbeResponse } from "@rakazo/contracts";
 import { parseServerHeaders } from "@rakazo/contracts";
 import { isLoopbackHost, isPrivateNetworkHost } from "@rakazo/contracts/network-host";
@@ -123,6 +125,20 @@ export function serializeSetup(setup: DesktopSetup): string {
 }
 
 /**
+ * {@link resolveStartupTarget} for a packaged app: its `package.json` names the default server
+ * when a build wrote one.
+ */
+export function resolvePackagedStartupTarget(
+  appPath: string,
+  input: Omit<Parameters<typeof resolveStartupTarget>[0], "defaultUrl">,
+): StartupTarget {
+  const { defaultServerUrl } = JSON.parse(
+    readFileSync(path.join(appPath, "package.json"), "utf8"),
+  ) as { defaultServerUrl?: unknown };
+  return resolveStartupTarget({ ...input, defaultUrl: defaultServerUrl });
+}
+
+/**
  * Decides between the setup window and the app window. A first launch opens the packaged
  * default server, or Rakazo Cloud when none is configured. An explicit
  * `RAKAZO_WEB_URL` still wins over saved configuration so test and performance
@@ -227,7 +243,7 @@ export function desktopStackImageTag(value: unknown): string | null {
 export async function readProbeJson(response: Response): Promise<unknown> {
   const declared = Number(response.headers.get("content-length") ?? 0);
   if (Number.isFinite(declared) && declared > PROBE_RESPONSE_LIMIT_BYTES) {
-    cancelResponse(response);
+    cancelProbeBody(response.body);
     return null;
   }
   if (response.body === null) return null;
@@ -241,13 +257,13 @@ export async function readProbeJson(response: Response): Promise<unknown> {
       if (done) break;
       size += value.byteLength;
       if (size > PROBE_RESPONSE_LIMIT_BYTES) {
-        cancelReader(reader);
+        cancelProbeBody(reader);
         return null;
       }
       chunks.push(value);
     }
   } catch (error) {
-    cancelReader(reader);
+    cancelProbeBody(reader);
     throw error;
   } finally {
     try {
@@ -270,17 +286,11 @@ export async function readProbeJson(response: Response): Promise<unknown> {
   }
 }
 
-function cancelResponse(response: Response): void {
+function cancelProbeBody(
+  body: ReadableStream<Uint8Array> | ReadableStreamDefaultReader<Uint8Array> | null,
+): void {
   try {
-    void Promise.resolve(response.body?.cancel()).catch(() => undefined);
-  } catch {
-    // Probe cleanup is best-effort.
-  }
-}
-
-function cancelReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
-  try {
-    void Promise.resolve(reader.cancel()).catch(() => undefined);
+    void Promise.resolve(body?.cancel()).catch(() => undefined);
   } catch {
     // Probe cleanup is best-effort.
   }

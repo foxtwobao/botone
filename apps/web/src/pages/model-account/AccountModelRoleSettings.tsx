@@ -13,6 +13,7 @@ import {
   OPENAI_COMPATIBLE_PROVIDER_ID,
 } from "@rakazo/contracts";
 import { createAccountModelRole } from "@rakazo/core";
+import { thinkingLevelLabel } from "@rakazo/i18n/thinking-level";
 import {
   Button,
   DropdownMenu,
@@ -31,7 +32,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { GripVertical, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { thinkingLevelLabel } from "../../lib/models/model-catalog";
 import { spaceQueries } from "../../lib/query/query";
 import { useSpaceRpc } from "../../lib/query/space-rpc";
 import type { RoleModelOption } from "../model-settings/role-model-picker";

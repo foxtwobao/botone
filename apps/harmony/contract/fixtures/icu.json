@@ -362,6 +362,42 @@
     },
     {
       "locale": "en",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, one {# chat} other {# chats}}",
+      "values": {
+        "chatCount": 0
+      },
+      "expected": "0 chats"
+    },
+    {
+      "locale": "en",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, one {# chat} other {# chats}}",
+      "values": {
+        "chatCount": 1
+      },
+      "expected": "1 chat"
+    },
+    {
+      "locale": "en",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, one {# chat} other {# chats}}",
+      "values": {
+        "chatCount": 2
+      },
+      "expected": "2 chats"
+    },
+    {
+      "locale": "en",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, one {# chat} other {# chats}}",
+      "values": {
+        "chatCount": 5
+      },
+      "expected": "5 chats"
+    },
+    {
+      "locale": "en",
       "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
       "message": "{connectedCount, plural, one {# connected} other {# connected}}",
       "values": {
@@ -940,16 +976,6 @@
     },
     {
       "locale": "en",
-      "msgid": "{0} {unitLabel}",
-      "message": "{0} {unitLabel}",
-      "values": {
-        "0": 3,
-        "unitLabel": "value"
-      },
-      "expected": "3 value"
-    },
-    {
-      "locale": "en",
       "msgid": "{0} connection",
       "message": "{0} connection",
       "values": {
@@ -1049,6 +1075,16 @@
     },
     {
       "locale": "en",
+      "msgid": "{0} of {1} left",
+      "message": "{0} of {1} left",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "3 of 3 left"
+    },
+    {
+      "locale": "en",
       "msgid": "{0} rollup hours",
       "message": "{0} rollup hours",
       "values": {
@@ -1073,6 +1109,17 @@
         "0": 3
       },
       "expected": "3, paused until you turn it on"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0}: {1} tokens, {2}",
+      "message": "{0}: {1} tokens, {2}",
+      "values": {
+        "0": 3,
+        "1": 3,
+        "2": 3
+      },
+      "expected": "3: 3 tokens, 3"
     },
     {
       "locale": "en",
@@ -1233,15 +1280,6 @@
     },
     {
       "locale": "en",
-      "msgid": "{botName}’s computer",
-      "message": "{botName}’s computer",
-      "values": {
-        "botName": "value"
-      },
-      "expected": "value’s computer"
-    },
-    {
-      "locale": "en",
       "msgid": "{calls} calls, {tokens} tokens",
       "message": "{calls} calls, {tokens} tokens",
       "values": {
@@ -1270,6 +1308,15 @@
         "date": "value"
       },
       "expected": "value value, value"
+    },
+    {
+      "locale": "en",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, one {# chat} other {# chats}}",
+      "values": {
+        "chatCount": 3
+      },
+      "expected": "3 chats"
     },
     {
       "locale": "en",
@@ -1402,15 +1449,6 @@
     },
     {
       "locale": "en",
-      "msgid": "{count} months",
-      "message": "{count} months",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 months"
-    },
-    {
-      "locale": "en",
       "msgid": "{count} more",
       "message": "{count} more",
       "values": {
@@ -1501,17 +1539,6 @@
     },
     {
       "locale": "en",
-      "msgid": "{day}: {0} tokens, {1}",
-      "message": "{day}: {0} tokens, {1}",
-      "values": {
-        "0": 3,
-        "1": 3,
-        "day": "value"
-      },
-      "expected": "value: 3 tokens, 3"
-    },
-    {
-      "locale": "en",
       "msgid": "{days} days free",
       "message": "{days} days free",
       "values": {
@@ -1538,15 +1565,6 @@
         "price": "value"
       },
       "expected": "value days free, then value / year. Cancel anytime."
-    },
-    {
-      "locale": "en",
-      "msgid": "{days}d ago",
-      "message": "{days}d ago",
-      "values": {
-        "days": "value"
-      },
-      "expected": "valued ago"
     },
     {
       "locale": "en",
@@ -1578,16 +1596,6 @@
         "total": "value"
       },
       "expected": "value–value of value rows"
-    },
-    {
-      "locale": "en",
-      "msgid": "{fromName} to {toName}",
-      "message": "{fromName} to {toName}",
-      "values": {
-        "fromName": "value",
-        "toName": "value"
-      },
-      "expected": "value to value"
     },
     {
       "locale": "en",
@@ -1638,15 +1646,6 @@
     },
     {
       "locale": "en",
-      "msgid": "{hours}h ago",
-      "message": "{hours}h ago",
-      "values": {
-        "hours": "value"
-      },
-      "expected": "valueh ago"
-    },
-    {
-      "locale": "en",
       "msgid": "{inviterName} invited you",
       "message": "{inviterName} invited you",
       "values": {
@@ -1683,23 +1682,13 @@
     },
     {
       "locale": "en",
-      "msgid": "{memoryGb} GB of RAM and {usage}× the computer time of {0}. Time counts only while your bot uses its computer.",
-      "message": "{memoryGb} GB of RAM and {usage}× the computer time of {0}. Time counts only while your bot uses its computer.",
+      "msgid": "{left} of {limit} left",
+      "message": "{left} of {limit} left",
       "values": {
-        "0": 3,
-        "memoryGb": "value",
-        "usage": "value"
+        "left": "value",
+        "limit": "value"
       },
-      "expected": "value GB of RAM and value× the computer time of 3. Time counts only while your bot uses its computer."
-    },
-    {
-      "locale": "en",
-      "msgid": "{minutes}m ago",
-      "message": "{minutes}m ago",
-      "values": {
-        "minutes": "value"
-      },
-      "expected": "valuem ago"
+      "expected": "value of value left"
     },
     {
       "locale": "en",
@@ -2414,6 +2403,16 @@
     },
     {
       "locale": "en",
+      "msgid": "@{0}, {1}",
+      "message": "@{0}, {1}",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "@3, 3"
+    },
+    {
+      "locale": "en",
       "msgid": "@{name}",
       "message": "@{name}",
       "values": {
@@ -2423,21 +2422,12 @@
     },
     {
       "locale": "en",
-      "msgid": "2. Enter this code at {host}",
-      "message": "2. Enter this code at {host}",
+      "msgid": "A sandbox limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
+      "message": "A sandbox limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
       "values": {
-        "host": "chat.example.com"
+        "hostLabel": "value"
       },
-      "expected": "2. Enter this code at chat.example.com"
-    },
-    {
-      "locale": "en",
-      "msgid": "A {times}× more powerful computer for your bot",
-      "message": "A {times}× more powerful computer for your bot",
-      "values": {
-        "times": "value"
-      },
-      "expected": "A value× more powerful computer for your bot"
+      "expected": "A sandbox limits access to your computer for added security. Using value lets bots work with your local files and tools."
     },
     {
       "locale": "en",
@@ -2648,15 +2638,6 @@
     },
     {
       "locale": "en",
-      "msgid": "at {0}",
-      "message": "at {0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "at 3"
-    },
-    {
-      "locale": "en",
       "msgid": "at {time}",
       "message": "at {time}",
       "values": {
@@ -2708,6 +2689,15 @@
         "0": 3
       },
       "expected": "Call with 3"
+    },
+    {
+      "locale": "en",
+      "msgid": "Change {0}",
+      "message": "Change {0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "Change 3"
     },
     {
       "locale": "en",
@@ -3306,15 +3296,6 @@
     },
     {
       "locale": "en",
-      "msgid": "Docker limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
-      "message": "Docker limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
-      "values": {
-        "hostLabel": "value"
-      },
-      "expected": "Docker limits access to your computer for added security. Using value lets bots work with your local files and tools."
-    },
-    {
-      "locale": "en",
       "msgid": "Download {0}",
       "message": "Download {0}",
       "values": {
@@ -3414,25 +3395,6 @@
     },
     {
       "locale": "en",
-      "msgid": "Every {0}",
-      "message": "Every {0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "Every 3"
-    },
-    {
-      "locale": "en",
-      "msgid": "Every {0} and {1}",
-      "message": "Every {0} and {1}",
-      "values": {
-        "0": 3,
-        "1": 3
-      },
-      "expected": "Every 3 and 3"
-    },
-    {
-      "locale": "en",
       "msgid": "Every {day}",
       "message": "Every {day}",
       "values": {
@@ -3482,15 +3444,6 @@
     },
     {
       "locale": "en",
-      "msgid": "Every hour at :{0}",
-      "message": "Every hour at :{0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "Every hour at :3"
-    },
-    {
-      "locale": "en",
       "msgid": "Every hour at :{minute}",
       "message": "Every hour at :{minute}",
       "values": {
@@ -3506,15 +3459,6 @@
         "app": "value"
       },
       "expected": "Everyone in this bot's space can read the chats it gets from value."
-    },
-    {
-      "locale": "en",
-      "msgid": "Everything in {0}",
-      "message": "Everything in {0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "Everything in 3"
     },
     {
       "locale": "en",
@@ -3642,6 +3586,15 @@
         "name": "Ada"
       },
       "expected": "Hi, I'm Ada."
+    },
+    {
+      "locale": "en",
+      "msgid": "Hide {field}",
+      "message": "Hide {field}",
+      "values": {
+        "field": "value"
+      },
+      "expected": "Hide value"
     },
     {
       "locale": "en",
@@ -3835,12 +3788,31 @@
     },
     {
       "locale": "en",
-      "msgid": "Message actions, {0}",
-      "message": "Message actions, {0}",
+      "msgid": "Message actions, {speakerName}",
+      "message": "Message actions, {speakerName}",
       "values": {
-        "0": 3
+        "speakerName": "value"
       },
-      "expected": "Message actions, 3"
+      "expected": "Message actions, value"
+    },
+    {
+      "locale": "en",
+      "msgid": "Message actions, {speakerName}, {when}",
+      "message": "Message actions, {speakerName}, {when}",
+      "values": {
+        "speakerName": "value",
+        "when": "value"
+      },
+      "expected": "Message actions, value, value"
+    },
+    {
+      "locale": "en",
+      "msgid": "Message actions, {when}",
+      "message": "Message actions, {when}",
+      "values": {
+        "when": "value"
+      },
+      "expected": "Message actions, value"
     },
     {
       "locale": "en",
@@ -3978,15 +3950,6 @@
         "time": "value"
       },
       "expected": "on day value at value"
-    },
-    {
-      "locale": "en",
-      "msgid": "on the 1st at {0}",
-      "message": "on the 1st at {0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "on the 1st at 3"
     },
     {
       "locale": "en",
@@ -4134,15 +4097,6 @@
         "count": 3
       },
       "expected": "Page value of 3"
-    },
-    {
-      "locale": "en",
-      "msgid": "Password must be {MAX_PASSWORD_LENGTH} characters or fewer",
-      "message": "Password must be {MAX_PASSWORD_LENGTH} characters or fewer",
-      "values": {
-        "MAX_PASSWORD_LENGTH": 3
-      },
-      "expected": "Password must be 3 characters or fewer"
     },
     {
       "locale": "en",
@@ -4563,12 +4517,12 @@
     },
     {
       "locale": "en",
-      "msgid": "Search MCP servers for “{query}”",
-      "message": "Search MCP servers for “{query}”",
+      "msgid": "Search public MCP directory for “{term}”",
+      "message": "Search public MCP directory for “{term}”",
       "values": {
-        "query": "value"
+        "term": "value"
       },
-      "expected": "Search MCP servers for “value”"
+      "expected": "Search public MCP directory for “value”"
     },
     {
       "locale": "en",
@@ -4650,6 +4604,15 @@
     },
     {
       "locale": "en",
+      "msgid": "Settings for {0}",
+      "message": "Settings for {0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "Settings for 3"
+    },
+    {
+      "locale": "en",
       "msgid": "Settings: {label}",
       "message": "Settings: {label}",
       "values": {
@@ -4710,6 +4673,24 @@
         "name": "Ada"
       },
       "expected": "Share voice data with Ada?"
+    },
+    {
+      "locale": "en",
+      "msgid": "Show {0}",
+      "message": "Show {0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "Show 3"
+    },
+    {
+      "locale": "en",
+      "msgid": "Show {field}",
+      "message": "Show {field}",
+      "values": {
+        "field": "value"
+      },
+      "expected": "Show value"
     },
     {
       "locale": "en",
@@ -4840,15 +4821,6 @@
     },
     {
       "locale": "en",
-      "msgid": "Start {name} trial",
-      "message": "Start {name} trial",
-      "values": {
-        "name": "Ada"
-      },
-      "expected": "Start Ada trial"
-    },
-    {
-      "locale": "en",
       "msgid": "Start {trialDays}-day free trial",
       "message": "Start {trialDays}-day free trial",
       "values": {
@@ -4900,15 +4872,6 @@
         "price": "value"
       },
       "expected": "Subscribe for value / month"
-    },
-    {
-      "locale": "en",
-      "msgid": "Subscribe to {name}",
-      "message": "Subscribe to {name}",
-      "values": {
-        "name": "Ada"
-      },
-      "expected": "Subscribe to Ada"
     },
     {
       "locale": "en",
@@ -5020,15 +4983,6 @@
     },
     {
       "locale": "en",
-      "msgid": "Trial ends {day}",
-      "message": "Trial ends {day}",
-      "values": {
-        "day": "value"
-      },
-      "expected": "Trial ends value"
-    },
-    {
-      "locale": "en",
       "msgid": "Turn {0} on or off",
       "message": "Turn {0} on or off",
       "values": {
@@ -5071,15 +5025,6 @@
         "limit": "value"
       },
       "expected": "Up to value sites."
-    },
-    {
-      "locale": "en",
-      "msgid": "Up to {times}× the vCPUs",
-      "message": "Up to {times}× the vCPUs",
-      "values": {
-        "times": "value"
-      },
-      "expected": "Up to value× the vCPUs"
     },
     {
       "locale": "en",
@@ -5176,12 +5121,12 @@
     },
     {
       "locale": "en",
-      "msgid": "Use defaults for {label}",
-      "message": "Use defaults for {label}",
+      "msgid": "Use account settings for {label}",
+      "message": "Use account settings for {label}",
       "values": {
         "label": "value"
       },
-      "expected": "Use defaults for value"
+      "expected": "Use account settings for value"
     },
     {
       "locale": "en",
@@ -5916,6 +5861,42 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 个聊天}}",
+      "values": {
+        "chatCount": 0
+      },
+      "expected": "0 个聊天"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 个聊天}}",
+      "values": {
+        "chatCount": 1
+      },
+      "expected": "1 个聊天"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 个聊天}}",
+      "values": {
+        "chatCount": 2
+      },
+      "expected": "2 个聊天"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 个聊天}}",
+      "values": {
+        "chatCount": 5
+      },
+      "expected": "5 个聊天"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
       "message": "{connectedCount, plural, one {# 个已连接} other {# 个已连接}}",
       "values": {
@@ -6494,16 +6475,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{0} {unitLabel}",
-      "message": "{0} {unitLabel}",
-      "values": {
-        "0": 3,
-        "unitLabel": "value"
-      },
-      "expected": "3 value"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "{0} connection",
       "message": "{0} 连接",
       "values": {
@@ -6603,6 +6574,16 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "{0} of {1} left",
+      "message": "剩余 {0}（共 {1}）",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "剩余 3（共 3）"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "{0} rollup hours",
       "message": "{0} 的合并间隔（小时）",
       "values": {
@@ -6627,6 +6608,17 @@
         "0": 3
       },
       "expected": "3，开启前保持暂停"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0}: {1} tokens, {2}",
+      "message": "{0}：{1} 个 token，{2}",
+      "values": {
+        "0": 3,
+        "1": 3,
+        "2": 3
+      },
+      "expected": "3：3 个 token，3"
     },
     {
       "locale": "zh-CN",
@@ -6787,15 +6779,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{botName}’s computer",
-      "message": "{botName} 的电脑",
-      "values": {
-        "botName": "value"
-      },
-      "expected": "value 的电脑"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "{calls} calls, {tokens} tokens",
       "message": "{calls} 次调用，{tokens} 个 token",
       "values": {
@@ -6824,6 +6807,15 @@
         "date": "value"
       },
       "expected": "value value, value"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 个聊天}}",
+      "values": {
+        "chatCount": 3
+      },
+      "expected": "3 个聊天"
     },
     {
       "locale": "zh-CN",
@@ -6956,15 +6948,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{count} months",
-      "message": "{count} 个月",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 个月"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "{count} more",
       "message": "还有 {count} 项",
       "values": {
@@ -7055,17 +7038,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{day}: {0} tokens, {1}",
-      "message": "{day}：{0} 个 token，{1}",
-      "values": {
-        "0": 3,
-        "1": 3,
-        "day": "value"
-      },
-      "expected": "value：3 个 token，3"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "{days} days free",
       "message": "免费 {days} 天",
       "values": {
@@ -7092,15 +7064,6 @@
         "price": "value"
       },
       "expected": "免费 value 天，之后每年 value。可随时取消。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{days}d ago",
-      "message": "{days} 天前",
-      "values": {
-        "days": "value"
-      },
-      "expected": "value 天前"
     },
     {
       "locale": "zh-CN",
@@ -7132,16 +7095,6 @@
         "total": "value"
       },
       "expected": "第 value–value 行，共 value 行"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{fromName} to {toName}",
-      "message": "{fromName}至{toName}",
-      "values": {
-        "fromName": "value",
-        "toName": "value"
-      },
-      "expected": "value至value"
     },
     {
       "locale": "zh-CN",
@@ -7192,15 +7145,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{hours}h ago",
-      "message": "{hours} 小时前",
-      "values": {
-        "hours": "value"
-      },
-      "expected": "value 小时前"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "{inviterName} invited you",
       "message": "{inviterName} 邀请了你",
       "values": {
@@ -7237,23 +7181,13 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{memoryGb} GB of RAM and {usage}× the computer time of {0}. Time counts only while your bot uses its computer.",
-      "message": "{memoryGb} GB 内存，电脑时长是 {0} 的 {usage} 倍。只在你的 Bot 使用电脑时计时。",
+      "msgid": "{left} of {limit} left",
+      "message": "剩余 {left}（共 {limit}）",
       "values": {
-        "0": 3,
-        "memoryGb": "value",
-        "usage": "value"
+        "left": "value",
+        "limit": "value"
       },
-      "expected": "value GB 内存，电脑时长是 3 的 value 倍。只在你的 Bot 使用电脑时计时。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "{minutes}m ago",
-      "message": "{minutes} 分钟前",
-      "values": {
-        "minutes": "value"
-      },
-      "expected": "value 分钟前"
+      "expected": "剩余 value（共 value）"
     },
     {
       "locale": "zh-CN",
@@ -7968,6 +7902,16 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "@{0}, {1}",
+      "message": "@{0}，{1}",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "@3，3"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "@{name}",
       "message": "@{name}",
       "values": {
@@ -7977,21 +7921,12 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "2. Enter this code at {host}",
-      "message": "2. 在 {host} 输入此验证码",
+      "msgid": "A sandbox limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
+      "message": "沙盒会限制对你电脑的访问，以提高安全性。使用 {hostLabel} 可让 Bot 使用你的本地文件和工具。",
       "values": {
-        "host": "chat.example.com"
+        "hostLabel": "value"
       },
-      "expected": "2. 在 chat.example.com 输入此验证码"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "A {times}× more powerful computer for your bot",
-      "message": "为你的 Bot 提供性能强 {times} 倍的电脑",
-      "values": {
-        "times": "value"
-      },
-      "expected": "为你的 Bot 提供性能强 value 倍的电脑"
+      "expected": "沙盒会限制对你电脑的访问，以提高安全性。使用 value 可让 Bot 使用你的本地文件和工具。"
     },
     {
       "locale": "zh-CN",
@@ -8202,15 +8137,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "at {0}",
-      "message": "{0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "3"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "at {time}",
       "message": "{time}",
       "values": {
@@ -8262,6 +8188,15 @@
         "0": 3
       },
       "expected": "与 3 通话"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Change {0}",
+      "message": "更改{0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "更改3"
     },
     {
       "locale": "zh-CN",
@@ -8860,15 +8795,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Docker limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
-      "message": "Docker 限制对你电脑的访问，以提高安全性。使用{hostLabel}时，Bot 可以处理你的本地文件并使用本地工具。",
-      "values": {
-        "hostLabel": "value"
-      },
-      "expected": "Docker 限制对你电脑的访问，以提高安全性。使用value时，Bot 可以处理你的本地文件并使用本地工具。"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "Download {0}",
       "message": "下载 {0}",
       "values": {
@@ -8968,25 +8894,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Every {0}",
-      "message": "每{0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "每3"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Every {0} and {1}",
-      "message": "每{0}和{1}",
-      "values": {
-        "0": 3,
-        "1": 3
-      },
-      "expected": "每3和3"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "Every {day}",
       "message": "每{day}",
       "values": {
@@ -9036,15 +8943,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Every hour at :{0}",
-      "message": "每小时{0}分",
-      "values": {
-        "0": 3
-      },
-      "expected": "每小时3分"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "Every hour at :{minute}",
       "message": "每小时{minute}分",
       "values": {
@@ -9060,15 +8958,6 @@
         "app": "value"
       },
       "expected": "此 Bot 空间中的每个人都能阅读它从 value 收到的聊天。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Everything in {0}",
-      "message": "包含 {0} 的全部内容",
-      "values": {
-        "0": 3
-      },
-      "expected": "包含 3 的全部内容"
     },
     {
       "locale": "zh-CN",
@@ -9196,6 +9085,15 @@
         "name": "Ada"
       },
       "expected": "你好，我是 Ada。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Hide {field}",
+      "message": "隐藏{field}",
+      "values": {
+        "field": "value"
+      },
+      "expected": "隐藏value"
     },
     {
       "locale": "zh-CN",
@@ -9389,12 +9287,31 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Message actions, {0}",
-      "message": "消息操作，{0}",
+      "msgid": "Message actions, {speakerName}",
+      "message": "消息操作，{speakerName}",
       "values": {
-        "0": 3
+        "speakerName": "value"
       },
-      "expected": "消息操作，3"
+      "expected": "消息操作，value"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Message actions, {speakerName}, {when}",
+      "message": "消息操作，{speakerName}，{when}",
+      "values": {
+        "speakerName": "value",
+        "when": "value"
+      },
+      "expected": "消息操作，value，value"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Message actions, {when}",
+      "message": "消息操作，{when}",
+      "values": {
+        "when": "value"
+      },
+      "expected": "消息操作，value"
     },
     {
       "locale": "zh-CN",
@@ -9532,15 +9449,6 @@
         "time": "value"
       },
       "expected": "value日 value"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "on the 1st at {0}",
-      "message": "1 日 {0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "1 日 3"
     },
     {
       "locale": "zh-CN",
@@ -9688,15 +9596,6 @@
         "count": 3
       },
       "expected": "第 value 页，共 3 页"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Password must be {MAX_PASSWORD_LENGTH} characters or fewer",
-      "message": "密码不能超过 {MAX_PASSWORD_LENGTH} 个字符",
-      "values": {
-        "MAX_PASSWORD_LENGTH": 3
-      },
-      "expected": "密码不能超过 3 个字符"
     },
     {
       "locale": "zh-CN",
@@ -10117,12 +10016,12 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Search MCP servers for “{query}”",
-      "message": "在 MCP 服务器中搜索“{query}”",
+      "msgid": "Search public MCP directory for “{term}”",
+      "message": "在公共 MCP 目录中搜索“{term}”",
       "values": {
-        "query": "value"
+        "term": "value"
       },
-      "expected": "在 MCP 服务器中搜索“value”"
+      "expected": "在公共 MCP 目录中搜索“value”"
     },
     {
       "locale": "zh-CN",
@@ -10204,6 +10103,15 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "Settings for {0}",
+      "message": "{0} 的设置",
+      "values": {
+        "0": 3
+      },
+      "expected": "3 的设置"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "Settings: {label}",
       "message": "设置：{label}",
       "values": {
@@ -10264,6 +10172,24 @@
         "name": "Ada"
       },
       "expected": "要与 Ada 共享语音数据吗？"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Show {0}",
+      "message": "显示 {0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "显示 3"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Show {field}",
+      "message": "显示{field}",
+      "values": {
+        "field": "value"
+      },
+      "expected": "显示value"
     },
     {
       "locale": "zh-CN",
@@ -10394,15 +10320,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Start {name} trial",
-      "message": "开始 {name} 试用",
-      "values": {
-        "name": "Ada"
-      },
-      "expected": "开始 Ada 试用"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "Start {trialDays}-day free trial",
       "message": "开始 {trialDays} 天免费试用",
       "values": {
@@ -10454,15 +10371,6 @@
         "price": "value"
       },
       "expected": "以每月 value 订阅"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Subscribe to {name}",
-      "message": "订阅 {name}",
-      "values": {
-        "name": "Ada"
-      },
-      "expected": "订阅 Ada"
     },
     {
       "locale": "zh-CN",
@@ -10574,15 +10482,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Trial ends {day}",
-      "message": "试用将于 {day} 结束",
-      "values": {
-        "day": "value"
-      },
-      "expected": "试用将于 value 结束"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "Turn {0} on or off",
       "message": "开启或关闭 {0}",
       "values": {
@@ -10625,15 +10524,6 @@
         "limit": "value"
       },
       "expected": "最多 value 个网站。"
-    },
-    {
-      "locale": "zh-CN",
-      "msgid": "Up to {times}× the vCPUs",
-      "message": "最多 {times} 倍的 vCPU",
-      "values": {
-        "times": "value"
-      },
-      "expected": "最多 value 倍的 vCPU"
     },
     {
       "locale": "zh-CN",
@@ -10730,12 +10620,12 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "Use defaults for {label}",
-      "message": "{label}使用默认设置",
+      "msgid": "Use account settings for {label}",
+      "message": "对 {label} 使用账户设置",
       "values": {
         "label": "value"
       },
-      "expected": "value使用默认设置"
+      "expected": "对 value 使用账户设置"
     },
     {
       "locale": "zh-CN",
@@ -11470,6 +11360,42 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 個聊天}}",
+      "values": {
+        "chatCount": 0
+      },
+      "expected": "0 個聊天"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 個聊天}}",
+      "values": {
+        "chatCount": 1
+      },
+      "expected": "1 個聊天"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 個聊天}}",
+      "values": {
+        "chatCount": 2
+      },
+      "expected": "2 個聊天"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 個聊天}}",
+      "values": {
+        "chatCount": 5
+      },
+      "expected": "5 個聊天"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "{connectedCount, plural, one {# connected} other {# connected}}",
       "message": "{connectedCount, plural, other {已連線 # 個}}",
       "values": {
@@ -12048,16 +11974,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{0} {unitLabel}",
-      "message": "{0} {unitLabel}",
-      "values": {
-        "0": 3,
-        "unitLabel": "value"
-      },
-      "expected": "3 value"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "{0} connection",
       "message": "{0} 連線",
       "values": {
@@ -12157,6 +12073,16 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "{0} of {1} left",
+      "message": "剩餘 {0}（共 {1}）",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "剩餘 3（共 3）"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "{0} rollup hours",
       "message": "{0} 彙整時數",
       "values": {
@@ -12181,6 +12107,17 @@
         "0": 3
       },
       "expected": "3，開啟前保持暫停"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0}: {1} tokens, {2}",
+      "message": "{0}：{1} 個 token，{2}",
+      "values": {
+        "0": 3,
+        "1": 3,
+        "2": 3
+      },
+      "expected": "3：3 個 token，3"
     },
     {
       "locale": "zh-TW",
@@ -12341,15 +12278,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{botName}’s computer",
-      "message": "{botName} 的電腦",
-      "values": {
-        "botName": "value"
-      },
-      "expected": "value 的電腦"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "{calls} calls, {tokens} tokens",
       "message": "{calls} 次呼叫，{tokens} 個 token",
       "values": {
@@ -12378,6 +12306,15 @@
         "date": "value"
       },
       "expected": "value value，value"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{chatCount, plural, one {# chat} other {# chats}}",
+      "message": "{chatCount, plural, other {# 個聊天}}",
+      "values": {
+        "chatCount": 3
+      },
+      "expected": "3 個聊天"
     },
     {
       "locale": "zh-TW",
@@ -12510,15 +12447,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{count} months",
-      "message": "{count} 個月",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 個月"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "{count} more",
       "message": "還有 {count} 項",
       "values": {
@@ -12609,17 +12537,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{day}: {0} tokens, {1}",
-      "message": "{day}：{0} 個 token，{1}",
-      "values": {
-        "0": 3,
-        "1": 3,
-        "day": "value"
-      },
-      "expected": "value：3 個 token，3"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "{days} days free",
       "message": "免費 {days} 天",
       "values": {
@@ -12646,15 +12563,6 @@
         "price": "value"
       },
       "expected": "免費 value 天，之後每年 value。可隨時取消。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{days}d ago",
-      "message": "{days} 天前",
-      "values": {
-        "days": "value"
-      },
-      "expected": "value 天前"
     },
     {
       "locale": "zh-TW",
@@ -12686,16 +12594,6 @@
         "total": "value"
       },
       "expected": "第 value–value 列，共 value 列"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{fromName} to {toName}",
-      "message": "{fromName}至{toName}",
-      "values": {
-        "fromName": "value",
-        "toName": "value"
-      },
-      "expected": "value至value"
     },
     {
       "locale": "zh-TW",
@@ -12746,15 +12644,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{hours}h ago",
-      "message": "{hours} 小時前",
-      "values": {
-        "hours": "value"
-      },
-      "expected": "value 小時前"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "{inviterName} invited you",
       "message": "{inviterName} 邀請了你",
       "values": {
@@ -12791,23 +12680,13 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{memoryGb} GB of RAM and {usage}× the computer time of {0}. Time counts only while your bot uses its computer.",
-      "message": "{memoryGb} GB 記憶體，電腦時數是 {0} 的 {usage} 倍。只在你的機器人使用電腦時計時。",
+      "msgid": "{left} of {limit} left",
+      "message": "剩餘 {left}（共 {limit}）",
       "values": {
-        "0": 3,
-        "memoryGb": "value",
-        "usage": "value"
+        "left": "value",
+        "limit": "value"
       },
-      "expected": "value GB 記憶體，電腦時數是 3 的 value 倍。只在你的機器人使用電腦時計時。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "{minutes}m ago",
-      "message": "{minutes} 分鐘前",
-      "values": {
-        "minutes": "value"
-      },
-      "expected": "value 分鐘前"
+      "expected": "剩餘 value（共 value）"
     },
     {
       "locale": "zh-TW",
@@ -13522,6 +13401,16 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "@{0}, {1}",
+      "message": "@{0}，{1}",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "@3，3"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "@{name}",
       "message": "@{name}",
       "values": {
@@ -13531,21 +13420,12 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "2. Enter this code at {host}",
-      "message": "2. 在 {host} 輸入此驗證碼",
+      "msgid": "A sandbox limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
+      "message": "沙箱會限制對你電腦的存取，以提升安全性。使用 {hostLabel} 可讓機器人使用你的本機檔案和工具。",
       "values": {
-        "host": "chat.example.com"
+        "hostLabel": "value"
       },
-      "expected": "2. 在 chat.example.com 輸入此驗證碼"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "A {times}× more powerful computer for your bot",
-      "message": "為你的機器人提供效能強 {times} 倍的電腦",
-      "values": {
-        "times": "value"
-      },
-      "expected": "為你的機器人提供效能強 value 倍的電腦"
+      "expected": "沙箱會限制對你電腦的存取，以提升安全性。使用 value 可讓機器人使用你的本機檔案和工具。"
     },
     {
       "locale": "zh-TW",
@@ -13756,15 +13636,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "at {0}",
-      "message": "{0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "3"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "at {time}",
       "message": "{time}",
       "values": {
@@ -13816,6 +13687,15 @@
         "0": 3
       },
       "expected": "與 3 通話"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Change {0}",
+      "message": "更改 {0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "更改 3"
     },
     {
       "locale": "zh-TW",
@@ -14414,15 +14294,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Docker limits access to your computer for added security. Using {hostLabel} lets bots work with your local files and tools.",
-      "message": "Docker 限制對你電腦的存取，以提高安全性。使用 {hostLabel} 時，機器人可以處理你的本機檔案並使用本機工具。",
-      "values": {
-        "hostLabel": "value"
-      },
-      "expected": "Docker 限制對你電腦的存取，以提高安全性。使用 value 時，機器人可以處理你的本機檔案並使用本機工具。"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "Download {0}",
       "message": "下載 {0}",
       "values": {
@@ -14522,25 +14393,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Every {0}",
-      "message": "每{0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "每3"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Every {0} and {1}",
-      "message": "每{0}和{1}",
-      "values": {
-        "0": 3,
-        "1": 3
-      },
-      "expected": "每3和3"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "Every {day}",
       "message": "每{day}",
       "values": {
@@ -14590,15 +14442,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Every hour at :{0}",
-      "message": "每小時 {0} 分",
-      "values": {
-        "0": 3
-      },
-      "expected": "每小時 3 分"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "Every hour at :{minute}",
       "message": "每小時 {minute} 分",
       "values": {
@@ -14614,15 +14457,6 @@
         "app": "value"
       },
       "expected": "此機器人空間中的每個人都能閱讀它從 value 收到的聊天。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Everything in {0}",
-      "message": "包含 {0} 的所有內容",
-      "values": {
-        "0": 3
-      },
-      "expected": "包含 3 的所有內容"
     },
     {
       "locale": "zh-TW",
@@ -14750,6 +14584,15 @@
         "name": "Ada"
       },
       "expected": "你好，我是 Ada。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Hide {field}",
+      "message": "隱藏{field}",
+      "values": {
+        "field": "value"
+      },
+      "expected": "隱藏value"
     },
     {
       "locale": "zh-TW",
@@ -14943,12 +14786,31 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Message actions, {0}",
-      "message": "訊息操作，{0}",
+      "msgid": "Message actions, {speakerName}",
+      "message": "訊息操作，{speakerName}",
       "values": {
-        "0": 3
+        "speakerName": "value"
       },
-      "expected": "訊息操作，3"
+      "expected": "訊息操作，value"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Message actions, {speakerName}, {when}",
+      "message": "訊息操作，{speakerName}，{when}",
+      "values": {
+        "speakerName": "value",
+        "when": "value"
+      },
+      "expected": "訊息操作，value，value"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Message actions, {when}",
+      "message": "訊息操作，{when}",
+      "values": {
+        "when": "value"
+      },
+      "expected": "訊息操作，value"
     },
     {
       "locale": "zh-TW",
@@ -15086,15 +14948,6 @@
         "time": "value"
       },
       "expected": "value 日 value"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "on the 1st at {0}",
-      "message": "每月 1 日 {0}",
-      "values": {
-        "0": 3
-      },
-      "expected": "每月 1 日 3"
     },
     {
       "locale": "zh-TW",
@@ -15242,15 +15095,6 @@
         "count": 3
       },
       "expected": "第 value 頁，共 3 頁"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Password must be {MAX_PASSWORD_LENGTH} characters or fewer",
-      "message": "密碼不得超過 {MAX_PASSWORD_LENGTH} 個字元",
-      "values": {
-        "MAX_PASSWORD_LENGTH": 3
-      },
-      "expected": "密碼不得超過 3 個字元"
     },
     {
       "locale": "zh-TW",
@@ -15671,12 +15515,12 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Search MCP servers for “{query}”",
-      "message": "在 MCP 伺服器中搜尋「{query}」",
+      "msgid": "Search public MCP directory for “{term}”",
+      "message": "在公開 MCP 目錄中搜尋「{term}」",
       "values": {
-        "query": "value"
+        "term": "value"
       },
-      "expected": "在 MCP 伺服器中搜尋「value」"
+      "expected": "在公開 MCP 目錄中搜尋「value」"
     },
     {
       "locale": "zh-TW",
@@ -15758,6 +15602,15 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "Settings for {0}",
+      "message": "{0} 的設定",
+      "values": {
+        "0": 3
+      },
+      "expected": "3 的設定"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "Settings: {label}",
       "message": "設定：{label}",
       "values": {
@@ -15818,6 +15671,24 @@
         "name": "Ada"
       },
       "expected": "要與 Ada 分享語音資料嗎？"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Show {0}",
+      "message": "顯示 {0}",
+      "values": {
+        "0": 3
+      },
+      "expected": "顯示 3"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Show {field}",
+      "message": "顯示{field}",
+      "values": {
+        "field": "value"
+      },
+      "expected": "顯示value"
     },
     {
       "locale": "zh-TW",
@@ -15948,15 +15819,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Start {name} trial",
-      "message": "開始 {name} 試用",
-      "values": {
-        "name": "Ada"
-      },
-      "expected": "開始 Ada 試用"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "Start {trialDays}-day free trial",
       "message": "開始 {trialDays} 天免費試用",
       "values": {
@@ -16008,15 +15870,6 @@
         "price": "value"
       },
       "expected": "以每月 value 訂閱"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Subscribe to {name}",
-      "message": "訂閱 {name}",
-      "values": {
-        "name": "Ada"
-      },
-      "expected": "訂閱 Ada"
     },
     {
       "locale": "zh-TW",
@@ -16128,15 +15981,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Trial ends {day}",
-      "message": "試用於 {day} 結束",
-      "values": {
-        "day": "value"
-      },
-      "expected": "試用於 value 結束"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "Turn {0} on or off",
       "message": "開啟或關閉 {0}",
       "values": {
@@ -16179,15 +16023,6 @@
         "limit": "value"
       },
       "expected": "最多 value 個網站。"
-    },
-    {
-      "locale": "zh-TW",
-      "msgid": "Up to {times}× the vCPUs",
-      "message": "最多 {times} 倍的 vCPU",
-      "values": {
-        "times": "value"
-      },
-      "expected": "最多 value 倍的 vCPU"
     },
     {
       "locale": "zh-TW",
@@ -16284,12 +16119,12 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "Use defaults for {label}",
-      "message": "{label}使用預設值",
+      "msgid": "Use account settings for {label}",
+      "message": "對 {label} 使用帳號設定",
       "values": {
         "label": "value"
       },
-      "expected": "value使用預設值"
+      "expected": "對 value 使用帳號設定"
     },
     {
       "locale": "zh-TW",

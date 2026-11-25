@@ -235,7 +235,7 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
   await expect(page.getByTestId("connection-detail")).toHaveCount(0);
   await expect(linearRow.getByRole("button", { name: "Add Linear", exact: true })).toBeVisible();
 
-  // Custom sources live behind one menu: GitHub, then MCP → OpenAPI → GraphQL → Executor.
+  // The Add menu lists custom source kinds before the direct MCP presets.
   await page.getByRole("button", { name: "Add custom", exact: true }).click();
   const addItems = page.getByRole("menuitem");
   await expect(addItems).toHaveText([
@@ -243,6 +243,9 @@ test("takeover, routine, plugins, and export are reachable", async ({ page }, te
     "MCP server",
     "OpenAPI",
     "GraphQL",
+    "GitHub",
+    "Linear",
+    "Notion",
     "Executor",
     "Browse MCP servers",
     "Search by domain",
@@ -368,16 +371,22 @@ test("sign-in, spawn, and stop work in the shell", async ({ page }, testInfo) =>
     if (message.type() === "error") browserErrors.push(message.text());
   });
   page.on("requestfailed", (request) => {
+    // Leaving a page closes its live streams. A live signal replaces any in-flight account read.
+    const pathname = new URL(request.url()).pathname;
     const error = request.failure()?.errorText ?? "";
     // Account settings cancel their config read on cleanup; this is not a shell failure.
     if (
       request.method() === "GET" &&
-      new URL(request.url()).pathname === "/api/model-account/config" &&
+      pathname === "/api/model-account/config" &&
       error === "net::ERR_ABORTED"
     )
       return;
-    // Leaving a page closes the live streams it held open.
-    if (request.url().includes("/rpc/notifications/subscribe") && error === "net::ERR_ABORTED")
+    if (
+      (pathname === "/rpc/notifications/subscribe" ||
+        pathname === "/rpc/notifications/subscribeCalls" ||
+        pathname === "/rpc/me") &&
+      error === "net::ERR_ABORTED"
+    )
       return;
     failedRequests.push(`${request.method()} ${request.url()} ${error}`);
   });

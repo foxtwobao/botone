@@ -23,28 +23,8 @@ export const RU_MESSAGES: Record<string, string> = {
   "Your Rakazo confirmation code": "Ваш код подтверждения BotONE",
   "Enter this code in Rakazo to confirm it's you:":
     "Введите этот код в BotONE, чтобы подтвердить, что это вы:",
-  "Welcome to Rakazo": "Добро пожаловать в BotONE",
-  "Welcome to Rakazo. The people who get the most out of it do three things:":
-    "Добро пожаловать в BotONE. Те, кто получает от него больше всего, делают три вещи:",
-  "Get the apps": "Установите приложения",
-  "Rakazo runs on {platforms}, so your bots can reach you wherever you are.":
-    "BotONE работает на {platforms}, поэтому ваши боты могут связаться с вами где угодно.",
-  "Join the community": "Присоединяйтесь к сообществу",
-  "See what others are building, get help fast, and tell us what to build next on {discord}.":
-    "Смотрите, что создают другие, быстро получайте помощь и подскажите нам в {discord}, что сделать дальше.",
-  "Star us on GitHub": "Поставьте нам звезду на GitHub",
-  "Rakazo is open source. {star} helps more people find it.":
-    "BotONE — проект с открытым исходным кодом. {star} помогает другим его найти.",
-  "A star on GitHub": "Звезда на GitHub",
-  "Questions? Just reply. I read every one.":
-    "Есть вопросы? Просто ответьте. Я читаю каждое письмо.",
   Unsubscribe: "Отписаться",
-  "Invite a friend": "Пригласите друга",
-  "Invite a friend to Rakazo: they get {weeks} weeks free, and you earn a free month when they start a qualifying subscription with a new card.":
-    "Пригласите друга в BotONE: он получит {weeks} недели бесплатно, а вы — бесплатный месяц, когда он оформит подходящую подписку с новой картой.",
   "Open Rakazo": "Откройте BotONE",
-  "and choose Invite friends for your link.":
-    "и выберите «Пригласить друзей», чтобы получить ссылку.",
   "We received your Rakazo plugin": "Мы получили ваш плагин для BotONE",
   "Thanks for submitting a plugin to the Rakazo marketplace.":
     "Спасибо, что отправили плагин в маркетплейс BotONE.",
@@ -85,16 +65,4 @@ export const RU_MESSAGES: Record<string, string> = {
     "{inviter} приглашает вас присоединиться к {space} в BotONE.",
   "Join {space}": "Присоединиться к {space}",
   "This invitation expires in 7 days.": "Приглашение действует 7 дней.",
-  "Connect a model to start using Rakazo": "Подключите модель, чтобы начать пользоваться Rakazo",
-  "Your Rakazo plan has started, but your bots can't reply until a model is connected.":
-    "Ваш тариф Rakazo уже действует, но ваши боты не смогут отвечать, пока не подключена модель.",
-  "Sign in with your {subscriptions} subscription, or paste an API key.":
-    "Войдите с подпиской {subscriptions} или вставьте ключ API.",
-  "Connect a model": "Подключить модель",
-  "Bring your old assistant to Rakazo": "Перенесите своего прежнего ассистента в Rakazo",
-  "Already set up an assistant in {assistants}? Rakazo can bring over its instructions, memory, skills and routines as a new bot, so you don't start again.":
-    "Уже настроили ассистента в {assistants}? Rakazo может перенести его инструкции, память, навыки и рутины в нового бота, чтобы вам не начинать заново.",
-  "It works for any other assistant too: send it one prompt and paste its reply.":
-    "Это работает и с любым другим ассистентом: отправьте ему один промпт и вставьте его ответ.",
-  "Import an agent": "Импортировать агента",
 };

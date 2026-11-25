@@ -380,6 +380,16 @@ real contract and roster forwards them to their readers (an ignored signal must 
 stream); the device replay covers both. The latest catalogs also changed existing ICU fixtures;
 the device replay now checks the number of embedded cases rather than a hard-coded old total.
 
+**Upstream sync through 2026-11-24.** The same suite caught two more notification kinds,
+`deploymentModel` and `preferences`; their snapshots are refreshed and roster forwards them, still
+without a reader (the mobile reference re-reads `me` and the model lists on them). The thread
+snapshots gained an optional `routineUpdate` payload on ask blocks and a `webhook` flag on routine
+events. Neither changed port code: such an ask renders as the plain card, whose `detail` the
+contract keeps readable, and `routine_event` reads only `name` and `change`. The ICU fixture is
+refreshed from the current catalogs (1,809 cases). For this sync the unsigned app and ohosTest
+HAPs were built, and the ICU fixture was replayed through `formatIcu` under Node rather than on a
+device. The roster replay's new assertions compile but have not run under hypium.
+
 The consent fixture's delayed-answer timer was originally attached to `req.close`, which Node
 fires when the request body finishes. That cancelled the answer and left the kit waiting until
 its timeout. The timer now attaches to the response close, is bounded to 60 seconds, and is

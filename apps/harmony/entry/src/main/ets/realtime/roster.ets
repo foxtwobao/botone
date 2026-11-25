@@ -17,8 +17,8 @@ import { subscribeSession, subscribeSpaceSelection } from '../net/session';
 
 /** The Space change kinds the stream forwards (the SpaceChangeKind enum, pinned by snapshot). */
 export const SPACE_CHANGE_KINDS: string[] = [
-  'computerUpdates', 'runs', 'routines', 'meetings', 'artifacts', 'meetingCalendar',
-  'pages', 'nativeCalendar',
+  'computerUpdates', 'deploymentModel', 'runs', 'routines', 'meetings', 'artifacts', 'meetingCalendar',
+  'pages', 'nativeCalendar', 'preferences',
 ];
 
 export function isSpaceChangeKind(type: string): boolean {

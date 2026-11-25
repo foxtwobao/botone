@@ -41,9 +41,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "d"
-                      ],
+                      "required": ["d"],
                       "type": "object"
                     },
                     "maxItems": 8,
@@ -54,30 +52,19 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "viewBox",
-                  "paths"
-                ],
+                "required": ["viewBox", "paths"],
                 "type": "object"
               },
               "variant": {
-                "enum": [
-                  "solid",
-                  "outline"
-                ],
+                "enum": ["solid", "outline"],
                 "type": "string"
               }
             },
-            "required": [
-              "variant"
-            ],
+            "required": ["variant"],
             "type": "object"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "type": "object"
       },
       "maxItems": 8,
@@ -100,11 +87,7 @@
           "additionalProperties": false,
           "properties": {
             "availability": {
-              "enum": [
-                "available",
-                "unavailable",
-                "checking"
-              ],
+              "enum": ["available", "unavailable", "checking"],
               "type": "string"
             },
             "name": {
@@ -112,10 +95,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "name",
-            "availability"
-          ],
+          "required": ["name", "availability"],
           "type": "object"
         },
         {
@@ -124,11 +104,6 @@
       ]
     }
   },
-  "required": [
-    "sso",
-    "passwordAuth",
-    "passwordReset",
-    "resetUrl"
-  ],
+  "required": ["sso", "passwordAuth", "passwordReset", "resetUrl"],
   "type": "object"
 }

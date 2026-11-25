@@ -16,7 +16,9 @@ vi.mock("@tanstack/react-query", () => ({
   }),
 }));
 vi.mock("../../lib/auth/auth", () => ({
-  authClient: { useSession: () => ({ data: { session: { id: state.session } } }) },
+  authClient: {
+    useSession: () => ({ data: { session: { id: state.session }, user: { id: "fixture-user" } } }),
+  },
 }));
 vi.mock("./queries", () => ({
   modelAccountConfigQuery: { queryKey: ["config"] },
@@ -31,7 +33,7 @@ it("opens authorization directly, allows dismissal, and reopens after a new auth
   const host = document.body.appendChild(document.createElement("div"));
   const root = createRoot(host);
   function Page({ visible = false }: { visible?: boolean }) {
-    useAccountAuthorizationPrompt("fixture-user", open, visible);
+    useAccountAuthorizationPrompt(open, visible);
     return <p>Saved conversation and draft</p>;
   }
   const render = (visible = false) => act(() => root.render(<Page visible={visible} />));

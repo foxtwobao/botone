@@ -20,6 +20,7 @@ export const PL_MESSAGES: Record<string, string> = {
   Redo: "Ponów",
   Cut: "Wytnij",
   Copy: "Kopiuj",
+  "Copy Link Address": "Kopiuj adres linku",
   Paste: "Wklej",
   "Paste and Match Style": "Wklej i dopasuj styl",
   Delete: "Usuń",

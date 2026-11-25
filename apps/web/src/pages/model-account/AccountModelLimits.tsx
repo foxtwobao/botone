@@ -9,6 +9,9 @@ import {
 } from "@rakazo/core";
 import {
   Button,
+  Checkbox,
+  Field,
+  FieldLabel,
   ModelSettingsFields,
   Select,
   SelectContent,
@@ -17,7 +20,7 @@ import {
   SelectValue,
 } from "@rakazo/ui-web";
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 export function AccountModelLimits({
   credential,
@@ -27,6 +30,7 @@ export function AccountModelLimits({
   refresh: () => Promise<void>;
 }) {
   const { t } = useLingui();
+  const reasoningId = useId();
   const models = connectionModels(credential, []);
   const [draft, setDraft] = useState<{
     id: string;
@@ -92,10 +96,6 @@ export function AccountModelLimits({
         <>
           <ModelSettingsFields
             disabled={save.isPending}
-            capabilities
-            reasoning={draft.reasoning}
-            reasoningLabel={t`Supports thinking`}
-            onReasoningChange={(reasoning) => setDraft({ ...draft, reasoning })}
             contextWindow={draft.context}
             contextWindowLabel={t`Context limit`}
             contextWindowPlaceholder={String(DEFAULT_MODEL_CONTEXT_WINDOW)}
@@ -105,6 +105,15 @@ export function AccountModelLimits({
             maxTokensPlaceholder={String(DEFAULT_MODEL_MAX_TOKENS)}
             onMaxTokensChange={(output) => setDraft({ ...draft, output })}
           />
+          <Field orientation="horizontal" className="mt-3">
+            <FieldLabel htmlFor={reasoningId}>{t`Supports thinking`}</FieldLabel>
+            <Checkbox
+              id={reasoningId}
+              checked={draft.reasoning}
+              onCheckedChange={(reasoning) => setDraft({ ...draft, reasoning: reasoning === true })}
+              disabled={save.isPending}
+            />
+          </Field>
           {!limits ? (
             <p role="alert">
               <Trans>Enter positive whole numbers. Output must be below the context limit.</Trans>

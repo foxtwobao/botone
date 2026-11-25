@@ -2,6 +2,7 @@
   "ios": {
     "NSCameraUsageDescription": "BotONE usa la cámara para que puedas adjuntar fotos a un mensaje para un bot.",
     "NSPhotoLibraryUsageDescription": "BotONE usa tu fototeca para que puedas adjuntar imágenes a un mensaje para un bot.",
+    "NSPhotoLibraryAddUsageDescription": "BotONE guarda en tu fototeca las fotos y los vídeos que descargas de Artefactos.",
     "NSLocalNetworkUsageDescription": "BotONE se conecta a un servidor de BotONE autoalojado en tu red local.",
     "NSMicrophoneUsageDescription": "BotONE usa el micrófono para las llamadas de voz con tus bots.",
     "NSSpeechRecognitionUsageDescription": "BotONE convierte lo que dices en mensajes durante las llamadas de voz.",

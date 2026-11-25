@@ -105,7 +105,8 @@ import {
   subscribeRemoteImages,
 } from "../lib/preferences/remote-images-preference";
 import { loadResponseStreamingPreference } from "../lib/preferences/response-streaming";
-import { clearQueries, resetRpcQueries } from "../lib/query/query";
+import { clearQueries, queryClient, resetRpcQueries } from "../lib/query/query";
+import { clearSavedReads, keepSavedReads } from "../lib/query/saved-reads";
 import {
   loadTrustedLinkSites,
   trustLinkSite,
@@ -119,6 +120,8 @@ capTextScaling();
 configureForegroundNotifications();
 registerSessionDiskCache(clearSavedChats);
 registerSessionDiskCache(clearQueries);
+keepSavedReads(queryClient);
+registerSessionDiskCache(clearSavedReads);
 subscribeAiConsentGranted(() => void resetRpcQueries("aiConsent/status"));
 registerSessionDiskCache((sameAccount) => {
   if (!sameAccount) return clearLastBot();

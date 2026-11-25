@@ -12,6 +12,10 @@
     "name": {
       "maxLength": 200,
       "type": "string"
+    },
+    "webhook": {
+      "const": true,
+      "type": "boolean"
     }
   },
   "required": ["kind", "change", "name"],

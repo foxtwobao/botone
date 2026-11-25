@@ -33,6 +33,8 @@ const models = vi.hoisted(() => ({
   role: vi.fn(),
   forRole: vi.fn(),
   setRole: vi.fn(),
+  media: vi.fn(),
+  setMedia: vi.fn(),
   credentials: vi.fn(),
   connect: vi.fn(),
   disconnect: vi.fn(),
@@ -45,6 +47,7 @@ const models = vi.hoisted(() => ({
   completeOAuth: vi.fn(),
   finishOAuth: vi.fn(),
   submitOAuthCode: vi.fn(),
+  deployment: { get: vi.fn(), update: vi.fn() },
 }));
 
 // These settings tests own the account fixture; no real session refresh or browser listeners.
@@ -370,6 +373,8 @@ beforeEach(() => {
   vi.mocked(rpc.me).mockResolvedValue(account("deepseek", "deepseek-chat"));
   models.list.mockResolvedValue([deepseekEntry]);
   models.credentials.mockResolvedValue([]);
+  const noMedia = { options: [], selected: null };
+  models.media.mockResolvedValue({ image: noMedia, video: noMedia });
   autoReview.get.mockResolvedValue({
     mode: "ask",
     enabled: false,
@@ -2031,6 +2036,43 @@ it("offers only account credentials even when the server lists ordinary connecti
     expect(models.setRole).toHaveBeenCalled();
   } finally {
     await view.unmount();
+  }
+});
+
+it("keeps the deployment default within reach for an admin in account-only mode", async () => {
+  models.credentials.mockResolvedValue([
+    {
+      id: "external-fixture",
+      label: "Model account",
+      provider: "openai-compatible",
+      enabledModelIds: ["account-model"],
+    },
+  ]);
+  models.deployment.get.mockResolvedValue({
+    provider: null,
+    modelId: null,
+    keySaved: false,
+    providers: [{ id: "example-provider", name: "Example Provider", models: [] }],
+  });
+  for (const isAdmin of [false, true]) {
+    vi.mocked(rpc.me).mockResolvedValue({
+      ...account("openai-compatible", "account-model"),
+      isAdmin,
+    });
+    const view = await renderSettings(true, testQueryClient(), "account", true);
+    try {
+      const block = view.container.querySelector('[data-testid="deployment-model-settings"]');
+      if (isAdmin) {
+        expect(block).not.toBeNull();
+        expect(block?.textContent).toContain("Default for everyone");
+      } else {
+        expect(block).toBeNull();
+        expect(models.deployment.get).not.toHaveBeenCalled();
+      }
+    } finally {
+      await view.unmount();
+      models.deployment.get.mockClear();
+    }
   }
 });
 

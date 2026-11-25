@@ -16,6 +16,7 @@ import { ModelAccount } from "../../components/ModelAccount";
 import { useSpaceQueries } from "../../lib/query/query";
 import { useSpaceRpc } from "../../lib/query/space-rpc";
 import { errorText } from "../../lib/query/user-error";
+import { DeploymentModelSettings } from "../model-settings/deployment-model-settings";
 import { SpaceBotsModelButton } from "../model-settings/space-bots-model";
 import { AccountI18n } from "./AccountI18n";
 import { AccountModelLimits } from "./AccountModelLimits";
@@ -44,6 +45,9 @@ function ModelAccountSettingsContent({
     ? t`Authorize access to ${serviceName} models`
     : t`Authorize model service`;
   const me = useQuery({ queryKey: queries.me.queryKey(), queryFn: () => rpc.me() });
+  // This page replaces the connection page that hosts the deployment default, so it
+  // hosts it here: same place in the account's list, same admin-only rule.
+  const deploymentDefault = scope === "account" && me.data?.isAdmin;
   const credentials = useQuery({
     queryKey: queries.models.credentials.queryKey(),
     queryFn: () => rpc.models.credentials(),
@@ -108,6 +112,7 @@ function ModelAccountSettingsContent({
           ) : null}
         </>
       ) : null}
+      {deploymentDefault ? <DeploymentModelSettings /> : null}
     </div>
   );
   if (embedded) return content;

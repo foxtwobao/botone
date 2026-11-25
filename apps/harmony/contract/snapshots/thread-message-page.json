@@ -474,6 +474,46 @@
                       "required": ["id", "origin"],
                       "type": "object"
                     },
+                    "routineUpdate": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "changes": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "after": {
+                                "type": ["string", "boolean", "null"]
+                              },
+                              "before": {
+                                "type": ["string", "boolean", "null"]
+                              },
+                              "field": {
+                                "enum": [
+                                  "active",
+                                  "name",
+                                  "schedule",
+                                  "timezone",
+                                  "nextRun",
+                                  "inChat",
+                                  "prompt"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": ["field", "before", "after"],
+                            "type": "object"
+                          },
+                          "maxItems": 7,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["changes"],
+                      "type": "object"
+                    },
                     "settingsUpdate": {
                       "additionalProperties": false,
                       "properties": {
@@ -818,6 +858,10 @@
                     "name": {
                       "maxLength": 200,
                       "type": "string"
+                    },
+                    "webhook": {
+                      "const": true,
+                      "type": "boolean"
                     }
                   },
                   "required": ["kind", "change", "name"],

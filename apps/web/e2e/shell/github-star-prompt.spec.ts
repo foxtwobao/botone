@@ -16,9 +16,13 @@ test("never asks for a GitHub star after repeated messages", async ({ page }, te
 
   const composer = page.getByRole("combobox", { name: /Message/ });
   const transcript = page.getByTestId("transcript");
+  const send = page.getByRole("button", { name: "Send", exact: true });
   for (let index = 1; index <= 7; index++) {
     const text = `Message ${index}`;
     await composer.fill(text);
+    // The transcript is optimistic: a bubble shows while its send is still in flight, and a send
+    // in flight takes no next Enter. Wait for the previous send, as the enabled Send control shows.
+    await expect(send).toBeEnabled();
     await composer.press("Enter");
     await expect(transcript.getByText(text, { exact: true })).toBeVisible();
   }
