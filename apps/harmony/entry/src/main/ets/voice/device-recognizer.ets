@@ -4,17 +4,30 @@
 // speaker's is not a speech locale), and it is available only when the engine itself lists that
 // language. The microphone answers 16 kHz mono S16LE PCM, handed over in the 1280-byte frames
 // the engine takes; the engine's own 60-second cap reads as a session that ended, which the
-// state machine restarts as it does every natural end — and that restart keeps the microphone,
-// so a rotating segment never drops audio. Listening ending for real stops and releases the
-// microphone, so no capture outlives the dictation that asked for it; callbacks name their
-// session, so a late word from an old segment cannot touch the one now running. Nothing loads
-// until the first listen, behind the capability check, and both the engine and the microphone
-// are released when the app leaves the foreground. Tests hand a scripted engine and microphone
-// in through setHardware.
+// state machine restarts as it does every natural end — and that restart keeps the microphone.
+// Listening ending for real stops and releases the microphone, so no capture outlives the
+// dictation that asked for it.
+//
+// One segment (one engine session) is in one of five states; the table with every entry's rule
+// is in docs/m7-notes.md:
+//   opening    the engine listens; the segment's microphone is still being opened
+//   recording  the microphone feeds the engine
+//   finishing  the engine was asked to finish or cancel the segment; its last words and its
+//              end are awaited
+//   closing    the engine ended the segment; the state machine still owes a restart or a stop
+//   idle       nothing is left to count
+// Whatever arrives is checked against the segment it belongs to before it acts: an engine
+// callback by the session it names, an opening microphone by the segment that asked for it. So a
+// late callback from an older segment, or a microphone opened for one that ended meanwhile,
+// cannot touch the one running now, and a segment's end is reported once.
+// Nothing loads until the first listen, behind the capability check, and both the engine and the
+// microphone are released when the app leaves the foreground. Tests hand a scripted engine and
+// microphone in through setHardware.
 import type { speechRecognizer } from '@kit.CoreSpeechKit';
 import type { audio } from '@kit.AudioKit';
 import { i18n } from '@kit.LocalizationKit';
 import type { common } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { recognitionLocaleTag } from './speech-locale';
 import { currentLocale } from '../i18n/i18n';
 import { paceLevel, pcmLevel } from './voice-clip';
@@ -45,6 +58,8 @@ export interface CaptureMic {
 const FRAME_BYTES = 1_280;
 /** The engine accepts at most 60,000 ms of audio per session. */
 const SESSION_AUDIO_MS = 60_000;
+/** The engine's answer to a finish it will not do: no last words and no completion follow it. */
+const FINISH_REFUSED = 1002200004;
 
 /** The recognition locale the composer dictates in: the device's language, the app's when the
  *  speaker's is not a speech locale. */
@@ -52,7 +67,7 @@ export function recognitionLanguage(): string {
   return recognitionLocaleTag(currentLocale(), i18n.System.getSystemLanguage());
 }
 
-/** One running session: the engine's id, and where the microphone's frames feed it. */
+/** One segment: the engine's session id, and how much audio it was fed. */
 interface LiveSession {
   sessionId: string;
   fed: number;
@@ -91,12 +106,32 @@ async function openCapturer(): Promise<CaptureMic | null> {
       try {
         capturer.off('readData');
       } catch (err) {
-        // The listener goes with the capturer either way.
+        hilog.warn(0, 'Voice', 'Could not detach the microphone listener');
       }
       await capturer.release();
     },
   };
   return mic;
+}
+
+/** Releases a microphone that never recorded, or whose start failed. A failure is logged: the
+ *  caller is done with this microphone either way. */
+async function releaseMicrophone(mic: CaptureMic): Promise<void> {
+  try {
+    await mic.release();
+  } catch (err) {
+    hilog.warn(0, 'Voice', 'Could not release the microphone');
+  }
+}
+
+/** Lets go of a recording microphone: stopped, then released whatever the stop did. */
+async function stopMicrophone(mic: CaptureMic): Promise<void> {
+  try {
+    await mic.stop();
+  } catch (err) {
+    hilog.warn(0, 'Voice', 'Could not stop the microphone');
+  }
+  await releaseMicrophone(mic);
 }
 
 /**
@@ -109,7 +144,14 @@ export class DeviceRecognizer implements SpeechRecognizer {
   private available: boolean = false;
   private mic: CaptureMic | null = null;
   private events: RecognizerEvents | null = null;
+  /** The running segment (opening or recording): the engine is listening to it. */
   private session: LiveSession | null = null;
+  /** The segment that left last. While none runs, a callback counts only when it names this
+   *  one, and the next segment replaces it. */
+  private closed: LiveSession | null = null;
+  /** The engine still owes the end of the closed segment: it was asked to finish or cancel it,
+   *  and reports its last words and its completion after. */
+  private awaiting: boolean = false;
   private carry: number[] = [];
   private followsLevel: boolean = false;
   private counter = 0;
@@ -158,6 +200,8 @@ export class DeviceRecognizer implements SpeechRecognizer {
       const languages = await engine.listLanguages({ sessionId: 'rakazo-ask' });
       this.available = languages.includes(language);
     } catch (err) {
+      // The recognizer answers as a device without the engine would.
+      hilog.warn(0, 'Voice', 'Could not prepare the recognizer');
       this.available = false;
     }
   }
@@ -168,6 +212,7 @@ export class DeviceRecognizer implements SpeechRecognizer {
       return await api.default.createEngine({ language: language, online: 1 });
     } catch (err) {
       // A failed engine creation is no engine at all: the caller reads no availability.
+      hilog.warn(0, 'Voice', 'Could not create the recognizer engine');
       return null;
     }
   }
@@ -193,6 +238,7 @@ export class DeviceRecognizer implements SpeechRecognizer {
     this.followsLevel = options.level;
     const session: LiveSession = { sessionId: sessionId, fed: 0 };
     this.session = session;
+    this.reset();
     this.carry = [];
     try {
       engine.startListening({
@@ -200,24 +246,38 @@ export class DeviceRecognizer implements SpeechRecognizer {
         audioInfo: { audioType: 'pcm', sampleRate: 16_000, soundChannel: 1, sampleBit: 16 },
       });
     } catch (err) {
+      // The engine did not start listening: no end will come from it for this segment.
       this.session = null;
+      this.closed = session;
+      this.carry = [];
       const failure: DictationError = { error: 'unknown' };
       this.events?.error(failure);
       return;
     }
-    void this.openMicrophone();
+    void this.openMicrophone(session);
+  }
+
+  /** Ends the running segment keeping what it heard: the engine is asked to finish, and its last
+   *  words arrive through the events before its end does. Nothing running leaves nothing to wait
+   *  for: the end is reported at once. */
+  finish(): void {
+    const session = this.session;
+    if (session !== null) {
+      this.closeSession(session);
+      return;
+    }
+    if (!this.awaiting) {
+      this.events?.end();
+    }
   }
 
   abort(): void {
-    const engine = this.engine;
-    const session = this.session;
-    this.session = null;
-    this.carry = [];
-    if (engine !== null && session !== null) {
+    const session = this.handOver();
+    if (session !== null) {
       try {
-        engine.cancel(session.sessionId);
+        this.engine?.cancel(session.sessionId);
       } catch (err) {
-        // A session already over: nothing to cancel.
+        hilog.warn(0, 'Voice', 'Could not cancel the recognition');
       }
     }
     // Listening ended here, not rotating into the next segment: the microphone goes with it.
@@ -229,7 +289,7 @@ export class DeviceRecognizer implements SpeechRecognizer {
     const mic = this.mic;
     this.mic = null;
     if (mic !== null) {
-      void mic.stop().then((): Promise<void> => mic.release()).catch((): void => undefined);
+      void stopMicrophone(mic);
     }
   }
 
@@ -240,6 +300,7 @@ export class DeviceRecognizer implements SpeechRecognizer {
     });
     return (): void => {
       this.abort();
+      this.reset();
       this.events = null;
     };
   }
@@ -251,18 +312,69 @@ export class DeviceRecognizer implements SpeechRecognizer {
     this.engine = null;
     this.available = false;
     this.loading = null;
+    this.reset();
     try {
       engine?.shutdown();
     } catch (err) {
-      // A shutdown failure leaves the engine to the system's own lifetime.
+      hilog.warn(0, 'Voice', 'Could not shut down the recognizer');
     }
   }
 
-  /** A callback belongs to the session it names: one from an older segment must not touch the
-   *  running one. With none running, the just-finished segment's own end still counts. */
+  /** A callback belongs to the segment it names: the one running, else the one that left last.
+   *  Anything else was over before anything now. */
   private isCurrent(sessionId: string): boolean {
+    const current = this.session ?? this.closed;
+    return current !== null && current.sessionId === sessionId;
+  }
+
+  /** A segment is running, or the engine still owes one its end. */
+  private endPending(): boolean {
+    return this.session !== null || this.awaiting;
+  }
+
+  /** Nothing from before counts any more. */
+  private reset(): void {
+    this.closed = null;
+    this.awaiting = false;
+  }
+
+  /** Stops writing to the running segment and leaves its end to the engine: no frame is written
+   *  to it after this, and its own callbacks still count until it reports done. */
+  private handOver(): LiveSession | null {
     const session = this.session;
-    return session === null || session.sessionId === sessionId;
+    if (session === null) {
+      return null;
+    }
+    this.session = null;
+    this.closed = session;
+    this.carry = [];
+    this.awaiting = true;
+    return session;
+  }
+
+  /** The engine is done with a segment: nothing runs until the state machine starts the next one
+   *  or stops, and this segment's end is not reported again. */
+  private engineEnded(): void {
+    if (this.session !== null) {
+      this.closed = this.session;
+      this.session = null;
+      this.carry = [];
+    }
+    this.awaiting = false;
+    this.events?.end();
+  }
+
+  /** Asks the engine to finish the segment and keep its words: they arrive through the listener,
+   *  then its end. */
+  private closeSession(session: LiveSession): void {
+    this.handOver();
+    try {
+      this.engine?.finish(session.sessionId);
+    } catch (err) {
+      // The engine threw instead of answering: no last words and no end are coming from it.
+      hilog.warn(0, 'Voice', 'Could not finish the recognition');
+      this.engineEnded();
+    }
   }
 
   private listener(): speechRecognizer.RecognitionListener {
@@ -280,6 +392,8 @@ export class DeviceRecognizer implements SpeechRecognizer {
         }
       },
       onResult: (sessionId: string, result: speechRecognizer.SpeechRecognitionResult): void => {
+        // A segment's last words may follow the error that ended it: they still count as long as
+        // no later segment replaced it.
         if (!this.isCurrent(sessionId)) {
           return;
         }
@@ -289,27 +403,35 @@ export class DeviceRecognizer implements SpeechRecognizer {
         }
       },
       onComplete: (sessionId: string, _eventMessage: string): void => {
-        if (!this.isCurrent(sessionId)) {
-          return;
+        // A completion that follows the error that already ended the segment is no second end.
+        if (this.isCurrent(sessionId) && this.endPending()) {
+          this.engineEnded();
         }
-        this.session = null;
-        this.events?.end();
       },
       onError: (sessionId: string, errorCode: number, _errorMessage: string): void => {
-        if (!this.isCurrent(sessionId)) {
+        // An error for a segment that already ended, as a late write into one the engine capped,
+        // says nothing new.
+        if (!this.isCurrent(sessionId) || !this.endPending()) {
           return;
         }
         // The engine's own codes are internal service trouble, which a restart may clear.
         const event: DictationError = { error: errorCode === 1002200006 ? 'busy' : 'unknown' };
-        this.session = null;
         this.events?.error(event);
-        this.events?.end();
+        // A segment the engine was asked to finish or to cancel reports its last words and its
+        // completion after such an error: they are waited for. Only a finish it refuses ends
+        // without them.
+        if (!this.awaiting || errorCode === FINISH_REFUSED) {
+          this.engineEnded();
+        }
       },
     };
   }
 
-  private async openMicrophone(): Promise<void> {
-    if (this.mic !== null || this.session === null) {
+  /** Opens the microphone for `session`. Every wait is followed by the question whether that
+   *  segment still runs: one that ended meanwhile takes no microphone, and the microphone opened
+   *  for it is released rather than left open beside the next segment's. */
+  private async openMicrophone(session: LiveSession): Promise<void> {
+    if (this.mic !== null || this.session !== session) {
       return;
     }
     const factory = this.micFactory;
@@ -317,31 +439,44 @@ export class DeviceRecognizer implements SpeechRecognizer {
     try {
       mic = factory !== null ? await factory() : await openCapturer();
     } catch (err) {
-      mic = null;
+      hilog.warn(0, 'Voice', 'Could not open the microphone');
     }
-    if (mic === null) {
-      const failure: DictationError = { error: 'audio-capture' };
-      this.events?.error(failure);
+    const opened = mic;
+    if (opened === null) {
+      this.failCapture(session);
       return;
     }
-    const opened: CaptureMic = mic;
+    if (this.session !== session) {
+      // Ended while the microphone was being created: it was never started.
+      void releaseMicrophone(opened);
+      return;
+    }
     try {
       opened.onFrames((buffer: ArrayBuffer): void => {
         this.heard(buffer);
       });
       await opened.start();
     } catch (err) {
-      const failure: DictationError = { error: 'audio-capture' };
-      this.events?.error(failure);
-      void opened.release().catch((): void => undefined);
+      hilog.warn(0, 'Voice', 'Could not start the microphone');
+      void releaseMicrophone(opened);
+      this.failCapture(session);
       return;
     }
-    if (this.session === null) {
-      // The session ended while the microphone was opening.
-      void opened.stop().then((): Promise<void> => opened.release()).catch((): void => undefined);
+    if (this.session !== session) {
+      // The segment ended while the microphone was starting.
+      void stopMicrophone(opened);
       return;
     }
     this.mic = opened;
+  }
+
+  /** The microphone cannot record, so the listening session ends on it: reported while the
+   *  segment it was opened for still runs. */
+  private failCapture(session: LiveSession): void {
+    if (this.session === session) {
+      const failure: DictationError = { error: 'audio-capture' };
+      this.events?.error(failure);
+    }
   }
 
   /** One microphone buffer: level out, frames to the engine in. */
@@ -376,22 +511,12 @@ export class DeviceRecognizer implements SpeechRecognizer {
       engine.writeAudio(session.sessionId, frame);
       session.fed += frame.byteLength;
     } catch (err) {
-      // The engine's audio cap (1002200003): finish the session, whose end restarts it.
+      // The engine ends a segment itself at its 60 s cap; one that refuses the frame instead
+      // (1002200003) is finished here, and that end restarts it.
       if (session.fed >= SESSION_AUDIO_MS * 32 - FRAME_BYTES) {
         this.closeSession(session);
       }
       // A dropped frame only shortens the turn's tail.
-    }
-  }
-
-  private closeSession(session: LiveSession): void {
-    const engine = this.engine;
-    this.session = null;
-    this.carry = [];
-    try {
-      engine?.finish(session.sessionId);
-    } catch (err) {
-      // Already complete: the engine's own end event ends the session for us.
     }
   }
 }

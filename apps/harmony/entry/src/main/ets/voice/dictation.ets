@@ -6,6 +6,11 @@
 // The recognizer and the clock are injected, so the state machine replays under hypium without
 // hardware; the layer-2 voice fixture is generated from the real mobile module. Not ported: the
 // call audio-session option and the iOS locale query (no calls here, no iOS).
+//
+// One addition of this port: a recognizer may offer a finish that keeps its own last words
+// (SpeechRecognizer.finish). A caller's finish then ends the turn when those words and the
+// recognizer's end are in, instead of aborting the segment out from under them. Without it the
+// turn ends as mobile's does, with what was reported so far.
 
 import { supportedSpeechTag } from './speech-locale';
 import type { StopSignal } from './stop-signal';
@@ -66,6 +71,9 @@ export interface SpeechRecognizer {
   load: () => Promise<void>;
   start: (options: RecognizerStartOptions) => void;
   abort: () => void;
+  /** Ends the running session keeping what it heard: its last words arrive through `result`,
+   *  then `end`. A recognizer without it is aborted by a caller's finish, as always. */
+  finish?: () => void;
   isRecognitionAvailable: () => boolean;
   /** Asks for the microphone when it is not allowed yet; true when dictation may listen. */
   requestPermissions: () => Promise<boolean>;
@@ -102,6 +110,8 @@ interface Session {
   onLevel?: (level: number) => void;
   /** Quiet gap that ends the utterance. */
   endpointMs: number;
+  /** The caller asked for the words: the recognizer's end delivers them rather than restarting. */
+  finishing: boolean;
   /** The caller chose the gap, so the silence timer alone ends a quiet session. */
   ownEndpoint: boolean;
   /** The words last reported, so a repeated result is not mistaken for new speech. */
@@ -201,9 +211,17 @@ export function stop(): void {
 
 /** Ends the running session now and delivers what it heard. */
 export function finishListening(): void {
-  if (active !== null) {
-    finish(active, 'idle');
+  const session = active;
+  if (session === null) {
+    return;
   }
+  if (session.recognizer.finish === undefined) {
+    finish(session, 'idle');
+    return;
+  }
+  // The recognizer's own last words come with its end: the turn ends once they are in.
+  session.finishing = true;
+  session.recognizer.finish();
 }
 
 /**
@@ -238,6 +256,7 @@ export async function listen(opts: DictationListenOptions): Promise<void> {
     onLevel: opts.onLevel,
     endpointMs: opts.endpointMs ?? ENDPOINT_SILENCE_MS,
     ownEndpoint: opts.endpointMs !== undefined,
+    finishing: false,
     reported: '',
     carried: '',
     heard: '',
@@ -397,6 +416,11 @@ function onResult(session: Session, event: DictationResult): void {
 
 function onEnd(session: Session): void {
   if (active !== session) {
+    return;
+  }
+  if (session.finishing) {
+    // The end the caller's finish was waiting for: deliver rather than restart.
+    finish(session, 'idle');
     return;
   }
   disarm(session.quiet);

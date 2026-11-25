@@ -5,8 +5,8 @@ dictation into the composer, read-aloud from a message, the bot's device voice, 
 settings page. Decisions were written down before any code in [m7-scope.md](m7-scope.md); this
 file records what shipped, what the device showed, and what the scope could not cover.
 
-**Status: verified on the emulator.** Hypium 201/201 (the review round added the lifecycle
-tests), the capability probe's findings hold in the shipped code, every walkthrough row
+**Status: verified on the emulator.** Hypium 214/214 (13 lifecycle cases added by the third
+review round), the capability probe's findings hold in the shipped code, every walkthrough row
 measured, 15 captures.
 
 ## What ships
@@ -76,14 +76,28 @@ collects.
 | Gate | Result |
 | --- | --- |
 | `pnpm exec vitest run apps/harmony/contract` | **131 / 131** |
-| `pnpm checks` | all green |
-| `pnpm lint` (Biome) | 0 errors |
-| `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL**; after the review round, verified against a clean build (caches wiped): **no ArkTS warning in any M7 file** |
-| hypium on the emulator | **201 / 201** (the full suite, fixture servers on 8787/8788) |
+| `pnpm checks` | all green (160) |
+| `pnpm lint` (Biome) | 0 errors (25 warnings and 24 infos; Biome does not read `.ets`) |
+| `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL** after `devecocli build clean`: **no ArkTS warning in any file M7 added or changed** |
+| hypium on the emulator | **214 / 214** (the full suite, fixture servers on 8787/8788) |
 | screenshots `m7-*.png` | 15 captures covering every row below |
 
+"No warning in an M7 file" is not "no warning in the build". Six warnings remain, all in files
+from earlier milestones that M7 never touched, and they are left as they are:
+`features/chat/consent-dialog.ets:56` (`AlertDialog` and `show` are deprecated; M3), and
+"Function may throw" in `net/asset-store.ets:56`, `net/server-store.ets:32` and `:33` and
+`net/sse.ets:200` (M1). The test build adds `ohosTest/ets/test/SseSmoke.test.ets:33` (M0).
+
 The emulator is the owner-started `devphone`; no power or license was touched, and the HAPs were
-debug-signed with a borrowed local config, reverted after each build.
+debug-signed with a borrowed local config, reverted after each build. In this round
+`devecocli signature generate` answered that the CLI's online services are not available in its
+detected region, so the borrowed config names signing material an earlier session had generated.
+
+The full hypium suite ran three times on the fixed code: 214/214, 213/214, then 214/214 on the
+same build. The one failure was `offline_read_keeps_the_last_rows_painted` in
+`RosterRealtime.test` (M3, the roster's offline banner), which read an empty error right after the
+banner appeared. It passed alone and in the other two runs, and nothing in this round touches the
+roster.
 
 ### The capability probe (before any product code)
 
@@ -149,11 +163,92 @@ each with a machine-run test:
 | S1 | The engine callbacks discarded their `sessionId`, so a late word, completion or error from an old segment could write into or clear the running one (60 s rotation, cancel-then-reopen). | Every listener callback now belongs to the session it names (`isCurrent`): a callback for an old segment arriving after the next one started is dropped, while the just-finished segment's own end still restarts it. The old-after-new ordering is tested. |
 | S2 | A bot row from an older server without `autoSpeak` failed to decode, dropping the whole bot from the list. | `readAutoSpeak`: missing or null reads as false (no reading aloud); a value of another type still fails the row. An old-response test was added to `Decode.test`. |
 | S3 | `pcmLevel` read the S16LE pairs unsigned — a negative half-wave read as a huge positive — and both capture paths repainted the meter once per microphone buffer. | The pair is read signed, and the level is paced at ten a second (`paceLevel`) on both the recording and the recognizer path. A signed-reading test covers the arithmetic. |
-| nit | These notes claimed no ArkTS warning in any M7 file while a clean build showed nine "Function may throw" warnings in `voice-prefs.ets` and `clip-player.ets` — the incremental builds had hidden them. | The throwing kit calls (preferences `get`/`put`/`flush`, both `openSync`, `createAVPlayer`, and the engine's `createEngine`) are wrapped, and the claim now holds against a clean build. |
+| nit | These notes claimed no ArkTS warning in any M7 file while a clean build showed nine "Function may throw" warnings in `voice-prefs.ets` and `clip-player.ets` — the incremental builds had hidden them. | The throwing kit calls (preferences `get`/`put`/`flush`, both `openSync`, `createAVPlayer`, and the engine's `createEngine`) are wrapped, and no M7 file warns against a clean build. The build's other warnings are listed under Verification. |
 
 The seams the tests need follow the module's own pattern — the recognizer and microphone behind
 `setHardware` on `DeviceRecognizer` (the dictation state machine already injected its engines),
 the microphone grant and the clip recorder behind `setVoiceMicrophoneGrant`/`setClipRecorder`.
+
+## Review findings (Codex's third round: the recognizer's lifecycle)
+
+A re-read of `47d619a89` closed B3, S2, S3 and the warning nit, judged B1, B2 and S1 not closed
+in substance, and found one more race (N1). All of it sits in `device-recognizer.ets`, so it was
+fixed as one state machine: the engine was probed on the emulator first, the states and every
+asynchronous entry were written down, and the code followed.
+
+### What the engine does
+
+A probe against the device engine in the hypium process (not committed; noise, and speech
+synthesized on the device with `playType: 0` and fed in real time).
+
+| Question | The engine's answer |
+| --- | --- |
+| A segment asked to `finish` | Its final words, then `onComplete`, 0–15 ms later. A finish 1.2 s into 「你好，今天天气怎么样」 answered 「你好今天。」 where the interim had been 「你好」 |
+| A segment cancelled | No final words: `onComplete` alone, or `onError(1002200010)` then `onComplete` |
+| An error around a finish | `onError(1002200010, "Write audio failed because the start listening is failed.")` comes in some runs and not in others, before the final words (which follow 15 ms later) or after them. The same error answers a frame written into a segment that already ended |
+| The 60 s cap | The engine ends the segment itself at about 59.6 s (`onEvent(3)`, final words, `onComplete`). `writeAudio` does not throw: 1,700 frames written back to back past the cap, no exception. The segment started after it hears normally |
+| `finish` or `cancel` on a session the engine does not know | Nothing is thrown. `onError(1002200004)` or `onError(1002200005)` names that session, and no completion follows |
+| A segment finished before any audio | `onComplete`, no result |
+| Two segments listening at once | Both get the error. The next segment may start the moment the last one was finished or cancelled |
+
+So `onError` is a notice the engine sends around a normal finish, not the end of anything. The
+adapter ended the segment on it, which on the device delivers a send without the engine's last
+words.
+
+### The state table
+
+A segment is one engine session. `session` holds the running one, `closed` the one that left
+last, `awaiting` whether the engine still owes that one its end.
+
+| Entry | opening | recording | finishing | closing | idle |
+| --- | --- | --- | --- | --- | --- |
+| | the engine listens, its microphone is being opened | the microphone feeds the engine | the engine was asked to finish or cancel; its last words and its end are awaited | the engine ended the segment; a restart or a stop is still owed | nothing is left to count |
+| `onEvent`, `onResult` naming the running or the closed segment | counts | counts | counts: the awaited last words | counts | dropped |
+| Any callback naming another segment | dropped | dropped | dropped | dropped | dropped |
+| `onComplete` of that segment | to closing, one `end` | to closing, one `end` | to closing, one `end` | dropped: already ended | dropped |
+| `onError` of that segment | to closing, `error` and one `end` | the same | `error` only; the end waits for the completion, except a refused finish (1002200004), which ends at once | dropped | dropped |
+| `start` (a restart, a new listen) | — | — | to opening, clean | to opening, clean | to opening |
+| `finish` (a send or a stop, keeping the words) | engine `finish`, to finishing; the microphone being opened is released when it answers | engine `finish`, to finishing | nothing: already asked | `end` at once | `end` at once |
+| `abort` (a cancel) | engine `cancel`, to finishing; the microphone stops and is released | the same | no engine call; the microphone is released | the microphone is released | nothing |
+| The microphone's open answers | taken only if the same segment still runs, else released | — | released | released | released |
+| The microphone's stop and release settle | no state changes; a failure is logged | the same | the same | the same | the same |
+| The app leaves the foreground (`release`) | as `abort`, then the engine is shut down: idle | the same | the same | idle | idle |
+| Listening ends (the `listen` uninstall) | as `abort`: idle | the same | the same | idle | idle |
+
+A cancel passes through *finishing* because the state machine's quiet restart cancels a segment
+and waits for its end to restart, and the engine reports that end after a cancel too.
+
+### The fixes
+
+| # | Finding | Fix | Hypium case |
+| --- | --- | --- | --- |
+| B1 | A send on the device path cancelled the engine segment, so the words it had not reported yet were lost. The existing case only injected an interim before the send. | The dictation port takes an optional `SpeechRecognizer.finish`: a caller's finish asks the recognizer to finish keeping its words, and the turn ends on the recognizer's `end`, which a `finishing` flag makes deliver instead of restart. The device recognizer answers with the engine's `finish`, waits for the final words and the completion, and the microphone goes with the turn. A recognizer without it is aborted as before, so the fixture replay still matches mobile. | `send_during_device_listening_waits_for_the_engine_final_then_sends`, `an_engine_error_during_the_finish_does_not_cut_off_the_final_words`, `a_finish_the_engine_refuses_still_sends`, `a_finish_the_engine_throws_on_still_sends`, `leaving_while_the_engine_finishes_drops_the_late_words` |
+| B2 | `mic.stop().then(release).catch(…)` skipped the release when the stop rejected, and swallowed the error. | `stopMicrophone` and `releaseMicrophone`: each step in its own catch, a failure logged, the release always runs. | `a_microphone_whose_stop_fails_is_still_released` |
+| S1 | With no segment running, any callback was accepted, so an old segment's late word, error or end landed in the gap before the next restart. | The segment that left last is kept until the next one starts. In the gap only its own callbacks count, and among them only its results: its end was already reported. | `an_older_segments_callbacks_are_dropped_between_two_segments` |
+| N1 | A cancel during the asynchronous `openMicrophone`, then an immediate restart: the old open returned, saw a session running and was adopted by it. The new open then overwrote it, and the first microphone stayed open. | `openMicrophone` checks after each wait that the segment which asked for it still runs. One that ended takes no microphone, and the microphone opened for it is released. | `a_microphone_created_for_a_cancelled_segment_is_released_not_adopted`, `a_microphone_that_started_for_a_cancelled_segment_is_stopped_and_released` |
+| Silent catches | The last round's `.catch(() => undefined)` chains and its kit-call wrappers dropped failures with a comment. | ArkTS cannot import `@rakazo/logging`, so this app's `bestEffort` is a catch with `hilog.warn(0, 'Voice', …)`, as `thread/attachment-files.ets` writes it. A promise-taking helper would not do: `bestEffort(label, mic.stop())` runs the kit call before its own try, and kit calls throw outright. Logged now: the microphone's stop, release, open, start and listener; the engine's creation, preparation, cancel, finish and shutdown; the preferences reads and the bot-voice save. Left as they are because the caller is told: the preference `put` (rethrown as the save failure) and `clip-player`'s three wrappers (each throws the clip failure). | none: a log line is not asserted |
+| New, from the probe | Every engine error ended its segment at once, and the completion that followed ended it again. On the device that is every cancel and every 60 s rotation: two `end`s, the restart armed twice, a dead restart counted twice. Around a send it cut off the last words. | An error is reported and waited out while the engine owes the segment its end. A segment's end is reported once, and its results keep counting after it. | `the_end_a_cancelled_segment_still_reports_reaches_the_listener`, `a_completed_segment_is_not_ended_twice`, `the_words_after_an_engine_error_still_reach_the_listener` |
+
+**Red before, green after.** With the final cases on the unfixed code, `DictationLifecycle` ran
+10 with 5 failures and `DictationHardware` ran 10 with 7 failures. On the fixed code both are
+10/10, and the full suite is 214/214. `send_between_two_segments_ends_at_once_without_cancelling`
+passes before and after: a send in the gap between two segments found nothing to cancel in either
+version, and now guards the `end` the recognizer reports at once there.
+
+**On the device engine itself** (a probe, not committed): the shipped recognizer and composer
+over the device engine, with a scripted microphone feeding synthesized speech. A send 1.2 s into
+「你好，今天天气怎么样」 asked the recognizer for `finish`; the interims 「你」 and 「你好」 were
+followed within milliseconds by 「你好今天。」, which landed with the report and with the
+delivery, and the send ran in the same millisecond. A cancel at the same point left the two
+interims and nothing else. In every run the microphone stopped and was released.
+
+The seams these cases need stay in the test: a run can hand its microphones over late
+(`ScriptedRun.late`), the engine can refuse a finish and announce a start, a microphone can fail
+its stop or hold its start, and `GrantedRecognizer` answers the microphone question so the
+composer can run over the real recognizer on scripted hardware.
+
+**Not verified.** The emulator's microphone records silence, so no screen shows a device send
+keeping its words: the probe is the evidence, and a physical device is still the acceptance.
 
 ## Deferred
 
@@ -169,6 +264,16 @@ the microphone grant and the clip recorder behind `setVoiceMicrophoneGrant`/`set
   probe's capturer read zeros), so live dictation verifies through the recognizer's PCM path —
   the state machine's replay feeds it the same frames the engine consumes. Real-input testing
   needs a physical device.
+- **A final result that trails the engine's completion** (this round): seen once, with noise and
+  empty. The recognizer waits for the completion, so such a result lands while a turn is still
+  open (a rotation) but not on a send. A physical device should show whether speech does it.
+- **A finish the engine neither completes nor refuses**: it would leave a send waiting for the
+  composer's 30 s silence limit. No engine path was found that does it.
+- **Speech in a rotation gap**: the engine ends a segment at a pause and the state machine
+  restarts it after its 250 ms backoff, so what is said in between is not recognized. The
+  adapter's header no longer claims a rotating segment never drops audio.
+- **Recognition quality** on the emulator: its engine hears 「你好今天。」 for a 2.5 s synthesized
+  sentence, which shows the wiring and nothing about accuracy.
 
 ## Filenames
 

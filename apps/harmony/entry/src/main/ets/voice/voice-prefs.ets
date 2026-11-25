@@ -3,6 +3,7 @@
 // voices in a document file of its own; both are plain preferences here (neither is a secret).
 import { preferences } from '@kit.ArkData';
 import type { common } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import type { VoiceChoiceStore } from './device-voice';
 
 const PREFS_NAME = 'rakazo.voice';
@@ -33,6 +34,7 @@ export const voiceChoiceStore: VoiceChoiceStore = {
       return typeof value === 'string' && value ? value as string : null;
     } catch (err) {
       // A read that fails reads as unset, so the caller's own default applies.
+      hilog.warn(0, 'Voice', 'Could not read the voice choice');
       return null;
     }
   },
@@ -60,6 +62,7 @@ export async function loadBotVoices(): Promise<Record<string, string> | null> {
     stored = await store.get(BOT_VOICES_KEY, '');
   } catch (err) {
     // An unreadable file reads as none, as the signature promises.
+    hilog.warn(0, 'Voice', 'Could not read the assigned voices');
     return null;
   }
   if (typeof stored !== 'string' || !stored) {
@@ -96,5 +99,6 @@ export async function saveBotVoices(assignments: Record<string, string>): Promis
     await store.flush();
   } catch (err) {
     // A failed save leaves what was last saved, as the line above says.
+    hilog.warn(0, 'Voice', 'Could not save the assigned voices');
   }
 }
