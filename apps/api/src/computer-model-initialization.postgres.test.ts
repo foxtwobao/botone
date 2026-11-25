@@ -8,6 +8,7 @@ import {
 import type { Auth } from "@rakazo/auth";
 import type { PrismaClient } from "@rakazo/db";
 import { asSystem, createDb, runAsTenant } from "@rakazo/db";
+import type { MockInstance } from "vitest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ensureAutomaticExecution } from "./automatic-execution.js";
 import { modelAccountRoutes } from "./model-account.js";
@@ -37,8 +38,7 @@ integration("computer initialization with persisted authorization", () => {
       defaults: { responses: "fixture-model" },
     }),
   )!;
-  const ensure = vi.spyOn(connection.provider, "ensure");
-  vi.spyOn(connection.provider, "revoke").mockResolvedValue();
+  let ensure: MockInstance<typeof connection.provider.ensure>;
   let rejectOriginal = false;
   const modelFetch = vi.fn<typeof fetch>(async (_url, init) =>
     new Headers(init?.headers).get("authorization") === "Bearer fake-original-key" && rejectOriginal
@@ -150,7 +150,11 @@ integration("computer initialization with persisted authorization", () => {
   });
   beforeEach(async () => {
     rejectOriginal = false;
-    ensure.mockReset().mockResolvedValue({ apiKey: "fake-original-key" });
+    // Vitest undoes spies before each test, so they are set again here.
+    ensure = vi.spyOn(connection.provider, "ensure").mockResolvedValue({
+      apiKey: "fake-original-key",
+    });
+    vi.spyOn(connection.provider, "revoke").mockResolvedValue();
     modelFetch.mockClear();
     await prisma.computer.update({
       where: { id: "computer-init-computer" },

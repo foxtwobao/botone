@@ -10,7 +10,7 @@ import type {
 import { createAdapterContext } from "@rakazo/adapter-kit";
 import type { createApp } from "@rakazo/api/app";
 import { runAsSystem, runAsTenant } from "@rakazo/db";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeHarnessProcess } from "../../native-runtime/src/protocol.test-support.js";
 import { NativeHarnessExecutionService } from "../../native-runtime/src/service.js";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
@@ -174,6 +174,9 @@ integration("native execution with real authorization, history and leases", () =
       botId,
       configuration: { connectionId, profileId: profile.id, revision: 1, model: null },
     });
+  });
+  // Vitest undoes spies before each test, so the guard is set again before each one.
+  beforeEach(() => {
     vi.spyOn(app.runtime, "run").mockImplementation(() => {
       throw new Error("The built-in runtime must not run");
     });
