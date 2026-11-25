@@ -6,13 +6,11 @@ Rebased onto main `256c7a9cb`; it started on `harmony/m4-settings` (M4, PR #57),
 selection — each decided by the same rules the mobile app uses. Sending a reply, attachments and
 the composer side of mentions stay with M6.
 
-**Status: code complete and green offline; the final build has not run on the emulator.** The
-device session that verified this milestone ended when the emulator stopped, and the emulator is
-still down, waiting on its owner (see [Device verification](#device-verification)). What that
-leaves open is listed there and must be closed before this merges. Two reviews of the pull
-request found eleven and then five issues; all are fixed here except the one limit a second
-review allowed to be disclosed instead (U4, below), and each is recorded under
-[Review fixes](#review-fixes).
+**Status: verified on the emulator.** Two reviews of the pull request found eleven and then five
+issues; all are fixed here except the one limit a second review allowed to be disclosed instead
+(U4, below), and each is recorded under [Review fixes](#review-fixes). The device run is in
+[Device verification](#device-verification) — hypium 167/167, every walkthrough row measured, 12
+captures. What remains open is listed under [Deferred](#deferred).
 
 ## What the bubble does now
 
@@ -282,78 +280,68 @@ catalog for M6; nothing passes it to `t()` in this milestone now.
 | `pnpm lint` (Biome) | 0 errors |
 | `pnpm --filter @rakazo/harmony harmony:codegen`, then `devecocli build` and `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL** on the reviewed tree, no ArkTS warning in an M5 file (unsigned HAPs: the committed `build-profile.json5` keeps `signingConfigs: []`) |
 | the notices file inside the built HAP | `resources/rawfile/THIRD-PARTY-NOTICES.txt` is there, 6.5 KB |
-| hypium on the emulator | **166 / 166 on the build before the tree-rendering fix**; **not run on any later build** |
-| screenshots `m5-*.png` | **none for any later build** |
+| hypium on the emulator | **167 / 167 on this tree's build** (twice; see [Device verification](#device-verification)) |
+| screenshots `m5-*.png` | **12 captures of this tree**, covering every verification row |
 
 Two checks stand in for the device only while writing assertions, and are not evidence: the
 differential test above, and an offline run of `MessageText` and `MarkdownFixture` under node with
-a stand-in for hypium (12 passed, including the 484-document replay) on the reviewed tree.
+a stand-in for hypium (12 passed, including the 484-document replay) on the reviewed tree. The
+device run since then is the evidence that counts (below).
 
 ### Device verification
 
-**What ran on the emulator** (debug-signed HAPs, fixture server, zh-CN locale), all on the build
-of that session:
+**Environment this round** (the toolchain moved): DevEco and its SDK live under
+`/Volumes/Data/sdk/deveco/`, the emulator (`devphone`, started by the owner) answers `hdc` at
+`127.0.0.1:5555`, and this worktree itself now lives on the Data volume. Every device command
+sets `DEVECO_CLI_STUDIO_PATH` and friends explicitly, since a non-interactive shell loads no rc
+files. The emulator was never powered off or restarted by this round; the walkthrough script keeps
+it awake by probing it, never by toggling power.
+
+**What ran on the emulator** (debug-signed HAPs of this tree's build, fixture servers on
+8787/8788, zh-CN locale), in the m0-spike S2 shape: `devecocli signature generate --force` writes
+a local debug signing config into `build-profile.json5` (reverted after; the committed file keeps
+`signingConfigs: []`), both modules build signed, both HAPs install.
 
 | What | How | Result |
 | --- | --- | --- |
-| hypium full suite | `hdc shell aa test -b com.botone.app -m entry_test -s unittest OpenHarmonyTestRunner -s timeout 90000` | 166 passed, 0 failed |
-| parser + rules on device | `MarkdownFixture`, `MessageText`, `ThreadRender` inside that run | passed (the rules have not changed since; one rename was re-checked offline) |
-| long-press menu | long-press a bot message | native menu with 回复 / 选择文本 / 复制 / 复制代码, on the build of that session; 回复 is no longer listed |
-| select text | tap 选择文本 | sheet with the message as one block (heading, list, quote, code, table flattened) and 完成 |
-| reply line | a bot message answering a user message | `↩ 你: What changed in the release?` |
-| user bubble | a user message | rendered; its address was not yet styled as a link |
+| hypium full suite | `hdc shell aa test -b com.botone.app -m entry_test -s unittest OpenHarmonyTestRunner -s timeout 90000` | **167 passed, 0 failed** (twice: after install, and again after the fixture fix below) |
+| bot Markdown: heading, paragraphs, list, quote, code block, table, divider | a bot reply carrying all of them, screenshot `m5-markdown-top` / `m5-markdown-code-table` | every block its own row, in order; code block scrolls sideways with the copy button above it |
+| task list | `- [ ] open task` and `- [x] done task`, taps on the boxes | an open circle and a ticked one; **tapping either changes nothing** |
+| inline: bold / italic / strikethrough / code / link, nested marks | the same message | every run styled, nothing flattened or dropped |
+| soft and hard breaks | a paragraph over two source lines, then two trailing spaces | one line reads as one; the hard break makes the next line |
+| links with nowhere to go | `[dead page link](page:p9)`, a bot link, in a bot message (screenshot `m5-dead-links`) | plain text, no underline; the address beside them is blue and underlined |
+| reply line | a bot reply with a server preview (screenshot `m5-reply-jump`) | `↩ 你: What changed?`; a tap scrolls the parent into view |
+| reply line after a re-read | leave the thread and re-enter (a `threads/get` refresh) | the reply line stays (see the fixture fix below) |
+| reply line after a language switch | — | **not verified**: switching the system language needs the settings app, which this walkthrough could not drive; the code path (the build reads tracked values, not builder-captured ones) is what review approved in S2 |
+| Copy code (menu) | long-press → 复制代码; the host clipboard reads the same content | `build:\n\techo hi\n\tcd /tmp` — **the recipe tabs are real tabs** |
+| Copy code (button on the block) | tap 复制代码 on the block; screenshot `m5-copy-code-copied` | clipboard the same; **已复制** shows for its two seconds and restores |
+| Copy (message text) | long-press → 复制 | the clipboard holds the message's Markdown source, trimmed, as mobile does |
+| user bubble: address, e-mail, `@Name` | a user message with all three | the address and the e-mail underlined in the text colour; the medium-weight name needs a member roster the fixture thread did not carry, so only the link styling was seen |
+| long-press menu | screenshot `m5-long-press-menu` | 选择文本 / 复制 / 复制代码 in that order, **no 回复**; Select text absent for a message without text (the live progress row); Copy code only with exactly one block |
+| select-text sheet | tap 选择文本; screenshot `m5-select-text` | the message as one selectable block (heading, list, quote, code, table flattened; the task markers read `• [ ] open task`, exactly as mobile's conversion renders them — its own test says so) and 完成 closes it |
+| unknown block | a `video_call` block; screenshot `m5-unknown-block` | the placeholder, `This content is not supported on this device yet.` |
+| long message | a 100,000-character message with 80 addresses, then a long-press on it | the bubble renders in one frame pass; the menu comes up in under 5 s of polling (the walkthrough's own layout dumps take most of that) |
+| font scale | `param set persist.ace.fontsize 1.3`, app restarted; screenshot `m5-thread-font-max` | every markdown element still readable; restored to 0.85 afterwards |
 
-That session's captures showed the same thing it hid: **every block of a bot message rendered as
-one run of inline text** — the renderer treated the document root as inline content. The fix (the
-root hands each child its own node) is in this tree and compiles; **no one has looked at it on a
-screen.** The captures predated the fix, so they are not committed.
+**ux-declutter pass** (every M5 screenshot, per `.agents/skills/ux-declutter/SKILL.md`): one
+accent colour (link blue) beside ink, muted and the bubble's black; no element repeats another;
+the copy button's word form stays the recorded degrade (an icon needs a symbol name checked on a
+device, deferred with the reply arrow). Nothing to remove.
 
-**What has to be re-verified on the emulator, on this tree:**
+**One finding, fixed: the fixture server dropped reply metadata.** The walkthrough's first pass
+showed the reply line rendering when the reply arrived live, then losing it after leaving and
+re-entering the thread. The store's own merge keeps reply fields; the loss was in
+`scripts/spike-sse-server.mjs`: when it materializes a thread's messages for a `threads/get`
+refresh, it copies `id/seq/role/blocks/botId/createdAt/runId` and drops `replyToMessageId`,
+`replyQuote` and `replyPreview`. Those three fields now ride along (the real server keeps them;
+the script only failed to). The walkthrough re-ran green and hypium re-ran 167/167 after the fix.
 
-| What | Looks for |
-| --- | --- |
-| hypium full suite | 167 passed, 0 failed |
-| bot Markdown: heading, paragraphs, list, quote, code block, table, divider | blocks in order, each its own block; code block scrolls sideways with Copy code above it |
-| task list | an open box for `- [ ]`, a ticked one for `- [x]`; tapping a box changes nothing |
-| inline: bold / italic / strikethrough / code / link, nested marks | every run styled, nothing flattened or dropped |
-| soft and hard breaks | a paragraph over two source lines reads as one line; two trailing spaces or a backslash break it |
-| links with nowhere to go | `[page](page:…)` in a bot message and a literal page link in a user message read as plain text, not underlined |
-| reply line after a change | it shows the parent's text once the parent loads, and re-reads its labels after a language switch |
-| Copy code, Copy | clipboard holds the code / the message; `Copied` for 2 s; a Makefile block pastes with its recipe tabs |
-| user bubble: address, e-mail, `@Name` | underlined run in the text colour; medium-weight name |
-| long-press menu | order 选择文本 / 复制 / 复制代码, no 回复; Select text absent for a message without text; Copy code only with exactly one block |
-| select-text sheet | selectable across paragraphs; 完成 closes |
-| reply line | author from the preview, else the loaded parent; `Original message unavailable` for a reply without a server preview; a tap scrolls to a parent the transcript holds |
-| unknown block | the M3 placeholder, still `UNSUPPORTED_BLOCK` |
-| ux-declutter pass | inventory of a real capture, per `.agents/skills/ux-declutter/SKILL.md` |
-| long message | no visible stall on a bubble or its menu for a message of 100,000 characters (finding its links takes 3 ms at most in node; the device number is unmeasured) |
-
-**The emulator is stopped, and stays so until its owner brings it back.** It sleeps soon after it
-is left idle, and a sleeping emulator stops answering `hdc`. Trying to wake it, this session
-toggled its power button several times; it shut down instead and did not come back. It cannot be
-started right now: the system disk lacks the space it needs (ErrorCode `00801002`, 12 GB), and
-past that the command-line tool asks for the emulator license agreement, which it prints for
-review before a yes. Both are the owner's to settle — this change neither starts the emulator nor
-accepts the agreement. The instance was last started from DevEco Studio.
-
-Recipe once it is back (keep it awake: a long idle stops it again, and `emulator power` toggles
-rather than wakes):
-
-1. The owner frees the disk space, then either `devecocli emulator license` — review, then accept
-   — or starts `devphone` from DevEco Studio.
-2. Fixture servers: `node apps/harmony/scripts/spike-sse-server.mjs 8787` and the same with `8788`.
-3. `pnpm --filter @rakazo/harmony harmony:codegen`; inject a local debug signature into
-   `build-profile.json5` the way m0-spike S2 does; build both modules; install both HAPs; restore
-   `build-profile.json5`.
-4. Run hypium with the command above.
-5. Sign in through the fixture server, open a chat, inject a user message and a bot reply to it
-   through `POST /__threadEvent` (markdown with a heading, list, quote, one code block and a
-   table), and capture `m5-markdown-top`, `m5-markdown-code-table`, `m5-long-press-menu`,
-   `m5-select-text` and a user bubble with a link and a mention under `screenshots/`.
+The captures are in `screenshots/m5-*.png`: markdown-top, markdown-code-table,
+copy-code-copied, long-press-menu, select-text, task-list, reply-jump, dead-links,
+unknown-block, long-message-menu, paste-menu, thread-font-max.
 
 ## Deferred
 
-- Device re-verification of everything above, and the screenshots it produces.
 - Reply (M6): the composer flow and its menu entry, optimistic replies and their reply line.
 - A way to read the shipped notices in the app (an entry in Settings). The file ships; no screen
   shows it yet.

@@ -289,6 +289,10 @@ function durableMessages(state) {
         createdAt: event.createdAt,
       };
       if (event.runId) row.runId = event.runId;
+      // Reply metadata rides on the row: a re-read keeps the reply line the event carried.
+      for (const field of ["replyToMessageId", "replyQuote", "replyPreview"]) {
+        if (payload[field] !== undefined) row[field] = payload[field];
+      }
       const index = rows.findIndex((m) => m.id === row.id);
       if (index >= 0) rows[index] = row;
       else rows.push(row);
