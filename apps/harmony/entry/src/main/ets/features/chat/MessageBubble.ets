@@ -1,7 +1,7 @@
 // One transcript message (M5): the bot's markdown tree rendered as the mobile bubble renders it
 // (headings, lists, quotes, fenced code with copy, links, spoilers as plain text), the user's
 // plain-text bubble with @Name mentions and links, the reply line above both, the long-press menu
-// (copy, select text, copy code, reply placeholder), and the select-text sheet. Row-level
+// (select text, copy, copy code), and the select-text sheet. Row-level
 // rendering: a changed message re-renders alone (the store's row key carries content).
 import { pasteboard } from '@kit.BasicServicesKit';
 import { appearance } from '../../uikit/theme';
@@ -26,22 +26,12 @@ import {
 import type { MessageLike, MessageMenu, PreviewLabels, ReplyAttachment, ReplyPreview } from '../../thread/message-text';
 import { userMentionTargets, userTextRuns } from '../../thread/message-mentions';
 import type { MemberLike, UserMentionTarget, UserTextRun } from '../../thread/message-mentions';
+import { sanitizeMarkdownUrl } from '../../thread/message-links';
 import { app } from '../../app/app-state';
 
-/** The page id of a `page:<pageId>` link; anything else opens as an address. */
-function pageIdOf(href: string): string {
-  const found = /^page:([A-Za-z0-9_-]{1,64})$/.exec(href);
-  return found?.[1] ?? '';
-}
-
-/** Whether a link opens at all: only the schemes the app may follow. */
+/** Where a link opens, or empty when it opens nothing: only the schemes the app may follow. */
 function openableHref(href: string): string {
-  const trimmed = href.trim();
-  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(trimmed)?.[1]?.toLowerCase();
-  if (scheme === undefined) {
-    return '';
-  }
-  return ['http', 'https', 'mailto', 'tel'].includes(scheme) ? trimmed : '';
+  return sanitizeMarkdownUrl(href) ?? '';
 }
 
 /** Puts text on the clipboard and says whether it did: a system that refuses has nothing to show
@@ -54,22 +44,6 @@ async function putClipboard(text: string): Promise<boolean> {
   } catch (err) {
     // The message stays on screen to copy again.
     return false;
-  }
-}
-
-/** The mention id a renderer link carries (`rakazo-mention:<encoded id>`). */
-function mentionIdOf(href: string): string {
-  if (!href.startsWith('rakazo-mention:')) {
-    return '';
-  }
-  let id = href.slice('rakazo-mention:'.length);
-  if (id.endsWith('#added')) {
-    id = id.slice(0, -'#added'.length);
-  }
-  try {
-    return decodeURIComponent(id);
-  } catch (_err) {
-    return '';
   }
 }
 
@@ -106,20 +80,10 @@ struct InlineRuns {
     })
   }
 
-  /** Follows a link run the way the mobile bubble does: a page opens in the app, a mention opens
-   *  its bot, an address opens outside, and a scheme the app may not follow does nothing. */
+  /** Opens the address a link run names, outside the app, as the mobile bubble does. */
   private open(run: TextRun): void {
-    if (run.href === '') {
-      return;
-    }
-    if (pageIdOf(run.href) !== '' || mentionIdOf(run.href) !== '') {
-      // Pages and bot profiles are not navigated in M5 (the page surface and bot sheet are later
-      // milestones); their link reads as a link and taps do nothing, like a refused scheme.
-      return;
-    }
-    const href = openableHref(run.href);
-    if (href !== '') {
-      void app.openExternal(href);
+    if (run.href !== '') {
+      void app.openExternal(run.href);
     }
   }
 }
@@ -134,8 +98,11 @@ struct CodeBlock {
   @Param code: string = '';
   @Local copied: boolean = false;
   private restoreTimer: number = -1;
+  /** False once the block is gone: the clipboard may still answer a copy started before. */
+  private mounted: boolean = true;
 
   aboutToDisappear(): void {
+    this.mounted = false;
     if (this.restoreTimer >= 0) {
       clearTimeout(this.restoreTimer);
     }
@@ -143,7 +110,7 @@ struct CodeBlock {
 
   private copy(): void {
     void putClipboard(this.code).then((copied: boolean): void => {
-      if (!copied) {
+      if (!copied || !this.mounted) {
         return;
       }
       this.copied = true;
@@ -388,10 +355,8 @@ struct UserText {
             ? { type: TextDecorationType.None }
             : { type: TextDecorationType.Underline, color: this.color })
           .onClick((): void => {
-            // A page link (`page:<id>`) has no scheme, so it opens nothing until pages arrive.
-            const href = openableHref(run.href);
-            if (href !== '') {
-              void app.openExternal(href);
+            if (run.href !== '') {
+              void app.openExternal(run.href);
             }
           })
       }, (run: UserTextRun, index: number): string => `${index}:${run.text}:${run.href}`)
@@ -699,7 +664,6 @@ interface ReplyParts {
 export struct MessageBubble {
   @Param message: LiveMessage | null = null;
   @Param busy: boolean = false;
-  @Param readOnly: boolean = false;
   @Param members: ThreadMember[] = [];
   @Param meId: string = '';
   @Param fallbackAuthor: string = '';
@@ -710,27 +674,15 @@ export struct MessageBubble {
     (_message: LiveMessage, _answer: string): void => {};
   @Event onJumpTo: (messageId: string) => void = (_messageId: string): void => {};
   @Local selectOpen: boolean = false;
-  private menuMessage: LiveMessage | null = null;
-  private menuReadOnly: boolean = false;
-  private menuValue: MessageMenu = {
-    reply: false, copy: false, select: false, copyCode: false, copyText: '', selectText: '', code: '',
-  };
-
-  /** The menu builder reads the menu once per item, and finding it parses the message: one
-   *  message parses once. */
-  private menuOf(message: LiveMessage): MessageMenu {
-    if (this.menuMessage !== message || this.menuReadOnly !== this.readOnly) {
-      const like: MessageLike = { id: message.id, role: message.role, blocks: message.blocks };
-      this.menuMessage = message;
-      this.menuReadOnly = this.readOnly;
-      this.menuValue = messageMenu(like, this.readOnly, {
-        reply: t('Reply'),
-        copy: t('Copy'),
-        select: t('Select text'),
-        copyCode: t('Copy code'),
-      });
+  /** The menu of the message shown, found once per change of that message: finding it parses. */
+  @Computed
+  get menu(): MessageMenu {
+    const message = this.message;
+    if (message === null) {
+      return { select: false, copyCode: false, copyText: '', selectText: '', code: '' };
     }
-    return this.menuValue;
+    const like: MessageLike = { id: message.id, role: message.role, blocks: message.blocks };
+    return messageMenu(like);
   }
 
   /** The wire's reply metadata narrowed to the shape the rules read. */
@@ -878,50 +830,43 @@ export struct MessageBubble {
   build() {
     if (this.message !== null) {
       Column() {
+        // The line's parts are read here, not passed through a builder: a builder keeps the
+        // values it was first built with, and these change (a parent loads, the language changes).
         if (this.reply !== null) {
-          this.replyLine(this.reply!)
+          ReplyLine({
+            author: this.reply!.author,
+            text: this.reply!.text,
+            unavailable: this.reply!.unavailable,
+            onJump: (): void => {
+              const parentId = this.message?.replyToMessageId;
+              if (parentId !== undefined) {
+                this.onJumpTo(parentId);
+              }
+            },
+          })
         }
         this.bodyOf(this.message!)
       }
-      .bindContextMenu(this.menuBuilder(this.message!), ResponseType.LongPress)
-      .bindSheet($$this.selectOpen, this.selectSheet(this.message!), { height: SheetSize.MEDIUM, showClose: false })
+      .bindContextMenu(this.menuBuilder(), ResponseType.LongPress)
+      .bindSheet($$this.selectOpen, this.selectSheet(), { height: SheetSize.MEDIUM, showClose: false })
     }
   }
 
   @Builder
-  replyLine(parts: ReplyParts) {
-    ReplyLine({
-      author: parts.author,
-      text: parts.text,
-      unavailable: parts.unavailable,
-      onJump: (): void => {
-        const parentId = this.message?.replyToMessageId;
-        if (parentId !== undefined) {
-          this.onJumpTo(parentId);
-        }
-      },
-    })
-  }
-
-  @Builder
-  selectSheet(message: LiveMessage) {
+  selectSheet() {
     SelectTextSheet({
-      text: this.menuOf(message).selectText,
+      text: this.menu.selectText,
       onClose: (): void => {
         this.selectOpen = false;
       },
     })
   }
 
-  /** The mobile menu's subset, in its order; quote, react, speak and mark-unread are later. */
+  /** The mobile menu's subset, in its order; reply, quote, react, speak and mark-unread are later. */
   @Builder
-  menuBuilder(message: LiveMessage) {
+  menuBuilder() {
     Menu() {
-      if (this.menuOf(message).reply) {
-        // M5 renders the entry; the composer's reply flow is M6.
-        MenuItem({ content: t('Reply') })
-      }
-      if (this.menuOf(message).select) {
+      if (this.menu.select) {
         MenuItem({ content: t('Select text') })
           .onClick((): void => {
             this.selectOpen = true;
@@ -929,15 +874,14 @@ export struct MessageBubble {
       }
       MenuItem({ content: t('Copy') })
         .onClick((): void => {
-          const text = this.menuOf(message).copyText;
-          if (text !== '') {
-            void putClipboard(text);
+          if (this.menu.copyText !== '') {
+            void putClipboard(this.menu.copyText);
           }
         })
-      if (this.menuOf(message).copyCode) {
+      if (this.menu.copyCode) {
         MenuItem({ content: t('Copy code') })
           .onClick((): void => {
-            void putClipboard(this.menuOf(message).code);
+            void putClipboard(this.menu.code);
           })
       }
     }

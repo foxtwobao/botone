@@ -109,7 +109,6 @@ export struct ThreadPage {
         message: row.message,
         parent: this.parentOf(row.message),
         busy: this.store.answer.pending,
-        readOnly: false,
         members: this.store.snapshot?.members ?? [],
         meId: app.me?.userId ?? '',
         fallbackAuthor: this.title,

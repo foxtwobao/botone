@@ -1,7 +1,19 @@
 // Plain text cut into text, links and page links (M5), ported from chat-ui's markdown module:
 // user bubbles stay plain text except a page link, and bare http(s) addresses and e-mail
-// addresses become links, as the web renderer's autolinks find them. The port follows linkify-it
-// closely enough for message text (m5-notes records where it approximates).
+// addresses become links, as the web renderer's autolinks find them. chat-ui finds them with
+// linkify-it; this port runs that library's patterns (link-patterns.generated.ets) through its
+// scan, so the two agree on where an address starts and ends.
+import {
+  LINK_EMAIL,
+  LINK_EMAIL_FLAGS,
+  LINK_HTTP_TAIL,
+  LINK_HTTP_TAIL_FLAGS,
+  LINK_MAILTO_TAIL,
+  LINK_MAILTO_TAIL_FLAGS,
+  LINK_SCHEMA_SEARCH,
+  LINK_SCHEMA_SEARCH_FLAGS,
+} from './link-patterns.generated';
+
 export interface PlainTextPart {
   type: string;
   value: string;
@@ -10,6 +22,14 @@ export interface PlainTextPart {
 }
 
 const PLAIN_PAGE_LINK = /\[((?:\\[\\[\]]|[^\\\[\]\n]){0,400})\]\(page:([A-Za-z0-9_-]{1,64})\)/g;
+const SCHEMA_SEARCH = new RegExp(LINK_SCHEMA_SEARCH, LINK_SCHEMA_SEARCH_FLAGS);
+/** What may follow each scheme the linkifier keeps (it drops `ftp:` and `//`). */
+const TAILS: Record<string, RegExp> = {
+  'http:': new RegExp(LINK_HTTP_TAIL, LINK_HTTP_TAIL_FLAGS),
+  'https:': new RegExp(LINK_HTTP_TAIL, LINK_HTTP_TAIL_FLAGS),
+  'mailto:': new RegExp(LINK_MAILTO_TAIL, LINK_MAILTO_TAIL_FLAGS),
+};
+const EMAIL = new RegExp(LINK_EMAIL, LINK_EMAIL_FLAGS);
 
 /**
  * User bubbles stay plain text: markdown remains characters, except a page link, which opens the
@@ -62,149 +82,91 @@ function appendUrlParts(parts: PlainTextPart[], text: string): void {
 export interface UrlMatch {
   index: number;
   end: number;
+  /** The address as written. */
   url: string;
+  /** The scheme it opens with (`http:`, `https:` or `mailto:`), as the linkifier names it. */
+  schema: string;
+  /** Where it opens: the address with its scheme added, as the linkifier normalizes it. */
+  href: string;
 }
 
 /**
- * Bare http(s) URLs and e-mail addresses, as the web renderer's GFM autolinks find them: balanced
- * parentheses stay inside a URL; `(`, `)` and trailing punctuation not part of an address stay out.
- * Fuzzy domains stay text (a file name like setup.py must not link); ftp and protocol-relative
- * URLs stay text because sanitizeMarkdownUrl would not open them.
+ * Bare http(s) URLs and e-mail addresses, where the web renderer's GFM autolinks find them: the
+ * two scans linkify-it runs, each one pass over the text, and its choice between what they find
+ * (the earliest start; the longer one when two start at the same place). Which characters belong
+ * to an address is the patterns' decision (a balanced parenthesis stays inside a URL; `(`, `)`
+ * and punctuation that are not part of one stay out). Fuzzy domains stay text (a file name like
+ * setup.py must not link); ftp and protocol-relative URLs stay text because sanitizeMarkdownUrl
+ * would not open them.
  */
 export function explicitLinkMatches(text: string): UrlMatch[] {
-  const out: UrlMatch[] = [];
-  const length = text.length;
-  let index = 0;
-  while (index < length) {
-    const at = linkStart(text, index);
-    if (typeof at === 'number') {
-      break;
+  const schemed: UrlMatch[] = [];
+  const emails: UrlMatch[] = [];
+  // Addresses with a scheme. One may only start after the beginning, a separator or a blank;
+  // what follows is then checked once per candidate, from where the scheme ends.
+  SCHEMA_SEARCH.lastIndex = 0;
+  let found = SCHEMA_SEARCH.exec(text);
+  while (found !== null) {
+    const schema = (found[2] ?? '').toLowerCase();
+    const tail = TAILS[schema];
+    if (tail !== undefined) {
+      tail.lastIndex = found.index + found[0].length;
+      if (tail.exec(text) !== null) {
+        schemed.push(address(text, found.index + found[1].length, tail.lastIndex, schema));
+      }
     }
-    const start = at[0];
-    const kind = at[1];
-    const end = linkEnd(text, start, kind);
-    if (end <= start) {
-      index = start + 1;
-      continue;
-    }
-    out.push({ index: start, end: end, url: text.slice(start, end) });
-    index = end;
+    found = SCHEMA_SEARCH.exec(text);
   }
-  return out;
+  // Addresses written without `mailto:`; group 1 is the character before the address.
+  EMAIL.lastIndex = 0;
+  found = EMAIL.exec(text);
+  while (found !== null) {
+    emails.push(address(text, found.index + found[1].length, found.index + found[0].length, 'mailto:'));
+    found = EMAIL.exec(text);
+  }
+  return earliestFirst(schemed, emails);
 }
 
-/** Where the next explicit link starts: `-1`, or `[offset, kind]` (0 http(s), 1 e-mail). */
-function linkStart(text: string, from: number): [number, number] | number {
-  const length = text.length;
-  for (let index = from; index < length; index += 1) {
-    if (/^(?:https?):\/\//i.test(text.slice(index))) {
-      return [index, 0];
-    }
-    if (mailtoAddressAt(text, index) > index) {
-      return [index, 1];
-    }
-  }
-  return -1;
+/** An address and where it opens: the linkifier adds the scheme of one written without it. */
+function address(text: string, index: number, end: number, schema: string): UrlMatch {
+  const url = text.slice(index, end);
+  return {
+    index: index,
+    end: end,
+    url: url,
+    schema: schema,
+    href: schema === 'mailto:' && !/^mailto:/i.test(url) ? `mailto:${url}` : url,
+  };
 }
 
 /**
- * The e-mail address starting at `index`, if one does: `user@labels.tld`, its end offset (or the
- * offset itself when there is none). Mirrors linkify-it's mail rules closely enough for message
- * text: local part of letters, digits and `._%+-`, domain labels of letters, digits and hyphens.
+ * linkify-it's choice between the two scans: both lists are in text order, and of the two
+ * candidates at their heads the one that starts earlier is taken, the longer one when they start
+ * at the same place. A candidate inside the one taken before it is dropped.
  */
-function mailtoAddressAt(text: string, index: number): number {
-  const length = text.length;
-  let end = index;
-  while (end < length && /[A-Za-z0-9._%+-]/.test(text[end])) {
-    end += 1;
-  }
-  if (end === index || end >= length || text[end] !== '@') {
-    return index;
-  }
-  let domainEnd = end + 1;
-  let labelEnd = domainEnd;
-  while (domainEnd < length) {
-    const ch = text[domainEnd];
-    if (/[A-Za-z0-9-]/.test(ch)) {
-      domainEnd += 1;
-      labelEnd = domainEnd;
-    } else if (ch === '.' && domainEnd > end + 1 && labelEnd > domainEnd - 1) {
-      domainEnd += 1;
-      labelEnd = domainEnd;
+function earliestFirst(schemed: UrlMatch[], emails: UrlMatch[]): UrlMatch[] {
+  const out: UrlMatch[] = [];
+  let next = 0;
+  let nextEmail = 0;
+  let lastEnd = 0;
+  while (next < schemed.length || nextEmail < emails.length) {
+    const url = schemed[next];
+    const mail = emails[nextEmail];
+    const takeMail = mail !== undefined && (url === undefined || mail.index < url.index
+      || (mail.index === url.index && mail.end >= url.end));
+    const taken = takeMail ? mail : url;
+    if (takeMail) {
+      nextEmail += 1;
     } else {
-      break;
+      next += 1;
     }
-  }
-  // A domain needs a dot and a label after it ("a@b" is prose, "x@y.co" is an address).
-  const lastDot = text.lastIndexOf('.', labelEnd - 1);
-  if (lastDot <= end || labelEnd - (lastDot + 1) < 2) {
-    return index;
-  }
-  return labelEnd;
-}
-
-/** Where a link starting at `start` ends (0 when it is not one). */
-function linkEnd(text: string, start: number, kind: number): number {
-  const length = text.length;
-  if (kind === 1) {
-    return mailtoAddressAt(text, start);
-  }
-  const scheme = /^(?:https?):\/\//i.exec(text.slice(start))?.[0].length ?? 0;
-  let index = start + scheme;
-  let end = index;
-  let depth = 0;
-  while (index < length) {
-    const ch = text[index];
-    if (ch === '(') {
-      depth += 1;
-    } else if (ch === ')') {
-      if (depth === 0) {
-        break;
-      }
-      depth -= 1;
-      // A balanced pair stays inside the address: keep both parens.
-      end = index + 1;
-      index += 1;
-      continue;
-    } else if (ch === ' ' || ch === '\t' || ch === '\r' || ch === '\n' || ch === '\u000b'
-      || ch === '\u000c' || ch === '\u00a0' || ch === '\u3000' || ch === '>' || ch === '<') {
-      // linkify-it ends a bare address at whitespace: full-width punctuation stays inside it,
-      // so "x.com/a，then" links whole (the web renderer shows the same reach).
-      break;
-    }
-    index += 1;
-    if (depth === 0) {
-      end = index;
-    }
-  }
-  // Trailing punctuation not part of the address stays out; a `)` closes a `(` still inside the
-  // address, so it stays too.
-  let balance = 0;
-  for (let i = start + scheme; i < end; i += 1) {
-    if (text[i] === '(') {
-      balance += 1;
-    } else if (text[i] === ')') {
-      balance -= 1;
-    }
-  }
-  while (end > start) {
-    const ch = text[end - 1];
-    if (ch === ')' && balance < 0) {
-      balance += 1;
-      end -= 1;
+    if (taken.end <= taken.index || taken.index < lastEnd) {
       continue;
     }
-    if (ch === '?' || ch === '!' || ch === ',' || ch === '.' || ch === ';' || ch === ':'
-      || ch === '\u201d' || ch === '\u2019' || ch === '"' || ch === '\'' || ch === ']') {
-      end -= 1;
-    } else {
-      break;
-    }
+    out.push(taken);
+    lastEnd = taken.end;
   }
-  if (end <= start + scheme) {
-    return 0;
-  }
-  return end;
+  return out;
 }
 
 function urlLinkParts(text: string): PlainTextPart[] {
@@ -215,14 +177,8 @@ function urlLinkParts(text: string): PlainTextPart[] {
   const parts: PlainTextPart[] = [];
   let cursor = 0;
   for (const match of matches) {
-    if (match.index < cursor || match.end <= match.index) {
-      continue;
-    }
-    const value = text.slice(match.index, match.end);
-    // An e-mail link opens its address: the scheme linkify-it adds for one.
-    const href = match.url.includes('@') && !/^[a-z][a-z\d+.-]*:/i.test(match.url)
-      ? `mailto:${match.url}`
-      : sanitizeMarkdownUrl(match.url);
+    const value = match.url;
+    const href = sanitizeMarkdownUrl(match.href);
     appendPlainText(parts, text.slice(cursor, match.index));
     if (href === undefined) {
       appendPlainText(parts, value);

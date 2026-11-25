@@ -8,9 +8,11 @@
 // The other rules the bubble renders with sit beside it, one port per file: @Name mentions
 // (message-mentions), plain-text links (message-links), the one-line preview of bot Markdown
 // (markdown-plain) and its selectable text (selectable-text).
-import { markdownPlainText, parseMarkdown } from './markdown-lite';
-import type { MdNode } from './markdown-types';
+import { codeBlocksAsWritten, markdownPlainText } from './markdown-lite';
 import { selectableTextFromMarkdown } from './selectable-text';
+
+/** Every code block needs a fence, four spaces or a tab; most messages hold none, so they skip the parse. */
+const MAY_HOLD_CODE = /```|~~~| {4}|\t/;
 
 /** A message's blocks as the store keeps them: raw JSON records. */
 export type Blocks = Record<string, Object>[];
@@ -340,17 +342,7 @@ export function displayName(name: string | null | undefined, fallback: string): 
 
 /* ------------------------------- the menu (mobile message-row) ------------------------------- */
 
-export interface MessageMenuLabels {
-  reply: string;
-  copy: string;
-  select: string;
-  copyCode: string;
-}
-
 export interface MessageMenu {
-  /** Reply is a placeholder in M5: the composer's reply flow is M6. */
-  reply: boolean;
-  copy: boolean;
   select: boolean;
   /** Exactly one code block: the mobile menu then offers to copy just it. */
   copyCode: boolean;
@@ -362,15 +354,15 @@ export interface MessageMenu {
   code: string;
 }
 
-/** The long-press menu a message offers (mobile's subset; quote/react/speak/unread are later). */
-export function messageMenu(message: MessageLike,
-  readOnly: boolean, _labels: MessageMenuLabels): MessageMenu {
+/**
+ * What the long-press menu acts on (mobile's subset; reply, quote, react, speak and mark-unread
+ * are later). Its words are the caller's: the menu draws them translated.
+ */
+export function messageMenu(message: MessageLike): MessageMenu {
   const messageText = selectableMessageText(message);
   const includeSelect = messageText.trim().length > 0;
   const codeBlocks = message.role === 'user' ? [] : markdownCodeBlocks(blockText(message));
   return {
-    reply: !readOnly && !message.id.startsWith('progress:'),
-    copy: true,
     select: includeSelect,
     copyCode: codeBlocks.length === 1,
     copyText: copyableMessageText(message),
@@ -381,18 +373,8 @@ export function messageMenu(message: MessageLike,
 
 /** The code of each fenced or indented block in a message (chat-ui markdownCodeBlocks). */
 export function markdownCodeBlocks(markdown: string): string[] {
-  const root = parseMarkdown(markdown);
-  const out: string[] = [];
-  collectCodeBlockTexts(root, out);
-  return out;
-}
-
-function collectCodeBlockTexts(node: MdNode, out: string[]): void {
-  if (node.type === 'codeblock' && /\S/.test(node.text)) {
-    out.push(node.text.replace(/\n$/, ''));
-    return;
+  if (!MAY_HOLD_CODE.test(markdown)) {
+    return [];
   }
-  for (const child of node.children) {
-    collectCodeBlockTexts(child, out);
-  }
+  return codeBlocksAsWritten(markdown);
 }

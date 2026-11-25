@@ -3,9 +3,12 @@
 // trees here come from the real renderer's parser rather than from a re-implementation, and the
 // ArkTS port (thread/markdown-*.ets) must produce the same tree for the same text.
 //
-// Flags mirror the mobile call site: GitHub flavor (tables, task lists, strikethrough), admonitions,
-// permissive autolinks, inline HTML left as text, spoilers on; math off (the app disables it, and
-// HarmonyOS has no math renderer, so `$` stays literal).
+// Flags are the configuration the port implements: GitHub flavor (tables, task lists,
+// strikethrough), admonitions, permissive autolinks, inline HTML left as text, spoilers on; the
+// others off. Math is the one place this differs from the mobile call site: chat-ui passes no
+// parser flags, so the component's default applies and mobile resolves `$…$` as a math span (this
+// app's mobile build ships no math renderer). HarmonyOS has none either and leaves `$` as text, so
+// a document with math is not a fixture case.
 
 import { createRequire } from "node:module";
 import path from "node:path";

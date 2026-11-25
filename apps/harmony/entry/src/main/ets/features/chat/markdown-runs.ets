@@ -2,6 +2,7 @@
 // nested emphasis (bold inside italic, a link inside bold) cannot nest components: the tree is
 // flattened here, each run carrying the styles it inherits. Pure: no ArkUI, so the hypium render
 // test replays it.
+import { sanitizeMarkdownUrl } from '../../thread/message-links';
 import type { MdNode } from '../../thread/markdown-types';
 
 /** One piece of text with the styles every enclosing node gives it. */
@@ -11,7 +12,7 @@ export interface TextRun {
   italic: boolean;
   strike: boolean;
   code: boolean;
-  /** A link's destination, or the id of the bot a mention names (`rakazo-mention:<id>`). */
+  /** Where a tap opens: the destination of a link the app may follow, else empty (plain text). */
   href: string;
 }
 
@@ -58,9 +59,9 @@ function flattenInto(node: MdNode, style: RunStyle, runs: TextRun[]): void {
     return;
   }
   if (node.type === 'br' || node.type === 'softbr') {
-    // A line break inside a paragraph reads as a line break; the renderer decides what a soft
-    // one looks like, so the run keeps the newline and the bubble draws both the same.
-    pushRun(runs, '\n', style);
+    // A soft break (a single newline in the source) reads as a space, as mobile shows it; two
+    // trailing spaces or a backslash make a hard one.
+    pushRun(runs, node.type === 'br' ? '\n' : ' ', style);
     return;
   }
   if (node.type === 'code') {
@@ -76,8 +77,11 @@ function flattenInto(node: MdNode, style: RunStyle, runs: TextRun[]): void {
     return;
   }
   if (node.type === 'a' || node.type === 'video') {
+    // Only a link the app can open reads as one. The others stay the words they wrap: a page or a
+    // bot profile has no screen to open yet, and a scheme the app may not follow opens nothing.
     const linkStyle: RunStyle = {
-      bold: style.bold, italic: style.italic, strike: style.strike, code: style.code, href: node.href,
+      bold: style.bold, italic: style.italic, strike: style.strike, code: style.code,
+      href: sanitizeMarkdownUrl(node.href) ?? '',
     };
     for (const child of node.children) {
       flattenInto(child, linkStyle, runs);

@@ -21,6 +21,7 @@ import {
   displayName,
   isOpaqueName,
   isPageOriginReply,
+  markdownCodeBlocks,
   messageMenu,
   otherAuthor,
   previewMessageText,
@@ -31,7 +32,6 @@ import {
 import type {
   Blocks,
   MessageLike,
-  MessageMenuLabels,
   PageOriginReplyLike,
   PreviewLabels,
   ReplyAttachment,
@@ -99,6 +99,9 @@ export default function messageTextTest() {
       const linked = userTextRuns('see https://x.com/@Writer now', found);
       expect(JSON.stringify(linked.map((run: UserTextRun): string =>
         run.href === '' ? (run.target === null ? '-' : 'M') : 'L'))).assertEqual('["-","L","-"]');
+      // A page link has no page to open yet, so it is plain text in the bubble, not a dead link.
+      expect(JSON.stringify(userTextRuns('[Home](page:p1)', []).map((run: UserTextRun): string =>
+        `${run.text}:${run.href === '' ? '-' : 'L'}`))).assertEqual('["Home:-"]');
     });
 
     it('plain_text_link_parts', 0, () => {
@@ -109,7 +112,7 @@ export default function messageTextTest() {
       // Bare domains stay text (a file name must not link).
       expect(plainTextLinkParts('setup.py notes.md').length).assertEqual(1);
       expect(plainTextLinkParts('a b@c.com d')[1].href).assertEqual('mailto:b@c.com');
-      // A page link opens the page.
+      // A page link is found as one (it opens a page once pages arrive).
       expect(plainTextLinkParts('[page](page:p1)')[0].type).assertEqual('page');
     });
 
@@ -167,26 +170,26 @@ export default function messageTextTest() {
     });
 
     it('menu_offers_copy_always_and_select_when_there_is_text', 0, () => {
-      const labels: MessageMenuLabels = { reply: 'Reply', copy: 'Copy', select: 'Select text', copyCode: 'Copy code' };
       const hello: MessageLike = { id: 'm1', role: 'user', blocks: [block('{"kind":"text","text":"hello"}')] };
-      const text = messageMenu(hello, false, labels);
-      expect(text.copy).assertEqual(true);
+      const text = messageMenu(hello);
       expect(text.select).assertEqual(true);
-      expect(text.reply).assertEqual(true);
+      expect(text.copyCode).assertEqual(false);
       expect(text.copyText).assertEqual('hello');
       const chart: MessageLike = { id: 'm2', role: 'bot', blocks: [block('{"kind":"chart"}')] };
-      const empty = messageMenu(chart, false, labels);
+      const empty = messageMenu(chart);
       expect(empty.select).assertEqual(false);
-      const hi: MessageLike = { id: 'm3', role: 'user', blocks: [block('{"kind":"text","text":"hi"}')] };
-      const readOnly = messageMenu(hi, true, labels);
-      expect(readOnly.reply).assertEqual(false);
-      const liveMessage: MessageLike = { id: 'progress:r1', role: 'bot', blocks: [block('{"kind":"text","text":"hi"}')] };
-      const live = messageMenu(liveMessage, false, labels);
-      expect(live.reply).assertEqual(false);
       const withCode: MessageLike = { id: 'm4', role: 'bot', blocks: [block('{"kind":"text","text":"```js\\nconst a = 1;\\n```"}')] };
-      const code = messageMenu(withCode, false, labels);
+      const code = messageMenu(withCode);
       expect(code.copyCode).assertEqual(true);
       expect(code.code).assertEqual('const a = 1;');
+    });
+
+    it('copy_code_keeps_the_tabs_the_code_was_written_with', 0, () => {
+      // A Makefile's recipe starts with a tab; copied as spaces it would no longer build.
+      const makefile: MessageLike = { id: 'm5', role: 'bot', blocks: [block('{"kind":"text","text":"```make\\nbuild:\\n\\techo hi\\n```"}')] };
+      expect(messageMenu(makefile).code).assertEqual('build:\n\techo hi');
+      expect(markdownCodeBlocks('- item\n\n  ```\n  \techo\n  ```')[0]).assertEqual('\techo');
+      expect(markdownCodeBlocks('```\n```').length).assertEqual(0);
     });
   });
 }

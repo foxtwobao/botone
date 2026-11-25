@@ -1,3 +1,29 @@
+// This file is part of a port of md4c (MIT), made for this app from the sources the mobile
+// renderer's parser is built from. md4c's notice follows, as its license asks.
+/*
+ * MD4C: Markdown parser for C
+ * (https://github.com/mity/md4c)
+ *
+ * Copyright (c) 2016-2026 Martin Mitáš
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
 // markdown-lite (design §6.4, M5): the markdown the bot bubble renders, parsed exactly as the
 // mobile app's native renderer parses it (md4c, GitHub flavor; see markdown-blocks.ets for where
 // the port comes from). This module walks the block list into the tree the renderer reads and
@@ -27,6 +53,7 @@ import {
 import type { MdBlock } from './markdown-line-scanners';
 import { MdLine } from './markdown-line-scanners';
 import { MdInlineParser } from './markdown-inline';
+import { codeBlockAsWritten } from './markdown-code';
 
 const ALIGNMENTS: string[] = ['default', 'left', 'right', 'center'];
 /**
@@ -648,6 +675,26 @@ export function parseMarkdown(text: string): MdNode {
     return nodeOf('doc');
   }
   return new MdDocumentParser(text).parse();
+}
+
+/**
+ * The code of each code block, as the copy button copies it (see markdown-code.ets). It is read
+ * from the block pass alone, so the tree the bubble renders stays as the parser reports it.
+ */
+export function codeBlocksAsWritten(text: string): string[] {
+  const blocks = new MdBlockParser(utf8Encode(text));
+  blocks.parse();
+  const out: string[] = [];
+  for (const block of blocks.blocks) {
+    if (block.type !== BLOCK_CODE) {
+      continue;
+    }
+    const code = codeBlockAsWritten(blocks.text, block.vlines, block.data !== 0);
+    if (/\S/.test(code)) {
+      out.push(code.replace(/\n$/, ''));
+    }
+  }
+  return out;
 }
 
 function compactInto(node: MdNode, parts: string[]): void {

@@ -10,14 +10,21 @@
 // `vi.mock("react-native")` is keyed by that bare name here and misses the import chat-ui's
 // native entry makes from inside its own dependency, and the real link splitter is exported only
 // from that entry, so a pass-through mock keeps a handle on it. Both resolve as mobile sees them.
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { expectLinearTime } from "@rakazo/contracts/test-timing";
 import * as core from "@rakazo/core";
 import { blockText } from "@rakazo/mobile/lib/api/mobile-types.js";
 import * as mobileMentions from "@rakazo/mobile/lib/messages/message-mentions.js";
 import * as mobileSelectable from "@rakazo/mobile/lib/messages/selectable-text.js";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
+import type * as markdownPlain from "../entry/src/main/ets/thread/markdown-plain.ets";
+import type * as messageLinks from "../entry/src/main/ets/thread/message-links.ets";
+import type * as messageMentions from "../entry/src/main/ets/thread/message-mentions.ets";
+import type * as messageText from "../entry/src/main/ets/thread/message-text.ets";
+import type * as selectableText from "../entry/src/main/ets/thread/selectable-text.ets";
 
 const mobileRequire = await vi.hoisted(async () =>
   (await import("node:module")).createRequire(
@@ -60,21 +67,33 @@ vi.mock(mobileRequire.resolve("react-native"), () => {
   };
 });
 
-/** The real link splitter, taken as the native entry loads for mobile's mention helpers. */
-const chatUi = vi.hoisted((): { plainTextLinkParts?: (text: string) => unknown } => ({}));
+/** The real link splitter and the real code block extractor, as the native entry loads them. */
+const chatUi = vi.hoisted(
+  (): {
+    plainTextLinkParts?: (text: string) => unknown;
+    markdownCodeBlocks?: (markdown: string) => unknown;
+  } => ({}),
+);
 vi.mock(mobileRequire.resolve("@rakazo/chat-ui/native"), async (original) => {
   const actual = await original<Record<string, unknown>>();
   chatUi.plainTextLinkParts = actual.plainTextLinkParts as (text: string) => unknown;
+  chatUi.markdownCodeBlocks = actual.markdownCodeBlocks as (markdown: string) => unknown;
   return actual;
 });
 
+type Port = typeof markdownPlain &
+  typeof messageLinks &
+  typeof messageMentions &
+  typeof messageText &
+  typeof selectableText;
+
 const appRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const outDir = "/tmp/harmony-mt-port";
-rmSync(outDir, { recursive: true, force: true });
-mkdirSync(outDir, { recursive: true });
+// A directory of this run's own: two runs (another worktree, another worker) must not read each
+// other's copy of the port.
+const outDir = mkdtempSync(path.join(tmpdir(), "harmony-mt-port-"));
 const threadDir = path.join(appRoot, "entry/src/main/ets/thread");
 for (const file of readdirSync(threadDir)) {
-  if (!/^(?:markdown-|message-|selectable-text)[\w.-]*\.ets$/.test(file)) continue;
+  if (!/^(?:markdown-|message-|selectable-text|link-patterns)[\w.-]*\.ets$/.test(file)) continue;
   writeFileSync(
     path.join(outDir, file.replace(/\.ets$/, ".ts")),
     readFileSync(path.join(threadDir, file), "utf8")
@@ -113,13 +132,23 @@ function check(name: string, input: unknown, expected: unknown, actual: unknown)
   }
 }
 
-type Port = typeof import("../entry/src/main/ets/thread/markdown-plain.ets") &
-  typeof import("../entry/src/main/ets/thread/message-links.ets") &
-  typeof import("../entry/src/main/ets/thread/message-mentions.ets") &
-  typeof import("../entry/src/main/ets/thread/message-text.ets") &
-  typeof import("../entry/src/main/ets/thread/selectable-text.ets");
 type LinkPart = { type: string; value: string; href?: string; pageId?: string };
 let port: Port;
+
+const realLinkParts = (text: string): LinkPart[] => chatUi.plainTextLinkParts?.(text) as LinkPart[];
+const realCodeBlocks = (markdown: string): string[] =>
+  chatUi.markdownCodeBlocks?.(markdown) as string[];
+/** The parts as comparable data: the reference names a page link's target `pageId`. */
+const partShape = (parts: LinkPart[]): unknown =>
+  parts.map((part) =>
+    part.type === "text"
+      ? { type: "text", value: part.value }
+      : { type: part.type, value: part.value, href: part.pageId ?? part.href },
+  );
+
+afterAll(() => {
+  rmSync(outDir, { recursive: true, force: true });
+});
 
 describe("harmony message-text port", () => {
   it("matches the TypeScript reference", async () => {
@@ -136,8 +165,6 @@ describe("harmony message-text port", () => {
       )),
     ) as Port;
     expect(chatUi.plainTextLinkParts, "the real link splitter loaded").toBeTypeOf("function");
-    const realLinkParts = (text: string): LinkPart[] =>
-      chatUi.plainTextLinkParts?.(text) as LinkPart[];
 
     const LABELS = { photo: "Photo", attachment: "Attachment", message: "Message" };
 
@@ -254,6 +281,7 @@ describe("harmony message-text port", () => {
       "see https://x.com/@Writer now",
       "mail a@b.co and @Writer",
       "[page](page:p1) @all",
+      "[Home](page:p1) then https://x.com/a @Writer",
     ]) {
       const targets = mobileMentions.userMentionTargets(MEMBERS, text);
       const asTarget = (
@@ -269,7 +297,8 @@ describe("harmony message-text port", () => {
         port.userMentionTargets(MEMBERS, text),
       );
       // The user bubble's runs: mobile lays its linkified text over splitMentionText, so the
-      // expected runs come from those two real pieces.
+      // expected runs come from those two real pieces. One difference is the port's own: a page
+      // link is plain text here, since no page opens yet, where mobile opens the page.
       check(
         "userTextRuns",
         text,
@@ -278,7 +307,7 @@ describe("harmony message-text port", () => {
             ? core
                 .splitMentionText(piece.value, targets)
                 .map((part) => ({ text: part.text, href: "", target: asTarget(part.target) }))
-            : [{ text: piece.value, href: piece.pageId ?? piece.href, target: null }],
+            : [{ text: piece.value, href: piece.type === "link" ? piece.href : "", target: null }],
         ),
         port
           .userTextRuns(text, targets)
@@ -488,18 +517,17 @@ describe("harmony message-text port", () => {
       "x@y.co.uk",
       "https://",
       "https://x.com/a)",
+      // Where the port used to draw the line differently from the reference.
+      "alice@example.com.",
+      "[https://example.com](https://example.com)",
     ];
     for (const text of PLAIN_TEXTS) {
-      // The reference names a page link's target `pageId`; the port keeps one field for it.
-      const shape = (parts: LinkPart[]): unknown =>
-        parts.map((part) =>
-          part.type === "text"
-            ? { type: "text", value: part.value }
-            : { type: part.type, value: part.value, href: part.pageId ?? part.href },
-        );
-      const expected = shape(realLinkParts(text));
-      const actual = shape(port.plainTextLinkParts(text));
-      check("plainTextLinkParts", text, expected, actual);
+      check(
+        "plainTextLinkParts",
+        text,
+        partShape(realLinkParts(text)),
+        partShape(port.plainTextLinkParts(text)),
+      );
     }
 
     // plainTextFromMarkdown (the reply-line preview path). markdown-lite.markdownPlainText is the
@@ -548,33 +576,89 @@ describe("harmony message-text port", () => {
       );
     }
 
-    // messageMenu
+    // messageMenu: what it offers and what it copies, against what mobile builds the same menu
+    // from (message-row.tsx). The code cases keep their indentation: a tab a Makefile needs.
     const MENU_CASES = [
       { id: "m1", role: "user", blocks: [{ kind: "text", text: "hello" }] },
       { id: "m2", role: "bot", blocks: [{ kind: "text", text: "```js\nconst a = 1;\n```" }] },
-      { id: "progress:x", role: "bot", blocks: [{ kind: "progress", text: "thinking" }] },
       { id: "m3", role: "bot", blocks: [{ kind: "chart" }] },
+      { id: "progress:x", role: "bot", blocks: [{ kind: "progress", text: "thinking" }] },
+      {
+        id: "m4",
+        role: "bot",
+        blocks: [{ kind: "text", text: "```make\nbuild:\n\techo hi\n```" }],
+      },
+      {
+        id: "m5",
+        role: "bot",
+        blocks: [{ kind: "text", text: "- item\n\n  ```\n  \techo\n  ```" }],
+      },
+      { id: "m6", role: "bot", blocks: [{ kind: "text", text: "```\n\ta\n```\n\n```\n\tb\n```" }] },
+      { id: "m7", role: "bot", blocks: [{ kind: "text", text: "```js\n\n\n```" }] },
+      { id: "user-code", role: "user", blocks: [{ kind: "text", text: "```\n\tx\n```" }] },
     ];
     for (const message of MENU_CASES) {
-      const menu = port.messageMenu(message, false, {
-        reply: "Reply",
-        copy: "Copy",
-        select: "Select text",
-        copyCode: "Copy code",
-      });
-      const expectedSelect =
-        message.role === "user"
-          ? core.selectableMessageText(message)
-          : mobileSelectable.selectableTextFromMarkdown(core.selectableMessageText(message));
-      check("messageMenu.selectText", message.id, expectedSelect, menu.selectText);
-      check("messageMenu.copyText", message.id, core.copyableMessageText(message), menu.copyText);
+      const text = blockText(message);
+      const messageText = core.selectableMessageText(message);
+      const codeBlocks = message.role === "user" ? [] : realCodeBlocks(text);
       check(
-        "messageMenu.copyCode",
+        "messageMenu",
         message.id,
-        message.role !== "user" && /```|~~~| {4}|\t/.test(blockText(message)),
-        menu.copyCode,
+        {
+          select: messageText.trim().length > 0,
+          copyCode: codeBlocks.length === 1,
+          copyText: core.copyableMessageText(message),
+          selectText:
+            message.role === "user"
+              ? messageText
+              : mobileSelectable.selectableTextFromMarkdown(messageText),
+          code: codeBlocks[0] ?? "",
+        },
+        port.messageMenu(message),
       );
-      check("messageMenu.reply", message.id, !message.id.startsWith("progress:"), menu.reply);
+    }
+    // The code copied, over the shapes a code block takes. Mobile reads it with a second parser
+    // (markdown-it), which keeps the tabs the renderer expands, so the port reads it as that does.
+    const CODE_CASES = [
+      "```make\nbuild:\n\techo hi\n\tcd /tmp\n```",
+      "```\n\tindented\n```",
+      "```\n\t\tdeep\n```",
+      "```\n  \tx\n```",
+      " ```\n\techo\n ```",
+      "  ```\n\techo\n  ```",
+      "   ```\n\techo\n   ```",
+      "```\na\tb\n```",
+      "```\nab\t\n```",
+      "    a\n\tb",
+      "\tcode line",
+      "\t\tcode",
+      "- item\n\n  ```\n  \techo\n  ```",
+      "> ```\n> \techo\n> ```",
+      "~~~\n\techo\n~~~",
+      "```\n\techo",
+      "```\n\ta\n```\n\ntext\n\n```\n\tb\n```",
+      "```js\tx\n\techo\n```",
+      "```\n\t\n\tx\n```",
+      "```\r\n\techo\r\n```",
+      "- ```\n  \tx\n  ```",
+      "```\n    space then\n\ttab\n```",
+      // A list item whose own line is the code, blank lines inside indented code, and a quote
+      // around a list.
+      "-     code",
+      "-     \tcode",
+      "1.      code",
+      "    a\n\t\n    b",
+      "    a\n\t\t\n    b",
+      "> - ```\n>   \tx\n>   ```",
+      "- > ```\n  > \tx\n  > ```",
+    ];
+    for (const markdown of CODE_CASES) {
+      check(
+        "markdownCodeBlocks",
+        markdown,
+        realCodeBlocks(markdown),
+        port.markdownCodeBlocks(markdown),
+      );
     }
 
     // The flat run list the bubble draws (Span takes no children, so nested emphasis flattens):
@@ -619,11 +703,28 @@ describe("harmony message-text port", () => {
           [" now", 0, 0, 0, 0, ""],
         ],
       ],
-      // A soft break and neighbouring plain text merge into one run.
-      ["line one\nline two", [["line one\nline two", 0, 0, 0, 0, ""]]],
+      // A soft break reads as a space, as mobile shows it; two trailing spaces or a backslash
+      // make a hard one. Either merges with the plain text around it.
+      ["line one\nline two", [["line one line two", 0, 0, 0, 0, ""]]],
+      ["line one  \nline two", [["line one\nline two", 0, 0, 0, 0, ""]]],
+      ["line one\\\nline two", [["line one\nline two", 0, 0, 0, 0, ""]]],
       // No image surface yet: the alternative text stands in.
       ["![alt text](https://x.com/i.png)", [["alt text", 0, 0, 0, 0, ""]]],
       ["**[link](https://x.com)**", [["link", 1, 0, 0, 0, "https://x.com"]]],
+      // A destination the app cannot follow is plain text: a page link, a bot link, a scheme it
+      // refuses, and a relative one. The words stay, with nothing to tap.
+      ["[Home](page:p1)", [["Home", 0, 0, 0, 0, ""]]],
+      ["[Bot](rakazo-mention:b1)", [["Bot", 0, 0, 0, 0, ""]]],
+      ["[x](javascript:alert(1))", [["x", 0, 0, 0, 0, ""]]],
+      ["[x](/docs)", [["x", 0, 0, 0, 0, ""]]],
+      [
+        "**[Home](page:p1)** and [mail](mailto:a@b.co)",
+        [
+          ["Home", 1, 0, 0, 0, ""],
+          [" and ", 0, 0, 0, 0, ""],
+          ["mail", 0, 0, 0, 0, "mailto:a@b.co"],
+        ],
+      ],
     ];
     for (const [markdown, expected] of runCases) {
       const tree = portLite.parseMarkdown(markdown);
@@ -660,5 +761,132 @@ describe("harmony message-text port", () => {
         )
         .join("\n"),
     ).toEqual([]);
+  });
+
+  it("agrees with the reference on where a link starts and ends in text built from its edge characters", () => {
+    // Where a link starts and ends is decided by single characters (a dot, a bracket, a blank,
+    // a full-width mark) and by the letter case of its scheme, so the corpus is short strings
+    // drawn from those. The generator is seeded, so a disagreement replays.
+    const ALPHABET = [
+      "a",
+      "b",
+      "A",
+      "Z",
+      "1",
+      "9",
+      "_",
+      "-",
+      ".",
+      ",",
+      ":",
+      ";",
+      "/",
+      "\\",
+      "?",
+      "!",
+      "@",
+      "#",
+      "%",
+      "(",
+      ")",
+      "[",
+      "]",
+      "{",
+      "}",
+      "<",
+      ">",
+      '"',
+      "'",
+      " ",
+      "\t",
+      "\n",
+      "\r",
+      "\u0000",
+      "\u001f",
+      "\u00a0",
+      "\u3000",
+      "\u00ad",
+      "\u200b",
+      "\ufeff",
+      "，",
+      "。",
+      "、",
+      "｜",
+      "é",
+      "ß",
+      "中",
+      "\u{1f600}",
+      "x.com",
+      "a@b.co",
+      "https://",
+      "HTTPS://",
+      "http:",
+      "mailto:",
+      "MailTo:",
+      "ftp:",
+      "//",
+      "www.",
+      "com",
+      "uk",
+      "zz",
+      "dev",
+      "cn",
+      "io",
+      "xn--p1ai",
+      "museum",
+      "localhost",
+      "192.168.0.1",
+      "255.255.255.255",
+      "999.1.1.1",
+      "user:pass@",
+      ":8080",
+      "?q=1",
+      "#f",
+      "/path",
+      "(x)",
+      "[x]",
+      '"q"',
+      "'q'",
+      "e.g",
+      "a..b",
+      "a--b",
+      "-a",
+      "a-",
+      "..",
+      "...",
+    ];
+    let seed = 0x5eed;
+    const next = (bound: number): number => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed % bound;
+    };
+    const disagreements: unknown[] = [];
+    for (let round = 0; round < 8_000; round += 1) {
+      let text = "";
+      const length = 1 + next(24);
+      for (let piece = 0; piece < length; piece += 1) {
+        text += ALPHABET[next(ALPHABET.length)];
+      }
+      const expected = partShape(realLinkParts(text));
+      const got = partShape(port.plainTextLinkParts(text));
+      if (JSON.stringify(expected) !== JSON.stringify(got) && disagreements.length < 6) {
+        disagreements.push({ text, expected, got });
+      }
+    }
+    expect(disagreements).toEqual([]);
+  });
+
+  it("finds the links of a long message in time that grows with its length", () => {
+    // Sized so that a scan which restarts at every letter takes minutes: a send may hold 100,000.
+    // Plain text has no address anywhere, and one that looks like the start of one at every step.
+    for (const text of [
+      "a".repeat(100_000),
+      "no links here ".repeat(7_700),
+      "a@".repeat(50_000),
+      "https:// ".repeat(12_500),
+      "https://a.b/c ".repeat(7_100),
+    ]) {
+      expectLinearTime(() => port.plainTextLinkParts(text));
+    }
   });
 });

@@ -21,7 +21,8 @@ export interface MentionTextPart {
 /** One run of a user's message as the bubble draws it. */
 export interface UserTextRun {
   text: string;
-  /** A link's address, or a page link's page id; empty for plain text and a mention. */
+  /** Where a tap opens: an address the app may follow. Empty for plain text, a mention, and a
+ *  page link, which has no page to open yet and so reads as plain text. */
   href: string;
   /** The bot, or everyone, a mention names. */
   target: UserMentionTarget | null;
@@ -174,7 +175,8 @@ export function userTextRuns(text: string, targets: UserMentionTarget[]): UserTe
         runs.push(run);
       }
     } else {
-      runs.push({ text: piece.value, href: piece.href, target: null });
+      // A page link is plain text until pages can open (it would draw as a link that does nothing).
+      runs.push({ text: piece.value, href: piece.type === 'link' ? piece.href : '', target: null });
     }
   }
   return runs;
