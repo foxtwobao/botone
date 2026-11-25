@@ -287,6 +287,13 @@ export default function attachmentsTest() {
         const uploads = records(log!['requests']).filter((r: Record<string, Object>): boolean => r['path'] === '/rpc/artifacts/create');
         expect(uploads.length).assertEqual(3);
         expect(uploads[1]['body']).assertEqual(uploads[2]['body']);
+        // The logged bodies replace the bytes with their length and digest: the replayed upload
+        // carried byte-identical content, not just matching metadata.
+        const replay = parseJsonObject(uploads[2]['body'] as string);
+        const carried = replay !== null ? replay['json'] as Record<string, Object> : null;
+        expect(carried !== null && carried!['contentSha256'] !== undefined
+          && (carried!['contentSha256'] as string).length > 0).assertTrue();
+        expect(carried!['contentBytes']).assertEqual(3);
       } finally {
         store.close();
         removeTemporaryFile(first.path);

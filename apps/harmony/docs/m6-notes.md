@@ -6,7 +6,7 @@ flow M5's menu entry waited for; and being the target of a system share. Decisio
 down before any code in [m6-scope.md](m6-scope.md); this file records what shipped, what the
 device showed, and what the scope could not cover.
 
-**Status: verified on the emulator.** Hypium 174/174, every walkthrough row measured, 43
+**Status: verified on the emulator.** Hypium 174/174, every walkthrough row measured, 42
 captures. A device walkthrough found and fixed three real defects this round (below); what stays
 open is under [Deferred](#deferred).
 
@@ -85,16 +85,18 @@ two with their reasons, one per file.
   `shareContent`/`sharePreview`.
 - hypium `Attachments.test.ets` (7 cases) — the fixture replay, the send envelopes, share
   dedup, chunked import and encode, the photo shrink against a generated 2000×1000 PNG, the
-  partial-upload retry (idempotent nonce reuse), and the mid-transfer cancel with its retry.
+  partial-upload retry (idempotent nonce reuse, byte digest included), and the mid-transfer
+  cancel with its retry.
 - hypium `ThreadRender.test.ets` — image/file blocks now project to the attachment tier.
 - `contract/snapshots/` gains the artifacts create/get shapes; `me` gains the two upload limits;
   the send input gains `artifactIds`, `replyToMessageId`, `imageHandling`; the image and file
   block views gain the fields the renderer reads.
 - The fixture server answers `artifacts/create` (nonce idempotent, name-targeted failure,
   paced-body mode for the cancel case) and `artifacts/get`, and writes image-confirming 409s.
-  The paced-body mode exists because cancelling during a *response wait* wedges the emulator's
-  network stack (see [Review findings](#review-findings)); cancelling while the request is still
-  being written is clean, and that is the path the case now takes.
+  Its request log replaces an upload's bytes with their length and SHA-256, so a test comparing
+  logged bodies proves the bytes themselves match. The paced-body mode keeps the cancel case
+  aborting a transfer that is still being written; see [Review findings](#review-findings) for
+  why that phase matters at suite scale.
 
 ## Copy
 
@@ -114,7 +116,7 @@ preview for this file type.` — each on the surface it belongs to, none persist
 | `pnpm lint` (Biome) | 0 errors |
 | `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL**; no ArkTS warning in any M6 file |
 | hypium on the emulator | **174 / 174** (the full suite; the one earlier red run is under [Review findings](#review-findings)) |
-| screenshots `m6-*.png` | 43 captures covering every row below |
+| screenshots `m6-*.png` | 42 captures covering every row below |
 
 The emulator is the owner-started `devphone`; no power or license was touched, and the HAPs were
 debug-signed with a borrowed local config, reverted after each build.
@@ -179,15 +181,24 @@ And two the review-adjacent probing surfaced, both worth recording:
    the composer grows, the list shrinks, and the "at bottom" test turns off without any scroll;
    the message you just sent then arrives off-screen. A successful send now pins bottom and
    scrolls. The walkthrough caught it as a missing echo check.
-5. **Cancelling during a response wait wedged the network stack.** The instrumented cancel case
-   first cancelled an upload whose response the fixture was holding; every later suite in the
-   same process then saw its requests fail with client-side write errors (curl 23/28), and the
-   full hypium run ended 173/174 with an M2 roster case unable to load. The stack recovers only
-   when the app process exits. Cancelling while the request is still being written is clean — the
-   fixture now paces the upload body, the case cancels mid-write, and the full suite is 174/174.
+5. **The emulator's network stack stalls under rapid connection cycling, and the first write-up
+   blamed the wrong cause.** The instrumented suite first saw an M2 roster case time out with
+   client-side curl 23/28 errors, and this file first attributed that to cancelling an upload
+   during its response wait. A review asked for the red test, and the controls falsified the
+   attribution, three ways, each 3/3 on the device:
+   - the requested case itself — upload held, cancel during the response wait, then reads — is
+     green: the very next request works;
+   - a probe with no upload and no cancel at all (an open-and-closed signal stream with a read,
+     six rounds) fails the same way, alone and before the roster suite;
+   - the same held-upload case with `destroy()` removed entirely still fails the same way.
+   What actually triggers the stall is many connections opened, held and closed in quick
+   succession with interleaved requests — a test-suite pacing pattern (six stuck ESTABLISHED
+   sockets, then new requests time out until the process exits). The paced-body cancel case is
+   kept because its phase is the quieter one, and a held-response case in the suite would put
+   the full run back over the threshold. Product pace does not reach it: the mid-write cancel
+   case plus the whole roster suite is green three runs in three, and the full suite is 174/174.
    The fixture also ends a held response's socket when the client aborts, so no half-open
-   connection leaks into the next suite either way. If a future change returns to
-   destroy-during-response-wait, expect this again.
+   connection leaks into the next suite either way.
 
 ## Deferred
 

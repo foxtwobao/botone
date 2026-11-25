@@ -1,4 +1,5 @@
 // Attachment RPC fixture used by the Harmony device suite and the walkthrough.
+import { createHash } from "node:crypto";
 import { bearer, json, rpcError } from "./fixture-http.mjs";
 
 const artifacts = new Map();
@@ -94,11 +95,22 @@ export function handleArtifactRoute(req, res, body) {
   return true;
 }
 
-/** The request log keeps an upload's metadata but not its bytes: tests compare the rest. */
+/** The request log keeps an upload's metadata, not its bytes: their length and digest stand in,
+ * so a test comparing logged bodies still proves the bytes themselves were identical. */
 export function loggedBody(path, body) {
-  return path === "/rpc/artifacts/create"
-    ? JSON.stringify({ json: { ...JSON.parse(body).json, contentBase64: undefined } })
-    : body;
+  if (path !== "/rpc/artifacts/create") return body;
+  const input = JSON.parse(body).json;
+  const bytes =
+    typeof input.contentBase64 === "string" ? Buffer.from(input.contentBase64, "base64") : null;
+  const digest = bytes === null ? "" : createHash("sha256").update(bytes).digest("hex");
+  return JSON.stringify({
+    json: {
+      ...input,
+      contentBase64: undefined,
+      contentBytes: bytes?.length ?? 0,
+      contentSha256: digest,
+    },
+  });
 }
 
 /** The blocks a send carries, or null when it names an artifact this target does not own. */
