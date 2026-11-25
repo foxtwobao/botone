@@ -15,12 +15,13 @@ vi.mock("@rakazo/mobile/lib/notifications/live-notifications.js", () => ({
 }));
 vi.mock("@rakazo/mobile/lib/api/network-cache.js", () => ({ clearNetworkCache: vi.fn() }));
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as SecureStore from "expo-secure-store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fixtureGenerators } from "../scripts/gen-fixtures";
+import { writeGenerated } from "./write-generated";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures");
 const update = process.env.HARMONY_UPDATE_FIXTURES === "1";
@@ -40,8 +41,7 @@ describe("harmony layer-2 behavior fixtures", () => {
       const generated = await generate();
       const file = path.join(fixturesDir, `${name}.json`);
       if (update) {
-        mkdirSync(fixturesDir, { recursive: true });
-        writeFileSync(file, `${JSON.stringify(generated, null, 2)}\n`);
+        writeGenerated(file, generated);
         return;
       }
       expect(existsSync(file), `missing fixture; run HARMONY_UPDATE_FIXTURES=1 vitest`).toBe(true);

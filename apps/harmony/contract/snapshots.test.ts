@@ -2,7 +2,7 @@
 // Schema and pinned to committed snapshots. Any diff fails — a new optional field can change
 // semantics too (review Q8). Fix path: port the change into the ArkTS decoder and update the
 // snapshot in the same PR (HARMONY_UPDATE_SNAPSHOTS=1 regenerates the files).
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getEventIteratorSchemaDetails } from "@orpc/contract";
@@ -36,6 +36,7 @@ import {
   threadSendOutputView,
   threadSnapshotView,
 } from "../scripts/contract-manifest";
+import { writeGenerated } from "./write-generated";
 
 const snapshotDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "snapshots");
 const update = process.env.HARMONY_UPDATE_SNAPSHOTS === "1";
@@ -168,8 +169,7 @@ describe("harmony layer-1 contract snapshots", () => {
       const generated = normalize(z.toJSONSchema(schema));
       const file = path.join(snapshotDir, `${name}.json`);
       if (update) {
-        mkdirSync(snapshotDir, { recursive: true });
-        writeFileSync(file, `${JSON.stringify(generated, null, 2)}\n`);
+        writeGenerated(file, generated);
         return;
       }
       expect(existsSync(file), `missing snapshot; run HARMONY_UPDATE_SNAPSHOTS=1 vitest`).toBe(
