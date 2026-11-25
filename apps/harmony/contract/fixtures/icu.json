@@ -1476,15 +1476,6 @@
     },
     {
       "locale": "en",
-      "msgid": "{count} tools",
-      "message": "{count} tools",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 tools"
-    },
-    {
-      "locale": "en",
       "msgid": "{count} unread",
       "message": "{count} unread",
       "values": {
@@ -1892,6 +1883,25 @@
         "name": "Ada"
       },
       "expected": "Ada’s computer"
+    },
+    {
+      "locale": "en",
+      "msgid": "{names} and {more} more may stop until you reconnect.",
+      "message": "{names} and {more} more may stop until you reconnect.",
+      "values": {
+        "names": "value",
+        "more": "value"
+      },
+      "expected": "value and value more may stop until you reconnect."
+    },
+    {
+      "locale": "en",
+      "msgid": "{names} may stop until you reconnect.",
+      "message": "{names} may stop until you reconnect.",
+      "values": {
+        "names": "value"
+      },
+      "expected": "value may stop until you reconnect."
     },
     {
       "locale": "en",
@@ -2403,13 +2413,13 @@
     },
     {
       "locale": "en",
-      "msgid": "@{0}, {1}",
-      "message": "@{0}, {1}",
+      "msgid": "@{0}, {details}",
+      "message": "@{0}, {details}",
       "values": {
         "0": 3,
-        "1": 3
+        "details": "value"
       },
-      "expected": "@3, 3"
+      "expected": "@3, value"
     },
     {
       "locale": "en",
@@ -2644,6 +2654,16 @@
         "time": "value"
       },
       "expected": "at value"
+    },
+    {
+      "locale": "en",
+      "msgid": "at {times} and {last}",
+      "message": "at {times} and {last}",
+      "values": {
+        "times": "value",
+        "last": "value"
+      },
+      "expected": "at value and value"
     },
     {
       "locale": "en",
@@ -4156,6 +4176,24 @@
     },
     {
       "locale": "en",
+      "msgid": "Preview of {title}",
+      "message": "Preview of {title}",
+      "values": {
+        "title": "value"
+      },
+      "expected": "Preview of value"
+    },
+    {
+      "locale": "en",
+      "msgid": "Previously: {value}",
+      "message": "Previously: {value}",
+      "values": {
+        "value": "value"
+      },
+      "expected": "Previously: value"
+    },
+    {
+      "locale": "en",
       "msgid": "Program: {name}",
       "message": "Program: {name}",
       "values": {
@@ -4460,6 +4498,15 @@
         "version": "value"
       },
       "expected": "Revision value"
+    },
+    {
+      "locale": "en",
+      "msgid": "Routine \"{name}\" ended",
+      "message": "Routine \"{name}\" ended",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "Routine \"Ada\" ended"
     },
     {
       "locale": "en",
@@ -5019,6 +5066,15 @@
     },
     {
       "locale": "en",
+      "msgid": "until {end}",
+      "message": "until {end}",
+      "values": {
+        "end": "value"
+      },
+      "expected": "until value"
+    },
+    {
+      "locale": "en",
       "msgid": "Up to {limit} sites.",
       "message": "Up to {limit} sites.",
       "values": {
@@ -5098,6 +5154,15 @@
       "message": "Use {hostLabel}",
       "values": {
         "hostLabel": "value"
+      },
+      "expected": "Use value"
+    },
+    {
+      "locale": "en",
+      "msgid": "Use {label}",
+      "message": "Use {label}",
+      "values": {
+        "label": "value"
       },
       "expected": "Use value"
     },
@@ -6975,15 +7040,6 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "{count} tools",
-      "message": "{count} 个工具",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 个工具"
-    },
-    {
-      "locale": "zh-CN",
       "msgid": "{count} unread",
       "message": "{count} 条未读",
       "values": {
@@ -7391,6 +7447,25 @@
         "name": "Ada"
       },
       "expected": "Ada 的电脑"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{names} and {more} more may stop until you reconnect.",
+      "message": "{names} 及另外 {more} 项可能会停止，直到你重新连接。",
+      "values": {
+        "names": "value",
+        "more": "value"
+      },
+      "expected": "value 及另外 value 项可能会停止，直到你重新连接。"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{names} may stop until you reconnect.",
+      "message": "{names} 可能会停止，直到你重新连接。",
+      "values": {
+        "names": "value"
+      },
+      "expected": "value 可能会停止，直到你重新连接。"
     },
     {
       "locale": "zh-CN",
@@ -7902,13 +7977,13 @@
     },
     {
       "locale": "zh-CN",
-      "msgid": "@{0}, {1}",
-      "message": "@{0}，{1}",
+      "msgid": "@{0}, {details}",
+      "message": "@{0}，{details}",
       "values": {
         "0": 3,
-        "1": 3
+        "details": "value"
       },
-      "expected": "@3，3"
+      "expected": "@3，value"
     },
     {
       "locale": "zh-CN",
@@ -8143,6 +8218,16 @@
         "time": "value"
       },
       "expected": "value"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "at {times} and {last}",
+      "message": "{times}和{last}",
+      "values": {
+        "times": "value",
+        "last": "value"
+      },
+      "expected": "value和value"
     },
     {
       "locale": "zh-CN",
@@ -9655,6 +9740,24 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "Preview of {title}",
+      "message": "{title} 的预览",
+      "values": {
+        "title": "value"
+      },
+      "expected": "value 的预览"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Previously: {value}",
+      "message": "之前：{value}",
+      "values": {
+        "value": "value"
+      },
+      "expected": "之前：value"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "Program: {name}",
       "message": "程序：{name}",
       "values": {
@@ -9959,6 +10062,15 @@
         "version": "value"
       },
       "expected": "第 value 版"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Routine \"{name}\" ended",
+      "message": "例行任务“{name}”已结束",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "例行任务“Ada”已结束"
     },
     {
       "locale": "zh-CN",
@@ -10518,6 +10630,15 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "until {end}",
+      "message": "直到 {end}",
+      "values": {
+        "end": "value"
+      },
+      "expected": "直到 value"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "Up to {limit} sites.",
       "message": "最多 {limit} 个网站。",
       "values": {
@@ -10597,6 +10718,15 @@
       "message": "使用 {hostLabel}",
       "values": {
         "hostLabel": "value"
+      },
+      "expected": "使用 value"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "Use {label}",
+      "message": "使用 {label}",
+      "values": {
+        "label": "value"
       },
       "expected": "使用 value"
     },
@@ -12474,15 +12604,6 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "{count} tools",
-      "message": "{count} 個工具",
-      "values": {
-        "count": 3
-      },
-      "expected": "3 個工具"
-    },
-    {
-      "locale": "zh-TW",
       "msgid": "{count} unread",
       "message": "{count} 條未讀",
       "values": {
@@ -12890,6 +13011,25 @@
         "name": "Ada"
       },
       "expected": "Ada 的電腦"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{names} and {more} more may stop until you reconnect.",
+      "message": "{names} 及另外 {more} 項可能會停止，直到你重新連線。",
+      "values": {
+        "names": "value",
+        "more": "value"
+      },
+      "expected": "value 及另外 value 項可能會停止，直到你重新連線。"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{names} may stop until you reconnect.",
+      "message": "{names} 可能會停止，直到你重新連線。",
+      "values": {
+        "names": "value"
+      },
+      "expected": "value 可能會停止，直到你重新連線。"
     },
     {
       "locale": "zh-TW",
@@ -13401,13 +13541,13 @@
     },
     {
       "locale": "zh-TW",
-      "msgid": "@{0}, {1}",
-      "message": "@{0}，{1}",
+      "msgid": "@{0}, {details}",
+      "message": "@{0}，{details}",
       "values": {
         "0": 3,
-        "1": 3
+        "details": "value"
       },
-      "expected": "@3，3"
+      "expected": "@3，value"
     },
     {
       "locale": "zh-TW",
@@ -13642,6 +13782,16 @@
         "time": "value"
       },
       "expected": "value"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "at {times} and {last}",
+      "message": "{times}和{last}",
+      "values": {
+        "times": "value",
+        "last": "value"
+      },
+      "expected": "value和value"
     },
     {
       "locale": "zh-TW",
@@ -15154,6 +15304,24 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "Preview of {title}",
+      "message": "{title} 的預覽",
+      "values": {
+        "title": "value"
+      },
+      "expected": "value 的預覽"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Previously: {value}",
+      "message": "先前：{value}",
+      "values": {
+        "value": "value"
+      },
+      "expected": "先前：value"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "Program: {name}",
       "message": "程式：{name}",
       "values": {
@@ -15458,6 +15626,15 @@
         "version": "value"
       },
       "expected": "第 value 版"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Routine \"{name}\" ended",
+      "message": "例行任務「{name}」已結束",
+      "values": {
+        "name": "Ada"
+      },
+      "expected": "例行任務「Ada」已結束"
     },
     {
       "locale": "zh-TW",
@@ -16017,6 +16194,15 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "until {end}",
+      "message": "直到 {end}",
+      "values": {
+        "end": "value"
+      },
+      "expected": "直到 value"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "Up to {limit} sites.",
       "message": "最多 {limit} 個網站。",
       "values": {
@@ -16096,6 +16282,15 @@
       "message": "使用 {hostLabel}",
       "values": {
         "hostLabel": "value"
+      },
+      "expected": "使用 value"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Use {label}",
+      "message": "使用 {label}",
+      "values": {
+        "label": "value"
       },
       "expected": "使用 value"
     },

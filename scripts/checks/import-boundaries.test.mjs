@@ -112,6 +112,10 @@ const RULES = {
     title: "imported workspace packages are declared dependencies",
     fix: 'Add it to this package.json as "workspace:*": under dependencies when shipped code imports it, under devDependencies when only tests or build scripts do.',
   },
+  bundled: {
+    title: "the desktop app lists the workspace packages it bundles as devDependencies",
+    fix: "The build compiles workspace code into the app, and the packager would also ship each of the package's own dependencies. Move it to devDependencies.",
+  },
   unused: {
     title: "declared workspace dependencies are imported",
     fix: "Nothing in this package imports it. Remove it from this package.json.",
@@ -317,7 +321,13 @@ function findViolations(sources, workspaces) {
     const file = `${workspace.dir}/package.json`;
     const dirOf = (name) => byName.get(name)?.dir;
     const declared = [...workspace.dependencies, ...workspace.devDependencies];
-    const shippable = BUNDLED.includes(workspace.dir) ? declared : workspace.dependencies;
+    const bundled = BUNDLED.includes(workspace.dir);
+    const shippable = bundled ? declared : workspace.dependencies;
+    if (bundled) {
+      for (const name of workspace.dependencies) {
+        violations.push({ rule: "bundled", file, specifier: name });
+      }
+    }
     for (const target of used.named) {
       const names = used.shipped.has(target) ? shippable : declared;
       if (!names.some((name) => dirOf(name) === target)) {
@@ -444,7 +454,9 @@ test("resolves specifiers to packages and reports each rule", () => {
     });
   const workspaces = [
     workspace("apps/api", ["core", "testkit"]),
-    workspace("apps/desktop", [], { devDependencies: { [scoped("core")]: "workspace:*" } }),
+    workspace("apps/desktop", ["contracts"], {
+      devDependencies: { [scoped("core")]: "workspace:*" },
+    }),
     workspace("apps/web", ["ui-web", "db", "contracts"], {
       devDependencies: { [scoped("core")]: "workspace:*" },
     }),
@@ -460,7 +472,7 @@ test("resolves specifiers to packages and reports each rule", () => {
     // A build script may use a devDependency; an undeclared package is still undeclared.
     { file: "apps/web/scripts/codegen.ts", specifiers: [scoped("core")] },
     { file: "apps/api/scripts/seed.ts", specifiers: [scoped("db")] },
-    { file: "apps/desktop/src/main/main.ts", specifiers: [scoped("core")] },
+    { file: "apps/desktop/src/main/main.ts", specifiers: [scoped("core"), scoped("contracts")] },
     {
       file: "apps/web/src/app.tsx",
       specifiers: [
@@ -505,6 +517,7 @@ test("resolves specifiers to packages and reports each rule", () => {
       "app: packages/db/src/index.ts -> @rakazo/api",
       "app: packages/testkit/src/browser.ts -> @rakazo/web",
       "app: packages/testkit/src/index.ts -> ../../../apps/api/src/app.ts",
+      "bundled: apps/desktop/package.json -> @rakazo/contracts",
       "core: packages/core/src/index.ts -> @rakazo/db",
       "exports: apps/web/src/app.tsx -> @rakazo/ui-web/src/internal",
       "leaf: packages/contracts/src/index.ts -> @rakazo/core",

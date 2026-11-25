@@ -73,7 +73,7 @@ test("connects and removes a configured creative app through the existing catalo
   await page.getByRole("button", { name: "Added", exact: true }).click();
   const detail = page.getByTestId("connection-detail");
   await expect(detail.getByRole("textbox", { name: "Account label" })).toHaveValue("CreativeOne");
-  await detail.getByText("3 tools", { exact: true }).click();
+  await detail.getByRole("button", { name: "Other actions", exact: true }).click();
   for (const name of ["View models", "Create media", "Check progress"])
     await expect(detail.getByText(name, { exact: true })).toBeVisible();
   await captureScreenshot(page, testInfo, "creative-app-connected");

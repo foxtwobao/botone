@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type { SignupSurvey as SignupSurveyAnswers } from "@rakazo/contracts";
 import { signupSurveyAsksTeamSize } from "@rakazo/contracts";
+import { bestEffort } from "@rakazo/logging/best-effort";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContext, useRef, useState } from "react";
 import {
@@ -66,7 +67,7 @@ export default function SignupSurvey() {
     const survey = signupSurveyAnswers({ reason, use, teamSize, source });
     if (next === "models") {
       // Answers are optional, so a slow or failed save never holds up the new account.
-      void rpc("onboarding/signupSurvey", survey).catch(() => undefined);
+      void bestEffort("save signup survey answers", rpc("onboarding/signupSurvey", survey));
       router.replace("/models");
     } else {
       answers.run(survey);

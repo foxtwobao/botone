@@ -848,7 +848,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "change": {
-                      "enum": ["created", "updated", "enabled", "disabled", "deleted"],
+                      "enum": ["created", "updated", "enabled", "disabled", "deleted", "ended"],
                       "type": "string"
                     },
                     "kind": {

@@ -43,7 +43,7 @@ it("uses catalog defaults on managed accounts in both the picker and runtime, pr
     const secret = parseModelSecret(plaintext);
     const dto = modelCredentialDto(row, plaintext);
     for (const [id, supported] of [
-      [known, managed],
+      [known, true],
       [other, false],
       [alias, true],
     ] as const) {
@@ -53,5 +53,24 @@ it("uses catalog defaults on managed accounts in both the picker and runtime, pr
     }
     expect(dto.defaultReasoningModelIds).toEqual(managed ? [known, other] : undefined);
     expect(JSON.parse(serializeModelSecret(secret)).models).toEqual(raw.models);
+  }
+});
+
+it("keeps a managed account's catalog-reasoning models thinking even where servers assume not", () => {
+  const known = "deepseek-v4.1-flash";
+  const raw = {
+    kind: "openai_compatible",
+    baseUrl: "http://127.0.0.1:8000/v1",
+    enabledModelIds: [known],
+  };
+  for (const managed of [true, false]) {
+    const secret = parseModelSecret(
+      JSON.stringify(
+        managed ? { ...raw, externalAccount: { accountId: "fixture", binding: "fixture" } } : raw,
+      ),
+    );
+    expect(connectionModelSettings(secret, "openai-compatible", known).reasoning ?? false).toBe(
+      managed,
+    );
   }
 });

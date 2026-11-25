@@ -5,6 +5,7 @@ import type {
 } from "@rakazo/contracts";
 import { modelAccountErrorCodeSchema } from "@rakazo/contracts";
 import { ModelAccountClientError, resolveAccountNavigation } from "@rakazo/core";
+import { bestEffort } from "@rakazo/logging/best-effort";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Alert, AppState, Linking, View } from "react-native";
@@ -143,7 +144,10 @@ export function ModelAccount({
       if (abort.signal.aborted) return;
       if (kind === "identity") setIdentityError(errorText(cause, t("Could not continue")));
       setError(cause instanceof ModelAccountClientError ? cause.code : "unavailable");
-      await refresh(api, abort.signal).catch(() => undefined);
+      await bestEffort(
+        "refresh the model account after a failed action",
+        refresh(api, abort.signal),
+      );
     } finally {
       if (!abort.signal.aborted) setBusy(false);
       if (actionAbort.current === abort) actionAbort.current = null;

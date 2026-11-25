@@ -10,6 +10,7 @@ import {
   ModelAccountClientError,
   resolveAccountNavigation,
 } from "@rakazo/core";
+import { bestEffort } from "@rakazo/logging/best-effort";
 import {
   Button,
   SectionHeading,
@@ -214,7 +215,7 @@ function ModelAccountContent({
       if (abort.signal.aborted) return;
       if (kind === "identity") setIdentityError(authErrorText(cause, t`Could not continue`));
       setError(cause instanceof ModelAccountClientError ? cause.code : "unavailable");
-      await refresh(abort.signal).catch(() => undefined);
+      await bestEffort("refresh the model account after a failed action", refresh(abort.signal));
     } finally {
       if (!abort.signal.aborted) {
         setBusy(false);
