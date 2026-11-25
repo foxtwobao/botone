@@ -76,6 +76,8 @@ export async function findContinuableRun(
     "bot.id": run.botId,
     "thread.id": run.threadId,
     "space.id": run.spaceId,
+    "run.trigger": run.trigger,
+    ...(run.routineId ? { "routine.id": run.routineId } : {}),
     ...(run.userId ? { "user.id": run.userId } : {}),
   });
   // Host runs finish through the device harness, even when the run already ended elsewhere.

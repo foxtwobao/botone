@@ -218,6 +218,12 @@ export * from "./providers/web/parallel/parallel-web.js";
 export * from "./reseller-model-account.js";
 export * from "./routines/release-watch.js";
 export { releaseRoutineBackoffs } from "./routines/routine-backoff.js";
+export {
+  routineEndError,
+  routineEnded,
+  routineEndInZone,
+  runBeforeEnd,
+} from "./routines/routine-end.js";
 export * from "./routines/routine-notice.js";
 export * from "./routines/routine-owner-computer.js";
 export { routineGroupThreadId } from "./routines/routine-thread.js";
@@ -332,6 +338,7 @@ export * from "./tools/builtin.tool-definition.js";
 export * from "./tools/builtin-skills.prompt.js";
 export * from "./tools/builtin-tool-bridge.js";
 export * from "./tools/fleet-tools.js";
+export { isLazyCatalogControlRoute } from "./tools/lazy-tool-catalog.js";
 export * from "./tools/schedule-tools.js";
 export * from "./tools/skill-tools.js";
 export * from "./voice/voice-factory.js";

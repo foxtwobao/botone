@@ -79,6 +79,8 @@ function ConnectionModelSettings({
     credentials,
     disconnectCredential,
     disconnectName,
+    disconnectPreviewLoading,
+    disconnectWarning,
     endpointPresets,
     error,
     groups,
@@ -486,8 +488,13 @@ function ConnectionModelSettings({
       open={confirmDisconnect}
       onCancel={() => setConfirmDisconnect(false)}
       title={<Trans>Disconnect {disconnectName}?</Trans>}
-      description={<Trans>This removes the connection from every space.</Trans>}
-      confirmDisabled={pending === "disconnect"}
+      description={
+        <>
+          <Trans>This removes the connection from every space.</Trans>
+          {disconnectWarning ? <> {disconnectWarning}</> : null}
+        </>
+      }
+      confirmDisabled={pending === "disconnect" || disconnectPreviewLoading}
       onConfirm={() => {
         setConfirmDisconnect(false);
         setConnectionAt(null);

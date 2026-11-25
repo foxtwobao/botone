@@ -8,6 +8,7 @@ const packageJson = JSON.parse(
   productName?: string;
   build?: {
     productName?: string;
+    protocols?: { name: string; schemes: string[] }[];
     mac?: {
       extendInfo?: Record<string, string>;
       extraResources?: { from: string; to: string }[];
@@ -20,6 +21,13 @@ describe("desktop package metadata", () => {
     // Electron initializes its profile and encryption identity before the main script.
     expect(packageJson.productName).toBe("Rakazo");
     expect(packageJson.build?.productName).toBe("BotONE");
+  });
+
+  it("registers the rakazo:// protocol scheme for packaged installers", () => {
+    expect(packageJson.build?.protocols).toContainEqual({
+      name: "Rakazo",
+      schemes: ["rakazo"],
+    });
   });
 
   it("ships the macOS server bundle's address only when a release build wrote one", () => {
