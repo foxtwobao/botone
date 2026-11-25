@@ -21,12 +21,12 @@ describe("harmony workspace alignment", () => {
   });
 
   it("names the build in the shape the server's handshake accepts", () => {
-    // Phase 1 reuses the mobile build series: gen-client-build.ts stamps buildIdAt(new Date())
-    // and the ArkTS net layer sends `mobile/<id>` under this header on every RPC.
+    // The client's own kind: gen-client-build.ts stamps buildIdAt(new Date()) and the ArkTS net
+    // layer sends `harmony/<id>` under this header on every RPC.
     const build = buildIdAt(new Date());
-    const header = formatClientBuild("mobile", build);
+    const header = formatClientBuild("harmony", build);
     expect(CLIENT_BUILD_HEADER).toBe("x-rakazo-client-build");
-    expect(parseClientBuild(header)).toEqual({ kind: "mobile", build });
+    expect(parseClientBuild(header)).toEqual({ kind: "harmony", build });
   });
 
   it("pins the half-open idle timeout the realtime layer ports", () => {
