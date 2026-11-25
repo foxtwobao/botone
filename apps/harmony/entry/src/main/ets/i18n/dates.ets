@@ -63,19 +63,18 @@ function clockTime(date: Date): string {
   return formatter(timeFormats, dateLocale(), options, `${dateLocale()}#${cycle}`).format(date);
 }
 
-/** Row time, ported from mobile formatThreadTime: today a 24-hour clock, the past week a weekday
- * name, older a short date — each in the active UI locale. */
+/** Row time, ported from mobile formatThreadTime: today a localized clock, the past week a
+ * weekday name, older a short date. */
 export function formatRowTime(iso: string, now: number): string {
   const date = new Date(iso);
   const time = date.getTime();
   if (Number.isNaN(time)) {
     return '';
   }
-  const pad = (value: number): string => value < 10 ? `0${value}` : `${value}`;
   const startOfDay = (d: Date): number => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const dayDiff = Math.round((startOfDay(new Date(now)) - startOfDay(date)) / 86_400_000);
   if (dayDiff <= 0) {
-    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return clockTime(date);
   }
   const locale = dateLocale();
   if (dayDiff < 7) {
