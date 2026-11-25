@@ -293,6 +293,18 @@ verification is still blocked** on the repo variables `HARMONY_CMDLINE_TOOLS_URL
 unset (by design). To unblock: pick the release on the download center, set both variables, run
 the workflow once on a branch touching `apps/harmony/**`.
 
+**Phase 2 update (PR #64, done):** the pull-request and push job moved off the hosted runner.
+Twice in one day the hosted macOS ARM64 queue gave up on a pull request's build after fifteen
+minutes ("The job was not acquired by Runner of type hosted even after multiple attempts"), so
+`Unsigned HAP` now runs on the repository's own macOS ARM64 runner — the one the manual
+`harmony-build-selfhosted.yml` already used — and finds DevEco Studio the same way, so the
+command-line-tools download, its cache and the two `HARMONY_CMDLINE_TOOLS_*` variables are no
+longer read by `harmony.yml` (the variables may stay or go). First run on the new job: six
+minutes end to end. Because that runner is a persistent personal machine, the job runs for
+pushes and for pull requests from `harmony/*` or `t3/*` branches only; fork pull requests and the
+automation branches (`i18n/*`, `deps/*`, `codex/*`) are skipped, and the manual workflow builds
+those on purpose.
+
 **S5 on the self-hosted runner.** The owner chose the repository's manual self-hosted macOS ARM64
 runner for now: `harmony-build-selfhosted.yml` ("BotONE HarmonyOS build (self-hosted)") is a
 dedicated `workflow_dispatch`-only workflow for it — it first landed as a `harmony` platform
