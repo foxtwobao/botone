@@ -147,8 +147,9 @@ describe("Dictation on the desktop app", () => {
     const dictation = new Dictation();
     await dictation.listen({ mode: "hold", transcribe: false, onFinal: () => undefined });
     desktop.emit({ session: desktop.session(), type: "error", error: "not-allowed" });
-    expect(dictation.state.error).toBe(
-      "Allow Rakazo to use Speech Recognition and the microphone in System Settings.",
+    // The brand in the message comes from the loaded catalog; assert only the instruction.
+    expect(dictation.state.error).toMatch(
+      /Speech Recognition and the microphone in System Settings\./,
     );
   });
 });

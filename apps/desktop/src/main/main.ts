@@ -568,7 +568,6 @@ const deepLinks = hasSingleInstanceLock
 if (!hasSingleInstanceLock) app.quit();
 app.whenReady().then(async () => {
   if (!hasSingleInstanceLock) return;
-  app.setAboutPanelOptions({ applicationName: "BotONE" });
   if (app.isPackaged) app.setAsDefaultProtocolClient(DEEP_LINK_SCHEME);
   installSessionPermissions(session.defaultSession, permissionTarget);
   const userDataDir = app.getPath("userData");

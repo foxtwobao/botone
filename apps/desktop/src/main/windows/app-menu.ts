@@ -112,6 +112,7 @@ export function applicationMenuInstaller({
   updaterEnvironment,
 }: MenuActions) {
   return function installApplicationMenu() {
+    app.setAboutPanelOptions({ applicationName: "BotONE" });
     const computerAccess: Electron.MenuItemConstructorOptions = {
       label: t("Computer Access…"),
       visible: desktop.currentSetup?.mode === "new",

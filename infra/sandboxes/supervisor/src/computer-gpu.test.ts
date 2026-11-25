@@ -58,8 +58,8 @@ describe("computer render node", () => {
       expect(() => resolveComputerGpu("/dev/dri/renderD128", real)).toThrow(/is a symlink/);
       for (const value of ["/dev/dri/renderD129", "/dev/dri/renderD130"])
         expect(() => resolveComputerGpu(value, real)).toThrow(/is not a character device/);
-      // /dev/null is a character device, but not DRM's.
-      expect(() => resolveComputerGpu("/dev/dri/renderD131", () => lstatSync("/dev/null"))).toThrow(
+      // /dev/null is a character device, but not DRM's; its number is OS-dependent, so say 1:3.
+      expect(() => resolveComputerGpu("/dev/dri/renderD131", () => device(1, 3))).toThrow(
         /is device 1:3, not a DRM render node/,
       );
       // card0 and controlD64 are DRM display nodes: same major, minors below 128.
