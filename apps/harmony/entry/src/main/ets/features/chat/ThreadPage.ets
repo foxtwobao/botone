@@ -79,6 +79,15 @@ export struct ThreadPage {
     this.atBottom = true;
   }
 
+  /** The message a reply answers, when the transcript holds it. */
+  private parentOf(message: LiveMessage | null): LiveMessage | null {
+    const id = message?.replyToMessageId;
+    if (id === undefined) {
+      return null;
+    }
+    return this.store.snapshot?.messages.find((candidate: LiveMessage): boolean => candidate.id === id) ?? null;
+  }
+
   @Builder
   daySeparator(label: string) {
     Text(label)
@@ -98,7 +107,23 @@ export struct ThreadPage {
     } else {
       MessageBubble({
         message: row.message,
+        parent: this.parentOf(row.message),
         busy: this.store.answer.pending,
+        members: this.store.snapshot?.members ?? [],
+        meId: app.me?.userId ?? '',
+        fallbackAuthor: this.title,
+        onJumpTo: (messageId: string): void => {
+          // Scrolls to a parent the transcript holds; one outside the loaded window (mobile loads
+          // it) and the highlight mobile puts on it arrive with a later milestone.
+          const index = this.store.rows.findIndex((candidate: ThreadRow): boolean =>
+            candidate.message !== null && candidate.message.id === messageId);
+          if (index < 0) {
+            return;
+          }
+          // The list counts its "load earlier messages" row above the transcript.
+          this.atBottom = false;
+          this.scroller.scrollToIndex(index + (this.store.olderCursor !== null ? 1 : 0), true, ScrollAlign.CENTER);
+        },
         onAnswer: (message: LiveMessage, answer: string): void => {
           if (message.runId === undefined) {
             return;
