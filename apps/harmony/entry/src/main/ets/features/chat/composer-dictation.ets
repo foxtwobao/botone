@@ -33,10 +33,23 @@ interface DictationSession {
   cancel: StopSignal;
   /** Stops listening and keeps the words, then runs the work waiting for them. */
   finish: () => void;
+  /** The microphone is open: ending the session keeps its words rather than dropping them. */
+  recording: boolean;
   /** The words are in and the recording is being transcribed. */
   transcribing: boolean;
   /** Runs once the words are in, when the session ends without a cancel or a failure. */
   afterWords?: () => void;
+}
+
+/** Controllers with a microphone open, so the app leaving the foreground can end them all. */
+const live: Set<ComposerDictation> = new Set<ComposerDictation>();
+
+/** Cancels every open dictation session: no microphone may outlive the foreground. */
+export function stopAllComposerDictation(): void {
+  for (const controller of live) {
+    controller.cancel();
+  }
+  stopDictation();
 }
 
 /** failure copy for an error of any shape: the server's own words, else `fallback`. */
@@ -75,6 +88,7 @@ export class ComposerDictation {
       return false;
     }
     this.session = null;
+    live.delete(this);
     this.status = 'idle';
     return true;
   }
@@ -104,7 +118,14 @@ export class ComposerDictation {
       mine.afterWords = then;
       return;
     }
-    // Before the mic opens there are no words to wait for: drop the setup and go on.
+    if (mine.recording) {
+      // The microphone is open: the session's own finish keeps what it heard, and the send
+      // waits for those words to land instead of dropping them with a cancel.
+      mine.afterWords = then;
+      mine.finish();
+      return;
+    }
+    // Before the microphone opens there are no words to wait for: drop the setup and go on.
     mine.cancel.cancel();
     this.end(mine);
     then();
@@ -120,9 +141,11 @@ export class ComposerDictation {
       finish: (): void => {
         this.cancel();
       },
+      recording: false,
       transcribing: false,
     };
     this.session = mine;
+    live.add(this);
     this.status = 'listening';
     this.levels = [];
     void this.start(mine).catch((err: Object): void => {
@@ -174,6 +197,7 @@ export class ComposerDictation {
         stopped.cancel();
         this.markTranscribing(mine);
       };
+      mine.recording = true;
       const clip = await recordClip(mine.cancel, stopped, (level: number): void => {
         this.reportLevel(mine, level);
       }, recognitionLanguage());
@@ -206,6 +230,7 @@ export class ComposerDictation {
     mine.finish = (): void => {
       finishListening();
     };
+    mine.recording = true;
     await listen({
       endpointMs: DICTATION_PAUSE_MS,
       signal: mine.cancel,

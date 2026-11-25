@@ -5,8 +5,9 @@ dictation into the composer, read-aloud from a message, the bot's device voice, 
 settings page. Decisions were written down before any code in [m7-scope.md](m7-scope.md); this
 file records what shipped, what the device showed, and what the scope could not cover.
 
-**Status: verified on the emulator.** Hypium 190/190, the capability probe's findings hold in the
-shipped code, every walkthrough row measured, 14 captures.
+**Status: verified on the emulator.** Hypium 201/201 (the review round added the lifecycle
+tests), the capability probe's findings hold in the shipped code, every walkthrough row
+measured, 15 captures.
 
 ## What ships
 
@@ -77,9 +78,9 @@ collects.
 | `pnpm exec vitest run apps/harmony/contract` | **131 / 131** |
 | `pnpm checks` | all green |
 | `pnpm lint` (Biome) | 0 errors |
-| `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL**; no ArkTS warning in any M7 file |
-| hypium on the emulator | **190 / 190** (the full suite, fixture servers on 8787/8788) |
-| screenshots `m7-*.png` | 14 captures covering every row below |
+| `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL**; after the review round, verified against a clean build (caches wiped): **no ArkTS warning in any M7 file** |
+| hypium on the emulator | **201 / 201** (the full suite, fixture servers on 8787/8788) |
+| screenshots `m7-*.png` | 15 captures covering every row below |
 
 The emulator is the owner-started `devphone`; no power or license was touched, and the HAPs were
 debug-signed with a borrowed local config, reverted after each build.
@@ -104,12 +105,14 @@ debug-signed with a borrowed local config, reverted after each build.
 | provider picker | tap the Provider row | 本设备 / Fake Voice / Self-hosted, the current one marked (`m7-voice-provider-menu`) |
 | connect | pick Fake Voice, paste the key, 连接 | the form gives way to 替换密钥/断开/语音模型/语音 + the voice listing (`m7-voice-connected`) |
 | voice picker | tap the Voice row | the listing; picking one POSTs `voice/setVoice` and the row renames (`m7-voice-picker`) |
-| voice consent | 试听 before the use is allowed | the disclosure dialog with 暂不/允许/隐私政策 (`m7-voice-consent-speak`); Allow speaks |
+| voice consent | 试听 before the use is allowed | the disclosure dialog with 暂不/允许/隐私政策 (`m7-voice-consent`); Allow speaks |
 | Speak message | long-press a bot message | 回复 / 朗读消息 / 选择文本 / 复制, mobile's order (`m7-longpress-menu`) |
 | hosted playback | tap 朗读消息 | the bar shows the speaker (Alpha, its roster color), Pause and Stop while the clip plays (`m7-playback-bar`); Stop clears it |
 | mic button | the composer's 🎙 | the system permission dialog with the reason 听写时把语音转成文字。 (`m7-mic-permission`); Allow opens the bar |
 | dictation bar | after Allow | 取消 / 电平条 / 停止 / 发送 (`m7-dictation-bar`, `m7-dictation-live`); the level row moves with the mic |
 | provider dictation | stop the recording | the fixture's transcription lands in the draft as words, status returns (`m7-dictation-transcribed`) |
+| empty-draft send (review B1) | during a hosted recording, tap 发送 on the empty draft | the recording stops keeping its words, the transcription ("Fake dictated words") lands in the draft and the message sends (`m7-review-empty-draft-send`) |
+| backgrounding during dictation (review B3) | Home while the mic records | the session ends: back on the thread the bar is gone and the composer is its own row again |
 
 **ux-declutter pass** (every capture, per `.agents/skills/ux-declutter/SKILL.md`): the playback
 bar is the one accent-less strip the moment needs — speaker name in the bot's color, ink
@@ -132,6 +135,26 @@ replies aloud on this device…») was removed rather than kept: the picker alre
    the clip without logging a play the recorded run never made, on both the vitest and the
    hypium side.
 
+## Review findings (Codex's second round)
+
+The independent review of `3093cbf60` asked for changes — three blockers, three should-fixes
+and a nit — centred on the dictation's send semantics and the microphone's lifecycle. All fixed,
+each with a machine-run test:
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| B1 | Tapping Send during dictation cancelled the session: a hosted recording was dropped, the device recognizer missed its final words, and an empty draft greyed Send out before it could ever send one. | A session now knows whether its microphone is open (`recording`). A send during recording stores its callback (`afterWords`) and calls the session's own `finish`: the hosted recording stops to keep its words and transcribes them, the device path runs `finishListening`, and the send fires once the words land. A send while still preparing has no words to keep, so it drops the setup and runs at once. The Send button stays enabled (and fully opaque) on an empty draft while dictating. Tested on both paths, for the empty draft, and for the preparing case (`DictationLifecycle.test`, `VoiceHosted.test`). |
+| B2 | The AudioCapturer kept running after listening ended: only backgrounding `release()` closed it, so the microphone stayed held after a stop or a leave. | `abort()` stops and releases the microphone with the engine session; the 60 s cap still rotates segments without touching it (`closeSession` never closes it), so a rotating segment keeps its capture. The uninstall the dictation stop runs ends the capture on every leave path. Tested for stop, cancel and leave-thread (`DictationHardware`). |
+| B3 | Backgrounding stopped the recognizer module but not the composer's own session: the controller stayed "listening" and a hosted recording kept capturing. | A registry of controllers with an open session gives `stopAllComposerDictation()`, and `install.ets`'s foreground handler now ends the composer session with everything else, on both paths. Tested device and hosted (`DictationLifecycle`, `VoiceHosted`). |
+| S1 | The engine callbacks discarded their `sessionId`, so a late word, completion or error from an old segment could write into or clear the running one (60 s rotation, cancel-then-reopen). | Every listener callback now belongs to the session it names (`isCurrent`): a callback for an old segment arriving after the next one started is dropped, while the just-finished segment's own end still restarts it. The old-after-new ordering is tested. |
+| S2 | A bot row from an older server without `autoSpeak` failed to decode, dropping the whole bot from the list. | `readAutoSpeak`: missing or null reads as false (no reading aloud); a value of another type still fails the row. An old-response test was added to `Decode.test`. |
+| S3 | `pcmLevel` read the S16LE pairs unsigned — a negative half-wave read as a huge positive — and both capture paths repainted the meter once per microphone buffer. | The pair is read signed, and the level is paced at ten a second (`paceLevel`) on both the recording and the recognizer path. A signed-reading test covers the arithmetic. |
+| nit | These notes claimed no ArkTS warning in any M7 file while a clean build showed nine "Function may throw" warnings in `voice-prefs.ets` and `clip-player.ets` — the incremental builds had hidden them. | The throwing kit calls (preferences `get`/`put`/`flush`, both `openSync`, `createAVPlayer`, and the engine's `createEngine`) are wrapped, and the claim now holds against a clean build. |
+
+The seams the tests need follow the module's own pattern — the recognizer and microphone behind
+`setHardware` on `DeviceRecognizer` (the dictation state machine already injected its engines),
+the microphone grant and the clip recorder behind `setVoiceMicrophoneGrant`/`setClipRecorder`.
+
 ## Deferred
 
 - **Bot voice picker** (scope D5): no bot settings surface exists here to hang it on, and this
@@ -149,7 +172,7 @@ replies aloud on this device…») was removed rather than kept: the picker alre
 
 ## Filenames
 
-The captures live in `screenshots/m7-*.png`: composer-mic… wait, no row capture was taken; drop it,
-voice-device-sample-bar, voice-provider-menu, voice-provider-form, voice-connected,
-voice-consent, voice-consent-speak, longpress-menu, playback-bar, composer-mic,
-mic-permission, dictation-bar, dictation-live, dictation-transcribed.
+The captures live in `screenshots/m7-*.png`: settings-voice-row, voice-device, voice-device-sample-bar,
+voice-provider-menu, voice-provider-form, voice-connected, voice-consent, longpress-menu,
+playback-bar, composer-mic, mic-permission, dictation-bar, dictation-live,
+dictation-transcribed, review-empty-draft-send.

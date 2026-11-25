@@ -13,9 +13,9 @@ import {
   setDeviceVoiceStore,
   setVoiceStatusReader,
 } from './device-voice';
-import { setSpeechEngines, stopVoicePlayback, noteSessionChanged } from './speech';
+import { stopVoicePlayback, noteSessionChanged, setSpeechEngines } from './speech';
 import type { HostedSession } from './speech';
-import { stop as stopDictation, setSpeechRecognizer } from './dictation';
+import { setSpeechRecognizer } from './dictation';
 import { loadVoiceStatus, prepareSpeech, renderSpeech } from './hosted-voice';
 import { voiceForBot } from './bot-voices-store';
 import { deviceRecognizer } from './device-recognizer';
@@ -23,9 +23,12 @@ import { deviceSpeech, engineVoiceFor } from './device-speech';
 import { playClip } from './clip-player';
 import { requestMicrophone } from './microphone';
 import { initVoicePrefs, voiceChoiceStore } from './voice-prefs';
+import { stopAllComposerDictation } from '../features/chat/composer-dictation';
 
 let host: common.UIAbilityContext | null = null;
 let installed = false;
+/** Answers a microphone request in the app's place; a test sets it, the app clears it. */
+let microphoneGrant: (() => Promise<boolean>) | null = null;
 
 /** The device's language prefix: the part voices and engines are chosen by. */
 function deviceLanguage(): string {
@@ -51,10 +54,18 @@ async function playHostedClip(bytes: Uint8Array, session: HostedSession): Promis
 /** Asks for the microphone when it is not allowed yet, for a hosted dictation the plan did not
  *  ask for itself. True when dictation may record. */
 export function requestVoiceMicrophone(): Promise<boolean> {
+  if (microphoneGrant !== null) {
+    return microphoneGrant();
+  }
   if (host === null) {
     return Promise.resolve(false);
   }
   return requestMicrophone(host);
+}
+
+/** A test answers the microphone question here; null restores the real permission ask. */
+export function setVoiceMicrophoneGrant(grant: (() => Promise<boolean>) | null): void {
+  microphoneGrant = grant;
 }
 
 /** Installs the device and hosted engines behind the speech and dictation modules. */
@@ -91,7 +102,9 @@ export function installVoice(context: common.UIAbilityContext): void {
     if (!isForeground) {
       stopVoicePlayback();
       deviceSpeech.release();
-      stopDictation();
+      // The composer's own session ends with everything else: its status must not stay
+      // "listening" with the engines gone, and a hosted recording stops capturing.
+      stopAllComposerDictation();
       void deviceRecognizer.release();
     }
   });

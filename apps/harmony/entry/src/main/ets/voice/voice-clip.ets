@@ -12,6 +12,8 @@ import type { StopSignal } from './stop-signal';
 export const MAX_DICTATION_MS = 5 * 60_000;
 /** A level at or under this is silence (mobile SILENT_LEVEL_DB). */
 const SILENT_LEVEL_DB = -50;
+/** How often a level is reported: the microphone hands over buffers far faster than the UI needs. */
+export const LEVEL_INTERVAL_MS = 100;
 
 /** The WAV header the server's transcriber reads, in front of the PCM it wraps. */
 function wavBytes(pcm: Uint8Array): Uint8Array {
@@ -43,12 +45,36 @@ export function pcmLevel(frame: Uint8Array): number {
   let squares = 0;
   const samples = Math.floor(frame.byteLength / 2);
   for (let index = 0; index + 1 < frame.byteLength; index += 2) {
-    const value = (frame[index] ?? 0) + ((frame[index + 1] ?? 0) << 8);
+    // S16LE samples are signed: reading the pair unsigned turns every negative half-wave into a
+    // huge positive value, so the meter jumps at what the ear hears as silence.
+    const raw = (frame[index] ?? 0) + ((frame[index + 1] ?? 0) << 8);
+    const value = raw >= 0x8000 ? raw - 0x10000 : raw;
     squares += value * value;
   }
   const rms = Math.sqrt(squares / Math.max(1, samples));
   const db = 20 * Math.log10(Math.max(1, rms) / 32_768);
   return Math.min(1, Math.max(0, (db - SILENT_LEVEL_DB) / -SILENT_LEVEL_DB));
+}
+
+/** Wraps a level callback so it fires at most a few times a second. */
+export function paceLevel(onLevel: (level: number) => void): (level: number) => void {
+  let last = 0;
+  return (level: number): void => {
+    const now = Date.now();
+    if (now - last >= LEVEL_INTERVAL_MS) {
+      last = now;
+      onLevel(level);
+    }
+  };
+}
+
+type ClipRecorder = (cancel: StopSignal, until: StopSignal, onLevel: (level: number) => void,
+  language: string) => Promise<VoiceRecording | null>;
+let recorder: ClipRecorder = captureClip;
+
+/** A test hands a scripted recorder in; null restores the microphone's own. */
+export function setClipRecorder(next: ClipRecorder | null): void {
+  recorder = next ?? captureClip;
 }
 
 /**
@@ -58,6 +84,11 @@ export function pcmLevel(frame: Uint8Array): number {
  * permission, which the caller asks for first.
  */
 export async function recordClip(cancel: StopSignal, until: StopSignal,
+  onLevel: (level: number) => void, language: string): Promise<VoiceRecording | null> {
+  return recorder(cancel, until, onLevel, language);
+}
+
+async function captureClip(cancel: StopSignal, until: StopSignal,
   onLevel: (level: number) => void, language: string): Promise<VoiceRecording | null> {
   if (cancel.isStopped()) {
     return null;
@@ -85,12 +116,14 @@ export async function recordClip(cancel: StopSignal, until: StopSignal,
   }
   const chunks: Uint8Array[] = [];
   let bytes = 0;
+  // The meter repaints a few times a second, not once per microphone buffer.
+  const meter: (level: number) => void = paceLevel(onLevel);
   try {
     capturer.on('readData', (buffer: ArrayBuffer): void => {
       const frame = new Uint8Array(buffer);
       chunks.push(frame);
       bytes += frame.byteLength;
-      onLevel(pcmLevel(frame));
+      meter(pcmLevel(frame));
     });
   } catch (err) {
     // A listener that cannot register: nothing is recorded without it.

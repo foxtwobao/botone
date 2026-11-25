@@ -28,15 +28,25 @@ export const voiceChoiceStore: VoiceChoiceStore = {
     if (store === null) {
       throw new Error('Voice preferences are unavailable');
     }
-    const value = await store.get(key, '');
-    return typeof value === 'string' && value ? value as string : null;
+    try {
+      const value = await store.get(key, '');
+      return typeof value === 'string' && value ? value as string : null;
+    } catch (err) {
+      // A read that fails reads as unset, so the caller's own default applies.
+      return null;
+    }
   },
   async put(key: string, value: string): Promise<void> {
     if (store === null) {
       throw new Error('Voice preferences are unavailable');
     }
-    await store.put(key, value);
-    await store.flush();
+    try {
+      await store.put(key, value);
+      await store.flush();
+    } catch (err) {
+      // A failed save is a failure the caller sees, not a silent no-op.
+      throw new Error('Could not save the voice choice');
+    }
   },
 };
 
@@ -45,13 +55,20 @@ export async function loadBotVoices(): Promise<Record<string, string> | null> {
   if (store === null) {
     return null;
   }
-  const stored = await store.get(BOT_VOICES_KEY, '');
+  let stored: Object = '';
+  try {
+    stored = await store.get(BOT_VOICES_KEY, '');
+  } catch (err) {
+    // An unreadable file reads as none, as the signature promises.
+    return null;
+  }
   if (typeof stored !== 'string' || !stored) {
     return null;
   }
+  const text = stored as string;
   let parsed: Object;
   try {
-    parsed = JSON.parse(stored);
+    parsed = JSON.parse(text);
   } catch (err) {
     return null;
   }
@@ -74,6 +91,10 @@ export async function saveBotVoices(assignments: Record<string, string>): Promis
   if (store === null) {
     return;
   }
-  await store.put(BOT_VOICES_KEY, JSON.stringify(assignments));
-  await store.flush();
+  try {
+    await store.put(BOT_VOICES_KEY, JSON.stringify(assignments));
+    await store.flush();
+  } catch (err) {
+    // A failed save leaves what was last saved, as the line above says.
+  }
 }

@@ -11,6 +11,12 @@ import { AiConsentBlocked, ensureVoiceConsent } from '../../../main/ets/net/cons
 import { rpc, captureContext } from '../../../main/ets/net/rpc';
 import { decodeVoiceCredential, decodeVoiceStatus } from '../../../main/ets/contract/decode-voice';
 import * as deviceVoicePort from '../../../main/ets/voice/device-voice';
+import { setSpeechRecognizer } from '../../../main/ets/voice/dictation';
+import { setClipRecorder } from '../../../main/ets/voice/voice-clip';
+import { setVoiceMicrophoneGrant } from '../../../main/ets/voice/install';
+import type { VoiceRecording } from '../../../main/ets/voice/hosted-voice';
+import type { StopSignal } from '../../../main/ets/voice/stop-signal';
+import { ComposerDictation, stopAllComposerDictation } from '../../../main/ets/features/chat/composer-dictation';
 import { clearSessionToken, saveSessionToken, setSelectedSpace } from '../../../main/ets/net/session';
 import { initServerStore } from '../../../main/ets/net/server-store';
 
@@ -33,6 +39,48 @@ async function allowVoice(): Promise<void> {
   body['version'] = CONSENT_VERSION;
   body['keys'] = [VOICE_KEY];
   await rpc('aiConsent/allow', body);
+}
+
+/** The scripted recorder a hosted dictation records through: it stops on either signal and
+ *  answers the fixture's clip, as the microphone's own recording would. */
+function scriptClip(log: string[]): Promise<void> {
+  let recording: (() => void) | null = null;
+  const at = new Promise<void>((resolve: () => void): void => {
+    recording = resolve;
+  });
+  setClipRecorder((cancel: StopSignal, until: StopSignal, _onLevel: (level: number) => void,
+    _language: string): Promise<VoiceRecording | null> => {
+    log.push('record');
+    if (recording !== null) {
+      recording();
+    }
+    return new Promise<VoiceRecording | null>((resolve: (value: VoiceRecording | null) => void): void => {
+      cancel.onCancel((): void => {
+        log.push('cancel');
+        resolve(null);
+      });
+      until.onCancel((): void => {
+        log.push('until');
+        const clip: VoiceRecording = { audio: recordedWav(), language: 'en-US' };
+        resolve(clip);
+      });
+    });
+  });
+  return at;
+}
+
+/** A self-hosted connection is the provider that transcribes; the device voice is off. */
+async function hostProviderDictation(): Promise<void> {
+  const connect: Record<string, Object> = {};
+  connect['provider'] = 'openai-compatible';
+  connect['baseUrl'] = 'http://selfhost.example';
+  await rpc('voice/connect', connect);
+  deviceVoicePort.setDeviceVoiceStore({
+    get: async (_key: string): Promise<string | null> => '0',
+    put: async (_key: string, _value: string): Promise<void> => undefined,
+  });
+  setSpeechRecognizer(null);
+  setVoiceMicrophoneGrant((): Promise<boolean> => Promise.resolve(true));
 }
 
 /** The fixture's silent WAV clip, as the app would record one for a hosted dictation. */
@@ -79,6 +127,11 @@ export default function voiceHostedTest() {
     afterEach(async () => {
       await clearSessionToken();
       setSelectedSpace('');
+      stopAllComposerDictation();
+      setSpeechRecognizer(null);
+      setVoiceMicrophoneGrant(null);
+      setClipRecorder(null);
+      deviceVoicePort.setDeviceVoiceStore(null);
     });
 
     it('the voice consent blocks a speech until the voice use is allowed', 0, async () => {
@@ -173,6 +226,67 @@ export default function voiceHostedTest() {
       await rpc('voice/connect', connect);
       const status = decodeVoiceStatus(await rpc('voice/status', {}));
       expect(status !== null && status.ready).assertTrue();
+    });
+
+    it('a send during a hosted recording keeps and transcribes its words', 0, async () => {
+      await reset();
+      await allowVoice();
+      await hostProviderDictation();
+      const clip: string[] = [];
+      const recordingAt: Promise<void> = scriptClip(clip);
+      const words: string[] = [];
+      const controller = new ComposerDictation(
+        (_message: string, _openVoice: boolean): void => undefined,
+        (text: string, _final: boolean): void => {
+          words.push(text);
+        },
+      );
+      controller.toggle();
+      await recordingAt;
+      expect(controller.status).assertEqual('listening');
+      let sent = false;
+      let sentSignal: (() => void) | null = null;
+      const sentAt = new Promise<void>((resolve: () => void): void => {
+        sentSignal = resolve;
+      });
+      controller.finish((): void => {
+        sent = true;
+        if (sentSignal !== null) {
+          sentSignal();
+        }
+      });
+      await sentAt;
+      // The recording was stopped to keep its words, not cancelled with them; the words
+      // transcribed through the voice use and the send ran once they landed.
+      expect(clip).assertDeepEquals(['record', 'until']);
+      expect(sent).assertTrue();
+      expect(words).assertDeepEquals(['Fake dictated words']);
+      expect(controller.status).assertEqual('idle');
+    });
+
+    it('backgrounding cancels a hosted recording', 0, async () => {
+      await reset();
+      await allowVoice();
+      await hostProviderDictation();
+      const clip: string[] = [];
+      const recordingAt: Promise<void> = scriptClip(clip);
+      const words: string[] = [];
+      const controller = new ComposerDictation(
+        (_message: string, _openVoice: boolean): void => undefined,
+        (text: string, _final: boolean): void => {
+          words.push(text);
+        },
+      );
+      controller.toggle();
+      await recordingAt;
+      stopAllComposerDictation();
+      await new Promise<void>((resolve: () => void): void => {
+        setTimeout(resolve, 10);
+      });
+      // The recording was dropped with the session: its own cancel, no transcription, no words.
+      expect(clip).assertDeepEquals(['record', 'cancel']);
+      expect(words).assertDeepEquals([]);
+      expect(controller.status).assertEqual('idle');
     });
   });
 }

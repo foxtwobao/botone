@@ -173,6 +173,16 @@ function readSnoozed(record: Record<string, Object>): string | null | undefined 
   return typeof value === 'string' ? value as string : undefined;
 }
 
+/** autoSpeak is optional: an older server sends no such field, and a bot without it does not
+ *  read aloud; a value of another type still fails the row. */
+function readAutoSpeak(record: Record<string, Object>): boolean | undefined {
+  const value = record['autoSpeak'];
+  if (value === undefined || value === null) {
+    return false;
+  }
+  return typeof value === 'boolean' ? value as boolean : undefined;
+}
+
 export function decodeBot(json: Object | null): BotView | null {
   const record = asRecord(json);
   if (record === null) {
@@ -187,10 +197,10 @@ export function decodeBot(json: Object | null): BotView | null {
   const status = readString(record, 'status');
   const updatedAt = readString(record, 'updatedAt');
   const snoozedUntil = readSnoozed(record);
-  const autoSpeak = readBoolean(record, 'autoSpeak');
+  const autoSpeak = readAutoSpeak(record);
   if (id === null || !id || name === null || color === null || pinned === null || unread === null
     || preview === null || status === null || updatedAt === null || snoozedUntil === undefined
-    || autoSpeak === null) {
+    || autoSpeak === undefined) {
     return null;
   }
   const result: BotView = {

@@ -411,8 +411,10 @@ export struct ThreadPage {
     .height(COMPOSER_CONTROL_SIZE)
     .accessibilityText(t(this.store.uploading > 0 ? 'Cancel' : 'Send'))
     .backgroundColor(appearance.tokens().primary)
-    .enabled(this.canSend || this.store.uploading > 0)
-    .opacity(this.canSend || this.store.send.pending ? 1 : 0.5)
+    // Dictating with an empty draft still sends: the send finishes the session and waits for
+    // its words rather than staying greyed out until they land.
+    .enabled(this.canSend || this.store.uploading > 0 || this.dictation.status !== 'idle')
+    .opacity(this.canSend || this.store.send.pending || this.dictation.status !== 'idle' ? 1 : 0.5)
     .onClick((): void => {
       if (this.store.uploading > 0) {
         this.store.cancelUpload();

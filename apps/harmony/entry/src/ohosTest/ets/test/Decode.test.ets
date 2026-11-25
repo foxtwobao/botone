@@ -123,6 +123,18 @@ export default function decodeTest() {
       expect(decodeBot(JSON.parse('{"id":"b1"}'))).assertNull();
     });
 
+    it('bot_autoSpeak_missing_defaults_false_but_a_wrong_type_fails', 0, () => {
+      // An older server's bot row carries no autoSpeak: the row still decodes, without reading
+      // aloud, rather than dropping the whole bot from the list.
+      const old = decodeBot(JSON.parse(BOT_JSON.replace('"autoSpeak":true,', '')));
+      expect(old !== null).assertTrue();
+      expect(old!.autoSpeak).assertFalse();
+      const nulled = decodeBot(JSON.parse(BOT_JSON.replace('"autoSpeak":true', '"autoSpeak":null')));
+      expect(nulled !== null).assertTrue();
+      expect(nulled!.autoSpeak).assertFalse();
+      expect(decodeBot(JSON.parse(BOT_JSON.replace('"autoSpeak":true', '"autoSpeak":"yes"')))).assertNull();
+    });
+
     it('group_decodes_and_rejects', 0, () => {
       const group = decodeGroup(JSON.parse('{"id":"g1","name":"Team","pinned":false,"unread":true,'
         + '"preview":"Chat","updatedAt":"2026-11-21T10:00:00.000Z"}'));

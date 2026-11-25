@@ -4,6 +4,7 @@
 // player's pause, resume and stop while it plays, and lets go of it the moment the clip ends,
 // so nothing of the speech outlives it.
 import type { common } from '@kit.AbilityKit';
+import type { media } from '@kit.MediaKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
 import { t } from '../i18n/i18n';
 import type { HostedPlayer, HostedSession } from './speech';/** How long a clip may take to start; one that cannot fails by then. */
@@ -40,7 +41,17 @@ export async function playClip(bytes: Uint8Array, session: HostedSession,
   }
   const kind = speechClipType(bytes);
   const path = `${context.cacheDir}/rakazo-voice-${Date.now()}.${kind.extension}`;
-  const file = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+  let opened: fs.File | null = null;
+  try {
+    opened = fs.openSync(path, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+  } catch (err) {
+    // No file to write the clip to: nothing can play.
+  }
+  if (opened === null) {
+    const failure: Error = new Error(t('Could not play that clip.'));
+    throw failure;
+  }
+  const file: fs.File = opened;
   try {
     fs.writeSync(file.fd, bytes.buffer);
   } catch (err) {
@@ -65,7 +76,17 @@ export async function playClip(bytes: Uint8Array, session: HostedSession,
 
 async function playFrom(path: string, session: HostedSession): Promise<void> {
   const api = await import('@ohos.multimedia.media');
-  const player = await api.default.createAVPlayer();
+  let created: media.AVPlayer | null = null;
+  try {
+    created = await api.default.createAVPlayer();
+  } catch (err) {
+    // A player that cannot be created cannot play anything.
+  }
+  if (created === null) {
+    const failure: Error = new Error(t('Could not play that clip.'));
+    throw failure;
+  }
+  const player = created;
   let resolve: () => void = (): void => undefined;
   const held: Promise<void> = new Promise<void>((settle: () => void): void => {
     resolve = settle;
@@ -90,8 +111,18 @@ async function playFrom(path: string, session: HostedSession): Promise<void> {
       finish(new Error(t('Could not play that clip.')));
     }
   }, CLIP_START_MS);
-  const source: fs.File = fs.openSync(path, fs.OpenMode.READ_ONLY);
+  let opened: fs.File | null = null;
   try {
+    try {
+      opened = fs.openSync(path, fs.OpenMode.READ_ONLY);
+    } catch (err) {
+      // Reopening the clip that was just written failed: nothing can play it.
+    }
+    if (opened === null) {
+      const failure: Error = new Error(t('Could not play that clip.'));
+      throw failure;
+    }
+    const source: fs.File = opened;
     player.on('stateChange', (state: string): void => {
       if (settled) {
         return;
@@ -153,10 +184,12 @@ async function playFrom(path: string, session: HostedSession): Promise<void> {
   } finally {
     clearTimeout(timer);
     session.setPlayer(null);
-    try {
-      await fs.close(source);
-    } catch (err) {
-      // The file is deleted right after this anyway.
+    if (opened !== null) {
+      try {
+        await fs.close(opened);
+      } catch (err) {
+        // The file is deleted right after this anyway.
+      }
     }
     try {
       await player.release();

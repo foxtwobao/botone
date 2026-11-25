@@ -29,6 +29,7 @@ import consentGateTest from './ConsentGate.test';
 import attachmentsTest from './Attachments.test';
 import voiceTest from './Voice.test';
 import voiceHostedTest from './VoiceHosted.test';
+import dictationLifecycleTest from './DictationLifecycle.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -67,4 +68,6 @@ export default function testsuite() {
   // M7: the voice ports' fixture replay (pure), then the hosted loop against the fixture server.
   voiceTest();
   voiceHostedTest();
+  // M7 review round 2: the dictation lifecycles and send semantics, both paths.
+  dictationLifecycleTest();
 }
