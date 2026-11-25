@@ -4,6 +4,36 @@
 import { asRecord } from '../contract/decode';
 import type { SendReceipt } from './thread-snapshot';
 
+export const THREAD_MESSAGE_TEXT_MAX_LENGTH = 100_000;
+
+export function sendTarget(botId: string, groupId: string): Record<string, Object> {
+  const body: Record<string, Object> = {};
+  if (groupId) {
+    body['groupId'] = groupId;
+  } else {
+    body['botId'] = botId;
+  }
+  return body;
+}
+
+/** Wire shape of the mobile composer's regular send. The server assembles the blocks. */
+export function threadSendBody(botId: string, groupId: string, text: string, artifactIds: string[],
+  replyToMessageId: string, nonce: string, imagesAsFiles: boolean): Record<string, Object> {
+  const body = sendTarget(botId, groupId);
+  body['clientNonce'] = nonce;
+  body['imageHandling'] = imagesAsFiles ? 'file' : 'confirm';
+  if (text.trim()) {
+    body['text'] = text.trim();
+  }
+  if (artifactIds.length) {
+    body['artifactIds'] = artifactIds;
+  }
+  if (replyToMessageId) {
+    body['replyToMessageId'] = replyToMessageId;
+  }
+  return body;
+}
+
 export interface SendOutput {
   taskId: string;
   runId: string;

@@ -9,7 +9,9 @@ import { SettingsPage } from '../features/settings/SettingsPage';
 import { ArchivedPage } from '../features/archived/ArchivedPage';
 import { ServerPage } from '../features/server/ServerPage';
 import { ThreadPage } from '../features/chat/ThreadPage';
-import { takeThreadRoute } from '../features/chat/thread-route';
+import type { ThreadRoute } from '../features/chat/thread-route';
+import { ShareTargetSheet } from '../features/chat/share-target-sheet';
+import { incomingShare } from '../stores/incoming-share-store';
 
 @Entry
 @ComponentV2
@@ -17,7 +19,12 @@ struct Index {
   private stack: NavPathStack = new NavPathStack();
 
   @Builder
-  destinations(name: string) {
+  shareTarget() {
+    ShareTargetSheet({ stack: this.stack })
+  }
+
+  @Builder
+  destinations(name: string, route: ThreadRoute) {
     if (name === 'server') {
       ServerPage({ stack: this.stack })
     } else if (name === 'archived') {
@@ -27,9 +34,10 @@ struct Index {
     } else if (name === 'chat') {
       ThreadPage({
         stack: this.stack,
-        botId: takeThreadRoute().botId,
-        groupId: takeThreadRoute().groupId,
-        title: takeThreadRoute().title,
+        botId: route.botId,
+        groupId: route.groupId,
+        title: route.title,
+        route: route,
       })
     }
   }
@@ -56,5 +64,10 @@ struct Index {
     .hideTitleBar(true)
     .mode(NavigationMode.Stack)
     .backgroundColor(appearance.tokens().background)
+    .bindSheet(app.phase === 'me' && app.me !== null && incomingShare.pending !== null, this.shareTarget(), {
+      height: SheetSize.MEDIUM,
+      showClose: false,
+      onWillDismiss: (action: DismissSheetAction): void => { incomingShare.cancel(); action.dismiss(); },
+    })
   }
 }

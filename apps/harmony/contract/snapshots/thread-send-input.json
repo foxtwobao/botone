@@ -1,6 +1,14 @@
 {
   "additionalProperties": false,
   "properties": {
+    "artifactIds": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
     "botId": {
       "minLength": 1,
       "type": "string"
@@ -11,6 +19,14 @@
       "type": "string"
     },
     "groupId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "imageHandling": {
+      "enum": ["confirm", "file"],
+      "type": "string"
+    },
+    "replyToMessageId": {
       "minLength": 1,
       "type": "string"
     },

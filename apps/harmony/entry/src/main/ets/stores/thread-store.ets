@@ -6,6 +6,11 @@
 import { rpc } from '../net/rpc';
 import { RpcError, errorText, isServerUnreachable } from '../net/errors';
 import { AiConsentBlocked } from '../net/consent';
+import { RequestCancellation, RequestCancelled } from '../net/request-cancellation';
+import { currentScope } from '../query/query-cache';
+import { asRecord } from '../contract/decode';
+import { readDraftBase64 } from '../thread/attachment-files';
+import type { DraftAttachment } from '../thread/attachment-files';
 import { SaveController } from '../query/save-controller';
 import type { SaveSend } from '../query/save-controller';
 import { currentSessionGeneration, selectedSpaceId } from '../net/session';
@@ -14,7 +19,7 @@ import { foreground } from '../realtime/foreground';
 import { applyThreadSendReceipt } from '../thread/thread-snapshot';
 import { isRunWorking } from './roster-projection';
 import type { LiveMessage, ThreadSnapshot } from '../thread/thread-snapshot';
-import { decodeSendOutput, newClientNonce, sendReceipt } from '../thread/thread-send';
+import { decodeSendOutput, newClientNonce, sendReceipt, sendTarget, threadSendBody } from '../thread/thread-send';
 import { decodeThreadMessagePage } from '../thread/thread-decode';
 import { isDeliveryMessage } from '../thread/block-view';
 import { historyGapAtEnd } from '../thread/thread-window';
@@ -82,7 +87,7 @@ export function messageKey(message: LiveMessage): string {
   for (const block of message.blocks) {
     blocks += JSON.stringify(block);
   }
-  return `${message.id}|${message.role}|${blocks}`;
+  return `${message.id}|${message.role}|${blocks}|${message.replyToMessageId ?? ''}|${message.replyQuote ?? ''}|${JSON.stringify(message.replyPreview) ?? ''}`;
 }
 
 /** Prepend an older history page without losing live state (core prependThreadHistoryPage).
@@ -125,9 +130,15 @@ export class ThreadStore {
   /** The transcript ends before the newest message this chat showed (history window eviction):
    * the screen offers "Jump to latest" back to the live page. */
   @Trace awayFromLatest: boolean = false;
-  /** The text of a failed send, so the composer can restore it for retry. */
-  @Trace sendFailedText: string = '';
+  @Trace uploading: number = 0;
+  @Trace imageConfirmation: boolean = false;
+  @Trace sentRevision: number = 0;
   readonly send: SaveController;
+  private upload: RequestCancellation | null = null;
+  private attemptKey: string = '';
+  private nonce: string = '';
+  private uploaded: string[] = [];
+  private imagesAsFiles: boolean = false;
   readonly answer: SaveController;
   readonly stop: SaveController;
   private stream: ThreadStream | null = null;
@@ -143,41 +154,16 @@ export class ThreadStore {
 
   constructor() {
     this.send = new SaveController({
-      save: async (input: Record<string, Object>, sendRpc: SaveSend): Promise<void> => {
-        const text = typeof input['text'] === 'string' ? input['text'] as string : '';
-        const body: Record<string, Object> = {};
-        if (this.groupId) {
-          body['groupId'] = this.groupId;
-        } else {
-          body['botId'] = this.botId;
-        }
-        body['text'] = text;
-        body['clientNonce'] = newClientNonce();
-        const output = decodeSendOutput(await sendRpc('threads/send', body));
-        if (output === null) {
-          throw new RpcError('Unexpected response from the server');
-        }
-        // The receipt shows the queued run at once; the echo arrives over the open stream.
-        if (!this.groupId && this.stream !== null) {
-          const next = applyThreadSendReceipt(this.stream.current(),
-            sendReceipt(this.botId, output), this.stream.terminalRunIds, new Date().toISOString());
-          if (next !== this.stream.current()) {
-            // commit paints through deps.commit with the window applied.
-            this.stream.commit(next);
-          }
-        }
-      },
+      save: (input: Record<string, Object>, sendRpc: SaveSend): Promise<void> => this.deliver(input, sendRpc),
       onSaved: (): void => {
-        this.sendFailedText = '';
+        this.resetAttempt();
+        this.sentRevision += 1;
       },
       onFailed: (error: RpcError): void => {
-        // The failed text is captured BEFORE any reset: reset clears the input it lives in.
-        const input = this.send.input;
-        this.sendFailedText = input !== null && typeof input['text'] === 'string' ? input['text'] as string : '';
-        // Not now is the user's choice: no error copy, the composer keeps the text.
-        if (error instanceof AiConsentBlocked && error.refusedByUser) {
+        if (error instanceof RequestCancelled || (error instanceof AiConsentBlocked && error.refusedByUser)) {
           this.send.reset();
         }
+        this.imageConfirmation = error.status === 409 && error.reason === 'model_image_input_unsupported';
       },
     });
     this.answer = new SaveController({
@@ -212,6 +198,89 @@ export class ThreadStore {
         await sendRpc('threads/stop', body);
       },
     });
+  }
+
+  sendDraft(text: string, attachments: DraftAttachment[], replyToMessageId: string,
+    imagesAsFiles: boolean = false): void {
+    if (!this.started || this.send.pending || (!text.trim() && !attachments.length)) {
+      return;
+    }
+    // A retry of the same draft reuses both its upload ids and the final message nonce.
+    const key = JSON.stringify([currentScope(), text.trim(), attachments.map((item: DraftAttachment) => item.path),
+      replyToMessageId]);
+    if (key !== this.attemptKey) {
+      this.resetAttempt();
+      this.attemptKey = key;
+      this.nonce = newClientNonce();
+    }
+    const input: Record<string, Object> = {};
+    input['text'] = text;
+    input['attachments'] = attachments;
+    input['replyToMessageId'] = replyToMessageId;
+    this.imagesAsFiles = this.imagesAsFiles || imagesAsFiles;
+    this.imageConfirmation = false;
+    this.send.run(input);
+  }
+
+  cancelUpload(): void {
+    this.upload?.cancel();
+  }
+
+  resetAttempt(): void {
+    this.attemptKey = '';
+    this.nonce = '';
+    this.uploaded = [];
+    this.imagesAsFiles = false;
+    this.imageConfirmation = false;
+    this.send.reset();
+  }
+
+  private async deliver(input: Record<string, Object>, sendRpc: SaveSend): Promise<void> {
+    const nonce = this.nonce;
+    const botId = this.botId;
+    const groupId = this.groupId;
+    const scope = currentScope();
+    const attachments = input['attachments'] as DraftAttachment[];
+    const ids = this.uploaded;
+    const cancellation = new RequestCancellation();
+    this.upload = cancellation;
+    try {
+      for (let index = ids.length; index < attachments.length; index += 1) {
+        this.uploading = index + 1;
+        const attachment = attachments[index];
+        const body = sendTarget(botId, groupId);
+        body['name'] = attachment.name;
+        body['mimeType'] = attachment.mimeType;
+        body['clientNonce'] = `${nonce}:${index}`;
+        body['contentBase64'] = await readDraftBase64(attachment, cancellation);
+        const result = asRecord(await sendRpc('artifacts/create', body, 60_000, cancellation));
+        const id = result?.['id'];
+        if (typeof id !== 'string' || !id) {
+          throw new RpcError('Unexpected response from the server');
+        }
+        ids.push(id as string);
+      }
+      cancellation.check();
+    } finally {
+      this.upload = null;
+      this.uploading = 0;
+    }
+    if (!this.started || this.nonce !== nonce || currentScope() !== scope) {
+      throw new RequestCancelled();
+    }
+    const body = threadSendBody(botId, groupId, input['text'] as string, ids,
+      input['replyToMessageId'] as string, nonce, this.imagesAsFiles);
+    const output = decodeSendOutput(await sendRpc('threads/send', body));
+    if (output === null) {
+      throw new RpcError('Unexpected response from the server');
+    }
+    if (!groupId && this.stream !== null && this.nonce === nonce && currentScope() === scope) {
+      const next = applyThreadSendReceipt(this.stream.current(), sendReceipt(botId, output),
+        this.stream.terminalRunIds, new Date().toISOString());
+      if (next !== this.stream.current()) {
+        this.stream.commit(next);
+      }
+    }
   }
 
   subscribeChanges(listener: () => void): () => void {
@@ -443,6 +512,7 @@ export class ThreadStore {
 
   close(): void {
     this.started = false;
+    this.cancelUpload();
     this.stream?.stop();
     this.stream = null;
     this.offForeground?.();
@@ -456,7 +526,7 @@ export class ThreadStore {
     this.offline = false;
     this.connected = false;
     this.loading = false;
-    this.send.reset();
+    this.resetAttempt();
     this.answer.reset();
     this.stop.reset();
     this.notifyChanges();

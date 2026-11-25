@@ -6,12 +6,14 @@
 // finishing save shows nothing and skips onSaved/onFailed.
 import { captureContext, rpc } from '../net/rpc';
 import type { RpcContext } from '../net/rpc';
+import type { RequestCancellation } from '../net/request-cancellation';
 import { RpcError, errorText } from '../net/errors';
 import { currentScope, queryCache, requestScope } from './query-cache';
 import { t } from '../i18n/i18n';
 
 /** One rpc write of a save, sent with the pinned context. */
-export type SaveSend = (proc: string, body: Record<string, Object>) => Promise<Object>;
+export type SaveSend = (proc: string, body: Record<string, Object>, timeoutMs?: number,
+  cancellation?: RequestCancellation) => Promise<Object>;
 
 export interface SaveOptions {
   /** Performs the write through `send`; may send several rpcs under the one pinned context. */
@@ -53,12 +55,13 @@ export class SaveController {
     this.input = input;
     const scope = currentScope();
     const pinned: Promise<RpcContext> = captureContext();
-    const send: SaveSend = async (proc: string, body: Record<string, Object>): Promise<Object> => {
+    const send: SaveSend = async (proc: string, body: Record<string, Object>, timeoutMs?: number,
+      cancellation?: RequestCancellation): Promise<Object> => {
       const context = await pinned;
       if (requestScope(context) !== scope || currentScope() !== scope) {
         throw new RpcError(t('Something went wrong. Try again.'));
       }
-      return rpc(proc, body, { context: context });
+      return rpc(proc, body, { context: context, timeoutMs: timeoutMs, cancellation: cancellation });
     };
     const stale = this.options.stale ?? [];
     void (async (): Promise<void> => {

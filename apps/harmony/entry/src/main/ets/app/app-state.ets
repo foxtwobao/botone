@@ -15,12 +15,15 @@ import {
 import { currentApiBase, initServerStore } from '../net/server-store';
 import { flushPendingSignOut } from '../net/sign-out';
 import type { SignOutContext } from '../net/sign-out';
+import { clearArtifactCache } from '../net/artifact-cache';
+import { cleanAttachmentDirectory, draftDirectory } from '../thread/attachment-files';
 import { loadI18n } from '../i18n/i18n';
 import { appearance } from '../uikit/theme';
 import { queryCache } from '../query/query-cache';
 import { rosterStore } from '../stores/roster-store';
 import { archivedStore } from '../stores/archived-store';
 import { settingsStore } from '../stores/settings-store';
+import { incomingShare } from '../stores/incoming-share-store';
 
 @ObservedV2
 export class AppState {
@@ -49,6 +52,8 @@ export class AppState {
 
   async bootstrap(context: common.UIAbilityContext): Promise<void> {
     this.context = context;
+    clearArtifactCache(context);
+    cleanAttachmentDirectory(draftDirectory(context));
     appearance.update(context.config.colorMode);
     setUpdateHandler((): void => {
       this.updateRequired = true;
@@ -90,11 +95,15 @@ export class AppState {
     // A session change crosses an auth boundary: forget every cached read and painted roster so
     // the next session never shows the previous owner's data (mobile clearQueries).
     queryCache.clear();
+    if (this.context !== null) {
+      clearArtifactCache(this.context);
+    }
     rosterStore.reset();
     archivedStore.reset();
     settingsStore.reset();
     void loadSessionToken().then((token: string): void => {
       if (!token) {
+        incomingShare.cancel();
         this.me = null;
         this.spaceName = '';
         this.meError = '';
@@ -159,6 +168,7 @@ export class AppState {
       // No browser available: nothing to open, the sign-in screen stays usable.
     }
   }
+
 }
 
 export const app: AppState = new AppState();

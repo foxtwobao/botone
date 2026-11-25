@@ -33,6 +33,19 @@
             "actions": [
               "ohos.want.action.home"
             ]
+          },
+          {
+            // The system share panel matches by type family (UTD), each declared on its own.
+            "actions": ["ohos.want.action.sendData"],
+            "uris": [
+              { "scheme": "file", "utd": "general.image", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.audio", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.video", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.text", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.composite-object", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.archive", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.file", "maxFileSupported": 100 }
+            ]
           }
         ]
       }

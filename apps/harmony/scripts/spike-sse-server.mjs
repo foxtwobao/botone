@@ -9,6 +9,15 @@
 // sign-in token shapes, capabilities, and sign-out with a delivery log at GET /__state.
 // All credentials here are fake probes, never real ones.
 import { createServer } from "node:http";
+import {
+  attachmentSendPayload,
+  collectBody,
+  handleArtifactRoute,
+  loggedBody,
+  refuseImages,
+  resetArtifacts,
+} from "./artifact-fixture.mjs";
+import { bearer, json, rpcError } from "./fixture-http.mjs";
 
 const port = Number(process.argv[2] ?? 8787);
 
@@ -502,6 +511,9 @@ function handleThreadRpc(req, res, body) {
     return json(res, 200, { json: messagePage(state, before) });
   }
   if (path === "/rpc/threads/send") {
+    if (refuseImages(res, input)) return;
+    const payload = attachmentSendPayload(input, durableMessages(state));
+    if (!payload) return rpcError(res, 400, "BAD_REQUEST", "Attachment unavailable");
     state.sends += 1;
     const messageId = `${state.threadId}-user-${state.sends}`;
     const seq = nextEventSeq(state);
@@ -520,7 +532,7 @@ function handleThreadRpc(req, res, body) {
           messageId,
           seq: messageSeq,
           role: "user",
-          blocks: [{ kind: "text", text: input.text ?? "" }],
+          ...payload,
           author: { id: ME.userId, name: ME.name },
         },
       }),
@@ -614,20 +626,6 @@ function nextEventSeq(state) {
     state.events.reduce((max, e) => Math.max(max, e.seq), 0),
     (state.history ?? []).reduce((max, m) => Math.max(max, m.seq ?? 0), 0),
   );
-}
-
-function json(res, status, value, headers = {}) {
-  res.writeHead(status, { "content-type": "application/json", ...headers });
-  res.end(JSON.stringify(value));
-}
-
-function rpcError(res, status, code, message, headers = {}) {
-  json(res, status, { json: { code, status, message } }, headers);
-}
-
-function bearer(req) {
-  const header = req.headers.authorization ?? "";
-  return header.startsWith("Bearer ") ? header.slice(7) : "";
 }
 
 function handleRpc(req, res, body) {
@@ -821,7 +819,7 @@ function handleNotifications(req, res) {
 
 createServer((req, res) => {
   let body = "";
-  req.on("data", (chunk) => {
+  collectBody(req, (chunk) => {
     body += chunk;
   });
   req.on("end", () => {
@@ -833,7 +831,7 @@ createServer((req, res) => {
     if (clientBuild) clientBuilds.push(clientBuild);
     if (req.url.startsWith("/rpc/")) {
       seq += 1;
-      requests.push({ seq, path: req.url, body, t: Date.now() });
+      requests.push({ seq, path: req.url, body: loggedBody(req.url, body), t: Date.now() });
     }
     if (req.url === "/__state") {
       return json(res, 200, { signOuts, clientBuilds, streams: notificationClients.size });
@@ -961,6 +959,7 @@ createServer((req, res) => {
       threadRefusals = 0;
       threadStall = null;
       resetModels();
+      resetArtifacts();
       resetConsent();
       consentScript = [];
       consentScriptIndex = 0;
@@ -982,6 +981,7 @@ createServer((req, res) => {
       consentScriptIndex = 0;
       return json(res, 200, { ok: true, count: consentScript.length });
     }
+    if (handleArtifactRoute(req, res, body)) return;
     if (req.url === "/rpc/notifications/subscribe") return handleNotifications(req, res);
     if (req.url.startsWith("/rpc/aiConsent/")) return handleConsentRpc(req, res, body);
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);

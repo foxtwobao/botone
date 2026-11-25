@@ -17,7 +17,6 @@ import type { RosterStore } from '../../stores/roster-store';
 import { rowKey } from '../../stores/roster-projection';
 import type { InboxRow } from '../../stores/roster-projection';
 import { RosterHolder } from '../../realtime/roster-holder';
-import { setThreadRoute } from '../chat/thread-route';
 import type { ThreadRoute } from '../chat/thread-route';
 
 /** A list entry: the optional Pinned heading, or a chat row. */
@@ -146,8 +145,7 @@ export struct InboxPage {
         groupId: row.kind === 'group' ? row.id : '',
         title: row.name,
       };
-      setThreadRoute(route);
-      this.stack.pushPathByName('chat', null);
+      this.stack.pushPathByName('chat', route);
     })
   }
 

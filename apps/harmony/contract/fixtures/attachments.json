@@ -1,0 +1,705 @@
+{
+  "constants": {
+    "imageMaxEdge": 1600,
+    "imageQuality": 0.7
+  },
+  "limits": [
+    {
+      "config": null,
+      "bytes": 10485760,
+      "count": 4
+    },
+    {
+      "config": {},
+      "bytes": 10485760,
+      "count": 4
+    },
+    {
+      "config": {
+        "maxUploadSizeBytes": 20971520,
+        "maxAttachmentsPerMessage": 8
+      },
+      "bytes": 20971520,
+      "count": 8
+    }
+  ],
+  "mime": [
+    {
+      "mimeType": "image/jpeg",
+      "image": true,
+      "audio": false,
+      "inline": true,
+      "kind": "image",
+      "label": "JPG",
+      "extension": ".jpg",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/png",
+      "image": true,
+      "audio": false,
+      "inline": true,
+      "kind": "image",
+      "label": "PNG",
+      "extension": ".png",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/webp",
+      "image": true,
+      "audio": false,
+      "inline": true,
+      "kind": "image",
+      "label": "WEBP",
+      "extension": ".webp",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/gif",
+      "image": true,
+      "audio": false,
+      "inline": true,
+      "kind": "image",
+      "label": "GIF",
+      "extension": ".gif",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "audio/mpeg",
+      "image": false,
+      "audio": true,
+      "inline": false,
+      "kind": "none",
+      "label": "MP3",
+      "extension": ".mp3",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "audio/wav",
+      "image": false,
+      "audio": true,
+      "inline": false,
+      "kind": "none",
+      "label": "WAV",
+      "extension": ".wav",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "audio/ogg",
+      "image": false,
+      "audio": true,
+      "inline": false,
+      "kind": "none",
+      "label": "OGG",
+      "extension": ".ogg",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "audio/mp4",
+      "image": false,
+      "audio": true,
+      "inline": false,
+      "kind": "none",
+      "label": "M4A",
+      "extension": ".m4a",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "video/mp4",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "video",
+      "label": "MP4",
+      "extension": ".mp4",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "video/quicktime",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "MOV",
+      "extension": ".mov",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "video/3gpp",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "3GP",
+      "extension": ".3gp",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/heic",
+      "image": false,
+      "audio": false,
+      "inline": true,
+      "kind": "none",
+      "label": "HEIC",
+      "extension": ".heic",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/heif",
+      "image": false,
+      "audio": false,
+      "inline": true,
+      "kind": "none",
+      "label": "HEIF",
+      "extension": ".heif",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/pdf",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "pdf",
+      "label": "PDF",
+      "extension": ".pdf",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "text/plain",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "text",
+      "label": "TXT",
+      "extension": ".txt",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "text/markdown",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "markdown",
+      "label": "MD",
+      "extension": ".md",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "text/csv",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "text",
+      "label": "CSV",
+      "extension": ".csv",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/vnd.ms-excel",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "XLS",
+      "extension": ".xls",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "XLSX",
+      "extension": ".xlsx",
+      "storedName": "probe.xlsx"
+    },
+    {
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "DOCX",
+      "extension": ".docx",
+      "storedName": "probe.docx"
+    },
+    {
+      "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "PPTX",
+      "extension": ".pptx",
+      "storedName": "probe.pptx"
+    },
+    {
+      "mimeType": "text/html",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "html",
+      "label": "HTML",
+      "extension": ".html",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/json",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "text",
+      "label": "JSON",
+      "extension": ".json",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/zip",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "ZIP",
+      "extension": ".zip",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/vnd.rar",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "RAR",
+      "extension": ".rar",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/x-7z-compressed",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "7Z",
+      "extension": ".7z",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/svg+xml",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "SVG+XM",
+      "extension": "",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "image/jpeg;profile=step-screenshot",
+      "image": false,
+      "audio": false,
+      "inline": true,
+      "kind": "image",
+      "label": "JPEG;P",
+      "extension": "",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "text/html; charset=utf-8",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "html",
+      "label": "HTML; ",
+      "extension": "",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "TEXT/PLAIN",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "text",
+      "label": "PLAIN",
+      "extension": "",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "application/octet-stream",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "OCTET-",
+      "extension": "",
+      "storedName": "probe.original"
+    },
+    {
+      "mimeType": "",
+      "image": false,
+      "audio": false,
+      "inline": false,
+      "kind": "none",
+      "label": "",
+      "extension": "",
+      "storedName": "probe.original"
+    }
+  ],
+  "inference": [
+    {
+      "name": "photo.JPG",
+      "reported": "",
+      "expected": "image/jpeg"
+    },
+    {
+      "name": "notes.md",
+      "reported": "text/plain",
+      "expected": "text/markdown"
+    },
+    {
+      "name": "sheet.csv",
+      "reported": "application/vnd.ms-excel",
+      "expected": "text/csv"
+    },
+    {
+      "name": "archive",
+      "reported": "application/x-zip-compressed",
+      "expected": "application/zip"
+    },
+    {
+      "name": "archive",
+      "reported": "application/x-rar",
+      "expected": "application/vnd.rar"
+    },
+    {
+      "name": "archive",
+      "reported": "application/x-7z",
+      "expected": "application/x-7z-compressed"
+    },
+    {
+      "name": "clip",
+      "reported": "audio/mp3",
+      "expected": "audio/mpeg"
+    },
+    {
+      "name": "clip",
+      "reported": "audio/vnd.wave",
+      "expected": "audio/wav"
+    },
+    {
+      "name": "clip.m4a",
+      "reported": "audio/aac",
+      "expected": "audio/mp4"
+    },
+    {
+      "name": "unknown.exe",
+      "reported": "constructor",
+      "expected": null
+    },
+    {
+      "name": "photo.heic",
+      "reported": "",
+      "expected": "image/heic"
+    },
+    {
+      "name": "file.pdf",
+      "reported": "application/octet-stream",
+      "expected": "application/pdf"
+    }
+  ],
+  "staticPng": [
+    {
+      "bytes": "iVBORw0KGgoAAAANSUhEUgAAAAAAAAAAAAAAAAAAAAAAAAAAAElEQVQ=",
+      "expected": true
+    },
+    {
+      "bytes": "iVBORw0KGgoAAAANSUhEUgAAAAAAAAAAAAAAAAAAAAAAAAAAAGFjVEw=",
+      "expected": false
+    },
+    {
+      "bytes": "iVBORw0KGgoAAAANSUhEUgAAAAAAAAAAAAAAAAAAAAAAAAAAAElFTkQ=",
+      "expected": false
+    },
+    {
+      "bytes": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "expected": false
+    }
+  ],
+  "fileSize": [
+    {
+      "bytes": -1,
+      "locale": "en",
+      "expected": ""
+    },
+    {
+      "bytes": 0,
+      "locale": "en",
+      "expected": "0 B"
+    },
+    {
+      "bytes": 512,
+      "locale": "en",
+      "expected": "512 B"
+    },
+    {
+      "bytes": 1536,
+      "locale": "en",
+      "expected": "1.5 KB"
+    },
+    {
+      "bytes": 1048575,
+      "locale": "en",
+      "expected": "1 MB"
+    },
+    {
+      "bytes": 1099511627776,
+      "locale": "en",
+      "expected": "1 TB"
+    },
+    {
+      "bytes": -1,
+      "locale": "zh-CN",
+      "expected": ""
+    },
+    {
+      "bytes": 0,
+      "locale": "zh-CN",
+      "expected": "0 B"
+    },
+    {
+      "bytes": 512,
+      "locale": "zh-CN",
+      "expected": "512 B"
+    },
+    {
+      "bytes": 1536,
+      "locale": "zh-CN",
+      "expected": "1.5 KB"
+    },
+    {
+      "bytes": 1048575,
+      "locale": "zh-CN",
+      "expected": "1 MB"
+    },
+    {
+      "bytes": 1099511627776,
+      "locale": "zh-CN",
+      "expected": "1 TB"
+    },
+    {
+      "bytes": -1,
+      "locale": "zh-TW",
+      "expected": ""
+    },
+    {
+      "bytes": 0,
+      "locale": "zh-TW",
+      "expected": "0 B"
+    },
+    {
+      "bytes": 512,
+      "locale": "zh-TW",
+      "expected": "512 B"
+    },
+    {
+      "bytes": 1536,
+      "locale": "zh-TW",
+      "expected": "1.5 KB"
+    },
+    {
+      "bytes": 1048575,
+      "locale": "zh-TW",
+      "expected": "1 MB"
+    },
+    {
+      "bytes": 1099511627776,
+      "locale": "zh-TW",
+      "expected": "1 TB"
+    },
+    {
+      "bytes": -1,
+      "locale": "fr",
+      "expected": ""
+    },
+    {
+      "bytes": 0,
+      "locale": "fr",
+      "expected": "0 B"
+    },
+    {
+      "bytes": 512,
+      "locale": "fr",
+      "expected": "512 B"
+    },
+    {
+      "bytes": 1536,
+      "locale": "fr",
+      "expected": "1,5 KB"
+    },
+    {
+      "bytes": 1048575,
+      "locale": "fr",
+      "expected": "1 MB"
+    },
+    {
+      "bytes": 1099511627776,
+      "locale": "fr",
+      "expected": "1 TB"
+    }
+  ],
+  "fit": [
+    {
+      "size": {
+        "width": 1,
+        "height": 10
+      },
+      "expected": {
+        "width": 1,
+        "height": 10
+      }
+    },
+    {
+      "size": {
+        "width": 1600,
+        "height": 900
+      },
+      "expected": {
+        "width": 270,
+        "height": 152
+      }
+    },
+    {
+      "size": {
+        "width": 500,
+        "height": 3000
+      },
+      "expected": {
+        "width": 60,
+        "height": 360
+      }
+    }
+  ],
+  "skip": [
+    {
+      "name": "edge.pdf",
+      "size": 10485760,
+      "mimeType": "application/pdf",
+      "existingCount": 0,
+      "expected": ""
+    },
+    {
+      "name": "large.pdf",
+      "size": 10485761,
+      "mimeType": "application/pdf",
+      "existingCount": 0,
+      "expected": "over 10 MiB"
+    },
+    {
+      "name": "unknown",
+      "size": 1,
+      "mimeType": null,
+      "existingCount": 0,
+      "expected": "unsupported type"
+    },
+    {
+      "name": "extra.pdf",
+      "size": 1,
+      "mimeType": "application/pdf",
+      "existingCount": 4,
+      "expected": "max 4 attachments"
+    }
+  ],
+  "send": [
+    {
+      "calls": [
+        {
+          "path": "artifacts/create",
+          "body": {
+            "botId": "bot-probe",
+            "name": "photo.png",
+            "mimeType": "image/png",
+            "contentBase64": "YWJj",
+            "clientNonce": "nonce-probe:0"
+          },
+          "timeout": 60000
+        },
+        {
+          "path": "artifacts/create",
+          "body": {
+            "botId": "bot-probe",
+            "name": "notes.txt",
+            "mimeType": "text/plain",
+            "contentBase64": "YWJj",
+            "clientNonce": "nonce-probe:1"
+          },
+          "timeout": 60000
+        },
+        {
+          "path": "threads/send",
+          "body": {
+            "botId": "bot-probe",
+            "clientNonce": "nonce-probe",
+            "imageHandling": "confirm",
+            "text": "Caption",
+            "artifactIds": ["artifact-1", "artifact-2"]
+          }
+        }
+      ],
+      "blocks": [
+        {
+          "kind": "image",
+          "artifactId": "artifact-1",
+          "mimeType": "image/png",
+          "name": "photo.png"
+        },
+        {
+          "kind": "file",
+          "artifactId": "artifact-2",
+          "mimeType": "text/plain",
+          "name": "notes.txt",
+          "size": 3
+        }
+      ]
+    },
+    {
+      "calls": [
+        {
+          "path": "artifacts/create",
+          "body": {
+            "groupId": "group-probe",
+            "name": "notes.txt",
+            "mimeType": "text/plain",
+            "contentBase64": "YWJj",
+            "clientNonce": "nonce-probe:1"
+          },
+          "timeout": 60000
+        },
+        {
+          "path": "threads/send",
+          "body": {
+            "groupId": "group-probe",
+            "clientNonce": "nonce-probe",
+            "imageHandling": "file",
+            "artifactIds": ["retained-artifact", "artifact-1"],
+            "replyToMessageId": "message-probe"
+          }
+        }
+      ],
+      "blocks": [
+        {
+          "kind": "image",
+          "artifactId": "retained-artifact",
+          "mimeType": "image/png",
+          "name": "photo.png"
+        },
+        {
+          "kind": "file",
+          "artifactId": "artifact-1",
+          "mimeType": "text/plain",
+          "name": "notes.txt",
+          "size": 3
+        }
+      ]
+    }
+  ]
+}

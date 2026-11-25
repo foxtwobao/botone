@@ -26,6 +26,7 @@ import threadWindowTest from './ThreadWindow.test';
 import threadStreamTest from './ThreadStream.test';
 import threadRealtimeTest from './ThreadRealtime.test';
 import consentGateTest from './ConsentGate.test';
+import attachmentsTest from './Attachments.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -56,6 +57,7 @@ export default function testsuite() {
   threadStreamTest();
   threadRealtimeTest();
   consentGateTest();
+  attachmentsTest();
   rosterRealtimeTest();
   // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();

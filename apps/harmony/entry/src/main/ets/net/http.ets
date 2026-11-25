@@ -4,8 +4,8 @@
 // authenticates by bearer only, like mobile's credentials: "omit".
 import { http } from '@kit.NetworkKit';
 import { util } from '@kit.ArkTS';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { RpcError } from './errors';
+import type { RequestCancellation } from './request-cancellation';
 
 export interface HttpResponseView {
   status: number;
@@ -43,7 +43,9 @@ export function bodyBytes(body: string): number {
 const KIT_TIMEOUT_GRACE_MS = 250;
 
 export async function requestJson(method: http.RequestMethod, url: string, headers: Record<string, string>,
-  body: string | null, timeoutMs: number, maxBytes: number): Promise<HttpResponseView> {
+  body: string | null, timeoutMs: number, maxBytes: number,
+  cancellation?: RequestCancellation): Promise<HttpResponseView> {
+  cancellation?.check();
   const request = http.createHttp();
   let timedOut = false;
   const timer = setTimeout(() => {
@@ -57,15 +59,32 @@ export async function requestJson(method: http.RequestMethod, url: string, heade
       connectTimeout: timeoutMs + KIT_TIMEOUT_GRACE_MS,
       readTimeout: timeoutMs + KIT_TIMEOUT_GRACE_MS,
       expectDataType: http.HttpDataType.STRING,
+      // The kit stops at 5 MiB by default, below the RPC cap an artifact reply needs. Twice the cap
+      // lets the check below answer first; past it the kit refuses with the same message.
+      maxLimit: MAX_RPC_RESPONSE_BYTES * 2,
       // Mobile rejects redirects wherever it sends credentials; a 3xx answer is never delivery.
       maxRedirects: 0,
     };
     if (body !== null) {
       options.extraData = body;
     }
-    const response = await request.request(url, options);
+    const transfer = request.request(url, options);
+    // The kit can leave the request promise pending after destroy(). Settle the caller ourselves.
+    const response = cancellation === undefined ? await transfer : await new Promise<http.HttpResponse>(
+      (resolve: (response: http.HttpResponse) => void, reject: (error: Object) => void): void => {
+        cancellation.listen((): void => {
+          try {
+            cancellation.check();
+          } catch (err) {
+            reject(err as Object);
+          }
+          request.destroy();
+        });
+        void transfer.then(resolve, reject);
+      });
+    cancellation?.check();
     const text = typeof response.result === 'string' ? response.result as string : JSON.stringify(response.result);
-    if (bodyBytes(text) > maxBytes) {
+    if (text.length > maxBytes || bodyBytes(text) > maxBytes) {
       throw new RpcError(`Response exceeds ${maxBytes} bytes`, response.responseCode);
     }
     const view: HttpResponseView = {
@@ -75,6 +94,7 @@ export async function requestJson(method: http.RequestMethod, url: string, heade
     };
     return view;
   } catch (err) {
+    cancellation?.check();
     if (err instanceof RpcError) {
       throw err;
     }
@@ -84,16 +104,20 @@ export async function requestJson(method: http.RequestMethod, url: string, heade
     const rawMessage = record !== null && typeof record['message'] === 'string' ? record['message'] as string : '';
     const message = err instanceof Error ? (err as Error).message : rawMessage || String(err);
     const code = record !== null && record['code'] !== undefined ? String(record['code']) : '';
+    if (code === '2300063') {
+      throw new RpcError(`Response exceeds ${maxBytes} bytes`);
+    }
     throw new RpcError(message || code, 0, '', -1, !timedOut, timedOut);
   } finally {
+    cancellation?.listen(null);
     clearTimeout(timer);
     request.destroy();
   }
 }
 
 export function postJson(url: string, headers: Record<string, string>, body: string,
-  timeoutMs: number, maxBytes: number): Promise<HttpResponseView> {
-  return requestJson(http.RequestMethod.POST, url, headers, body, timeoutMs, maxBytes);
+  timeoutMs: number, maxBytes: number, cancellation?: RequestCancellation): Promise<HttpResponseView> {
+  return requestJson(http.RequestMethod.POST, url, headers, body, timeoutMs, maxBytes, cancellation);
 }
 
 export function getJson(url: string, headers: Record<string, string>,

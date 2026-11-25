@@ -20,6 +20,7 @@ import { app } from '../app/app-state';
 import { appearance } from '../uikit/theme';
 import { foreground } from '../realtime/foreground';
 import { i18nStore } from '../i18n/i18n';
+import { incomingShare } from '../stores/incoming-share-store';
 
 const DOMAIN = 0x0000;
 
@@ -28,6 +29,11 @@ export default class EntryAbility extends UIAbility {
     // The appearance preference (system/light/dark) is applied by AppearanceStore.init once the
     // window exists; setting a color mode here would override a saved manual choice.
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
+    void incomingShare.receive(want);
+  }
+
+  onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    void incomingShare.receive(want);
   }
 
   onConfigurationUpdate(newConfig: Configuration): void {
@@ -37,6 +43,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onDestroy(): void {
+    incomingShare.cancel();
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
   }
 
