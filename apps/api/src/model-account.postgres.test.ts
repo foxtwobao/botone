@@ -549,9 +549,11 @@ postgres("external model account isolated PostgreSQL", () => {
       ["/connect", {}],
     ] as const)
       expect((await post(path, body)).status).toBe(200);
-    expect(await storedModels()).toEqual({ "example-model": limits, "second-model": limits });
-    expect((await update("example-model", { reasoning: null })).status).toBe(200);
-    expect(await storedModels()).toEqual({ "second-model": limits });
+    // An older app's switch on is saved as the default thinking level.
+    const stored = { ...limits, thinkingLevel: "medium" };
+    expect(await storedModels()).toEqual({ "example-model": stored, "second-model": stored });
+    expect((await update("example-model", { thinkingLevel: null })).status).toBe(200);
+    expect(await storedModels()).toEqual({ "second-model": stored });
     expect(await (await request("/status")).json()).toMatchObject({
       connected: true,
       apiProtocol: "responses",
