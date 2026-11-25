@@ -50,6 +50,8 @@ export struct Field {
   @Param email: boolean = false;
   @Param disabled: boolean = false;
   @Event onChange: (value: string) => void = (): void => {};
+  /** The keyboard's own send: a form that acts on the whole value when it is submitted. */
+  @Event onSubmit: () => void = (): void => {};
 
   build() {
     Column({ space: 6 }) {
@@ -70,6 +72,9 @@ export struct Field {
         .enabled(!this.disabled)
         .onChange((value: string): void => {
           this.onChange(value);
+        })
+        .onSubmit((): void => {
+          this.onSubmit();
         })
     }
     .width('100%')

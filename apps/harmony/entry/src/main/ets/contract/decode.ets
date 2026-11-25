@@ -36,6 +36,8 @@ export interface BotView {
   status: string;
   updatedAt: string;
   snoozedUntil: string | null;
+  /** M7: the bot reads its finished replies aloud (the auto-speak gate). */
+  autoSpeak: boolean;
 }
 
 /** A group inbox row (M2): no identity color (bots carry the only color). */
@@ -76,12 +78,12 @@ export function asRecord(value: Object | null | undefined): Record<string, Objec
   return value as Record<string, Object>;
 }
 
-function readString(record: Record<string, Object>, key: string): string | null {
+export function readString(record: Record<string, Object>, key: string): string | null {
   const value = record[key];
   return typeof value === 'string' ? value as string : null;
 }
 
-function readBoolean(record: Record<string, Object>, key: string): boolean | null {
+export function readBoolean(record: Record<string, Object>, key: string): boolean | null {
   const value = record[key];
   return typeof value === 'boolean' ? value as boolean : null;
 }
@@ -185,13 +187,15 @@ export function decodeBot(json: Object | null): BotView | null {
   const status = readString(record, 'status');
   const updatedAt = readString(record, 'updatedAt');
   const snoozedUntil = readSnoozed(record);
+  const autoSpeak = readBoolean(record, 'autoSpeak');
   if (id === null || !id || name === null || color === null || pinned === null || unread === null
-    || preview === null || status === null || updatedAt === null || snoozedUntil === undefined) {
+    || preview === null || status === null || updatedAt === null || snoozedUntil === undefined
+    || autoSpeak === null) {
     return null;
   }
   const result: BotView = {
     id: id, name: name, color: color, pinned: pinned, unread: unread, preview: preview,
-    status: status, updatedAt: updatedAt, snoozedUntil: snoozedUntil,
+    status: status, updatedAt: updatedAt, snoozedUntil: snoozedUntil, autoSpeak: autoSpeak,
   };
   return result;
 }

@@ -17,6 +17,7 @@ import { AbilityConstant, Configuration, UIAbility, Want } from '@kit.AbilityKit
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { app } from '../app/app-state';
+import { installVoice } from '../voice/install';
 import { appearance } from '../uikit/theme';
 import { foreground } from '../realtime/foreground';
 import { i18nStore } from '../i18n/i18n';
@@ -49,6 +50,7 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+    installVoice(this.context);
     void app.bootstrap(this.context);
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {

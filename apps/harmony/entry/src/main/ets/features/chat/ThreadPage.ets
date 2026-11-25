@@ -22,9 +22,20 @@ import type { ThreadRow } from '../../stores/thread-store';
 import { RosterHolder } from '../../realtime/roster-holder';
 import { MessageBubble } from './MessageBubble';
 import { installConsentDialog } from './consent-dialog';
-import type { LiveMessage } from '../../thread/thread-snapshot';
+import { ComposerDictation, DictationLevels, stopComposerDictation } from './composer-dictation';
+import { DraftDictation } from '../../voice/draft-dictation';
+import { speechFromBlocks } from '../../voice/speech-text';
+import { nextAutoSpeakAction } from '../../voice/auto-speak';
+import { speakQueue, speakText } from '../../voice/speech';
+import type { SpeechQueueItem } from '../../voice/speech';
+import { resolveBotColor } from '../../uikit/avatar';
+import { rosterStore } from '../../stores/roster-store';
+import { foreground } from '../../realtime/foreground';
+import { errorText } from '../../net/errors';
 import type { ShareContent } from '../../thread/incoming-share';
 import type { ThreadRoute } from './thread-route';
+import type { LiveMessage, ThreadMember } from '../../thread/thread-snapshot';
+import type { InboxRow } from '../../stores/roster-projection';
 
 const COMPOSER_CONTROL_SIZE = 46;
 
@@ -47,6 +58,27 @@ export struct ThreadPage {
   private offSpace: (() => void) | null = null;
   /** M6: the parent whose id the next send carries. Kept on failure for a safe retry. */
   @Local replyTarget: LiveMessage | null = null;
+  /** The composer's dictation controller; the draft's merge rule lives in its DraftDictation. */
+  @Local dictation: ComposerDictation = new ComposerDictation(
+    (message: string, openVoice: boolean): void => {
+      if (message) {
+        this.voiceNotice = message;
+        this.voiceNoticeAction = openVoice;
+      } else if (openVoice) {
+        this.stack.pushPathByName('voice', null);
+      }
+    },
+    (text: string, final: boolean): void => {
+      this.showDictation(text, final);
+    },
+  );
+  private merge: DraftDictation = new DraftDictation();
+  /** Send was tapped while the microphone was open; it sends once the words are in. */
+  @Local sendAfterDictation: boolean = false;
+  @Local voiceNotice: string = '';
+  @Local voiceNoticeAction: boolean = false;
+  private autoSpokenBotId: string | null = null;
+  private autoSpokenMessageId: string | null = null;
   private holder: RosterHolder = new RosterHolder();
 
   @Monitor('store.sentRevision')
@@ -69,6 +101,7 @@ export struct ThreadPage {
   }
 
   private offChanges: (() => void) | null = null;
+  private offForeground: (() => void) | null = null;
   private offConsent: (() => void) | null = null;
   private scroller: Scroller = new Scroller();
   private atBottom: boolean = true;
@@ -84,6 +117,10 @@ export struct ThreadPage {
       if (this.atBottom) {
         this.scroller.scrollEdge(Edge.Bottom);
       }
+      this.autoSpeak();
+    });
+    this.offForeground = foreground.subscribe((): void => {
+      this.autoSpeak();
     });
     this.store.open(this.botId, this.groupId, app.me?.userId ?? '');
     this.store.setVisible(true);
@@ -103,6 +140,11 @@ export struct ThreadPage {
     this.active = false;
     this.offSession?.();
     this.offSpace?.();
+    this.offForeground?.();
+    this.offForeground = null;
+    this.merge.close();
+    stopComposerDictation(this.dictation);
+    this.voiceNotice = '';
     this.clearDraft();
     this.store.setVisible(false);
     this.store.close();
@@ -121,6 +163,147 @@ export struct ThreadPage {
     this.draft = '';
     this.replyTarget = null;
     this.attachmentNotice = '';
+    this.sendAfterDictation = false;
+  }
+
+  /** The words the microphone heard land in the draft by the composer's own merge rule. */
+  private showDictation(words: string, final: boolean): void {
+    const next = this.merge.show(this.draft, words, final);
+    if (next !== null) {
+      this.store.resetAttempt();
+      this.draft = next;
+    }
+  }
+
+  private toggleDictation(): void {
+    if (this.dictation.status === 'idle') {
+      this.merge.open(this.draft);
+    }
+    this.voiceNotice = '';
+    this.dictation.toggle();
+  }
+
+  /** Drops the recording and the words it already put in the box. */
+  private discardDictation(): void {
+    if (this.merge.owns(this.draft)) {
+      const base = this.merge.show(this.draft, '', false);
+      if (base !== null) {
+        this.store.resetAttempt();
+        this.draft = base;
+      }
+    }
+    this.merge.close();
+    this.dictation.cancel();
+  }
+
+  /** Send during dictation stops it first and sends once its words are in. */
+  private sendOrFinish(): void {
+    if (this.dictation.status !== 'idle') {
+      this.dictation.finish((): void => {
+        this.sendAfterDictation = true;
+      });
+      return;
+    }
+    this.sendDraft();
+  }
+
+  @Monitor('dictation.status')
+  onDictationEnded(): void {
+    if (this.sendAfterDictation && this.dictation.status === 'idle') {
+      this.sendAfterDictation = false;
+      if (this.canSend) {
+        this.sendDraft();
+      }
+    }
+  }
+
+  /** The bot's row as the inbox last painted it: its name, color and whether it reads aloud. */
+  private botRow(): InboxRow | null {
+    for (const row of rosterStore.rows) {
+      if (row.kind === 'bot' && row.id === this.botId) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  /** Reads a bot's finished reply aloud when it has auto-speak on and its chat is in front. */
+  private autoSpeak(): void {
+    if (!this.botId || this.groupId || !this.active) {
+      return;
+    }
+    const bot = this.botRow();
+    if (bot === null) {
+      return;
+    }
+    const messages = this.store.snapshot?.messages ?? [];
+    const decision = nextAutoSpeakAction({
+      botId: bot.id,
+      autoSpeak: bot.autoSpeak,
+      callActive: false,
+      focused: foreground.foreground,
+      snapshotReady: this.store.snapshot?.botId === bot.id && this.store.connected,
+      lastSpokenBotId: this.autoSpokenBotId,
+      lastSpokenMessageId: this.autoSpokenMessageId,
+      runStatus: this.store.snapshot?.run?.status,
+      messages: messages,
+    });
+    if (decision.action === 'seed') {
+      this.autoSpokenBotId = bot.id;
+      this.autoSpokenMessageId = decision.messageId;
+      return;
+    }
+    if (decision.action !== 'speak') {
+      return;
+    }
+    this.autoSpokenBotId = bot.id;
+    this.autoSpokenMessageId = decision.messageId;
+    void speakText(decision.text, {
+      botId: bot.id,
+      speaker: { name: bot.name, color: resolveBotColor(bot.color) },
+    }).catch((): void => undefined);
+  }
+
+  /** Reads the chat aloud from the message on, each bot reply in its speaker's voice. */
+  private speakFromMessage(message: LiveMessage): void {
+    const items: SpeechQueueItem[] = [];
+    const seen = this.store.rows.findIndex((row: ThreadRow): boolean => row.message?.id === message.id);
+    const from = seen >= 0 ? this.store.rows.slice(seen) : [{ message: message } as ThreadRow];
+    for (const row of from) {
+      const candidate = row.message;
+      if (candidate === null || candidate.role !== 'bot') {
+        continue;
+      }
+      const text = speechFromBlocks(candidate.blocks);
+      if (!text) {
+        continue;
+      }
+      const speakerBotId = candidate.botId ?? this.botId;
+      const member = this.store.snapshot?.members
+        ?.find((entry: ThreadMember): boolean => entry.botId === speakerBotId);
+      const item: SpeechQueueItem = {
+        text: text,
+        botId: speakerBotId,
+        messageId: candidate.id,
+        speaker: {
+          name: member?.name ?? this.title,
+          color: resolveBotColor(member?.color ?? this.botRow()?.color ?? ''),
+        },
+      };
+      items.push(item);
+    }
+    if (items.length === 0) {
+      return;
+    }
+    void speakQueue(items).then((spoken: boolean): void => {
+      if (!spoken) {
+        this.voiceNotice = t('Add a voice provider in Voice settings.');
+        this.voiceNoticeAction = true;
+      }
+    }, (err: Object): void => {
+      this.voiceNotice = err instanceof Error && (err as Error).message
+        ? (err as Error).message : t('Could not speak');
+    });
   }
 
   private sessionChanged(): void {
@@ -211,6 +394,34 @@ export struct ThreadPage {
     this.store.sendDraft(text, this.attachments, this.replyTarget?.id ?? '', imagesAsFiles);
   }
 
+  /** The composer's send button: one builder, because the dictation bar row carries it too. */
+  @Builder
+  sendButton() {
+    Button({ type: ButtonType.Circle }) {
+      if (this.store.uploading > 0) {
+        Text('×').fontSize(24).fontColor(appearance.tokens().primaryForeground)
+      } else if (this.store.send.pending) {
+        LoadingProgress().width(22).height(22).color(appearance.tokens().primaryForeground)
+      } else {
+        SymbolGlyph($r('sys.symbol.arrow_up')).fontSize('20vp').fontColor([appearance.tokens().primaryForeground])
+      }
+    }
+    .id('thread-send')
+    .width(COMPOSER_CONTROL_SIZE)
+    .height(COMPOSER_CONTROL_SIZE)
+    .accessibilityText(t(this.store.uploading > 0 ? 'Cancel' : 'Send'))
+    .backgroundColor(appearance.tokens().primary)
+    .enabled(this.canSend || this.store.uploading > 0)
+    .opacity(this.canSend || this.store.send.pending ? 1 : 0.5)
+    .onClick((): void => {
+      if (this.store.uploading > 0) {
+        this.store.cancelUpload();
+      } else {
+        this.sendOrFinish();
+      }
+    })
+  }
+
   @Builder
   attachmentMenu() {
     Menu() {
@@ -255,6 +466,9 @@ export struct ThreadPage {
         botId: this.botId,
         groupId: this.groupId,
         canReply: !this.store.send.pending,
+        onSpeak: (message: LiveMessage): void => {
+          this.speakFromMessage(message);
+        },
         onReply: (message: LiveMessage): void => {
           if (!this.store.send.pending && this.scope === currentScope()) {
             this.store.resetAttempt();
@@ -459,6 +673,42 @@ export struct ThreadPage {
           .accessibilityText(t('Sending…'))
           .padding({ left: 16, right: 16, top: 4 })
       }
+      if (this.dictation.status !== 'idle') {
+        Row({ space: 8 }) {
+          Button('×', { type: ButtonType.Circle })
+            .width(COMPOSER_CONTROL_SIZE)
+            .height(COMPOSER_CONTROL_SIZE)
+            .backgroundColor(appearance.tokens().muted)
+            .fontColor(appearance.tokens().foreground)
+            .fontSize(24)
+            .accessibilityText(t('Cancel dictation'))
+            .onClick((): void => {
+              this.discardDictation();
+            })
+          if (this.dictation.status === 'transcribing') {
+            Row()
+              .height(COMPOSER_CONTROL_SIZE)
+              .layoutWeight(1)
+          } else {
+            DictationLevels({ dictation: this.dictation })
+              .height(COMPOSER_CONTROL_SIZE)
+          }
+          Button('■', { type: ButtonType.Circle })
+            .width(COMPOSER_CONTROL_SIZE)
+            .height(COMPOSER_CONTROL_SIZE)
+            .backgroundColor(appearance.tokens().muted)
+            .fontColor(appearance.tokens().foreground)
+            .accessibilityText(t('Stop dictating'))
+            .enabled(this.dictation.status !== 'transcribing')
+            .opacity(this.dictation.status === 'transcribing' ? 0.5 : 1)
+            .onClick((): void => {
+              this.toggleDictation();
+            })
+          this.sendButton()
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, top: 8 })
+      } else {
       Row({ space: 8 }) {
         Button({ type: ButtonType.Circle }) {
           if (this.picking) {
@@ -489,33 +739,37 @@ export struct ThreadPage {
               this.draft = value;
             }
           })
-          .onSubmit((): void => { this.sendDraft(); })
-        Button({ type: ButtonType.Circle }) {
-          if (this.store.uploading > 0) {
-            Text('×').fontSize(24).fontColor(appearance.tokens().primaryForeground)
-          } else if (this.store.send.pending) {
-            LoadingProgress().width(22).height(22).color(appearance.tokens().primaryForeground)
-          } else {
-            SymbolGlyph($r('sys.symbol.arrow_up')).fontSize('20vp').fontColor([appearance.tokens().primaryForeground])
-          }
-        }
-        .id('thread-send')
-        .width(COMPOSER_CONTROL_SIZE)
-        .height(COMPOSER_CONTROL_SIZE)
-        .accessibilityText(t(this.store.uploading > 0 ? 'Cancel' : 'Send'))
-        .backgroundColor(appearance.tokens().primary)
-        .enabled(this.canSend || this.store.uploading > 0)
-        .opacity(this.canSend || this.store.send.pending ? 1 : 0.5)
-        .onClick((): void => {
-          if (this.store.uploading > 0) {
-            this.store.cancelUpload();
-          } else {
-            this.sendDraft();
-          }
-        })
+          .onSubmit((): void => { this.sendOrFinish(); })
+        Button('🎙', { type: ButtonType.Circle })
+          .width(COMPOSER_CONTROL_SIZE)
+          .height(COMPOSER_CONTROL_SIZE)
+          .backgroundColor(appearance.tokens().card)
+          .fontSize(22)
+          .accessibilityText(t('Dictate'))
+          .enabled(!this.store.send.pending)
+          .onClick((): void => {
+            this.toggleDictation();
+          })
+        this.sendButton()
       }
       .width('100%')
       .padding({ left: 16, right: 16, top: 8, bottom: 12 })
+      }
+      if (this.voiceNotice) {
+        Row({ space: 8 }) {
+          ErrorText({ message: this.voiceNotice }).layoutWeight(1)
+          if (this.voiceNoticeAction) {
+            Text(t('Open Voice'))
+              .fontSize(typeScale.secondary.fontSize)
+              .fontColor(appearance.tokens().link)
+              .onClick((): void => {
+                this.stack.pushPathByName('voice', null);
+              })
+          }
+        }
+        .width('100%')
+        .padding({ left: 16, right: 16, bottom: 4 })
+      }
       }
       .width('100%')
       .height('100%')

@@ -92,7 +92,7 @@ export const meView = meOutput.pick({
 const botSchema = procedureOutput(appContract.bots.list).element;
 const groupSchema = procedureOutput(appContract.groups.list).element;
 
-/** A bot row: identity color, unread, preview, run status, pinned order, snooze. */
+/** A bot row: identity color, unread, preview, run status, pinned order, snooze, auto-speak. */
 export const botView = botSchema.pick({
   id: true,
   name: true,
@@ -103,6 +103,8 @@ export const botView = botSchema.pick({
   status: true,
   updatedAt: true,
   snoozedUntil: true,
+  /** M7: whether the bot reads its finished replies aloud (the auto-speak gate). */
+  autoSpeak: true,
 });
 
 /** A group row: no identity color (bots carry the only color), unread, preview, pinned, snooze. */
@@ -293,23 +295,27 @@ export const threadStopOutputView = procedureOutput(appContract.threads.stop);
 export const threadMarkReadInputView = procedureInput(appContract.threads.markRead);
 export const threadMarkReadOutputView = procedureOutput(appContract.threads.markRead);
 
-/** aiConsent/status input (the gate's query): target + uses; routineId/settingsScope unused.
- * The schema's .default({}) is unwrapped — the gate always sends an explicit query. */
+/** aiConsent/status input (the gate's query): target + uses; routineId unused.
+ * The schema's .default({}) is unwrapped — the gate always sends an explicit query. M7's voice
+ * consent names the account's copy of the settings. */
 export const aiConsentStatusInputView = pickRefined(AiConsentQuerySchema, [
   "botId",
   "groupId",
   "uses",
+  "settingsScope",
 ]);
 
 /** aiConsent/status + allow output (decodeAiConsentStatus): the disclosure the prompt renders. */
 export const aiConsentStatusOutputView = AiConsentStatusSchema;
 
 /** aiConsent/allow input: the gate saves one recipient key per Allow (keys 1–200 is the schema's
- * own bound; the gate always sends exactly one). settingsScope is not sent in Phase 1. */
+ * own bound; the gate always sends exactly one). settingsScope rides along with the voice
+ * consent's query (M7). */
 export const aiConsentAllowInputView = procedureInput(appContract.aiConsent.allow).pick({
   scope: true,
   version: true,
   keys: true,
+  settingsScope: true,
 });
 
 /** The full enums the reducer/render dispatch on (unknown values degrade safely). */
@@ -428,6 +434,64 @@ export const modelCatalogEntryView = procedureOutput(appContract.models.list).el
 });
 export const modelsListView = zod.array(modelCatalogEntryView);
 
+// ── M7: the voice surface (settings, read-aloud, dictation) ──
+
+/** voice/catalog: what picks a connection and shapes its form. */
+export const voiceCatalogEntryView = procedureOutput(appContract.voice.catalog).element.pick({
+  id: true,
+  name: true,
+  transcribe: true,
+  keyless: true,
+  speechModel: true,
+  modelConnection: true,
+  freeformVoice: true,
+});
+export const voiceCatalogView = zod.array(voiceCatalogEntryView);
+/** A saved connection (voice/credentials, voice/connect, voice/setSpeechModel): never the key. */
+export const voiceCredentialView = procedureOutput(appContract.voice.connect).pick({
+  id: true,
+  provider: true,
+  hasKey: true,
+  voiceId: true,
+  speechModel: true,
+  transcribe: true,
+  endpoint: true,
+  ttsModel: true,
+  sttModel: true,
+});
+export const voiceCredentialsView = zod.array(voiceCredentialView);
+/** voice/status, voice/setVoice: which voice reads replies and whether it transcribes. */
+export const voiceStatusView = procedureOutput(appContract.voice.status);
+/** voice/voices: the voices a connection offers. */
+export const voiceVoicesView = procedureOutput(appContract.voice.voices);
+/** voice/connect input (carries a superRefine: the self-hosted address is required). */
+export const voiceConnectInputView = pickRefined(procedureInput(appContract.voice.connect), [
+  "provider",
+  "apiKey",
+  "voiceId",
+  "speechModel",
+  "baseUrl",
+  "sttBaseUrl",
+  "sttApiKey",
+  "ttsModel",
+  "sttModel",
+  "scope",
+]);
+export const voiceDisconnectInputView = procedureInput(appContract.voice.disconnect);
+export const voiceSetVoiceInputView = procedureInput(appContract.voice.setVoice).pick({
+  scope: true,
+  voiceId: true,
+  provider: true,
+});
+export const voiceSetSpeechModelInputView = procedureInput(appContract.voice.setSpeechModel).pick({
+  scope: true,
+  provider: true,
+  speechModel: true,
+});
+/** voice/prepare: the text in, the utterances to render out. */
+export const voicePrepareInputView = procedureInput(appContract.voice.prepare);
+export const voicePrepareOutputView = procedureOutput(appContract.voice.prepare);
+
 /** Every snapshot the layer-1 test pins, keyed by the file name under snapshots/. */
 export const snapshotViews: Record<string, z.ZodType> = {
   health: healthView,
@@ -500,6 +564,19 @@ export const snapshotViews: Record<string, z.ZodType> = {
     size: true,
     contentBase64: true,
   }),
+  // M7 voice surface
+  "voice-catalog": voiceCatalogView,
+  "voice-catalog-entry": voiceCatalogEntryView,
+  "voice-credentials": voiceCredentialsView,
+  "voice-credential": voiceCredentialView,
+  "voice-status": voiceStatusView,
+  "voice-voices": voiceVoicesView,
+  "voice-connect-input": voiceConnectInputView,
+  "voice-disconnect-input": voiceDisconnectInputView,
+  "voice-set-voice-input": voiceSetVoiceInputView,
+  "voice-set-speech-model-input": voiceSetSpeechModelInputView,
+  "voice-prepare-input": voicePrepareInputView,
+  "voice-prepare-output": voicePrepareOutputView,
   // M4 settings surface
   "models-list": modelsListView,
   "model-catalog-entry": modelCatalogEntryView,

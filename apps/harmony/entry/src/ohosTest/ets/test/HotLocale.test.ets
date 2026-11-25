@@ -14,7 +14,7 @@ import type { LiveMessage, ThreadSnapshot } from '../../../main/ets/thread/threa
 function row(id: string, pinned: boolean): InboxRow {
   return {
     kind: 'bot', id: id, name: id, color: '', working: false, unread: false,
-    pinned: pinned, preview: '', updatedAt: '2026-11-22T10:00:00Z',
+    pinned: pinned, preview: '', updatedAt: '2026-11-22T10:00:00Z', autoSpeak: false,
   };
 }
 

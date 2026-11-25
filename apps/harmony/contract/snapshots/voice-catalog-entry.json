@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "freeformVoice": {
+      "type": "boolean"
+    },
+    "id": {
+      "type": "string"
+    },
+    "keyless": {
+      "type": "boolean"
+    },
+    "modelConnection": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
+    },
+    "speechModel": {
+      "type": "boolean"
+    },
+    "transcribe": {
+      "type": "boolean"
+    }
+  },
+  "required": ["id", "name", "transcribe"],
+  "type": "object"
+}

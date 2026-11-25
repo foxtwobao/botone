@@ -99,7 +99,7 @@ export default function decodeTest() {
     });
 
     const BOT_JSON = '{"id":"b1","name":"Alpha","color":"#3EC5A8","pinned":true,"unread":true,'
-      + '"preview":"Hi","status":"running","updatedAt":"2026-11-21T10:00:00.000Z","extra":1}';
+      + '"preview":"Hi","status":"running","updatedAt":"2026-11-21T10:00:00.000Z","autoSpeak":true,"extra":1}';
 
     it('bot_decodes_consumed_fields_and_ignores_extras', 0, () => {
       const bot = decodeBot(JSON.parse(BOT_JSON));
@@ -110,6 +110,7 @@ export default function decodeTest() {
       expect(bot!.unread).assertTrue();
       expect(bot!.status).assertEqual('running');
       expect(bot!.snoozedUntil).assertNull();
+      expect(bot!.autoSpeak).assertTrue();
     });
 
     it('bot_snoozed_until_nullable_optional', 0, () => {
@@ -133,7 +134,7 @@ export default function decodeTest() {
     });
 
     it('lists_drop_bad_rows_but_fail_on_non_array', 0, () => {
-      const bots = decodeBotList(JSON.parse(`[${BOT_JSON},{"id":"bad"},${BOT_JSON.replace('"b1"', '"b2"')}]`));
+      const bots = decodeBotList(JSON.parse(`[${BOT_JSON},{"id":"bad"},${BOT_JSON.replace('"id":"b1"', '"id":"b2"')}]`));
       expect(bots !== null).assertTrue();
       expect(bots!.length).assertEqual(2);
       expect(bots![1].id).assertEqual('b2');

@@ -696,6 +696,7 @@ interface InboxBot {
   status: string;
   updatedAt: string;
   snoozedUntil: string | null;
+  autoSpeak: boolean;
 }
 interface InboxGroup {
   id: string;
@@ -765,6 +766,7 @@ export function generateInboxFixture(): InboxFixture {
     status: "idle",
     updatedAt: "2026-11-21T10:00:00.000Z",
     snoozedUntil: null,
+    autoSpeak: false,
     ...over,
   });
   const group = (id: string, over: Partial<InboxGroup> = {}): InboxGroup => ({
@@ -783,7 +785,7 @@ export function generateInboxFixture(): InboxFixture {
     { name: "empty roster", bots: [], groups: [] },
     {
       name: "bots then groups in server order",
-      bots: [bot("b1"), bot("b2")],
+      bots: [bot("b1"), bot("b2", { autoSpeak: true })],
       groups: [group("g1"), group("g2")],
     },
     {

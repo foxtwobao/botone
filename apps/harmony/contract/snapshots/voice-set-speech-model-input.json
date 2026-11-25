@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "provider": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "speechModel": {
+      "maxLength": 64,
+      "type": "string"
+    }
+  },
+  "required": ["provider", "speechModel"],
+  "type": "object"
+}
