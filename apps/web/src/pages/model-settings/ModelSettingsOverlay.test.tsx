@@ -2072,12 +2072,15 @@ it("keeps the deployment default within reach for an admin in account-only mode"
     });
     const view = await renderSettings(true, testQueryClient(), "account", true);
     try {
-      const block = view.container.querySelector('[data-testid="deployment-model-settings"]');
+      const deploymentSettings = () =>
+        view.container.querySelector('[data-testid="deployment-model-settings"]');
       if (isAdmin) {
-        expect(block).not.toBeNull();
-        expect(block?.textContent).toContain("Default for everyone");
+        await vi.waitFor(async () => {
+          await act(flush);
+          expect(deploymentSettings()?.textContent).toContain("Default for everyone");
+        });
       } else {
-        expect(block).toBeNull();
+        expect(deploymentSettings()).toBeNull();
         expect(models.deployment.get).not.toHaveBeenCalled();
       }
     } finally {
