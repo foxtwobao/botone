@@ -20,6 +20,8 @@ import saveControllerTest from './SaveController.test';
 import rosterRealtimeTest from './RosterRealtime.test';
 import threadReducerTest from './ThreadReducer.test';
 import threadRenderTest from './ThreadRender.test';
+import markdownFixtureTest from './MarkdownFixture.test';
+import messageTextTest from './MessageText.test';
 import threadWindowTest from './ThreadWindow.test';
 import threadStreamTest from './ThreadStream.test';
 import threadRealtimeTest from './ThreadRealtime.test';
@@ -37,6 +39,8 @@ export default function testsuite() {
   inboxProjectionTest();
   threadReducerTest();
   threadRenderTest();
+  markdownFixtureTest();
+  messageTextTest();
   threadWindowTest();
   hotLocaleTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,

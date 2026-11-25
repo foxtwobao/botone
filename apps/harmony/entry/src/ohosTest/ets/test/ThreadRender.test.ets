@@ -3,10 +3,12 @@
 // DoD's "伪造新 kind 渲染为占位不崩溃" case; the tier table mirrors the design whitelist.
 import { describe, expect, it } from '@ohos/hypium';
 import { blockView, isDeliveryMessage, messageBlockViews, TIER_FULL, TIER_TEXT, TIER_PLACEHOLDER } from '../../../main/ets/thread/block-view';
-import { markdownPlainText, parseInline, parseMarkdownLite } from '../../../main/ets/thread/markdown-lite';
-import type { InlineSpan } from '../../../main/ets/thread/markdown-lite';
+import { markdownPlainText, mdCompact, parseMarkdown } from '../../../main/ets/thread/markdown-lite';
 import { daySeparatorLabel, messageKey, projectRows } from '../../../main/ets/stores/thread-store';
 import { t } from '../../../main/ets/i18n/i18n';
+import type { MdNode } from '../../../main/ets/thread/markdown-types';
+import { inlineRuns } from '../../../main/ets/features/chat/markdown-runs';
+import type { TextRun } from '../../../main/ets/features/chat/markdown-runs';
 import type { LiveMessage, ThreadSnapshot } from '../../../main/ets/thread/thread-snapshot';
 
 function block(json: string): Record<string, Object> {
@@ -107,39 +109,30 @@ export default function threadRenderTest() {
       expect(narration.activity).assertEqual(false);
     });
 
-    it('markdown_lite_segments', 0, () => {
-      const segments = parseMarkdownLite('# Title\n\nSome **bold** and `code`.\n\n- one\n- two\n\n```\nlet x = 1;\n```\n\n> quoted');
-      expect(segments.length).assertEqual(6);
-      expect(segments[0].kind).assertEqual('heading');
-      expect(segments[0].marker).assertEqual('1');
-      expect(segments[1].kind).assertEqual('paragraph');
-      expect(segments[2].kind).assertEqual('list-item');
-      expect(segments[3].kind).assertEqual('list-item');
-      expect(segments[4].kind).assertEqual('code');
-      expect(segments[4].code).assertEqual('let x = 1;');
-      expect(segments[5].kind).assertEqual('quote');
+    it('markdown_tree_blocks', 0, () => {
+      // The tree the bubble renders: headings, paragraphs, lists, fenced code and quotes in order.
+      const root = parseMarkdown('# Title\n\nSome **bold** and `code`.\n\n- one\n- two\n\n```\nlet x = 1;\n```\n\n> quoted');
+      const types: string[] = root.children.map((child: MdNode): string => child.type);
+      expect(JSON.stringify(types)).assertEqual('["h","p","ul","codeblock","quote"]');
+      expect(root.children[0].level).assertEqual(1);
+      expect(root.children[3].text).assertEqual('let x = 1;\n');
+      // A closing fence is not content.
+      expect(root.children[3].text.includes('```')).assertEqual(false);
     });
 
-    it('inline_bold_italic_code_link', 0, () => {
-      const spans = parseInline('a **b** *c* `d` [e](https://x.com)');
-      // The styled spans carry their flags; the spaces between them stay literal plain spans.
-      const bold = spans.filter((s: InlineSpan): boolean => s.bold);
-      const italic = spans.filter((s: InlineSpan): boolean => s.italic);
-      const code = spans.filter((s: InlineSpan): boolean => s.code);
-      const link = spans.filter((s: InlineSpan): boolean => s.href !== '');
-      expect(bold.length).assertEqual(1);
-      expect(bold[0].text).assertEqual('b');
-      expect(italic.length).assertEqual(1);
-      expect(italic[0].text).assertEqual('c');
-      expect(code.length).assertEqual(1);
-      expect(code[0].text).assertEqual('d');
-      expect(link.length).assertEqual(1);
-      expect(link[0].text).assertEqual('e');
-      expect(link[0].href).assertEqual('https://x.com');
+    it('markdown_inline_spans', 0, () => {
+      const root = parseMarkdown('a **b** *c* `d` [e](https://x.com)');
+      const runs = inlineRuns(root.children[0]);
+      expect(runs.map((run: TextRun): string => run.text).join('')).assertEqual('a b c d e');
+      expect(runs.filter((run: TextRun): boolean => run.bold).map((run: TextRun): string => run.text).join('')).assertEqual('b');
+      expect(runs.filter((run: TextRun): boolean => run.italic).map((run: TextRun): string => run.text).join('')).assertEqual('c');
+      expect(runs.filter((run: TextRun): boolean => run.code).map((run: TextRun): string => run.text).join('')).assertEqual('d');
+      const link = runs.find((run: TextRun): boolean => run.href !== '');
+      expect(link!.text).assertEqual('e');
+      expect(link!.href).assertEqual('https://x.com');
       // An unpaired marker stays literal (no closing delimiter), never a crash.
       expect(markdownPlainText('a * b')).assertEqual('a * b');
       expect(markdownPlainText('plain text only')).assertEqual('plain text only');
-      expect(parseInline('a * b').length > 0).assertEqual(true);
     });
 
     it('markdown_plain_text_strips_markers', 0, () => {
