@@ -8,7 +8,8 @@
 // The other rules the bubble renders with sit beside it, one port per file: @Name mentions
 // (message-mentions), plain-text links (message-links), the one-line preview of bot Markdown
 // (markdown-plain) and its selectable text (selectable-text).
-import { codeBlocksAsWritten, markdownPlainText } from './markdown-lite';
+import { markdownPlainText, parseMarkdown } from './markdown-lite';
+import type { MdNode } from './markdown-types';
 import { selectableTextFromMarkdown } from './selectable-text';
 
 /** Every code block needs a fence, four spaces or a tab; most messages hold none, so they skip the parse. */
@@ -376,5 +377,21 @@ export function markdownCodeBlocks(markdown: string): string[] {
   if (!MAY_HOLD_CODE.test(markdown)) {
     return [];
   }
-  return codeBlocksAsWritten(markdown);
+  // Read off the tree, where each code block carries its code as written (markdown-code.ets):
+  // one parse serves the bubble, the menu and the button.
+  const out: string[] = [];
+  collectCodeBlocks(parseMarkdown(markdown), out);
+  return out;
+}
+
+function collectCodeBlocks(node: MdNode, out: string[]): void {
+  if (node.type === 'codeblock') {
+    if (/\S/.test(node.copyText)) {
+      out.push(node.copyText.replace(/\n$/, ''));
+    }
+    return;
+  }
+  for (const child of node.children) {
+    collectCodeBlocks(child, out);
+  }
 }

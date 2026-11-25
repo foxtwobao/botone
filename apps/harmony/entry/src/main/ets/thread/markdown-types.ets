@@ -42,6 +42,9 @@ export class MdNode {
   level: number = 0;
   /** codeblock: the language the fence names. */
   lang: string = '';
+  /** codeblock: the code as its author wrote it, tabs kept, for the copy button; `text` is how
+   *  the block is shown, with tabs expanded, as every client shows it. */
+  copyText: string = '';
   /** codeblock: the fence character ('`' or '~'); empty for indented code. */
   fence: string = '';
   /** ol: the first item's number. */

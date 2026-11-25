@@ -581,6 +581,7 @@ class MdDocumentParser {
       const node = this.blockNode(block);
       if (block.type === BLOCK_CODE) {
         node.text = this.codeText(block, block.data !== 0);
+        node.copyText = codeBlockAsWritten(this.text, block.vlines, block.data !== 0);
         this.builder.enterBlock(block.type, node);
         if (node.text !== '') {
           // The reference reports the code as one text child as well.
@@ -677,26 +678,6 @@ export function parseMarkdown(text: string): MdNode {
   return new MdDocumentParser(text).parse();
 }
 
-/**
- * The code of each code block, as the copy button copies it (see markdown-code.ets). It is read
- * from the block pass alone, so the tree the bubble renders stays as the parser reports it.
- */
-export function codeBlocksAsWritten(text: string): string[] {
-  const blocks = new MdBlockParser(utf8Encode(text));
-  blocks.parse();
-  const out: string[] = [];
-  for (const block of blocks.blocks) {
-    if (block.type !== BLOCK_CODE) {
-      continue;
-    }
-    const code = codeBlockAsWritten(blocks.text, block.vlines, block.data !== 0);
-    if (/\S/.test(code)) {
-      out.push(code.replace(/\n$/, ''));
-    }
-  }
-  return out;
-}
-
 function compactInto(node: MdNode, parts: string[]): void {
   parts.push('{"type":', JSON.stringify(node.type));
   const text = (key: string, value: string): void => {
@@ -775,4 +756,3 @@ export function markdownPlainText(text: string): string {
   collectPlainText(parseMarkdown(text), parts);
   return parts.join('').replace(/\s+/g, ' ').trim();
 }
-

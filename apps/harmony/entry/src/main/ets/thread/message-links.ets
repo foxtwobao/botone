@@ -102,17 +102,44 @@ export interface UrlMatch {
 export function explicitLinkMatches(text: string): UrlMatch[] {
   const schemed: UrlMatch[] = [];
   const emails: UrlMatch[] = [];
+  // Nothing the patterns read crosses a blank or control character, so for one candidate it is
+  // enough to read to the next one: a window ending there answers for the whole text. A run with
+  // no blank at all is read in windows of TAIL_WINDOW characters, settled by `runHoldsNoCloser`
+  // when it can be, and by the whole run when it cannot.
+  let closerOrBlank: Int32Array | null = null;
+  const runHoldsNoCloser = (from: number): boolean => {
+    if (closerOrBlank === null) {
+      const table = new Int32Array(text.length);
+      let next = -1;
+      for (let off = text.length - 1; off >= 0; off -= 1) {
+        table[off] = next;
+        const ch = text.charCodeAt(off);
+        if (isCloserChar(ch) || isBlankChar(ch)) {
+          next = off;
+        }
+      }
+      closerOrBlank = table;
+    }
+    const at = closerOrBlank[from];
+    return at < 0 || isBlankChar(text.charCodeAt(at));
+  };
+  const tailEndOf = (pos: number, tail: RegExp): number => tailEnd(text, pos, tail, runHoldsNoCloser);
   // Addresses with a scheme. One may only start after the beginning, a separator or a blank;
-  // what follows is then checked once per candidate, from where the scheme ends.
+  // what follows is then checked once per candidate, from where the scheme ends. A candidate
+  // starting inside an address already found is dropped when the two scans are merged below, so
+  // its tail is never checked: on a wall of repeated addresses, one long match stands for all.
+  let covered = 0;
   SCHEMA_SEARCH.lastIndex = 0;
   let found = SCHEMA_SEARCH.exec(text);
   while (found !== null) {
     const schema = (found[2] ?? '').toLowerCase();
     const tail = TAILS[schema];
-    if (tail !== undefined) {
-      tail.lastIndex = found.index + found[0].length;
-      if (tail.exec(text) !== null) {
-        schemed.push(address(text, found.index + found[1].length, tail.lastIndex, schema));
+    const start = found.index + found[1].length;
+    if (tail !== undefined && start >= covered) {
+      const end = tailEndOf(found.index + found[0].length, tail);
+      if (end > 0) {
+        schemed.push(address(text, start, end, schema));
+        covered = end;
       }
     }
     found = SCHEMA_SEARCH.exec(text);
@@ -126,6 +153,56 @@ export function explicitLinkMatches(text: string): UrlMatch[] {
   }
   return earliestFirst(schemed, emails);
 }
+
+/**
+ * Where the address whose scheme ends at `pos` ends, or -1 when there is none. The tail is matched
+ * on a window of the text; a window that ends at a blank (or at the end of the text) is the whole
+ * answer, because nothing the pattern reads crosses one. A window cut short of a blank is the
+ * answer only when the rest of the run holds no closing character at all, so no bracketed group
+ * the pattern tried could have closed beyond the window; otherwise the whole run settles it.
+ */
+function tailEnd(text: string, pos: number, tail: RegExp,
+  runHoldsNoCloser: (from: number) => boolean): number {
+  const size = text.length;
+  const cap = Math.min(size, pos + TAIL_WINDOW);
+  let windowEnd = pos;
+  while (windowEnd < cap && !isBlankChar(text.charCodeAt(windowEnd))) {
+    windowEnd += 1;
+  }
+  const window = text.slice(pos, windowEnd);
+  tail.lastIndex = 0;
+  const matched = tail.exec(window) !== null;
+  // `windowEnd < cap` says the window ended at a blank; `cap === size` says it ended with the text.
+  if (windowEnd < cap || cap === size) {
+    return matched ? pos + tail.lastIndex : -1;
+  }
+  // A window cut short of a blank answers for the run when nothing in it can close a bracketed
+  // group (each such group then fails on the whole run as it did here) and the match ends away
+  // from the cut, where the pattern's greed cannot have stopped only because the window did.
+  if (runHoldsNoCloser(pos) && (!matched || tail.lastIndex + TAIL_EDGE < window.length)) {
+    return matched ? pos + tail.lastIndex : -1;
+  }
+  tail.lastIndex = pos;
+  return tail.exec(text) !== null ? tail.lastIndex : -1;
+}
+
+/** A blank or control character (the `Cc` and `Z` classes the patterns blank at). */
+function isBlankChar(ch: number): boolean {
+  return ch <= 0x1f || (ch >= 0x7f && ch <= 0x9f) || ch === 0x20 || ch === 0xa0 || ch === 0x1680
+    || (ch >= 0x2000 && ch <= 0x200a) || ch === 0x2028 || ch === 0x2029 || ch === 0x202f
+    || ch === 0x205f || ch === 0x3000;
+}
+
+/** A character that closes a bracketed group in a path: `)`, `]`, `}`, `"` or `'`. */
+function isCloserChar(ch: number): boolean {
+  return ch === 41 || ch === 93 || ch === 125 || ch === 34 || ch === 39;
+}
+
+/** How far a tail is read before its answer must be settled by the whole run. */
+const TAIL_WINDOW = 1024;
+
+/** How far from the cut a match must end for the window to stand without checking the run. */
+const TAIL_EDGE = 8;
 
 /** An address and where it opens: the linkifier adds the scheme of one written without it. */
 function address(text: string, index: number, end: number, schema: string): UrlMatch {

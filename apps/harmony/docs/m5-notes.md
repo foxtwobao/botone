@@ -9,8 +9,9 @@ the composer side of mentions stay with M6.
 **Status: code complete and green offline; the final build has not run on the emulator.** The
 device session that verified this milestone ended when the emulator stopped, and the emulator is
 still down, waiting on its owner (see [Device verification](#device-verification)). What that
-leaves open is listed there and must be closed before this merges. A first review of the pull
-request found eleven issues; all are fixed here and each is recorded under
+leaves open is listed there and must be closed before this merges. Two reviews of the pull
+request found eleven and then five issues; all are fixed here except the one limit a second
+review allowed to be disclosed instead (U4, below), and each is recorded under
 [Review fixes](#review-fixes).
 
 ## What the bubble does now
@@ -94,10 +95,11 @@ mark-unread come later.
 
 - **Reply is not listed.** The composer's reply flow is M6. An entry that drew and did nothing
   read as a control that failed.
-- **Copy code** copies the block's code as its author wrote it, tabs included: a Makefile's recipe
-  tab, which mobile's copy button keeps, is not turned into four spaces. The bubble still shows
-  the code with its tabs expanded, as every client shows it. **Copy** copies the message's text as
-  mobile does (`copyableMessageText`, trimmed).
+- **Copy code**, from the menu and from the button on the block itself, copies the code as its
+  author wrote it, tabs included: a Makefile's recipe tab, which mobile's copy button keeps, is
+  not turned into four spaces. The bubble still shows the code with its tabs expanded, as every
+  client shows it. **Copy** copies the message's text as mobile does (`copyableMessageText`,
+  trimmed).
 
 ### Reply line
 
@@ -127,8 +129,19 @@ selection can span paragraphs, list items and code lines.
   `harmony:codegen`, not committed), and `message-links.ets` runs them through the same scan: one
   pass for the schemes, one for addresses written without `mailto:`, then the earliest match wins.
   Which characters belong to an address is the patterns' decision, and the differential test holds
-  the result to the real function on a corpus and on 8,000 seeded random strings. Bare domains stay
-  text (a file name must not link), as on mobile.
+  the result to the real function on a corpus and on 8,000 seeded random strings; a wider one-off
+  run of 48,000 (eight seeds) and 9,000 window-stress strings (long runs, brackets, blanks) also
+  agreed in full while writing this. Bare domains stay text (a file name must not link), as on
+  mobile.
+
+  Two shapes of a long message were still quadratic after that (U1 below): a wall of repeated
+  addresses, where the first match swallows the rest, and a parenthesis left unclosed before a
+  wall of them, where every candidate's check walked the whole run. The tail is now read through a
+  window that ends at the next blank (nothing the patterns read crosses one), or, in a blank-free
+  run, through a window that stands only when no bracketed group in it could have closed beyond
+  the cut; a candidate that starts inside an address already found is never checked at all, since
+  the merge drops it anyway. A run that holds a closing character before an unclosed bracket still
+  checks the whole run for each candidate it starts, as linkify-it itself does there.
 - **One known gap in the mention rules, found while fixing the link scan and left as it was.**
   core does not count `all` or `所有人` inside a link, and its idea of a link includes a bare
   domain (`x.com/path`). The port finds that range from the links the bubble draws, and those
@@ -195,19 +208,28 @@ Three more cases sit beside it, each written to fail on the code it replaced:
   shows that many blanks. Mobile's copy button reads the same block with a second parser
   (markdown-it, through the markdown-display package), which takes the indentation off character
   by character and keeps the tabs left over. `markdown-code.ets` reads each line the second way
-  from its own bytes, and 29 code shapes are compared with the real extractor: a Makefile's recipe
+  from its own bytes, and 35 code shapes are compared with the real extractor: a Makefile's recipe
   tabs, tabs beside spaces, a fence indented by one to three spaces, a fence opened on a list
   item's own line, a fence in a list and in a quote, a list inside a quote, a tilde fence, an
   unclosed one, two blocks in a message, a tab in an info string and on a blank line, a tab inside
   and at the end of a code line, a list item whose own line is code, blank lines inside indented
-  code, CRLF.
-  One limit is known: inside a quote whose fence line is itself indented (`> ```` plus one space),
-  the port leaves one blank more before the code than mobile's copy does. The two parsers disagree
-  there about which blank belongs to the quote mark; tabs are still kept. The fix would mean
-  porting markdown-it's quote indentation, which is not worth it for that case.
+  code, a tab right after a quote mark, CRLF. The value the button on a block copies is the same
+  one, read off the tree the bubble renders, and is compared with the real extractor too; the
+  shapes a quote's indented fence line still gets wrong are pinned by literal expectations.
+  One limit is known, and a second review allowed it to stay disclosed (U4): inside a quote whose
+  fence line is itself indented, the copied indentation can differ from mobile's by the columns
+  the two parsers give the quote mark. With a space after the mark (`>  ```) it is one blank; with
+  a tab wider than one column in the mark's place the tab itself stays whole where mobile's copy
+  may eat columns of it (a fence line reading `>`, tab, fence, over a code line reading `>`, tab,
+  tab, copies the whole `\t\tx` here where mobile's copy eats two columns of the first tab). A tab after
+  the mark on a plain `> ``` fence line is copied whole, as on mobile. Closing this would mean
+  porting markdown-it's quote-mark arithmetic (its `bsCount` and `adjustTab`), which is not worth
+  it for shapes that rare; the divergent shapes are pinned by literal expectations so a change is
+  seen.
 - **Time that grows with the length.** A message may hold 100,000 characters, and the scan that
   found links by restarting at every letter took minutes on one long word. Five long inputs, each
-  with no address, with the start of one at every step, or with addresses throughout, run through
+  with no address, with the start of one at every step, with addresses throughout, with one wall
+  of repeated addresses and with a parenthesis left unclosed before them, run through
   `expectLinearTime`. On the replaced scan the first of them alone ran 69 s before the limit
   stopped it; on this one each takes under 3 ms in node (best of five). The device is unmeasured.
 
@@ -364,6 +386,11 @@ Each is fixed in this tree; what follows says what was wrong and what changed.
 | S7, soft breaks | A soft break inside a paragraph was drawn as a line break; mobile draws a space. A test asserted the difference. | A soft break reads as a space, a hard one (two trailing spaces, a backslash) as a line break. The test asserts both. |
 | S8, promises too wide | The notes said the port used "the mobile call site's flags" and built "the same tree mobile renders from"; mobile resolves `$…$` as math. The render table said mobile plays video; this app's mobile build has no player. | Both passages now say what was checked and where the two differ (above). |
 | Nit | An inline `typeof import(…)` type, and two trailing blank lines. | Top-level `import type`, and a clean `git diff --check`. |
+| U1, link scan quadratic again | Two shapes of a long message still grew quadratically: a wall of repeated addresses (the first match swallows the rest, so every later candidate's check re-walked it) and a parenthesis left unclosed before such a wall (every check walked the whole run looking for its closing bracket). Measured in node: 8.2 s and 7.3 s for 200,000 characters. | The tail is matched through a window that ends at the next blank, which nothing the patterns read crosses; a blank-free run is read through a shorter window that stands only when no bracketed group could have closed beyond the cut, and otherwise settles on the whole run. A candidate that starts inside an address already found is never checked: the merge drops it anyway. Both shapes joined the `expectLinearTime` case, which the old code fails at 7.7 s; the port answers both in under 10 ms, and 48,000 random strings and 9,000 window-stress strings still agree with the linkifier. |
+| U2, contract tests needed the codegen | On a clean checkout that had not run `harmony:codegen`, three contract tests failed: the port is materialized from files the codegen writes. | The test materializes the generated modules itself, from the same generator functions the codegen runs, so any environment that runs vitest runs it. Verified with the generated files moved away. |
+| U3, the button still lost tabs | The copy button on the block itself copied `node.text`, the shown form with tabs expanded; only the menu path had been fixed. | The tree's codeblock node carries the code as written beside the code as shown, and the button copies that. The menu and the button read the same value, one parse serves them, and the differential test compares what the tree carries with the real extractor. |
+| U4, quote-mark tabs | A tab right after a quote mark was cut into blanks (`>		x` copied `  	x`); mobile copies `		x`. | The parser takes a column of such a tab for the mark and the copy rule leaves it in the line, so the column is now given back and the tab is copied whole. The reported shape and its plain-fence variants match mobile; a quote whose fence line is itself indented still differs by the mark's columns, disclosed above, and pinned by literal expectations rather than a comparison, since the two parsers disagree there. |
+| U5, trailing blank lines | `git diff --check origin/main...<head>` flagged a blank line at the end of two files. | Both trimmed; the check runs clean against the branch head. |
 
 The menu rule lost its `readOnly` and label arguments with the Reply entry: nothing read them.
 `MessageMenuLabels` is gone with it.

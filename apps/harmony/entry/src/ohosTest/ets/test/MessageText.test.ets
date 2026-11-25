@@ -13,6 +13,7 @@ import {
 } from '../../../main/ets/thread/message-mentions';
 import type { MemberLike, UserMentionTarget, UserTextRun } from '../../../main/ets/thread/message-mentions';
 import { plainTextLinkParts } from '../../../main/ets/thread/message-links';
+import { parseMarkdown } from '../../../main/ets/thread/markdown-lite';
 import {
   blockText,
   channelMessageSender,
@@ -190,6 +191,10 @@ export default function messageTextTest() {
       expect(messageMenu(makefile).code).assertEqual('build:\n\techo hi');
       expect(markdownCodeBlocks('- item\n\n  ```\n  \techo\n  ```')[0]).assertEqual('\techo');
       expect(markdownCodeBlocks('```\n```').length).assertEqual(0);
+      // The copy button on the block itself copies the same tabs: the codeblock node carries them.
+      const tree = parseMarkdown('```make\nbuild:\n\techo hi\n```');
+      expect(tree.children[0].copyText).assertEqual('build:\n\techo hi\n');
+      expect(tree.children[0].text).assertEqual('build:\n    echo hi\n');
     });
   });
 }

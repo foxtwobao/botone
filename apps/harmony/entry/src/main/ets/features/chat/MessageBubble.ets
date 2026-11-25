@@ -95,7 +95,10 @@ struct InlineRuns {
  */
 @ComponentV2
 struct CodeBlock {
+  /** The code as the block shows it, tabs expanded. */
   @Param code: string = '';
+  /** The code as its author wrote it, tabs kept: what the copy button puts on the clipboard. */
+  @Param copyCode: string = '';
   @Local copied: boolean = false;
   private restoreTimer: number = -1;
   /** False once the block is gone: the clipboard may still answer a copy started before. */
@@ -109,7 +112,7 @@ struct CodeBlock {
   }
 
   private copy(): void {
-    void putClipboard(this.code).then((copied: boolean): void => {
+    void putClipboard(this.copyCode).then((copied: boolean): void => {
       if (!copied || !this.mounted) {
         return;
       }
@@ -181,7 +184,7 @@ struct MarkdownNode {
         weight: FontWeight.Bold,
       })
     } else if (node.type === 'codeblock') {
-      CodeBlock({ code: node.text })
+      CodeBlock({ code: node.text, copyCode: node.copyText })
     } else if (node.type === 'blockquote' || node.type === 'quote' || node.type === 'admonition') {
       // The bar is the quote's own left border, so it is as tall as the quote whatever that is
       // (a separate bar would need a share of a height the quote itself defines).
@@ -887,4 +890,3 @@ export struct MessageBubble {
     }
   }
 }
-

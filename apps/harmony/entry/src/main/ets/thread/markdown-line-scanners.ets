@@ -87,6 +87,9 @@ export class MdVerbatimLine {
   /** Where the line starts in the document, and where its content begins after the `>` marks. */
   start: number = 0;
   afterMarks: number = 0;
+  /** Columns the parser took off for a `>` mark's optional blank that the copy rule leaves in:
+   *  a tab wider than one column after a `>`. */
+  unmatchedMarkBlanks: number = 0;
 }
 
 /** What one line of the document is (MD_LINE_ANALYSIS). */
@@ -99,6 +102,7 @@ export class MdLineAnalysis {
   indent: number = 0;
   start: number = 0;
   afterMarks: number = 0;
+  unmatchedMarkBlanks: number = 0;
 }
 
 /** An open container (a block quote, or a list and the item being read). */

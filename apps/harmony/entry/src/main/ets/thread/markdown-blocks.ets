@@ -161,6 +161,7 @@ export class MdBlockParser {
       verbatim.end = line.end;
       verbatim.start = line.start;
       verbatim.afterMarks = line.afterMarks;
+      verbatim.unmatchedMarkBlanks = line.unmatchedMarkBlanks;
       block.vlines.push(verbatim);
     } else {
       const text = new MdLine();
@@ -366,6 +367,7 @@ export class MdBlockParser {
 
     line.start = beg;
     line.afterMarks = 0;
+    line.unmatchedMarkBlanks = 0;
     line.indent = this.scan.lineIndentation(totalIndent, off);
     off = this.scan.scanEnd;
     totalIndent += line.indent;
@@ -379,9 +381,13 @@ export class MdBlockParser {
         off += 1;
         totalIndent += 1;
         // The `>` and the one blank that may follow it belong to the quote, not to the line.
+        // A blank the copy rule does not count for the mark (a tab wider than one column) is
+        // still one column short in `indent` below, so the column is noted to be given back.
         line.afterMarks = off - beg;
-        if (off < size && text[off] === 32) {
+        if (off < size && (text[off] === 32 || (text[off] === 9 && totalIndent % 4 === 3))) {
           line.afterMarks += 1;
+        } else if (off < size && (text[off] === 32 || text[off] === 9)) {
+          line.unmatchedMarkBlanks += 1;
         }
         line.indent = this.scan.lineIndentation(totalIndent, off);
         off = this.scan.scanEnd;

@@ -25,6 +25,8 @@ import type * as messageLinks from "../entry/src/main/ets/thread/message-links.e
 import type * as messageMentions from "../entry/src/main/ets/thread/message-mentions.ets";
 import type * as messageText from "../entry/src/main/ets/thread/message-text.ets";
 import type * as selectableText from "../entry/src/main/ets/thread/selectable-text.ets";
+import { linkifyPatterns, renderLinkifyPatterns } from "../scripts/gen-linkify-patterns.ts";
+import { loadTables, renderTables } from "../scripts/gen-markdown-tables.ts";
 
 const mobileRequire = await vi.hoisted(async () =>
   (await import("node:module")).createRequire(
@@ -93,7 +95,10 @@ const appRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = mkdtempSync(path.join(tmpdir(), "harmony-mt-port-"));
 const threadDir = path.join(appRoot, "entry/src/main/ets/thread");
 for (const file of readdirSync(threadDir)) {
-  if (!/^(?:markdown-|message-|selectable-text|link-patterns)[\w.-]*\.ets$/.test(file)) continue;
+  // The generated modules are rebuilt below from their generators, so a clean checkout that has
+  // not run `harmony:codegen` runs this test the same as one that has.
+  if (!/^(?:markdown-|message-|selectable-text)[\w.-]*\.ets$/.test(file) || /generated/.test(file))
+    continue;
   writeFileSync(
     path.join(outDir, file.replace(/\.ets$/, ".ts")),
     readFileSync(path.join(threadDir, file), "utf8")
@@ -101,6 +106,15 @@ for (const file of readdirSync(threadDir)) {
       .replace(/Record<string, Object>/g, "Record<string, object>"),
   );
 }
+writeFileSync(
+  path.join(outDir, "link-patterns.generated.ts"),
+  renderLinkifyPatterns(linkifyPatterns()),
+);
+const tables = loadTables();
+writeFileSync(
+  path.join(outDir, "markdown-tables.generated.ts"),
+  renderTables(tables.maps, tables.entities),
+);
 // The bubble's flat run list lives beside the bubble; it reads the parser like the ports do.
 writeFileSync(
   path.join(outDir, "markdown-runs.ts"),
@@ -165,6 +179,21 @@ describe("harmony message-text port", () => {
       )),
     ) as Port;
     expect(chatUi.plainTextLinkParts, "the real link splitter loaded").toBeTypeOf("function");
+
+    const portLite = await import(pathToFileURL(path.join(outDir, "markdown-lite.ts")).href);
+    /** What the copy button on a code block copies: the code each codeblock node carries written. */
+    const codeBlocksOfTree = (markdown: string): string[] => {
+      const found: string[] = [];
+      const walk = (node: { type: string; copyText: string; children: unknown[] }): void => {
+        if (node.type === "codeblock") {
+          if (/\S/.test(node.copyText)) found.push(node.copyText.replace(/\n$/, ""));
+          return;
+        }
+        for (const child of node.children) walk(child as typeof node);
+      };
+      walk(portLite.parseMarkdown(markdown) as never);
+      return found;
+    };
 
     const LABELS = { photo: "Photo", attachment: "Attachment", message: "Message" };
 
@@ -651,7 +680,30 @@ describe("harmony message-text port", () => {
       "    a\n\t\t\n    b",
       "> - ```\n>   \tx\n>   ```",
       "- > ```\n  > \tx\n  > ```",
+      // A tab right after the quote mark: the parser takes a column of it for the mark, the
+      // copy rule leaves the tab in the line, so the tab is copied whole.
+      "> ```\n>\t\tx\n> ```",
+      "> ```\n>\tx\n> ```",
+      "> ```\n> \tx\n> ```",
+      "> ```\n>\t \tx\n> ```",
+      "> ```\n>\t\t\ty\n> ```",
+      "> > ```\n> >\t\tx\n> > ```",
     ];
+    // Inside a quote whose fence line is itself indented (`>  ``` or a tab after the mark) the
+    // copied indentation can differ from mobile's by the columns the two parsers give the quote
+    // mark; m5-notes records it. These pin what this port does, so a change is seen.
+    for (const [markdown, expected] of [
+      [">  ```\n>\t\tx\n>  ```", ["\t\tx"]],
+      [">\t```\n>\t\tx\n>\t```", ["\t\tx"]],
+      [">  ```\n>  x\n>  ```", [" x"]],
+    ] as const) {
+      check(
+        "markdownCodeBlocksInsideAnIndentedQuote",
+        markdown,
+        [...expected],
+        port.markdownCodeBlocks(markdown),
+      );
+    }
     for (const markdown of CODE_CASES) {
       check(
         "markdownCodeBlocks",
@@ -659,13 +711,19 @@ describe("harmony message-text port", () => {
         realCodeBlocks(markdown),
         port.markdownCodeBlocks(markdown),
       );
+      // The same value read off the tree, where the copy button on the block itself takes it.
+      check(
+        "codeBlocksAsTheTreeCarriesThem",
+        markdown,
+        realCodeBlocks(markdown),
+        codeBlocksOfTree(markdown),
+      );
     }
 
     // The flat run list the bubble draws (Span takes no children, so nested emphasis flattens):
     // every run keeps the styles of all its enclosing nodes, and neighbours with the same styles
     // merge. Checked against the parser's own tree, which the fixture already pins.
     const runs = await import(pathToFileURL(path.join(outDir, "markdown-runs.ts")).href);
-    const portLite = await import(pathToFileURL(path.join(outDir, "markdown-lite.ts")).href);
     /** [text, bold, italic, strike, code, href] as the bubble draws it. */
     type Shape = [string, number, number, number, number, string];
     const runCases: [string, Shape[]][] = [
@@ -877,14 +935,20 @@ describe("harmony message-text port", () => {
   });
 
   it("finds the links of a long message in time that grows with its length", () => {
-    // Sized so that a scan which restarts at every letter takes minutes: a send may hold 100,000.
+    // Sized so that a scan that restarts at every letter takes minutes: a send may hold 100,000.
     // Plain text has no address anywhere, and one that looks like the start of one at every step.
+    // The wall of repeated addresses is one address to the linkifier (the first swallows the
+    // rest), and the unclosed parenthesis makes every candidate's check walk the whole run: both
+    // were quadratic before the tail was read through a window and covered candidates were
+    // skipped.
     for (const text of [
       "a".repeat(100_000),
       "no links here ".repeat(7_700),
       "a@".repeat(50_000),
       "https:// ".repeat(12_500),
       "https://a.b/c ".repeat(7_100),
+      "https://x.com/".repeat(12_500),
+      `https://x.com/${"(".repeat(60)}a`.concat("https://x.com/".repeat(12_000)),
     ]) {
       expectLinearTime(() => port.plainTextLinkParts(text));
     }

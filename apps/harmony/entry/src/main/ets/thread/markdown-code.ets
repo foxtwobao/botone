@@ -31,7 +31,9 @@ function codeLine(text: Uint8Array, line: MdVerbatimLine): string {
   for (const width of widths) {
     total += width;
   }
-  let toEat = total - line.indent;
+  // The quote marks' unmatched blanks go back: the parser took a column for each, the copy
+  // rule the code is read by leaves it in the line.
+  let toEat = total - line.indent - line.unmatchedMarkBlanks;
   let at = marks;
   for (const width of widths) {
     if (toEat <= 0) {
