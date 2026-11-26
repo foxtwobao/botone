@@ -9,7 +9,6 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { MAX_TRANSCRIBE_BYTES } from "@rakazo/adapters";
 import { voiceConnectionForm } from "@rakazo/contracts";
 import * as core from "@rakazo/core";
 import { deferred } from "@rakazo/core/test-async";
@@ -56,6 +55,7 @@ import {
   runDictationScenario,
   runSpeechScenario,
 } from "../scripts/voice-scenarios";
+import { readMaxTranscribeBytes } from "../scripts/voice-transcribe-limit";
 
 const appRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const voiceDir = path.join(appRoot, "entry/src/main/ets/voice");
@@ -427,11 +427,12 @@ describe("voice ports against the live references", () => {
   });
 
   it("a dictated clip at its cap stays inside the server's transcription limit", () => {
+    const MAX_TRANSCRIBE_BYTES = readMaxTranscribeBytes();
     const cap = clipLimit.dictationCapMs(MAX_TRANSCRIBE_BYTES);
-    // Header included it fits, and one more millisecond would not: the cap is the longest that does.
-    expect(clipLimit.WAV_HEADER_BYTES + cap * clipLimit.CLIP_BYTES_PER_MS).toBeLessThan(
-      MAX_TRANSCRIBE_BYTES,
-    );
+    const wavBytes = clipLimit.WAV_HEADER_BYTES + cap * clipLimit.CLIP_BYTES_PER_MS;
+    expect(clipLimit.WAV_HEADER_BYTES).toBe(44);
+    expect(wavBytes).toBe(8_388_588);
+    expect(wavBytes).toBeLessThan(MAX_TRANSCRIBE_BYTES);
     expect(clipLimit.WAV_HEADER_BYTES + (cap + 1) * clipLimit.CLIP_BYTES_PER_MS).toBeGreaterThan(
       MAX_TRANSCRIBE_BYTES,
     );

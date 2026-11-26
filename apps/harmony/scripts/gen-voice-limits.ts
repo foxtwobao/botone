@@ -4,7 +4,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { MAX_TRANSCRIBE_BYTES } from "@rakazo/adapters";
+import { readMaxTranscribeBytes } from "./voice-transcribe-limit.ts";
+
+const MAX_TRANSCRIBE_BYTES = readMaxTranscribeBytes();
 
 const outFile = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

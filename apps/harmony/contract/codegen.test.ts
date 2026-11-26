@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { toArkColor } from "../scripts/color.ts";
 import { fixtureLiterals } from "../scripts/fixture-literals.ts";
+import { readMaxTranscribeBytes } from "../scripts/voice-transcribe-limit.ts";
 
 describe("token codegen color conversion", () => {
   it("moves the CSS alpha channel to the ArkUI front", () => {
@@ -32,5 +33,16 @@ describe("fixture embedding", () => {
       expect(last < 0xd800 || last > 0xdbff).toBe(true);
     }
     expect(fixtureLiterals("")).toEqual([]);
+  });
+});
+
+describe("voice transcription limit codegen", () => {
+  it("reads only a literal multiplication from the server source", () => {
+    expect(readMaxTranscribeBytes("export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;\n")).toBe(
+      8_388_608,
+    );
+    expect(() =>
+      readMaxTranscribeBytes("export const MAX_TRANSCRIBE_BYTES = getLimit();\n"),
+    ).toThrow("Unsupported MAX_TRANSCRIBE_BYTES expression");
   });
 });

@@ -5,20 +5,21 @@ dictation into the composer, read-aloud from a message, the bot's device voice, 
 settings page. Decisions were written down before any code in [m7-scope.md](m7-scope.md); this
 file records what shipped, what the device showed, and what the scope could not cover.
 
-**Status: verified on the emulator.** Hypium 218/218 (17 cases added after the second review
-round), the capability probe's findings hold in the shipped code, every walkthrough row measured,
-15 captures in `apps/harmony/screenshots/` retaken on the rebased head, each opened and checked
-after it was taken.
+**Status: verified on the emulator.** Hypium 232/232 (17 cases added after the second review
+round and 14 after the fourth), the capability probe's findings hold in the shipped code, every
+walkthrough row measured, 15 captures in `apps/harmony/screenshots/` retaken on the rebased head,
+each opened and checked after it was taken.
 
 ## What ships
 
 | Layer | File | What it does |
 | --- | --- | --- |
-| rules | `voice/speech-locale.ets`, `voice/speech-text.ets`, `voice/auto-speak.ets`, `voice/voice-plan.ets`, `voice/voice-assignment.ets`, `voice/bot-voices.ets`, `voice/stop-signal.ets`, `voice/draft-dictation.ets`, `voice/voice-settings-model.ets` | core's and mobile's pure rules, ported value-for-value: locale tags, speakable text and utterances, the auto-speak gate, the voice plan, the unused-voice picker, the bot-voice choice, the composer's draft merge, the settings form rules |
+| rules | `voice/speech-locale.ets`, `voice/speech-text.ets`, `voice/auto-speak.ets`, `voice/voice-plan.ets`, `voice/voice-assignment.ets`, `voice/bot-voices.ets`, `voice/stop-signal.ets`, `voice/draft-dictation.ets`, `voice/voice-settings-model.ets`, `voice/clip-limit.ets` | core's and mobile's pure rules, ported value-for-value: locale tags, speakable text and utterances, the auto-speak gate, the voice plan, the unused-voice picker, the bot-voice choice, the composer's draft merge, the settings form rules; and the recording cap a server's transcription limit allows |
 | state machines | `voice/dictation.ets`, `voice/speech.ets`, `voice/device-voice.ets` | mobile's dictation session (silence endpoint, carried/heard folding, restart backoff) and speech playback (one control, queue, session switch), with every recognizer, timer, engine and store injected |
-| engines | `voice/device-recognizer.ets`, `voice/device-speech.ets`, `voice/voice-clip.ets`, `voice/clip-player.ets`, `voice/microphone.ets`, `voice/voice-prefs.ets`, `voice/bot-voices-store.ets`, `voice/install.ets` | CoreSpeechKit's recognizer and synthesizer, the AudioCapturer recording (WAV-wrapped PCM), the AVPlayer clip player, the microphone permission, the preferences file for the choices, the wiring at app start |
+| engines | `voice/device-recognizer.ets`, `voice/device-speech.ets`, `voice/voice-clip.ets`, `voice/clip-player.ets`, `voice/microphone.ets`, `voice/voice-prefs.ets`, `voice/bot-voices-store.ets`, `voice/install.ets` | CoreSpeechKit's recognizer and synthesizer, the AudioCapturer recording (WAV-wrapped PCM), the AVPlayer clip player, the microphone's permission and its capturer behind one seam, the preferences file for the choices, the wiring at app start |
 | transport | `net/http.ets` (extended), `voice/hosted-voice.ets`, `net/consent.ets` (extended), `contract/decode-voice.ets` | one byte-body HTTP request for the speech clip, `voice/prepare`, `/api/voice/speak`, `/api/voice/transcribe`, the voice-use consent gate, the voice contract decoders |
 | UI | `features/chat/composer-dictation.ets`, `features/chat/voice-player-bar.ets`, `features/settings/VoicePage.ets`, `stores/voice-settings-store.ets`, `features/chat/ThreadPage.ets` (extended), `features/chat/MessageBubble.ets` (extended), `pages/Index.ets`, `features/settings/SettingsPage.ets`, `uikit/controls.ets` (Field gains `onSubmit`) | the mic button and the dictation bar, the playback bar in the root column, the Voice settings page, the Speak message menu entry, the auto-speak wiring |
+| codegen | `scripts/gen-voice-limits.ts`, `voice/transcribe-limit.generated.ets` | the server's transcription limit, read at every build from the package the API's transcribe route reads it from |
 | fixture | `scripts/voice-scenarios.ts`, `scripts/voice-scenario-list.ts`, `scripts/voice-fixture-corpora.ts`, `scripts/gen-voice-fixtures.ts`, `scripts/voice-fixture.mjs`, `contract/voice-fixtures.test.ts`, `contract/voice-port.test.ts`, `contract/fixtures/voice.json` | the scenario runner and its lists, the corpora, the generator (its own file, its mocks out of the other generators' graph), the differential replay, and the fixture server's voice routes |
 
 ## How the two paths work
@@ -77,11 +78,11 @@ collects.
 
 | Gate | Result |
 | --- | --- |
-| `pnpm exec vitest run apps/harmony/contract` | **131 / 131** |
-| `pnpm checks` | all green (160) |
-| `pnpm lint` (Biome) | 0 errors (25 warnings and 24 infos; Biome does not read `.ets`) |
+| `pnpm exec vitest run apps/harmony/contract` | **133 / 133** |
+| `pnpm checks` | all green (170) |
+| `pnpm lint` (Biome) | 0 errors (26 warnings and 24 infos; Biome does not read `.ets`) |
 | `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL** after `devecocli build clean`: **no ArkTS warning in any file M7 added or changed** |
-| hypium on the emulator | **218 / 218** (the full suite, fixture servers on 8787/8788) |
+| hypium on the emulator | **232 / 232** (the full suite, fixture servers on 8787/8788) |
 | screenshots `apps/harmony/screenshots/m7-*.png` | 15 captures, one for each row below that names one; each opened and checked after it was taken |
 
 "No warning in an M7 file" is not "no warning in the build". Six warnings remain, all in files
@@ -90,10 +91,12 @@ from earlier milestones that M7 never touched, and they are left as they are:
 "Function may throw" in `net/asset-store.ets:56`, `net/server-store.ets:32` and `:33` and
 `net/sse.ets:200` (M1). The test build adds `ohosTest/ets/test/SseSmoke.test.ets:33` (M0).
 
-The emulator is the owner-started `devphone`; no power or license was touched, and the HAPs were
-debug-signed with a borrowed local config, reverted after each build. In this round
-`devecocli signature generate` answered that the CLI's online services are not available in its
-detected region, so the borrowed config names signing material an earlier session had generated.
+The emulator is the `devphone` instance: owner-started in the earlier rounds, and in the fourth
+round started and stopped by the round itself once the owner had accepted the emulator's license
+(see below). No power state and no license was touched by the round, and the HAPs were
+debug-signed with a borrowed local config, reverted after each build. `devecocli signature
+generate` answered that the CLI's online services are not available in its detected region, so
+the borrowed config names signing material an earlier session had generated.
 
 The full hypium suite ran three times on the fixed code: 214/214, 213/214, then 214/214 on the
 same build. The one failure was `offline_read_keeps_the_last_rows_painted` in
@@ -279,35 +282,62 @@ keeping its words: the probe is the evidence, and a physical device is still the
 
 ## Review findings (Codex's fourth round: the asynchronous races beside the dictation)
 
-A final read of the whole milestone found eight more defects beside the recognizer's lifecycle:
-six waits whose late answer was not checked against the caller that asked for it, and two
-functional bugs in the Voice settings page. Each is fixed the way N1 was (the third round's
-microphone opened for a cancelled segment): whatever was asked for is checked, after every wait,
-against the one that asked, and whatever arrives for a caller that is gone is let go of, not used.
+A last read of the whole milestone found eight more defects beside the recognizer's lifecycle:
+five asynchronous races, a recording cap that outran the server's limit, and two bugs in the Voice
+settings page. Each race is fixed the way N1 was (the third round's microphone opened for a
+cancelled segment): whatever was asked for is checked, after every wait, against the one that
+asked, and whatever arrives for a caller that is gone is let go of, not used.
 
 | # | Finding | Fix | Hypium case |
 | --- | --- | --- | --- |
 | F1 | A microphone frame was written into whichever segment ran when it arrived. A microphone let go of with a cancelled segment could still deliver frames it had queued, and they landed in the segment started after it. | A frame counts only while its microphone is the live one (`capture`). The callback belongs to the microphone opened for a segment, and a segment that rotates onto the same microphone keeps it; the microphone let go of when listening ends, or stopped after its segment ended, delivers nothing from then on. | `a_frame_the_old_microphone_delivers_after_its_cancel_reaches_no_segment` (`DictationHardware`) |
-| F2 | Stop, the app leaving the foreground, or a newer speech during the synthesizer's asynchronous creation: once the engine arrived, `DeviceSpeech.speak` said the utterance anyway, and a replaced speech's engine stayed open beside the new one's. | A speech asks with a ticket (`DeviceSpeech.ticket()`), taken before its last wait, the voice listing. A stop or a release moves the synthesizer on, and a ticket from before is answered with nothing: no engine is asked for, and one that arrives late is shut down at once, since few may exist device-wide. The engine factory is a seam (`setEngineFactory`). | `a_stop_while_the_engine_is_being_created_shuts_the_late_engine_down`, `a_release_while_the_engine_is_being_created_shuts_the_late_engine_down`, `a_stop_that_lands_before_the_engine_is_asked_for_leaves_the_speech_without_one`, `a_replaced_speechs_late_engine_is_shut_down_and_the_new_speech_alone_speaks` (`DeviceSpeechLifecycle`) |
+| F2 | Stop, the app leaving the foreground, or a newer speech during the synthesizer's asynchronous creation: once the engine arrived, `DeviceSpeech.speak` said the utterance anyway, and a replaced speech's engine stayed open beside the new one's. | A speech asks the synthesizer with a ticket (`DeviceSpeech.ticket()`), taken before its last wait, the voice listing. A stop or a release moves the synthesizer on, and a ticket from before is answered with nothing: no engine is asked for, and one that arrives late is shut down at once, since few may exist device-wide. The engine factory is a seam (`setEngineFactory`). | `a_stop_while_the_engine_is_being_created_shuts_the_late_engine_down`, `a_release_while_the_engine_is_being_created_shuts_the_late_engine_down`, `a_stop_that_lands_before_the_engine_is_asked_for_leaves_the_speech_without_one`, `a_replaced_speechs_late_engine_is_shut_down_and_the_new_speech_alone_speaks` (`DeviceSpeechLifecycle`) |
 | F3 | A cancel that landed while the recording's AudioCapturer was being created still started it: the recorder began after the session had ended, then stopped and released. | The cancel is read again once the microphone answers. A cancelled session releases the microphone and returns nothing: no listener, no start. The microphone is a seam (`setClipMicrophone`), the same `CaptureMic` the recognizer records through, so the capturer and its two helpers moved from `device-recognizer.ets` to `microphone.ets`. | `a_cancel_while_the_microphone_is_being_opened_starts_no_recording` (`ClipRecording`) |
-| F4 | The hosted transcription had no cancel. After the microphone closed, a cancel or the app leaving the foreground ended the session but not the consent read or the request, so the recording could still leave, and the request ran on to its answer or its 70 s timeout. | The hosted session owns one `RequestCancellation`, which its `StopSignal` cancels. It runs through the consent read, the check before the audio is encoded, and the transfer (`transcribeRecording`). Leaving the thread and backgrounding cancel the session, so they end the request too. | `a_cancel_while_the_transcriptions_consent_is_pending_keeps_the_recording_home`, `backgrounding_while_the_transcription_is_in_flight_abandons_the_request` (`VoiceHostedAgainstFixtureServer`) |
+| F4 | The hosted transcription had no cancel. After the microphone closed, a cancel or the app leaving the foreground ended the session but not the consent read or the request, so the request ran on to its answer or its 70 s timeout. | The hosted session owns one `RequestCancellation`, which its `StopSignal` cancels. It runs through the consent read, the check before the audio is encoded, and the transfer (`transcribeRecording`). Leaving the thread and backgrounding cancel the session, so they end the request too. The transcriber is a seam (`setDictationTranscriber`). | `a_cancel_while_the_transcriptions_consent_is_pending_gives_it_up_at_once`, `a_cancel_while_the_transcription_is_in_flight_gives_it_up_at_once` (the real transport against the fixture server), `backgrounding_while_the_transcription_is_in_flight_cancels_its_request` (the composer's wiring) (`VoiceHostedAgainstFixtureServer`) |
 | F5 | The five-minute cap produced a 9,600,044-byte WAV, and the server transcribes at most `MAX_TRANSCRIBE_BYTES` (8 MiB): every recording past 4:22 failed. | The cap is computed from the server's own constant (`dictationCapMs` in `voice/clip-limit.ets`): 262,142 ms, a WAV of 8,388,588 bytes. The constant reaches the app by codegen, and the microphone's buffers do not wait for the timer, so the frame that would pass the cap ends the recording itself, keeping the words. | `a_recording_that_reaches_its_cap_stops_and_keeps_its_words` (`ClipRecording`); on the vitest side `a dictated clip at its cap stays inside the server's transcription limit` (`voice-port.test`) |
 | F6 | Pause during the first clip's load reached the player in a state that cannot take it, and the kit answers such a control with a rejected promise, which nothing handled. Resume and Stop during the load had the same hole. | The player's state is followed, and a control reaches it only from a state the kit lists for it; the answer of each one is handled (`attempt`), a pause or stop being logged and a prepare or play failing the clip. A pause asked for while the clip loads is the session's to keep: the clip then does not start. The player factory is a seam (`setClipPlayerFactory`). | `a_pause_asked_before_the_first_clip_loads_holds_the_clip_until_a_resume`, `a_resume_or_a_stop_asked_while_the_clip_loads_reaches_no_control_the_player_refuses` (`ClipPlayerLifecycle`) |
 | F7 | An edited Speech model was never saved: the guard compared the submitted value with the form's, which is the same value once the field is edited, so no request left. | The guard compares with the saved credential alone. | `an_edited_speech_model_is_saved` (`VoiceSettingsAgainstFixtureServer`) |
-| F8 | Hear a sample always asked for the account's copy of the voice settings, while the page shows whichever copy applies in the selected Space: a Space with its own voice heard another copy's sample. | The sample names no scope, as the page's own reads and writes do. The server's prepare and speak take no provider: a sample speaks with the copy's default voice, as it does on mobile. | `the_sample_names_the_same_copy_of_the_settings_as_the_page_reads` (`VoiceSettingsAgainstFixtureServer`) |
+| F8 | Hear a sample always asked for the account's copy of the voice settings, while the page shows whichever copy applies in the selected Space: a Space with its own voice heard another copy's sample. | The sample names no scope, as the page's own reads and writes do. The server's `voice/prepare` and `/api/voice/speak` take no explicit connection, so a sample speaks with the account- or Space-effective connection. A page-selected connection that is not in effect cannot be previewed independently; that is M11 work. | `the_sample_names_the_same_copy_of_the_settings_as_the_page_reads` (`VoiceSettingsAgainstFixtureServer`) |
+
+**Red before, green after.** The fourteen cases ran on a build that kept every seam of the fixes
+and none of their behaviour: `DictationHardware` 11 with 1 failure, `DeviceSpeechLifecycle` 4 with
+4, `ClipRecording` 2 with 2, `ClipPlayerLifecycle` 2 with 2, `VoiceHostedAgainstFixtureServer` 10
+with 3 and `VoiceSettingsAgainstFixtureServer` 2 with 2. Each failure names its defect: the old
+microphone's frame was written into the next segment; the late engine took a listener and spoke
+(`["listener","speak Hello there."]` where `["shutdown"]` was due); a stop before the engine was
+asked for still asked (`1 equals 0`); the recorder started after its cancel
+(`["frames","start","stop","release"]` for `["release"]`); the cap's WAV was 9,600,044 bytes for
+the server's 8,388,608; the player was asked to `pause@idle`, and to play and stop while loading;
+a cancelled transcription was still pending 300 ms later, and the composer's cancel never reached
+it; no save went out for the speech model; and the sample's scope was `account`. The seventeen
+cases beside them passed on that build too. On the fixed build the same six describes ran 11, 4,
+2, 2, 10 and 2 of theirs, and the full suite 232/232 twice.
+
+**The emulator this round.** `devphone` was stopped when the round began, and `devecocli emulator
+start devphone` answered `Emulator license agreements are not accepted yet`: the record at
+`~/Library/Caches/Huawei/Emulator26.0/.emu_config` held `disagree` for both agreements, and was
+written again that way twice during the round by no command of it. Accepting is the owner's; once
+the record read `agree`, the round started the instance, ran the device work, and stopped it.
+
+**Why the transcription's cases read the client.** The kit's `HttpRequest.destroy()` ends a
+request for the app at once, but on this emulator the server does not see the connection close
+until the process goes: a fixture-side "abandoned" flag never turned within a case, on the fixed
+code as on the red. So the two transport cases hold the server's answer (the consent read for a
+second, the transcription until released) and read that the transcription settled within 300 ms of
+its cancel, and the third hands the composer a transcriber that answers only to its cancellation.
+`VoiceHosted.test.ets` and `VoiceSettings.test.ets` now switch to the fixture server in
+`beforeAll`, as the other suites against it do: run alone after a walkthrough, the hosted describe
+used to talk to whatever server the app had selected.
 
 **Where the transcription limit lives.** `MAX_TRANSCRIBE_BYTES` is defined in
-`packages/adapters/src/voice/voice-factory.ts`, not in `packages/contracts`: the API's transcribe
-route reads it there, and nothing in the contracts package names it. So `gen-voice-limits.ts`
-reads it from `@rakazo/adapters` and writes `voice/transcribe-limit.generated.ets`, and
-`@rakazo/adapters` became a dev-only workspace dependency of this package: a link to a package the
-repository already installs, with no third-party package and three lines in the lockfile. The cap
-is never a number of the app's own.
+`packages/adapters/src/voice/voice-factory.ts`, which the API's transcribe route reads. Harmony
+codegen statically reads and validates that literal multiplication without importing or executing
+the adapters package, then writes `voice/transcribe-limit.generated.ets`. The contract test reads
+the same source. The cap is never a number of the app's own.
 
 **What the fixture server learned.** The voice routes take a held transcription answer
-(`holdTranscribe`, released by `releaseTranscribe`, and `abandoned` once the client closed the
-connection before it came), and `__voiceState` reports what each request carried (`inputs`), beside
-the paths it already listed.
+(`holdTranscribe`, released by `releaseTranscribe`), and `__voiceState` reports what each request
+carried (`inputs`), beside the paths it already listed.
 
 ## Base synchronization
 
@@ -369,6 +399,10 @@ model connections to it are offered as explicit choices, or a sign-in where it h
   `voice/connect`'s `modelCredentialId` goes with that work. **Known limitation until then:** a
   connection whose voice would authenticate through a model connection needs a pasted API key on
   this device.
+- **Choosing a provider in the page's picker** (found beside F8, not fixed): on mobile the choice
+  also makes that connection the voice in use, saving `voice/setVoice` when it has a voice of its
+  own saved. The port only shows the chosen connection's form, so after picking another connected
+  provider the page shows its voice while replies, dictation and the sample keep the one in use.
 - **The consent prompt after leaving the Voice page** (found while retaking the captures, on the
   rebased head, not fixed): with a provider selected but not connected, the mic button in a thread
   opens the Voice page over that thread. The page installs the consent dialog when it appears and
