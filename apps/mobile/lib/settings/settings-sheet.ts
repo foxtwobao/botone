@@ -39,6 +39,7 @@ const settingsScreens = new Set([
   "spaces",
   "spending-limit",
   "team-conversation",
+  "tool-source",
   "vault",
   "voice",
   "wallet",
