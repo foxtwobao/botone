@@ -271,11 +271,15 @@ export class DeviceRecognizer implements SpeechRecognizer {
     }
   }
 
+  /** Drops the segment: the one the engine still owes, running or being finished, is cancelled,
+   *  and the microphone goes with it. A segment the engine already ended is left alone, so a
+   *  finish that delivered its words is never cancelled behind them. */
   abort(): void {
-    const session = this.handOver();
-    if (session !== null) {
+    this.handOver();
+    const owed = this.awaiting ? this.closed : null;
+    if (owed !== null) {
       try {
-        this.engine?.cancel(session.sessionId);
+        this.engine?.cancel(owed.sessionId);
       } catch (err) {
         hilog.warn(0, 'Voice', 'Could not cancel the recognition');
       }
@@ -340,16 +344,15 @@ export class DeviceRecognizer implements SpeechRecognizer {
 
   /** Stops writing to the running segment and leaves its end to the engine: no frame is written
    *  to it after this, and its own callbacks still count until it reports done. */
-  private handOver(): LiveSession | null {
+  private handOver(): void {
     const session = this.session;
     if (session === null) {
-      return null;
+      return;
     }
     this.session = null;
     this.closed = session;
     this.carry = [];
     this.awaiting = true;
-    return session;
   }
 
   /** The engine is done with a segment: nothing runs until the state machine starts the next one

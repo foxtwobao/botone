@@ -29,6 +29,19 @@ const settle = (): Promise<void> => new Promise<void>((resolve: () => void): voi
   setTimeout(resolve, 10);
 });
 
+/** Up to five seconds for `condition`, as the other device suites wait. */
+async function waitFor(condition: () => boolean, label: string): Promise<void> {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    if (condition()) {
+      return;
+    }
+    await new Promise<void>((resolve: () => void): void => {
+      setTimeout(resolve, 25);
+    });
+  }
+  throw new Error(`timed out waiting for ${label}`);
+}
+
 /** The recognizer the composer's device path listens through, scripted. */
 class ScriptedRecognizer implements dictationPort.SpeechRecognizer {
   calls: string[] = [];
@@ -538,6 +551,23 @@ export default function dictationLifecycleTest(): void {
       expect(words).assertDeepEquals(['你好', '你好']);
       await settle();
       expect(run.mic.calls).assertDeepEquals(['stop', 'release']);
+    });
+
+    it('a_finish_the_engine_never_answers_cancels_the_segment_it_still_owes', 0, async () => {
+      const run = new ScriptedRun(new GrantedRecognizer());
+      await run.prepare();
+      const controller = await hardwareController(run, []);
+      const segment = run.engine.sessionIds[0] ?? '';
+      const interim: speechRecognizer.SpeechRecognitionResult = { isFinal: false, isLast: false, result: '你好' };
+      run.engine.listener?.onResult(segment, interim);
+      const cancelled = (): boolean => run.engine.calls.includes(`cancel ${segment}`);
+      controller.finish((): void => undefined);
+      // While the turn waits for the engine, the segment is left to finish: it is not cancelled
+      // out from under the words it may still report.
+      expect(cancelled()).assertFalse();
+      // Once the grace ends the turn, the engine is told to drop that segment, so the next
+      // listen does not find it still inside the finish it never answered.
+      await waitFor(cancelled, 'the cancelled segment');
     });
 
     it('leaving_while_the_engine_finishes_drops_the_late_words', 0, async () => {

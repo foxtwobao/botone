@@ -5,7 +5,7 @@ dictation into the composer, read-aloud from a message, the bot's device voice, 
 settings page. Decisions were written down before any code in [m7-scope.md](m7-scope.md); this
 file records what shipped, what the device showed, and what the scope could not cover.
 
-**Status: verified on the emulator.** Hypium 215/215 (14 lifecycle cases added by the third
+**Status: verified on the emulator.** Hypium 216/216 (15 lifecycle cases added by the third
 review round), the capability probe's findings hold in the shipped code, every walkthrough row
 measured, 15 captures.
 
@@ -79,7 +79,7 @@ collects.
 | `pnpm checks` | all green (160) |
 | `pnpm lint` (Biome) | 0 errors (25 warnings and 24 infos; Biome does not read `.ets`) |
 | `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL** after `devecocli build clean`: **no ArkTS warning in any file M7 added or changed** |
-| hypium on the emulator | **215 / 215** (the full suite, fixture servers on 8787/8788) |
+| hypium on the emulator | **216 / 216** (the full suite, fixture servers on 8787/8788) |
 | screenshots `m7-*.png` | 15 captures covering every row below |
 
 "No warning in an M7 file" is not "no warning in the build". Six warnings remain, all in files
@@ -97,7 +97,8 @@ The full hypium suite ran three times on the fixed code: 214/214, 213/214, then 
 same build. The one failure was `offline_read_keeps_the_last_rows_painted` in
 `RosterRealtime.test` (M3, the roster's offline banner), which read an empty error right after the
 banner appeared. It passed alone and in the other two runs, and nothing in this round touches the
-roster. Those three ran before the finishing timeout below; with it the full suite ran 215/215.
+roster. Those three ran before the finishing timeout below; with it the full suite ran 215/215,
+and with its cancel 216/216.
 
 ### The capability probe (before any product code)
 
@@ -210,7 +211,7 @@ last, `awaiting` whether the engine still owes that one its end.
 | `onError` of that segment | to closing, `error` and one `end` | the same | `error` only; the end waits for the completion, except a refused finish (1002200004), which ends at once | dropped | dropped |
 | `start` (a restart, a new listen) | — | — | to opening, clean | to opening, clean | to opening |
 | `finish` (a send or a stop, keeping the words) | engine `finish`, to finishing; the microphone being opened is released when it answers | engine `finish`, to finishing | nothing: already asked | `end` at once | `end` at once |
-| `abort` (a cancel) | engine `cancel`, to finishing; the microphone stops and is released | the same | no engine call; the microphone is released | the microphone is released | nothing |
+| `abort` (a cancel) | engine `cancel`, to finishing; the microphone stops and is released | the same | engine `cancel` for the segment it still owes; the microphone is released | the microphone is released | nothing |
 | The microphone's open answers | taken only if the same segment still runs, else released | — | released | released | released |
 | The microphone's stop and release settle | no state changes; a failure is logged | the same | the same | the same | the same |
 | The app leaves the foreground (`release`) | as `abort`, then the engine is shut down: idle | the same | the same | idle | idle |
@@ -218,6 +219,10 @@ last, `awaiting` whether the engine still owes that one its end.
 
 A cancel passes through *finishing* because the state machine's quiet restart cancels a segment
 and waits for its end to restart, and the engine reports that end after a cancel too.
+
+An `abort` cancels whatever segment the engine still owes (`awaiting`): the one running, or the
+one it was asked to finish. By the time a normal `end` reaches `abort()` the engine has already
+ended the segment, so a finish that delivered its words is never cancelled behind them.
 
 ### The fixes
 
@@ -229,12 +234,13 @@ and waits for its end to restart, and the engine reports that end after a cancel
 | N1 | A cancel during the asynchronous `openMicrophone`, then an immediate restart: the old open returned, saw a session running and was adopted by it. The new open then overwrote it, and the first microphone stayed open. | `openMicrophone` checks after each wait that the segment which asked for it still runs. One that ended takes no microphone, and the microphone opened for it is released. | `a_microphone_created_for_a_cancelled_segment_is_released_not_adopted`, `a_microphone_that_started_for_a_cancelled_segment_is_stopped_and_released` |
 | Silent catches | The last round's `.catch(() => undefined)` chains and its kit-call wrappers dropped failures with a comment. | ArkTS cannot import `@rakazo/logging`, so this app's `bestEffort` is a catch with `hilog.warn(0, 'Voice', …)`, as `thread/attachment-files.ets` writes it. A promise-taking helper would not do: `bestEffort(label, mic.stop())` runs the kit call before its own try, and kit calls throw outright. Logged now: the microphone's stop, release, open, start and listener; the engine's creation, preparation, cancel, finish and shutdown; the preferences reads and the bot-voice save. Left as they are because the caller is told: the preference `put` (rethrown as the save failure) and `clip-player`'s three wrappers (each throws the clip failure). | none: a log line is not asserted |
 | New, from the probe | Every engine error ended its segment at once, and the completion that followed ended it again. On the device that is every cancel and every 60 s rotation: two `end`s, the restart armed twice, a dead restart counted twice. Around a send it cut off the last words. | An error is reported and waited out while the engine owes the segment its end. A segment's end is reported once, and its results keep counting after it. | `the_end_a_cancelled_segment_still_reports_reaches_the_listener`, `a_completed_segment_is_not_ended_twice`, `the_words_after_an_engine_error_still_reach_the_listener` |
-| Finish timeout (should-fix) | A finish the engine neither completes nor refuses hung the send. On `eaa7fbc62` a wedged engine held it for 30 s: the composer's silence limit delivered the words then, and the quiet restart's abort had already closed the microphone at 15 s while the bar still said listening. No engine path was found that does it; the case scripts one. | `FINISH_GRACE_MS`: a caller's finish arms a 2 s timer on the session's own clock, and a turn whose recognizer has not reported its end by then ends with the words heard. `stop()` disarms it, and a normal `end` delivers first. | `a_finish_the_engine_never_answers_still_sends_what_was_heard` |
+| Finish timeout (should-fix) | A finish the engine neither completes nor refuses hung the send. On `eaa7fbc62` a wedged engine held it for 30 s: the composer's silence limit delivered the words then, and the quiet restart's abort had already closed the microphone at 15 s while the bar still said listening. No engine path was found that does it; the case scripts one. | `FINISH_GRACE_MS`: a caller's finish arms a 2 s timer on the session's own clock, and a turn whose recognizer has not reported its end by then ends with the words heard. `stop()` disarms it, and a normal `end` delivers first. The `abort()` that ends the turn then cancels the segment the engine still owed, so the next listen does not find the engine inside that finish; a segment the engine already ended is never cancelled. | `a_finish_the_engine_never_answers_still_sends_what_was_heard`, `a_finish_the_engine_never_answers_cancels_the_segment_it_still_owes` |
 
 **Red before, green after.** With those cases on the unfixed code (`47d619a89`), `DictationLifecycle`
 ran 10 with 5 failures and `DictationHardware` ran 10 with 7 failures. On the fixed code
-(`eaa7fbc62`) both were 10/10 and the full suite 214/214; with the finishing timeout they are
-11/11 and 10/10, and the full suite 215/215.
+(`eaa7fbc62`) both were 10/10 and the full suite 214/214; with the finishing timeout they were
+11/11 and 10/10 and the full suite 215/215; with its cancel they are 12/12 and 10/10, and the
+full suite 216/216.
 `send_between_two_segments_ends_at_once_without_cancelling` passes before and after: a send in the
 gap between two segments found nothing to cancel in either version, and now guards the `end` the
 recognizer reports at once there.
@@ -242,7 +248,9 @@ recognizer reports at once there.
 **The finishing timeout, measured** (a temporary probe, not committed): on `eaa7fbc62` a finish
 the scripted engine never answered sent at 30,011 ms, and the microphone had stopped at
 15,089 ms. With the timeout the same finish sent at 2,001 ms and the microphone stopped at
-2,031 ms. Both ran with 「你好」 heard and delivered twice.
+2,031 ms. Both ran with 「你好」 heard and delivered twice. The cancel case was red on
+`559c43f21`: it waits five seconds for the engine's `cancel`, and none came, because `abort()`
+made no engine call while the segment was finishing.
 
 **On the device engine itself** (a probe, not committed): the shipped recognizer and composer
 over the device engine, with a scripted microphone feeding synthesized speech. A send 1.2 s into
