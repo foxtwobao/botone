@@ -9,7 +9,7 @@ permissions:
 jobs:
   build:
     name: Signed and notarized macOS installers
-    runs-on: macos-26
+    runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 120
     env:
       EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL }}
