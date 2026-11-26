@@ -2,7 +2,7 @@
 // transcript row projection. Pure functions, no network. The unknown-kind placeholder is the M3
 // DoD's "伪造新 kind 渲染为占位不崩溃" case; the tier table mirrors the design whitelist.
 import { describe, expect, it } from '@ohos/hypium';
-import { blockView, isDeliveryMessage, messageBlockViews, TIER_FULL, TIER_TEXT, TIER_PLACEHOLDER } from '../../../main/ets/thread/block-view';
+import { blockView, isDeliveryMessage, messageBlockViews, TIER_ATTACHMENT, TIER_FULL, TIER_TEXT, TIER_PLACEHOLDER } from '../../../main/ets/thread/block-view';
 import { markdownPlainText, mdCompact, parseMarkdown } from '../../../main/ets/thread/markdown-lite';
 import { daySeparatorLabel, messageKey, projectRows } from '../../../main/ets/stores/thread-store';
 import { t } from '../../../main/ets/i18n/i18n';
@@ -53,8 +53,8 @@ export default function threadRenderTest() {
       expect(blockView(block('{"kind":"voice_call","title":"Call","farewell":"bye"}')).tier).assertEqual(TIER_TEXT);
       expect(blockView(block('{"kind":"computer","state":"on","text":"clicking"}')).tier).assertEqual(TIER_TEXT);
       expect(blockView(block('{"kind":"subagent","name":"Scout","task":"search"}')).tier).assertEqual(TIER_TEXT);
-      expect(blockView(block('{"kind":"image","name":"photo.png"}')).tier).assertEqual(TIER_TEXT);
-      expect(blockView(block('{"kind":"file","name":"doc.pdf"}')).tier).assertEqual(TIER_TEXT);
+      expect(blockView(block('{"kind":"image","name":"photo.png"}')).tier).assertEqual(TIER_ATTACHMENT);
+      expect(blockView(block('{"kind":"file","name":"doc.pdf"}')).tier).assertEqual(TIER_ATTACHMENT);
       // T3 placeholder for the unsupported kinds.
       expect(blockView(block('{"kind":"chart"}')).tier).assertEqual(TIER_PLACEHOLDER);
       expect(blockView(block('{"kind":"app"}')).tier).assertEqual(TIER_PLACEHOLDER);

@@ -10,6 +10,8 @@
 export const TIER_FULL = 'full';
 export const TIER_TEXT = 'text';
 export const TIER_PLACEHOLDER = 'placeholder';
+/** M6: an image/file block renders as an attachment (inline media or a file row). */
+export const TIER_ATTACHMENT = 'attachment';
 
 export interface BlockView {
   tier: string;
@@ -28,6 +30,18 @@ export interface BlockView {
   title: string;
   /** progress: provider activity line vs assistant narration. */
   activity: boolean;
+  /** M6 image/file block: the attachment the renderer needs. */
+  attachment: AttachmentView | null;
+}
+
+/** An image/file block as the media renderer reads it. */
+export interface AttachmentView {
+  kind: string;
+  artifactId: string;
+  name: string;
+  mimeType: string;
+  /** file block: bytes (the image block carries none). */
+  size: number;
 }
 
 export interface BlockLine {
@@ -144,7 +158,7 @@ function choiceView(block: Record<string, Object>): ChoiceView {
 function emptyView(kind: string, tier: string): BlockView {
   const view: BlockView = {
     tier: tier, kind: kind, text: '', lines: [], steps: [], ask: null, choice: null,
-    title: '', activity: false,
+    title: '', activity: false, attachment: null,
   };
   return view;
 }
@@ -254,8 +268,16 @@ export function blockView(block: Record<string, Object>): BlockView {
     return view;
   }
   if (kind === 'image' || kind === 'file') {
-    const view = emptyView(kind, TIER_TEXT);
-    view.title = str(block, 'name');
+    const artifactId = str(block, 'artifactId');
+    const view = emptyView(kind, TIER_ATTACHMENT);
+    const attachment: AttachmentView = {
+      kind: kind,
+      artifactId: artifactId,
+      name: str(block, 'name'),
+      mimeType: str(block, 'mimeType'),
+      size: typeof block['size'] === 'number' ? block['size'] as number : -1,
+    };
+    view.attachment = attachment;
     return view;
   }
   // Everything else — chart, app, page, mcp_approval, import_setup, skill_draft, cloud_agent,

@@ -1,0 +1,33 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "clientNonce": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "contentBase64": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "mimeType": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 255,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["name", "mimeType", "contentBase64"],
+  "type": "object"
+}

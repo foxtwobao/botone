@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifactId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["artifactId"],
+  "type": "object"
+}

@@ -12,6 +12,7 @@ export class RpcError extends Error {
   transport: boolean;
   /** The client gave up on its own deadline. */
   timedOut: boolean;
+  reason: string = '';
 
   constructor(message: string, status: number = 0, code: string = '', retryAfterMs: number = -1,
     transport: boolean = false, timedOut: boolean = false) {

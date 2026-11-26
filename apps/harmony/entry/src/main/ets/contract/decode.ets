@@ -3,12 +3,14 @@
 // consumed field is missing or mistyped; fields outside the M1 view are ignored (forward
 // compatible). The layer-1 snapshots pin exactly these views to the real contract schemas.
 
+import type { UploadLimits } from '../thread/attachments';
+
 export interface HealthOutput {
   ok: boolean;
   version: string;
 }
 
-export interface MeView {
+export interface MeView extends UploadLimits {
   userId: string;
   email: string;
   name: string;
@@ -131,6 +133,14 @@ export function decodeMe(json: Object | null): MeView | null {
     defaultProvider: defaultProvider,
     defaultModel: defaultModel,
   };
+  const maxBytes = record['maxUploadSizeBytes'];
+  if (typeof maxBytes === 'number' && Number.isSafeInteger(maxBytes) && (maxBytes as number) > 0) {
+    result.maxUploadSizeBytes = maxBytes as number;
+  }
+  const maxCount = record['maxAttachmentsPerMessage'];
+  if (typeof maxCount === 'number' && Number.isSafeInteger(maxCount) && (maxCount as number) > 0) {
+    result.maxAttachmentsPerMessage = maxCount as number;
+  }
   return result;
 }
 

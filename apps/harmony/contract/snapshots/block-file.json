@@ -1,14 +1,26 @@
 {
   "additionalProperties": false,
   "properties": {
+    "artifactId": {
+      "minLength": 1,
+      "type": "string"
+    },
     "kind": {
       "const": "file",
       "type": "string"
     },
+    "mimeType": {
+      "type": "string"
+    },
     "name": {
       "type": "string"
+    },
+    "size": {
+      "maximum": 9007199254740991,
+      "minimum": 0,
+      "type": "integer"
     }
   },
-  "required": ["kind", "name"],
+  "required": ["kind", "artifactId", "name", "mimeType", "size"],
   "type": "object"
 }

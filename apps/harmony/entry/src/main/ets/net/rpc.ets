@@ -20,6 +20,8 @@ import { flushPendingSignOut } from './sign-out';
 import type { SignOutContext } from './sign-out';
 import { t } from '../i18n/i18n';
 import { ensureAiDataConsent } from './consent';
+import type { RequestCancellation } from './request-cancellation';
+import { asRecord } from '../contract/decode';
 
 export interface RpcContext {
   apiBase: string;
@@ -30,6 +32,7 @@ export interface RpcContext {
 export interface RpcOptions {
   context?: RpcContext;
   timeoutMs?: number;
+  cancellation?: RequestCancellation;
   skipSpaceAuthRecovery?: boolean;
 }
 
@@ -107,6 +110,7 @@ export async function rpc(proc: string, body: Record<string, Object>, options?: 
   await ensureAiDataConsent(proc, body, context);
   // The gate's asks may have outlived the pinned session (mobile api.ts:726): re-check before
   // dispatch so a stale context never sends the original request.
+  options?.cancellation?.check();
   if (context.generation !== currentSessionGeneration()) {
     throw new RpcError(t('Something went wrong. Try again.'));
   }
@@ -122,7 +126,8 @@ export async function rpc(proc: string, body: Record<string, Object>, options?: 
   let response: HttpResponseView;
   try {
     response = await postJson(`${context.apiBase}/rpc/${proc}`, requestHeaders,
-      JSON.stringify(envelope), options?.timeoutMs ?? RPC_TIMEOUT_MS, MAX_RPC_RESPONSE_BYTES);
+      JSON.stringify(envelope), options?.timeoutMs ?? RPC_TIMEOUT_MS, MAX_RPC_RESPONSE_BYTES,
+      options?.cancellation);
   } catch (err) {
     const error = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
     if (error.transport || error.timedOut) {
@@ -178,7 +183,12 @@ export async function rpc(proc: string, body: Record<string, Object>, options?: 
         }
       }
     }
-    throw new RpcError(message, response.status, code, retryAfter);
+    const error = new RpcError(message, response.status, code, retryAfter);
+    const data = asRecord(errorJson?.['data']);
+    if (typeof data?.['reason'] === 'string') {
+      error.reason = data['reason'] as string;
+    }
+    throw error;
   }
   if (parsed === null || parsed['json'] === undefined || parsed['json'] === null) {
     throw new RpcError('Unexpected response from the server', response.status);

@@ -27,6 +27,7 @@ import { normalizeApiBase, probeApiBase } from "@rakazo/mobile/lib/api/endpoint.
 import { activateUiLocale } from "@rakazo/mobile/lib/i18n/i18n.js";
 import { formatThreadTime } from "@rakazo/mobile/lib/inbox/inbox.js";
 import { vi } from "vitest";
+import { generateAttachmentsFixture } from "./gen-attachments-fixtures.ts";
 import { generateMarkdownFixture } from "./gen-markdown-fixtures.ts";
 import { generateThreadFixture } from "./gen-thread-fixtures.ts";
 import { readCatalog as readPoCatalog } from "./po.ts";
@@ -866,5 +867,6 @@ export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>>
   inbox: generateInboxFixture,
   dates: generateDatesFixture,
   thread: generateThreadFixture,
+  attachments: generateAttachmentsFixture,
   markdown: generateMarkdownFixture,
 };

@@ -82,6 +82,8 @@ export const meView = meOutput.pick({
   needsModel: true,
   defaultProvider: true,
   defaultModel: true,
+  maxUploadSizeBytes: true,
+  maxAttachmentsPerMessage: true,
 });
 
 // The roster row fields M2 reads. BotSchema/GroupSchema are the real element schemas the
@@ -255,13 +257,16 @@ export const threadSubscribeInputView = pickRefined(procedureInput(appContract.t
  * whole below). The thread.meta activity superRefine is server-side; toJSONSchema drops it. */
 export const threadEventView = eventYields(appContract.threads.subscribe);
 
-/** threads/send input: the fields the composer sends (text + nonce + target; attachments,
- * mentions and replies are Phase 2). The text-or-attachment superRefine is a sender rule. */
+/** threads/send input: the fields the composer sends (text, nonce, target, attachments
+ * and replies). The text-or-attachment superRefine is a sender rule. */
 export const threadSendInputView = pickRefined(procedureInput(appContract.threads.send), [
   "botId",
   "groupId",
   "text",
   "clientNonce",
+  "artifactIds",
+  "replyToMessageId",
+  "imageHandling",
 ]);
 
 /** threads/send output (decodeSendOutput): the receipt that shows the queued run at once. */
@@ -394,8 +399,19 @@ export const blockSubagentView = blockVariant("subagent").pick({
   progress: true,
   result: true,
 });
-export const blockImageView = blockVariant("image").pick({ kind: true, name: true });
-export const blockFileView = blockVariant("file").pick({ kind: true, name: true });
+export const blockImageView = blockVariant("image").pick({
+  kind: true,
+  artifactId: true,
+  name: true,
+  mimeType: true,
+});
+export const blockFileView = blockVariant("file").pick({
+  kind: true,
+  artifactId: true,
+  name: true,
+  mimeType: true,
+  size: true,
+});
 export const blockDeliveryView = blockVariant("delivery");
 
 // ── M4: the settings surface (design §4.3.1 models/list, §4.3.4/Q6 read-only model display) ──
@@ -475,6 +491,15 @@ export const snapshotViews: Record<string, z.ZodType> = {
   "block-image": blockImageView,
   "block-file": blockFileView,
   "block-delivery": blockDeliveryView,
+  // M6 attachment surface
+  "artifact-create-input": procedureInput(appContract.artifacts.create),
+  "artifact-create-output": procedureOutput(appContract.artifacts.create).pick({ id: true }),
+  "artifact-get-input": procedureInput(appContract.artifacts.get),
+  "artifact-get-output": procedureOutput(appContract.artifacts.get).pick({
+    id: true,
+    size: true,
+    contentBase64: true,
+  }),
   // M4 settings surface
   "models-list": modelsListView,
   "model-catalog-entry": modelCatalogEntryView,

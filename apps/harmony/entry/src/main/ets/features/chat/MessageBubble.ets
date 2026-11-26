@@ -28,6 +28,7 @@ import { userMentionTargets, userTextRuns } from '../../thread/message-mentions'
 import type { MemberLike, UserMentionTarget, UserTextRun } from '../../thread/message-mentions';
 import { sanitizeMarkdownUrl } from '../../thread/message-links';
 import { app } from '../../app/app-state';
+import { AttachmentBlock } from './media-attachments';
 
 /** Where a link opens, or empty when it opens nothing: only the schemes the app may follow. */
 function openableHref(href: string): string {
@@ -491,14 +492,22 @@ struct ChoiceCard {
 struct BlockContent {
   @Param view: BlockView = {
     tier: 'placeholder', kind: '', text: '', lines: [], steps: [], ask: null, choice: null,
-    title: '', activity: false,
+    title: '', activity: false, attachment: null,
   };
   @Param botMessage: boolean = true;
   @Param busy: boolean = false;
+  @Param botId: string = '';
+  @Param groupId: string = '';
   @Event onAnswer: (answer: string) => void = (_answer: string): void => {};
 
   build() {
-    if (this.view.tier === 'placeholder') {
+    if (this.view.tier === 'attachment' && this.view.attachment !== null) {
+      AttachmentBlock({
+        view: this.view.attachment,
+        botId: this.botId,
+        groupId: this.groupId,
+      })
+    } else if (this.view.tier === 'placeholder') {
       Text(UNSUPPORTED_BLOCK)
         .fontSize(typeScale.secondary.fontSize)
         .fontColor(appearance.tokens().faintForeground)
@@ -670,12 +679,18 @@ export struct MessageBubble {
   @Param members: ThreadMember[] = [];
   @Param meId: string = '';
   @Param fallbackAuthor: string = '';
+  /** The thread's own target, so attachment downloads carry the authorized botId/groupId. */
+  @Param botId: string = '';
+  @Param groupId: string = '';
+  @Param canReply: boolean = false;
   /** The message this one answers, when the transcript holds it: its text stands in until the
    *  server's preview arrives, and it names an author the preview leaves out. */
   @Param parent: LiveMessage | null = null;
   @Event onAnswer: (message: LiveMessage, answer: string) => void =
     (_message: LiveMessage, _answer: string): void => {};
   @Event onJumpTo: (messageId: string) => void = (_messageId: string): void => {};
+  /** M6: the Reply menu entry hands the message to the composer's reply flow. */
+  @Event onReply: (message: LiveMessage) => void = (_message: LiveMessage): void => {};
   @Local selectOpen: boolean = false;
   /** The menu of the message shown, found once per change of that message: finding it parses. */
   @Computed
@@ -800,7 +815,14 @@ export struct MessageBubble {
                 color: appearance.tokens().chatUserForeground,
               })
             } else {
-              BlockContent({ view: view, botMessage: false, busy: this.busy, onAnswer: (_a: string): void => {} })
+              BlockContent({
+                view: view,
+                botMessage: false,
+                busy: this.busy,
+                botId: this.botId,
+                groupId: this.groupId,
+                onAnswer: (_a: string): void => {},
+              })
             }
           }, (view: BlockView, index: number): string => `${index}:${view.kind}:${view.text}`)
         }
@@ -818,6 +840,8 @@ export struct MessageBubble {
             view: view,
             botMessage: true,
             busy: this.busy,
+            botId: this.botId,
+            groupId: this.groupId,
             onAnswer: (answer: string): void => {
               this.onAnswer(message, answer);
             },
@@ -865,10 +889,18 @@ export struct MessageBubble {
     })
   }
 
-  /** The mobile menu's subset, in its order; reply, quote, react, speak and mark-unread are later. */
+  /** The mobile menu's subset, in its order. */
   @Builder
   menuBuilder() {
     Menu() {
+      if (this.canReply && this.message?.seq !== undefined) {
+        MenuItem({ content: t('Reply') })
+          .onClick((): void => {
+            if (this.message !== null) {
+              this.onReply(this.message);
+            }
+          })
+      }
       if (this.menu.select) {
         MenuItem({ content: t('Select text') })
           .onClick((): void => {
