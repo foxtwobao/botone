@@ -277,6 +277,38 @@ composer can run over the real recognizer on scripted hardware.
 **Not verified.** The emulator's microphone records silence, so no screen shows a device send
 keeping its words: the probe is the evidence, and a physical device is still the acceptance.
 
+## Review findings (Codex's fourth round: the asynchronous races beside the dictation)
+
+A final read of the whole milestone found eight more defects beside the recognizer's lifecycle:
+six waits whose late answer was not checked against the caller that asked for it, and two
+functional bugs in the Voice settings page. Each is fixed the way N1 was (the third round's
+microphone opened for a cancelled segment): whatever was asked for is checked, after every wait,
+against the one that asked, and whatever arrives for a caller that is gone is let go of, not used.
+
+| # | Finding | Fix | Hypium case |
+| --- | --- | --- | --- |
+| F1 | A microphone frame was written into whichever segment ran when it arrived. A microphone let go of with a cancelled segment could still deliver frames it had queued, and they landed in the segment started after it. | A frame counts only while its microphone is the live one (`capture`). The callback belongs to the microphone opened for a segment, and a segment that rotates onto the same microphone keeps it; the microphone let go of when listening ends, or stopped after its segment ended, delivers nothing from then on. | `a_frame_the_old_microphone_delivers_after_its_cancel_reaches_no_segment` (`DictationHardware`) |
+| F2 | Stop, the app leaving the foreground, or a newer speech during the synthesizer's asynchronous creation: once the engine arrived, `DeviceSpeech.speak` said the utterance anyway, and a replaced speech's engine stayed open beside the new one's. | A speech asks with a ticket (`DeviceSpeech.ticket()`), taken before its last wait, the voice listing. A stop or a release moves the synthesizer on, and a ticket from before is answered with nothing: no engine is asked for, and one that arrives late is shut down at once, since few may exist device-wide. The engine factory is a seam (`setEngineFactory`). | `a_stop_while_the_engine_is_being_created_shuts_the_late_engine_down`, `a_release_while_the_engine_is_being_created_shuts_the_late_engine_down`, `a_stop_that_lands_before_the_engine_is_asked_for_leaves_the_speech_without_one`, `a_replaced_speechs_late_engine_is_shut_down_and_the_new_speech_alone_speaks` (`DeviceSpeechLifecycle`) |
+| F3 | A cancel that landed while the recording's AudioCapturer was being created still started it: the recorder began after the session had ended, then stopped and released. | The cancel is read again once the microphone answers. A cancelled session releases the microphone and returns nothing: no listener, no start. The microphone is a seam (`setClipMicrophone`), the same `CaptureMic` the recognizer records through, so the capturer and its two helpers moved from `device-recognizer.ets` to `microphone.ets`. | `a_cancel_while_the_microphone_is_being_opened_starts_no_recording` (`ClipRecording`) |
+| F4 | The hosted transcription had no cancel. After the microphone closed, a cancel or the app leaving the foreground ended the session but not the consent read or the request, so the recording could still leave, and the request ran on to its answer or its 70 s timeout. | The hosted session owns one `RequestCancellation`, which its `StopSignal` cancels. It runs through the consent read, the check before the audio is encoded, and the transfer (`transcribeRecording`). Leaving the thread and backgrounding cancel the session, so they end the request too. | `a_cancel_while_the_transcriptions_consent_is_pending_keeps_the_recording_home`, `backgrounding_while_the_transcription_is_in_flight_abandons_the_request` (`VoiceHostedAgainstFixtureServer`) |
+| F5 | The five-minute cap produced a 9,600,044-byte WAV, and the server transcribes at most `MAX_TRANSCRIBE_BYTES` (8 MiB): every recording past 4:22 failed. | The cap is computed from the server's own constant (`dictationCapMs` in `voice/clip-limit.ets`): 262,142 ms, a WAV of 8,388,588 bytes. The constant reaches the app by codegen, and the microphone's buffers do not wait for the timer, so the frame that would pass the cap ends the recording itself, keeping the words. | `a_recording_that_reaches_its_cap_stops_and_keeps_its_words` (`ClipRecording`); on the vitest side `a dictated clip at its cap stays inside the server's transcription limit` (`voice-port.test`) |
+| F6 | Pause during the first clip's load reached the player in a state that cannot take it, and the kit answers such a control with a rejected promise, which nothing handled. Resume and Stop during the load had the same hole. | The player's state is followed, and a control reaches it only from a state the kit lists for it; the answer of each one is handled (`attempt`), a pause or stop being logged and a prepare or play failing the clip. A pause asked for while the clip loads is the session's to keep: the clip then does not start. The player factory is a seam (`setClipPlayerFactory`). | `a_pause_asked_before_the_first_clip_loads_holds_the_clip_until_a_resume`, `a_resume_or_a_stop_asked_while_the_clip_loads_reaches_no_control_the_player_refuses` (`ClipPlayerLifecycle`) |
+| F7 | An edited Speech model was never saved: the guard compared the submitted value with the form's, which is the same value once the field is edited, so no request left. | The guard compares with the saved credential alone. | `an_edited_speech_model_is_saved` (`VoiceSettingsAgainstFixtureServer`) |
+| F8 | Hear a sample always asked for the account's copy of the voice settings, while the page shows whichever copy applies in the selected Space: a Space with its own voice heard another copy's sample. | The sample names no scope, as the page's own reads and writes do. The server's prepare and speak take no provider: a sample speaks with the copy's default voice, as it does on mobile. | `the_sample_names_the_same_copy_of_the_settings_as_the_page_reads` (`VoiceSettingsAgainstFixtureServer`) |
+
+**Where the transcription limit lives.** `MAX_TRANSCRIBE_BYTES` is defined in
+`packages/adapters/src/voice/voice-factory.ts`, not in `packages/contracts`: the API's transcribe
+route reads it there, and nothing in the contracts package names it. So `gen-voice-limits.ts`
+reads it from `@rakazo/adapters` and writes `voice/transcribe-limit.generated.ets`, and
+`@rakazo/adapters` became a dev-only workspace dependency of this package: a link to a package the
+repository already installs, with no third-party package and three lines in the lockfile. The cap
+is never a number of the app's own.
+
+**What the fixture server learned.** The voice routes take a held transcription answer
+(`holdTranscribe`, released by `releaseTranscribe`, and `abandoned` once the client closed the
+connection before it came), and `__voiceState` reports what each request carried (`inputs`), beside
+the paths it already listed.
+
 ## Base synchronization
 
 The branch was rebased onto main once the upstream sync (PR #71) and M6 (PR #72) had landed. The

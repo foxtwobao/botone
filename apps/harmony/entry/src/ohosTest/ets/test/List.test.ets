@@ -30,6 +30,10 @@ import attachmentsTest from './Attachments.test';
 import voiceTest from './Voice.test';
 import voiceHostedTest from './VoiceHosted.test';
 import dictationLifecycleTest from './DictationLifecycle.test';
+import voiceClipTest from './VoiceClip.test';
+import deviceSpeechTest from './DeviceSpeech.test';
+import clipPlayerTest from './ClipPlayer.test';
+import voiceSettingsTest from './VoiceSettings.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -70,4 +74,10 @@ export default function testsuite() {
   voiceHostedTest();
   // M7 review round 2: the dictation lifecycles and send semantics, both paths.
   dictationLifecycleTest();
+  // M7 review round 4: the recording, the device synthesizer and the clip player on scripted
+  // hardware, then the Voice settings store against the fixture server.
+  voiceClipTest();
+  deviceSpeechTest();
+  clipPlayerTest();
+  voiceSettingsTest();
 }

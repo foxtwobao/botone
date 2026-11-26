@@ -9,6 +9,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { MAX_TRANSCRIBE_BYTES } from "@rakazo/adapters";
 import { voiceConnectionForm } from "@rakazo/contracts";
 import * as core from "@rakazo/core";
 import { deferred } from "@rakazo/core/test-async";
@@ -19,6 +20,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import type { RpcContext } from "../entry/src/main/ets/net/rpc.ets";
 import type * as autoSpeakPort from "../entry/src/main/ets/voice/auto-speak.ets";
 import type * as botVoicesPort from "../entry/src/main/ets/voice/bot-voices.ets";
+import type * as clipLimitPort from "../entry/src/main/ets/voice/clip-limit.ets";
 import type * as deviceVoicePort from "../entry/src/main/ets/voice/device-voice.ets";
 import type * as dictationPort from "../entry/src/main/ets/voice/dictation.ets";
 import type * as draftDictationPort from "../entry/src/main/ets/voice/draft-dictation.ets";
@@ -70,6 +72,7 @@ const PURE_PORTS = [
   "dictation",
   "device-voice",
   "speech",
+  "clip-limit",
 ];
 // A directory of this run's own: two runs (another worktree, another worker) must not read each
 // other's copy of the port.
@@ -98,6 +101,7 @@ const deviceVoice = await load<typeof deviceVoicePort>("device-voice");
 const speech = await load<typeof speechPort>("speech");
 const draftDictation = await load<typeof draftDictationPort>("draft-dictation");
 const voiceSettings = await load<typeof voiceSettingsPort>("voice-settings-model");
+const clipLimit = await load<typeof clipLimitPort>("clip-limit");
 
 interface VoiceFixture {
   constants: {
@@ -420,6 +424,17 @@ describe("voice ports against the live references", () => {
         core.speechFromBlocks(entry.blocks as never),
       );
     });
+  });
+
+  it("a dictated clip at its cap stays inside the server's transcription limit", () => {
+    const cap = clipLimit.dictationCapMs(MAX_TRANSCRIBE_BYTES);
+    // Header included it fits, and one more millisecond would not: the cap is the longest that does.
+    expect(clipLimit.WAV_HEADER_BYTES + cap * clipLimit.CLIP_BYTES_PER_MS).toBeLessThan(
+      MAX_TRANSCRIBE_BYTES,
+    );
+    expect(clipLimit.WAV_HEADER_BYTES + (cap + 1) * clipLimit.CLIP_BYTES_PER_MS).toBeGreaterThan(
+      MAX_TRANSCRIBE_BYTES,
+    );
   });
 
   it("the auto-speak gate, the voice plan and the voice assignment match mobile", async () => {

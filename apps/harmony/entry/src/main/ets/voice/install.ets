@@ -41,7 +41,10 @@ function deviceLanguage(): string {
 
 /** The engine voice a bot's assigned device voice names, or the device's own when it has none. */
 async function speakOnDevice(utterance: string, voice: string | undefined): Promise<void> {
-  return deviceSpeech.speak(utterance, await engineVoiceFor(voice, deviceLanguage()));
+  // The ticket is taken before the voice is listed: a stop or a release that lands in that wait
+  // leaves this utterance unspoken.
+  const ticket = deviceSpeech.ticket();
+  return deviceSpeech.speak(utterance, await engineVoiceFor(voice, deviceLanguage()), ticket);
 }
 
 async function playHostedClip(bytes: Uint8Array, session: HostedSession): Promise<void> {

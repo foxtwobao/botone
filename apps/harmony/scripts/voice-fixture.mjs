@@ -27,6 +27,8 @@ function clipBytes() {
 }
 
 export function resetVoice() {
+  // An answer an earlier case left held still goes out, to a client that may be waiting for it.
+  state?.releaseTranscribe?.();
   state = {
     connected: false,
     selfHosted: false,
@@ -37,6 +39,9 @@ export function resetVoice() {
     speechesLeft: null,
     transcribeText: "Fake dictated words",
     transcriptionFails: false,
+    // The next transcription answer is held in flight until the suite releases it.
+    holdNextTranscribe: false,
+    releaseTranscribe: null,
     requests: [],
   };
 }
@@ -196,8 +201,17 @@ export function handleVoiceHttp(req, res, body) {
     res.end(JSON.stringify({ error: "Recording is empty." }));
     return true;
   }
-  res.writeHead(200, { "content-type": "application/json" });
-  res.end(JSON.stringify({ text: state.transcribeText }));
+  const answer = () => {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ text: state.transcribeText }));
+  };
+  // A held answer stays in flight until the suite releases it.
+  if (state.holdNextTranscribe) {
+    state.holdNextTranscribe = false;
+    state.releaseTranscribe = answer;
+    return true;
+  }
+  answer();
   return true;
 }
 
@@ -213,7 +227,9 @@ export function handleVoiceControl(req, res, body) {
       connected: state.connected,
       voiceId: state.voiceId,
       speechModel: state.speechModel,
+      // The requests in arrival order, and what each of them carried.
       requests: state.requests.map((entry) => entry.path),
+      inputs: state.requests.map((entry) => entry.input),
     });
     return true;
   }
@@ -223,6 +239,12 @@ export function handleVoiceControl(req, res, body) {
     if (typeof input.transcribeText === "string") state.transcribeText = input.transcribeText;
     if (typeof input.transcriptionFails === "boolean") {
       state.transcriptionFails = input.transcriptionFails;
+    }
+    if (input.holdTranscribe === true) state.holdNextTranscribe = true;
+    if (input.releaseTranscribe === true) {
+      const release = state.releaseTranscribe;
+      state.releaseTranscribe = null;
+      release?.();
     }
     json(res, 200, { ok: true });
     return true;

@@ -3,12 +3,24 @@
 // and both the file and the player go when the clip ends or is stopped; the session holds the
 // player's pause, resume and stop while it plays, and lets go of it the moment the clip ends,
 // so nothing of the speech outlives it.
+//
+// The kit's player answers a control from a state that cannot take it with a rejected promise,
+// and Pause, Resume and Stop are all offered while the first clip is still loading. So the
+// player's state is followed here and a control reaches it only from a state that takes it; the
+// answer of each one is handled, never left to reject on its own. A pause asked for while the
+// clip loads is the session's to keep: the clip then does not start.
 import type { common } from '@kit.AbilityKit';
 import type { media } from '@kit.MediaKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { t } from '../i18n/i18n';
-import type { HostedPlayer, HostedSession } from './speech';/** How long a clip may take to start; one that cannot fails by then. */
+import type { HostedPlayer, HostedSession } from './speech';
+
+/** How long a clip may take to start; one that cannot fails by then. */
 const CLIP_START_MS = 3_000;
+/** The states the kit's player takes a play in, and the ones it takes a stop in. */
+const PLAYS_FROM: string[] = ['prepared', 'paused', 'completed'];
+const STOPS_FROM: string[] = ['prepared', 'playing', 'paused', 'completed'];
 
 /** What a clip's bytes are, as the player's cache file is named by it. */
 interface ClipType {
@@ -28,6 +40,75 @@ export function speechClipType(bytes: Uint8Array): ClipType {
   }
   const mp3: ClipType = { mimeType: 'audio/mpeg', extension: 'mp3' };
   return mp3;
+}
+
+/** The calls one clip makes on its player; the kit's AVPlayer satisfies them behind a wrapper, so
+ *  tests can fake it. */
+export interface ClipPlayer {
+  onState: (callback: (state: string) => void) => void;
+  onError: (callback: () => void) => void;
+  load: (fd: number) => void;
+  prepare: () => Promise<void>;
+  play: () => Promise<void>;
+  pause: () => Promise<void>;
+  stop: () => Promise<void>;
+  release: () => Promise<void>;
+}
+
+/** The kit's own player, behind the calls a clip makes. A player that cannot be created cannot
+ *  play anything. */
+async function createClipPlayer(): Promise<ClipPlayer> {
+  let player: media.AVPlayer;
+  try {
+    const api = await import('@ohos.multimedia.media');
+    player = await api.default.createAVPlayer();
+  } catch (err) {
+    const failure: Error = new Error(t('Could not play that clip.'));
+    throw failure;
+  }
+  const created: ClipPlayer = {
+    onState: (callback: (state: string) => void): void => {
+      player.on('stateChange', (state: string): void => {
+        callback(state);
+      });
+    },
+    onError: (callback: () => void): void => {
+      player.on('error', (): void => {
+        callback();
+      });
+    },
+    load: (fd: number): void => {
+      player.fdSrc = { fd: fd };
+    },
+    prepare: (): Promise<void> => player.prepare(),
+    play: (): Promise<void> => player.play(),
+    pause: (): Promise<void> => player.pause(),
+    stop: (): Promise<void> => player.stop(),
+    release: (): Promise<void> => player.release(),
+  };
+  return created;
+}
+
+let playerFactory: () => Promise<ClipPlayer> = createClipPlayer;
+
+/** A test hands a scripted player factory in; null restores the kit's own. */
+export function setClipPlayerFactory(next: (() => Promise<ClipPlayer>) | null): void {
+  playerFactory = next ?? createClipPlayer;
+}
+
+/** One control of the player. The kit answers a refusal with a rejected promise rather than a
+ *  throw, so both ways reach `refused`: the answer is never left to reject on its own. */
+function attempt(control: () => Promise<void>, refused: () => void): void {
+  try {
+    control().then((): void => undefined, (): void => refused());
+  } catch (err) {
+    refused();
+  }
+}
+
+/** A control nothing waits for was refused. */
+function noteRefused(): void {
+  hilog.warn(0, 'Voice', 'The clip player refused a control');
 }
 
 /**
@@ -75,18 +156,7 @@ export async function playClip(bytes: Uint8Array, session: HostedSession,
 }
 
 async function playFrom(path: string, session: HostedSession): Promise<void> {
-  const api = await import('@ohos.multimedia.media');
-  let created: media.AVPlayer | null = null;
-  try {
-    created = await api.default.createAVPlayer();
-  } catch (err) {
-    // A player that cannot be created cannot play anything.
-  }
-  if (created === null) {
-    const failure: Error = new Error(t('Could not play that clip.'));
-    throw failure;
-  }
-  const player = created;
+  const player = await playerFactory();
   let resolve: () => void = (): void => undefined;
   const held: Promise<void> = new Promise<void>((settle: () => void): void => {
     resolve = settle;
@@ -94,6 +164,8 @@ async function playFrom(path: string, session: HostedSession): Promise<void> {
   let settled = false;
   let started = false;
   let heardPlaying = false;
+  /** The player's state as it last reported it; idle until the clip is loaded. */
+  let state = 'idle';
   /** What the clip ended with; null means it played or was stopped by the caller. */
   let failure: Error | null = null;
   const finish = (error: Error | null): void => {
@@ -105,10 +177,13 @@ async function playFrom(path: string, session: HostedSession): Promise<void> {
     session.setPlayer(null);
     resolve();
   };
+  const fail = (): void => {
+    finish(new Error(t('Could not play that clip.')));
+  };
   // A clip that never starts fails by then, so a stalled player cannot hold the speech forever.
   const timer = setTimeout((): void => {
     if (!started) {
-      finish(new Error(t('Could not play that clip.')));
+      fail();
     }
   }, CLIP_START_MS);
   let opened: fs.File | null = null;
@@ -123,49 +198,49 @@ async function playFrom(path: string, session: HostedSession): Promise<void> {
       throw failure;
     }
     const source: fs.File = opened;
-    player.on('stateChange', (state: string): void => {
+    player.onState((next: string): void => {
+      state = next;
       if (settled) {
         return;
       }
-      if (state === 'initialized') {
-        void player.prepare();
-      } else if (state === 'prepared') {
+      if (next === 'initialized') {
+        // The clip waits on this answer: refused, it can never play.
+        attempt((): Promise<void> => player.prepare(), fail);
+      } else if (next === 'prepared') {
         started = true;
+        // A pause asked for while the clip loaded holds it here, until a resume.
         if (!session.isStopped && !session.isPaused) {
-          void player.play();
+          attempt((): Promise<void> => player.play(), fail);
         }
-      } else if (state === 'playing') {
+      } else if (next === 'playing') {
         heardPlaying = true;
-      } else if (state === 'completed' || state === 'stopped') {
+      } else if (next === 'completed' || next === 'stopped') {
         finish(null);
-      } else if (state === 'released' || state === 'idle') {
+      } else if (next === 'released' || next === 'idle') {
         finish(heardPlaying ? null : new Error(t('Could not play that clip.')));
       }
     });
-    player.on('error', (): void => {
-      finish(new Error(t('Could not play that clip.')));
+    player.onError((): void => {
+      fail();
     });
     const handle: HostedPlayer = {
       pause: (): void => {
-        try {
-          player.pause();
-        } catch (err) {
-          // Pausing is best effort; the bar still shows the state.
+        // The player takes a pause only while it plays. One asked for before that is the
+        // session's to keep, and the clip then does not start.
+        if (state === 'playing') {
+          attempt((): Promise<void> => player.pause(), noteRefused);
         }
       },
       resume: (): void => {
-        try {
-          player.play();
-        } catch (err) {
-          finish(new Error(t('Could not play that clip.')));
+        if (PLAYS_FROM.includes(state)) {
+          attempt((): Promise<void> => player.play(), fail);
         }
       },
       stopNow: (): void => {
         finish(null);
-        try {
-          player.stop();
-        } catch (err) {
-          // Stopped from a state the player refuses: the clip is over for the session.
+        // A player still loading its clip has nothing to stop: the release below ends it.
+        if (STOPS_FROM.includes(state)) {
+          attempt((): Promise<void> => player.stop(), noteRefused);
         }
       },
     };
@@ -174,7 +249,7 @@ async function playFrom(path: string, session: HostedSession): Promise<void> {
       finish(null);
       await held;
     } else {
-      player.fdSrc = { fd: source.fd };
+      player.load(source.fd);
       await held;
     }
     if (failure !== null) {

@@ -9,6 +9,7 @@
 // queries status again.
 import { rpc } from './rpc';
 import type { RpcContext } from './rpc';
+import type { RequestCancellation } from './request-cancellation';
 import { RpcError, errorText } from './errors';
 import { currentSessionGeneration } from './session';
 import { asRecord } from '../contract/decode';
@@ -213,17 +214,19 @@ export async function ensureAiDataConsent(proc: string, body: Record<string, Obj
  * Asks before audio or text reaches a voice recipient the user has not allowed yet (M7, mobile
  * ensureVoiceConsent): before a reply is spoken, a sample plays or a recording is transcribed.
  * `scope` names the copy of the voice settings a speech uses; undefined means the one that applies.
+ * A `cancellation` ends the status read it is asked through.
  */
-export async function ensureVoiceConsent(context: RpcContext, scope?: string): Promise<void> {
+export async function ensureVoiceConsent(context: RpcContext, scope?: string,
+  cancellation?: RequestCancellation): Promise<void> {
   const target: Record<string, Object> = {};
   if (scope !== undefined) {
     target['settingsScope'] = scope;
   }
-  await ensureUsesConsent(['voice'], target, context);
+  await ensureUsesConsent(['voice'], target, context, cancellation);
 }
 
 async function ensureUsesConsent(uses: string[], target: Record<string, Object>,
-  context: RpcContext): Promise<void> {
+  context: RpcContext, cancellation?: RequestCancellation): Promise<void> {
   const query: Record<string, Object> = {};
   query['uses'] = uses;
   for (const key of Object.keys(target)) {
@@ -231,7 +234,8 @@ async function ensureUsesConsent(uses: string[], target: Record<string, Object>,
   }
   let status: AiConsentStatus | null;
   try {
-    status = decodeAiConsentStatus(await rpc('aiConsent/status', query, { context: context }));
+    status = decodeAiConsentStatus(
+      await rpc('aiConsent/status', query, { context: context, cancellation: cancellation }));
   } catch (err) {
     const error = err instanceof RpcError ? err as RpcError : null;
     if (error !== null && error.status === 404) {

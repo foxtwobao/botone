@@ -8,6 +8,7 @@ import { rpc } from '../net/rpc';
 import type { RpcContext } from '../net/rpc';
 import { postBytes, postJson, parseJsonObject } from '../net/http';
 import type { HttpBytesResponse, HttpResponseView } from '../net/http';
+import type { RequestCancellation } from '../net/request-cancellation';
 import { RpcError, errorText } from '../net/errors';
 import { AiConsentBlocked, ensureVoiceConsent } from '../net/consent';
 import { decodeVoicePrepare, decodeVoiceStatus, decodeTranscription } from '../contract/decode-voice';
@@ -139,10 +140,14 @@ export interface VoiceRecording {
   language: string;
 }
 
-/** /api/voice/transcribe behind the voice consent: the words in a recorded clip. */
+/** /api/voice/transcribe behind the voice consent: the words in a recorded clip. A `cancellation`
+ *  ends the consent read and the transfer it is asked through, and keeps a recording whose turn
+ *  was cancelled while either was pending from ever leaving the device. */
 export async function transcribeRecording(recording: VoiceRecording,
-  context: RpcContext): Promise<string> {
-  await ensureVoiceConsent(context);
+  context: RpcContext, cancellation?: RequestCancellation): Promise<string> {
+  await ensureVoiceConsent(context, undefined, cancellation);
+  // The consent's asks may have outlived the dictation that asked for them: then its audio stays.
+  cancellation?.check();
   const base64 = new util.Base64Helper().encodeToStringSync(recording.audio);
   const body: Record<string, Object> = {};
   body['audioBase64'] = base64;
@@ -151,7 +156,7 @@ export async function transcribeRecording(recording: VoiceRecording,
   let response: HttpResponseView;
   try {
     response = await postJson(`${context.apiBase}/api/voice/transcribe`, requestHeaders(context),
-      JSON.stringify(body), VOICE_RESPONSE_TIMEOUT_MS, MAX_TRANSCRIPTION_RESPONSE_BYTES);
+      JSON.stringify(body), VOICE_RESPONSE_TIMEOUT_MS, MAX_TRANSCRIPTION_RESPONSE_BYTES, cancellation);
   } catch (err) {
     throw new Error(transportText(err as Object, t('Could not transcribe that.')));
   }

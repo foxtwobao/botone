@@ -17,9 +17,11 @@
 //   closing    the engine ended the segment; the state machine still owes a restart or a stop
 //   idle       nothing is left to count
 // Whatever arrives is checked against the segment it belongs to before it acts: an engine
-// callback by the session it names, an opening microphone by the segment that asked for it. So a
-// late callback from an older segment, or a microphone opened for one that ended meanwhile,
-// cannot touch the one running now, and a segment's end is reported once.
+// callback by the session it names, an opening microphone by the segment that asked for it, a
+// microphone's frames by the microphone that is still the live one. So a late callback from an
+// older segment, a microphone opened for one that ended meanwhile, or a frame an old microphone
+// still delivers after it was let go of, cannot touch the one running now, and a segment's end is
+// reported once.
 // Nothing loads until the first listen, behind the capability check, and both the engine and the
 // microphone are released when the app leaves the foreground. Tests hand a scripted engine and
 // microphone in through setHardware.
@@ -33,7 +35,8 @@ import { currentLocale } from '../i18n/i18n';
 import { paceLevel, pcmLevel } from './voice-clip';
 import type { DictationError, DictationResult, RecognizerEvents, RecognizerStartOptions } from './dictation';
 import type { SpeechRecognizer } from './dictation';
-import { requestMicrophone } from './microphone';
+import { openCaptureMicrophone, releaseMicrophone, requestMicrophone, stopMicrophone } from './microphone';
+import type { CaptureMic } from './microphone';
 
 /** The engine calls the recognizer makes; the HMS engine satisfies it, so tests can fake it. */
 export interface RecognizerEngine {
@@ -44,14 +47,6 @@ export interface RecognizerEngine {
   cancel: (sessionId: string) => void;
   shutdown: () => void;
   listLanguages: (params: speechRecognizer.LanguageQuery) => Promise<Array<string>>;
-}
-
-/** The microphone the recognizer records from: the AudioCapturer behind a seam tests can fake. */
-export interface CaptureMic {
-  onFrames: (frames: (buffer: ArrayBuffer) => void) => void;
-  start: () => Promise<void>;
-  stop: () => Promise<void>;
-  release: () => Promise<void>;
 }
 
 /** The frame the engine takes: 640 or 1280 bytes of 16 kHz mono S16LE PCM. */
@@ -73,67 +68,6 @@ interface LiveSession {
   fed: number;
 }
 
-/** The microphone's own AudioCapturer, behind the seam's shape. */
-async function openCapturer(): Promise<CaptureMic | null> {
-  if (!canIUse('SystemCapability.Multimedia.Audio.Core')) {
-    return null;
-  }
-  const api = await import('@ohos.multimedia.audio');
-  const streamInfo: audio.AudioStreamInfo = {
-    samplingRate: api.default.AudioSamplingRate.SAMPLE_RATE_16000,
-    channels: api.default.AudioChannel.CHANNEL_1,
-    sampleFormat: api.default.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
-    encodingType: api.default.AudioEncodingType.ENCODING_TYPE_RAW,
-  };
-  const capturerInfo: audio.AudioCapturerInfo = {
-    source: api.default.SourceType.SOURCE_TYPE_VOICE_RECOGNITION,
-    capturerFlags: 0,
-  };
-  const capturer = await api.default.createAudioCapturer({
-    streamInfo: streamInfo, capturerInfo: capturerInfo,
-  });
-  const mic: CaptureMic = {
-    onFrames: (frames: (buffer: ArrayBuffer) => void): void => {
-      capturer.on('readData', frames);
-    },
-    start: async (): Promise<void> => {
-      await capturer.start();
-    },
-    stop: async (): Promise<void> => {
-      await capturer.stop();
-    },
-    release: async (): Promise<void> => {
-      try {
-        capturer.off('readData');
-      } catch (err) {
-        hilog.warn(0, 'Voice', 'Could not detach the microphone listener');
-      }
-      await capturer.release();
-    },
-  };
-  return mic;
-}
-
-/** Releases a microphone that never recorded, or whose start failed. A failure is logged: the
- *  caller is done with this microphone either way. */
-async function releaseMicrophone(mic: CaptureMic): Promise<void> {
-  try {
-    await mic.release();
-  } catch (err) {
-    hilog.warn(0, 'Voice', 'Could not release the microphone');
-  }
-}
-
-/** Lets go of a recording microphone: stopped, then released whatever the stop did. */
-async function stopMicrophone(mic: CaptureMic): Promise<void> {
-  try {
-    await mic.stop();
-  } catch (err) {
-    hilog.warn(0, 'Voice', 'Could not stop the microphone');
-  }
-  await releaseMicrophone(mic);
-}
-
 /**
  * The adapter itself: engine and microphone owned together, events routed to whoever is
  * listening. The microphone opens while a listener is installed and closes when listening ends.
@@ -143,6 +77,10 @@ export class DeviceRecognizer implements SpeechRecognizer {
   private engine: RecognizerEngine | null = null;
   private available: boolean = false;
   private mic: CaptureMic | null = null;
+  /** The microphone whose frames count: the one opened for the running segment, which a later
+   *  segment rotating onto the same microphone keeps. A microphone let go of may still deliver
+   *  what it has queued, and none of that may reach the segment that runs after it. */
+  private capture: CaptureMic | null = null;
   private events: RecognizerEvents | null = null;
   /** The running segment (opening or recording): the engine is listening to it. */
   private session: LiveSession | null = null;
@@ -292,6 +230,9 @@ export class DeviceRecognizer implements SpeechRecognizer {
   private closeMicrophone(): void {
     const mic = this.mic;
     this.mic = null;
+    // From here nothing a microphone delivers counts: not the one let go of now, nor one still
+    // being opened for the segment that just ended (it is stopped once it answers).
+    this.capture = null;
     if (mic !== null) {
       void stopMicrophone(mic);
     }
@@ -440,7 +381,7 @@ export class DeviceRecognizer implements SpeechRecognizer {
     const factory = this.micFactory;
     let mic: CaptureMic | null = null;
     try {
-      mic = factory !== null ? await factory() : await openCapturer();
+      mic = factory !== null ? await factory() : await openCaptureMicrophone();
     } catch (err) {
       hilog.warn(0, 'Voice', 'Could not open the microphone');
     }
@@ -455,11 +396,13 @@ export class DeviceRecognizer implements SpeechRecognizer {
       return;
     }
     try {
+      this.capture = opened;
       opened.onFrames((buffer: ArrayBuffer): void => {
-        this.heard(buffer);
+        this.heard(opened, buffer);
       });
       await opened.start();
     } catch (err) {
+      this.dropCapture(opened);
       hilog.warn(0, 'Voice', 'Could not start the microphone');
       void releaseMicrophone(opened);
       this.failCapture(session);
@@ -467,10 +410,18 @@ export class DeviceRecognizer implements SpeechRecognizer {
     }
     if (this.session !== session) {
       // The segment ended while the microphone was starting.
+      this.dropCapture(opened);
       void stopMicrophone(opened);
       return;
     }
     this.mic = opened;
+  }
+
+  /** A microphone that will record for no one: its frames stop counting at once. */
+  private dropCapture(mic: CaptureMic): void {
+    if (this.capture === mic) {
+      this.capture = null;
+    }
   }
 
   /** The microphone cannot record, so the listening session ends on it: reported while the
@@ -482,8 +433,13 @@ export class DeviceRecognizer implements SpeechRecognizer {
     }
   }
 
-  /** One microphone buffer: level out, frames to the engine in. */
-  private heard(buffer: ArrayBuffer): void {
+  /** One microphone buffer: level out, frames to the engine in. Only the microphone whose frames
+   *  count reaches the segment running now: what a microphone let go of still delivers is
+   *  dropped, so none of it lands in the segment that came after it. */
+  private heard(mic: CaptureMic, buffer: ArrayBuffer): void {
+    if (this.capture !== mic) {
+      return;
+    }
     const session = this.session;
     const bytes = new Uint8Array(buffer);
     if (this.followsLevel) {

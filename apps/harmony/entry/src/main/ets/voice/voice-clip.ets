@@ -1,15 +1,23 @@
 // One recorded turn for the hosted dictation (M7): mobile's recordClip on the AudioCapturer. The
 // microphone answers 16 kHz mono S16LE PCM, kept in memory and wrapped in a WAV (a 44-byte header
-// the server's transcriber reads); the level is reported each buffer the mic hands over, and the
-// recording ends when its `until` signal stops it (a stop tap, which keeps the words) or its cap
-// is reached — the cap keeps a dictated clip inside the server's transcription size limit.
-import type { audio } from '@kit.AudioKit';
+// the server's transcriber reads); the level is reported a few times a second. The recording ends
+// when its `until` signal stops it (a stop tap, which keeps the words), when the session's
+// `cancel` ends it (which drops them), or when it reaches its cap: the cap keeps the clip inside
+// the server's transcription limit, and reaching it keeps the words like a stop tap does. The
+// microphone sits behind a seam a test can fake, as the recognizer's does.
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { t } from '../i18n/i18n';
 import type { VoiceRecording } from './hosted-voice';
 import type { StopSignal } from './stop-signal';
+import type { CaptureMic } from './microphone';
+import { openCaptureMicrophone, releaseMicrophone, stopMicrophone } from './microphone';
+import { MAX_TRANSCRIBE_BYTES } from './transcribe-limit.generated';
+import { CLIP_BYTES_PER_MS, dictationCapMs, WAV_HEADER_BYTES } from './clip-limit';
 
-/** A dictated clip's cap (mobile MAX_DICTATION_MS). */
-export const MAX_DICTATION_MS = 5 * 60_000;
+/** A dictated clip's cap: the longest recording whose WAV stays inside the server's limit. */
+export const MAX_DICTATION_MS = dictationCapMs(MAX_TRANSCRIBE_BYTES);
+/** The same cap in bytes of PCM: the microphone's buffers do not wait for the timer. */
+const MAX_CLIP_BYTES = MAX_DICTATION_MS * CLIP_BYTES_PER_MS;
 /** A level at or under this is silence (mobile SILENT_LEVEL_DB). */
 const SILENT_LEVEL_DB = -50;
 /** How often a level is reported: the microphone hands over buffers far faster than the UI needs. */
@@ -17,7 +25,7 @@ export const LEVEL_INTERVAL_MS = 100;
 
 /** The WAV header the server's transcriber reads, in front of the PCM it wraps. */
 function wavBytes(pcm: Uint8Array): Uint8Array {
-  const out = new Uint8Array(pcm.byteLength + 44);
+  const out = new Uint8Array(pcm.byteLength + WAV_HEADER_BYTES);
   const view = new DataView(out.buffer);
   const ascii = (offset: number, text: string): void => {
     for (let index = 0; index < text.length; index += 1) {
@@ -36,7 +44,7 @@ function wavBytes(pcm: Uint8Array): Uint8Array {
   view.setUint16(34, 16, true);
   ascii(36, 'data');
   view.setUint32(40, pcm.byteLength, true);
-  out.set(pcm, 44);
+  out.set(pcm, WAV_HEADER_BYTES);
   return out;
 }
 
@@ -77,6 +85,15 @@ export function setClipRecorder(next: ClipRecorder | null): void {
   recorder = next ?? captureClip;
 }
 
+/** Opens the microphone a recording takes its frames from; null where the device has none. */
+type MicrophoneOpener = () => Promise<CaptureMic | null>;
+let microphone: MicrophoneOpener = openCaptureMicrophone;
+
+/** A test hands a scripted microphone in; null restores the device's own. */
+export function setClipMicrophone(next: MicrophoneOpener | null): void {
+  microphone = next ?? openCaptureMicrophone;
+}
+
 /**
  * Records until `until` stops it (its audio is kept) or `cancel` ends the session (its audio is
  * dropped). The level reaches `onLevel` a few times a second while the microphone is open, and
@@ -93,34 +110,37 @@ async function captureClip(cancel: StopSignal, until: StopSignal,
   if (cancel.isStopped()) {
     return null;
   }
-  if (!canIUse('SystemCapability.Multimedia.Audio.Core')) {
-    throw new Error(t('Allow microphone access to dictate.'));
-  }
-  const api = await import('@ohos.multimedia.audio');
-  const streamInfo: audio.AudioStreamInfo = {
-    samplingRate: api.default.AudioSamplingRate.SAMPLE_RATE_16000,
-    channels: api.default.AudioChannel.CHANNEL_1,
-    sampleFormat: api.default.AudioSampleFormat.SAMPLE_FORMAT_S16LE,
-    encodingType: api.default.AudioEncodingType.ENCODING_TYPE_RAW,
-  };
-  const capturerInfo: audio.AudioCapturerInfo = {
-    source: api.default.SourceType.SOURCE_TYPE_VOICE_RECOGNITION,
-    capturerFlags: 0,
-  };
-  let capturer: audio.AudioCapturer;
+  let opened: CaptureMic | null = null;
   try {
-    capturer = await api.default.createAudioCapturer({ streamInfo: streamInfo, capturerInfo: capturerInfo });
+    opened = await microphone();
   } catch (err) {
     // A microphone that cannot open reads as its permission: nothing else can be recorded.
+    hilog.warn(0, 'Voice', 'Could not open the microphone');
+  }
+  if (opened === null) {
     throw new Error(t('Allow microphone access to dictate.'));
   }
+  // Cancelled while the microphone was being opened: it is released, never started, so no
+  // recording begins after the session that asked for it ended.
+  if (cancel.isStopped()) {
+    await releaseMicrophone(opened);
+    return null;
+  }
+  const captured = opened;
   const chunks: Uint8Array[] = [];
   let bytes = 0;
   // The meter repaints a few times a second, not once per microphone buffer.
   const meter: (level: number) => void = paceLevel(onLevel);
+  let done = false;
+  let endRecording: () => void = (): void => undefined;
   try {
-    capturer.on('readData', (buffer: ArrayBuffer): void => {
+    captured.onFrames((buffer: ArrayBuffer): void => {
       const frame = new Uint8Array(buffer);
+      if (bytes + frame.byteLength > MAX_CLIP_BYTES) {
+        // The cap, as the buffers reach it: one more would take the clip past the server's limit.
+        endRecording();
+        return;
+      }
       chunks.push(frame);
       bytes += frame.byteLength;
       meter(pcmLevel(frame));
@@ -129,15 +149,17 @@ async function captureClip(cancel: StopSignal, until: StopSignal,
     // A listener that cannot register: nothing is recorded without it.
     throw new Error(t('Allow microphone access to dictate.'));
   }
-  let done = false;
   let cleanup: () => void = (): void => undefined;
   const ended = new Promise<void>((resolve: () => void): void => {
     const offCancel = cancel.onCancel(resolve);
     const offUntil = until.onCancel(resolve);
-    // The cap ends the recording itself: a dictated message stays inside the server's limit.
-    const timer = setTimeout((): void => {
+    // Reaching the cap ends the recording itself, keeping its words.
+    endRecording = (): void => {
       done = true;
       resolve();
+    };
+    const timer = setTimeout((): void => {
+      endRecording();
     }, MAX_DICTATION_MS);
     cleanup = (): void => {
       clearTimeout(timer);
@@ -146,25 +168,11 @@ async function captureClip(cancel: StopSignal, until: StopSignal,
     };
   });
   try {
-    await capturer.start();
+    await captured.start();
     await ended;
   } finally {
     cleanup();
-    try {
-      await capturer.stop();
-    } catch (err) {
-      // The capturer is released below either way.
-    }
-    try {
-      capturer.off('readData');
-    } catch (err) {
-      // The listener is gone with the capturer either way.
-    }
-    try {
-      await capturer.release();
-    } catch (err) {
-      // Same: the capturer is not reused.
-    }
+    await stopMicrophone(captured);
   }
   if (!done && cancel.isStopped()) {
     return null;

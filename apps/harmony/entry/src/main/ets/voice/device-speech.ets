@@ -5,17 +5,32 @@
 // pipeline (at most three engines may exist device-wide). Nothing loads until the first speech,
 // behind the capability check. Voices that are not installed are never offered, and the kit's
 // own voice download is never called: it opens a system ability that must be run by the user.
+//
+// Creating an engine takes a moment, and a stop, a release or a newer speech may land in it. Each
+// speech therefore asks with a ticket taken before its last wait, and whatever was asked for
+// before a stop or a release is no longer wanted: an engine that arrives late is shut down at
+// once, and nothing starts speaking after the bar has cleared or the app has left the foreground.
 import type { textToSpeech } from '@kit.CoreSpeechKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { speechLocaleTag } from './speech-locale';
 import { t } from '../i18n/i18n';
 
-type Engine = textToSpeech.TextToSpeechEngine;
 type VoiceInfo = textToSpeech.VoiceInfo;
 
 /** What an engine is created for: its language and the voice it speaks with. */
 export interface EngineVoice {
   language: string;
   person: number;
+}
+
+/** The engine calls the synthesizer makes; the HMS engine satisfies them, so tests can fake it. */
+export interface SpeechEngine {
+  setListener: (listener: textToSpeech.SpeakListener) => void;
+  speak: (text: string, params: textToSpeech.SpeakParams) => void;
+  stop: () => void;
+  pause: () => void;
+  resume: () => void;
+  shutdown: () => void;
 }
 
 /** The identifier the bot-voice assignment knows a listed voice by: 'zh-CN-13'. */
@@ -81,15 +96,34 @@ interface PendingUtterance {
  * synthesis is still being prepared; pause and resume only while it is being said.
  */
 export class DeviceSpeech {
-  private engine: Engine | null = null;
+  private engine: SpeechEngine | null = null;
   /** The voice the current engine speaks with. */
   private engineVoice: EngineVoice | null = null;
   private pending: PendingUtterance | null = null;
   private counter = 0;
+  /** Moved on by every stop and release: what was asked for under an earlier value is not wanted. */
+  private epoch = 0;
+  private engineFactory: (() => Promise<SpeechEngine>) | null = null;
 
-  /** Speaks once, creating the engine for `voice` when the current one is another voice's. */
-  async speak(text: string, voice: EngineVoice): Promise<void> {
-    const engine = await this.ensure(voice);
+  /** Tests hand a scripted engine factory in; null restores the device's own. */
+  setEngineFactory(factory: (() => Promise<SpeechEngine>) | null): void {
+    this.engineFactory = factory;
+  }
+
+  /** The ticket of a speech about to speak: take it before the speech's last wait, so a stop or a
+   *  release that lands in that wait leaves it without a voice. */
+  ticket(): number {
+    return this.epoch;
+  }
+
+  /** Speaks once, creating the engine for `voice` when the current one is another voice's. Nothing
+   *  is said once a stop or a release has moved past `ticket`; the utterance then counts as
+   *  stopped. */
+  async speak(text: string, voice: EngineVoice, ticket: number): Promise<void> {
+    const engine = await this.ensure(voice, ticket);
+    if (engine === null) {
+      return;
+    }
     const requestId = `rakazo-${Date.now()}-${(this.counter += 1)}`;
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       const pending: PendingUtterance = { requestId: requestId, resolve: resolve, reject: reject };
@@ -118,10 +152,12 @@ export class DeviceSpeech {
   }
 
   stop(): void {
+    this.epoch += 1;
     try {
       this.engine?.stop();
     } catch (err) {
       // Already stopped: the pending utterance settles through its own callbacks.
+      hilog.warn(0, 'Voice', 'Could not stop the speech');
     }
   }
 
@@ -130,6 +166,7 @@ export class DeviceSpeech {
       this.engine?.pause();
     } catch (err) {
       // Pausing is best effort; the bar still shows the state.
+      hilog.warn(0, 'Voice', 'Could not pause the speech');
     }
   }
 
@@ -138,6 +175,7 @@ export class DeviceSpeech {
       this.engine?.resume();
     } catch (err) {
       // Resuming is best effort; the bar still shows the state.
+      hilog.warn(0, 'Voice', 'Could not resume the speech');
     }
   }
 
@@ -149,6 +187,7 @@ export class DeviceSpeech {
 
   /** Lets go of the engine; the next speech creates a fresh one. */
   release(): void {
+    this.epoch += 1;
     const engine = this.engine;
     this.engine = null;
     this.engineVoice = null;
@@ -157,6 +196,7 @@ export class DeviceSpeech {
       engine?.shutdown();
     } catch (err) {
       // A shutdown failure leaves the engine to the system's own lifetime.
+      hilog.warn(0, 'Voice', 'Could not shut down the speech engine');
     }
   }
 
@@ -181,28 +221,59 @@ export class DeviceSpeech {
     pending.reject(new Error(message));
   }
 
-  /** The one engine this class holds, created for `voice` when it is not that voice's already. */
-  private async ensure(voice: EngineVoice): Promise<Engine> {
+  /** The one engine this class holds, created for `voice` when it is not that voice's already.
+   *  Null when a stop or a release has moved past `ticket`, before or while it was created: the
+   *  engine is then shut down rather than spoken on. */
+  private async ensure(voice: EngineVoice, ticket: number): Promise<SpeechEngine | null> {
+    if (ticket !== this.epoch) {
+      return null;
+    }
     if (this.engine !== null && this.engineVoice !== null
       && this.engineVoice.language === voice.language && this.engineVoice.person === voice.person) {
       return this.engine;
     }
     this.release();
+    const creating = this.epoch;
     if (!canIUse('SystemCapability.AI.TextToSpeech')) {
       throw new Error(t('Could not speak'));
     }
+    try {
+      const factory = this.engineFactory;
+      const created = factory !== null ? await factory() : await this.createEngine(voice);
+      if (creating !== this.epoch) {
+        // Stopped, released or replaced while it was being created: too late to speak, and an
+        // engine left open is one of the few the device allows.
+        this.shutdown(created);
+        return null;
+      }
+      this.engine = created;
+      this.engineVoice = voice;
+      return created;
+    } catch (err) {
+      // The voice is not on this device: the kit's own detail names ids and codes.
+      throw new Error(t('Could not speak'));
+    }
+  }
+
+  /** The kit's own engine for `voice`; a creation the kit refuses is thrown on, with its detail. */
+  private async createEngine(voice: EngineVoice): Promise<SpeechEngine> {
     const api = await import('@hms.ai.textToSpeech');
     const params: textToSpeech.CreateEngineParams = {
       language: voice.language, person: voice.person, online: 1,
     };
     try {
-      const engine = await api.default.createEngine(params);
-      this.engine = engine;
-      this.engineVoice = voice;
-      return engine;
+      return await api.default.createEngine(params);
     } catch (err) {
-      // The voice is not on this device: the kit's own detail names ids and codes.
-      throw new Error(t('Could not speak'));
+      throw err as Error;
+    }
+  }
+
+  private shutdown(engine: SpeechEngine): void {
+    try {
+      engine.shutdown();
+    } catch (err) {
+      // A shutdown failure leaves the engine to the system's own lifetime.
+      hilog.warn(0, 'Voice', 'Could not shut down the speech engine');
     }
   }
 }

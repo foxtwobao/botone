@@ -13,13 +13,17 @@
 // microphone is released whatever its stop did, and one opened for a segment that ended
 // meanwhile is released rather than adopted by the next. The composer runs over the real
 // recognizer on scripted hardware here, so its send is followed through the engine's own finish.
+//
+// Review round 4: a microphone let go of with its segment may still deliver frames it had queued,
+// and none of them may reach the segment that runs after it.
 import { afterEach, describe, expect, it } from '@ohos/hypium';
 import type { speechRecognizer } from '@kit.CoreSpeechKit';
 import { FINISH_GRACE_MS } from '../../../main/ets/voice/dictation';
 import * as dictationPort from '../../../main/ets/voice/dictation';
 import type { DictationError, DictationResult, RecognizerEvents } from '../../../main/ets/voice/dictation';
 import { DeviceRecognizer, recognitionLanguage } from '../../../main/ets/voice/device-recognizer';
-import type { CaptureMic, RecognizerEngine } from '../../../main/ets/voice/device-recognizer';
+import type { RecognizerEngine } from '../../../main/ets/voice/device-recognizer';
+import type { CaptureMic } from '../../../main/ets/voice/microphone';
 import { pcmLevel } from '../../../main/ets/voice/voice-clip';
 import * as deviceVoicePort from '../../../main/ets/voice/device-voice';
 import { ComposerDictation, stopAllComposerDictation } from '../../../main/ets/features/chat/composer-dictation';
@@ -114,6 +118,8 @@ function deviceController(on: string, fake: ScriptedRecognizer, words: string[])
 class FakeEngine implements RecognizerEngine {
   calls: string[] = [];
   sessionIds: string[] = [];
+  /** For each frame written, the byte values it holds: a frame must hold its own microphone's. */
+  tones: number[][] = [];
   listener: speechRecognizer.RecognitionListener | null = null;
   /** Called when a segment starts listening; a test waits on it to know the engine is live. */
   onStarted: ((sessionId: string) => void) | null = null;
@@ -131,8 +137,16 @@ class FakeEngine implements RecognizerEngine {
     this.onStarted?.(params.sessionId);
   };
 
-  writeAudio = (sessionId: string, _audio: Uint8Array): void => {
+  writeAudio = (sessionId: string, audio: Uint8Array): void => {
     this.calls.push(`write ${sessionId}`);
+    const tones: number[] = [];
+    for (let index = 0; index < audio.byteLength; index += 1) {
+      const tone = audio[index] ?? -1;
+      if (!tones.includes(tone)) {
+        tones.push(tone);
+      }
+    }
+    this.tones.push(tones);
   };
 
   finish = (sessionId: string): void => {
@@ -211,6 +225,13 @@ function recordEvents(log: string[]): RecognizerEvents {
       log.push(`level ${value}`);
     },
   };
+}
+
+/** A microphone buffer that holds one byte value throughout. */
+function filled(tone: number, size: number): ArrayBuffer {
+  const bytes = new Uint8Array(size);
+  bytes.fill(tone);
+  return bytes.buffer as ArrayBuffer;
 }
 
 /** One scripted-hardware run: the recognizer, its engine, its microphone, the event log. */
@@ -775,6 +796,34 @@ export default function dictationLifecycleTest(): void {
       const second = run.engine.sessionIds[1] ?? '';
       live.frames?.(new ArrayBuffer(1_280));
       expect(run.engine.calls.includes(`write ${second}`)).assertTrue();
+    });
+
+    it('a_frame_the_old_microphone_delivers_after_its_cancel_reaches_no_segment', 0, async () => {
+      const run = new ScriptedRun();
+      run.late = true;
+      await run.prepare();
+      run.listen();
+      run.startAgain();
+      const old = new FakeMic();
+      await run.handOver(old);
+      old.frames?.(filled(0x11, 1_280));
+      expect(run.engine.tones).assertDeepEquals([[0x11]]);
+      // The first segment is cancelled and the next one starts at once, with a microphone of its own.
+      run.recognizer.abort();
+      run.startAgain();
+      const live = new FakeMic();
+      await run.handOver(live);
+      const second = run.engine.sessionIds[1] ?? '';
+      // The cancelled segment's microphone still hands over what it had queued while the next
+      // segment runs: half a frame, then a whole one.
+      old.frames?.(filled(0xAA, 640));
+      old.frames?.(filled(0xAA, 1_280));
+      // None of it was written into the next segment.
+      expect(run.engine.calls.includes(`write ${second}`)).assertFalse();
+      // The next segment's own microphone feeds it, and its first frame holds that microphone's
+      // bytes alone: nothing of the old one sits in front of them.
+      live.frames?.(filled(0x55, 1_280));
+      expect(run.engine.tones).assertDeepEquals([[0x11], [0x55]]);
     });
   });
 

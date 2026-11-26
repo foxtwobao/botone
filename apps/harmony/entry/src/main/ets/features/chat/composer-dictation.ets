@@ -11,6 +11,7 @@ import type { RpcContext } from '../../net/rpc';
 import { RpcError, errorText } from '../../net/errors';
 import { AiConsentBlocked } from '../../net/consent';
 import { currentSessionGeneration } from '../../net/session';
+import { RequestCancellation } from '../../net/request-cancellation';
 import { loadDeviceVoiceEnabled } from '../../voice/device-voice';
 import { available as dictationAvailable, finishListening, listen, stop as stopDictation } from '../../voice/dictation';
 import { recordClip } from '../../voice/voice-clip';
@@ -43,6 +44,16 @@ interface DictationSession {
 
 /** Controllers with a microphone open, so the app leaving the foreground can end them all. */
 const live: Set<ComposerDictation> = new Set<ComposerDictation>();
+
+/** The server's transcription of a recorded clip, behind a seam a test can fake. */
+type Transcriber = (clip: VoiceRecording, context: RpcContext,
+  cancellation: RequestCancellation) => Promise<string>;
+let transcriber: Transcriber = transcribeRecording;
+
+/** A test hands a scripted transcriber in; null restores the server's own. */
+export function setDictationTranscriber(next: Transcriber | null): void {
+  transcriber = next ?? transcribeRecording;
+}
 
 /** Cancels every open dictation session: no microphone may outlive the foreground. */
 export function stopAllComposerDictation(): void {
@@ -177,11 +188,15 @@ export class ComposerDictation {
       return;
     }
     if (plan.kind === 'provider') {
+      // The cancel ends the consent reads and the transcription request too, not only the
+      // recording: a turn cancelled after its microphone closed sends nothing more.
+      const cancellation = new RequestCancellation();
+      mine.cancel.onCancel((): void => cancellation.cancel());
       const requestContext: RpcContext = await captureContext();
       if (this.session !== mine) {
         return;
       }
-      await ensureVoiceConsent(requestContext);
+      await ensureVoiceConsent(requestContext, undefined, cancellation);
       if (this.session !== mine) {
         return;
       }
@@ -215,7 +230,7 @@ export class ComposerDictation {
       mine.finish = (): void => {};
       let text = '';
       if (clip !== null) {
-        text = await this.transcribe(clip, requestContext);
+        text = await this.transcribe(clip, requestContext, cancellation);
       }
       if (!this.end(mine) || requestContext.generation !== currentSessionGeneration()) {
         return;
@@ -263,9 +278,10 @@ export class ComposerDictation {
     });
   }
 
-  private async transcribe(clip: VoiceRecording, requestContext: RpcContext): Promise<string> {
+  private async transcribe(clip: VoiceRecording, requestContext: RpcContext,
+    cancellation: RequestCancellation): Promise<string> {
     try {
-      return await transcribeRecording(clip, requestContext);
+      return await transcriber(clip, requestContext, cancellation);
     } catch (err) {
       throw new Error(failureText(err as Object, t('Could not transcribe that.')));
     }

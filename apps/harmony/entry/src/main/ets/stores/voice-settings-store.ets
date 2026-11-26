@@ -300,7 +300,8 @@ export class VoiceSettingsStore {
       return;
     }
     const next = value.trim();
-    if (next === (credential.speechModel ?? '') || this.speechModel === next) {
+    // Only the saved value says whether there is something to save: the form holds `next` itself.
+    if (next === (credential.speechModel ?? '')) {
       return;
     }
     this.revision += 1;
@@ -333,10 +334,10 @@ export class VoiceSettingsStore {
     this.pending = 'test';
     this.error = '';
     try {
-      const ready = await speakText(
-        t("Hi, this is how I'll sound when I read replies out loud."),
-        { scope: 'account' },
-      );
+      // The sample speaks with the copy of the voice settings this page shows. The page's reads
+      // and writes name no scope, so the copy is whichever applies in the selected Space; a named
+      // one would play another copy's voice.
+      const ready = await speakText(t("Hi, this is how I'll sound when I read replies out loud."));
       if (!ready) {
         throw new Error(t('Connect a voice provider first.'));
       }
