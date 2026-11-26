@@ -1,7 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { guardedFlush, guardedWrite, logSinkHealth, reportSinkError } from "./sink-guard.js";
 
 let now = Date.UTC(2026, 0, 1);
+
+beforeAll(() => {
+  // This worker shares the module between files, and an earlier file can leave suppressed reports
+  // behind. One just after the epoch falls outside any window they left, so it clears their count.
+  vi.spyOn(Date, "now").mockReturnValue(30_000);
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  reportSinkError("earlier file");
+  vi.restoreAllMocks();
+});
 
 beforeEach(() => {
   now += 30_000;
@@ -108,5 +117,19 @@ describe("sink failure diagnostics", () => {
       degraded: true,
     });
     expect(logSinkHealth(now + 300_000).degraded).toBe(false);
+  });
+
+  it("reports again after the clock steps back", () => {
+    vi.restoreAllMocks();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const realNow = Date.now();
+
+    reportSinkError("first");
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith("log sink failed", "first");
+
+    vi.spyOn(Date, "now").mockReturnValue(realNow - 86_400_000);
+    reportSinkError("second");
+
+    expect(consoleError).toHaveBeenLastCalledWith("log sink failed", "second");
   });
 });
