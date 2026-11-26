@@ -236,6 +236,20 @@ export struct SettingsPage {
                 this.stack.pushPathByName('server', null);
               })
               ValueRow({ label: t('Model'), value: this.modelLabel() })
+              Row() {
+                Text(t('Voice'))
+                  .fontSize(typeScale.secondary.fontSize)
+                  .fontColor(appearance.tokens().mutedForeground)
+                Blank()
+                Text(t('Voice'))
+                  .fontSize(typeScale.body.fontSize)
+                  .fontColor(appearance.tokens().link)
+              }
+              .width('100%')
+              .padding({ top: 12, bottom: 12 })
+              .onClick((): void => {
+                this.stack.pushPathByName('voice', null);
+              })
             }
             .width('100%')
             .padding({ left: 16, right: 16 })

@@ -95,7 +95,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "b2",
@@ -107,7 +108,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": true
         }
       ],
       "groups": [
@@ -169,7 +171,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "b2",
@@ -181,7 +184,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "b3",
@@ -193,7 +197,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         }
       ],
       "groups": [
@@ -260,7 +265,8 @@
           "preview": "",
           "status": "queued",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "leased",
@@ -272,7 +278,8 @@
           "preview": "",
           "status": "leased",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "running",
@@ -284,7 +291,8 @@
           "preview": "",
           "status": "running",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "waiting",
@@ -296,7 +304,8 @@
           "preview": "",
           "status": "waiting_input",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "takeover",
@@ -308,7 +317,8 @@
           "preview": "",
           "status": "waiting_takeover",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "done",
@@ -320,7 +330,8 @@
           "preview": "",
           "status": "completed",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "failed",
@@ -332,7 +343,8 @@
           "preview": "",
           "status": "failed",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "idle",
@@ -344,7 +356,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         }
       ],
       "groups": [
@@ -421,7 +434,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "snoozed",
@@ -433,7 +447,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": "2026-11-21T13:00:00.000Z"
+          "snoozedUntil": "2026-11-21T13:00:00.000Z",
+          "autoSpeak": false
         },
         {
           "id": "woke",
@@ -445,7 +460,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": "2026-11-21T11:00:00.000Z"
+          "snoozedUntil": "2026-11-21T11:00:00.000Z",
+          "autoSpeak": false
         },
         {
           "id": "bad-snooze",
@@ -457,7 +473,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": "not-a-date"
+          "snoozedUntil": "not-a-date",
+          "autoSpeak": false
         }
       ],
       "groups": [
@@ -519,7 +536,8 @@
           "preview": "",
           "status": "running",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         },
         {
           "id": "p2",
@@ -531,7 +549,8 @@
           "preview": "",
           "status": "idle",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": "2026-11-21T13:00:00.000Z"
+          "snoozedUntil": "2026-11-21T13:00:00.000Z",
+          "autoSpeak": false
         },
         {
           "id": "u1",
@@ -543,7 +562,8 @@
           "preview": "",
           "status": "queued",
           "updatedAt": "2026-11-21T10:00:00.000Z",
-          "snoozedUntil": null
+          "snoozedUntil": null,
+          "autoSpeak": false
         }
       ],
       "groups": [

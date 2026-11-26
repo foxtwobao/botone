@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "BotONE"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "Turn your voice into text as you dictate a message."
     }
   ]
 }

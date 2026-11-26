@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "apiKey": {
+      "default": "",
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "baseUrl": {
+      "maxLength": 2048,
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "scope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "speechModel": {
+      "maxLength": 64,
+      "type": "string"
+    },
+    "sttApiKey": {
+      "maxLength": 4096,
+      "type": "string"
+    },
+    "sttBaseUrl": {
+      "maxLength": 2048,
+      "type": "string"
+    },
+    "sttModel": {
+      "maxLength": 200,
+      "type": "string"
+    },
+    "ttsModel": {
+      "maxLength": 200,
+      "type": "string"
+    },
+    "voiceId": {
+      "maxLength": 120,
+      "type": "string"
+    }
+  },
+  "required": ["provider", "apiKey"],
+  "type": "object"
+}

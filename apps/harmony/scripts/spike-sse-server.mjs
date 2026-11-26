@@ -1,13 +1,8 @@
 // Offline fixture server for the instrumented suites. Run on the host:
 // node scripts/spike-sse-server.mjs [port]; the emulator reaches it at http://10.0.2.2:<port>.
-//
-// M0 S3 routes (unchanged): /sse splits one frame across writes, cutting a multi-byte UTF-8
-// character mid-byte; /sse-cut closes mid-frame; a wrong Accept header is answered 400.
-//
-// M1 routes: a wire-format-faithful fake of the RPC/auth surface the net layer ports —
-// health, me (401 by bearer/space), spaces/list, error/timeout/oversize branches, better-auth
-// sign-in token shapes, capabilities, and sign-out with a delivery log at GET /__state.
-// All credentials here are fake probes, never real ones.
+// It fakes the RPC, auth and stream surface each milestone consumes, plus the /sse splits of M0.
+// Every credential, id and key here is a fake probe, never a real one. The voice routes live in
+// voice-fixture.mjs and the artifact routes in artifact-fixture.mjs.
 import { createServer } from "node:http";
 import {
   attachmentSendPayload,
@@ -18,6 +13,12 @@ import {
   resetArtifacts,
 } from "./artifact-fixture.mjs";
 import { bearer, json, rpcError } from "./fixture-http.mjs";
+import {
+  handleVoiceControl,
+  handleVoiceHttp,
+  handleVoiceRpc,
+  resetVoice,
+} from "./voice-fixture.mjs";
 
 const port = Number(process.argv[2] ?? 8787);
 
@@ -39,9 +40,7 @@ const ME = {
   defaultModel: "fake-model",
 };
 
-// M4: the read-only model display's catalog. The default names the first entry, so the settings
-// row shows the SERVER label; /__models lets a test move the default off the catalog to prove the
-// generic fallback (no raw id ever reaches the screen). Every id here is a fake probe.
+// The model catalog; /__models moves the default off it to prove the generic fallback.
 let MODELS = [
   {
     provider: "fake-provider",
@@ -67,10 +66,7 @@ function resetModels() {
   ME.defaultModel = "fake-model";
 }
 
-// ---- M2 roster state -------------------------------------------------------
-// A mutable fake roster so archive/restore and signal-driven re-reads have something to change.
-// Every /rpc request is logged (path + body + sequence) so a test can prove reads happen only on
-// a signal or foreground, never on a timer. All ids/credentials here are fake probes.
+// ---- M2 roster state: a mutable fake roster whose /rpc reads are all logged ----
 const SPACE = "space-fake";
 let seq = 0;
 const requests = [];
@@ -78,6 +74,7 @@ const notificationClients = new Set();
 
 function makeBot(id, name, over = {}) {
   return {
+    autoSpeak: false,
     id,
     spaceId: SPACE,
     name,
@@ -115,8 +112,7 @@ function makeGroup(id, name, over = {}) {
 
 let bots = [];
 let groups = [];
-// When offline, read RPCs drop the connection (a transport failure, not an HTTP answer) so the
-// client's offline banner + memory-cache fallback can be exercised without stopping the server.
+// Offline: read RPCs drop the connection, so the banner and memory fallback can be exercised.
 let offline = false;
 const OFFLINE_READS = new Set([
   "/rpc/spaces/list",
@@ -133,6 +129,7 @@ const OFFLINE_READS = new Set([
 function resetRoster() {
   bots = [
     makeBot("bot-1", "Alpha", {
+      autoSpeak: true,
       pinned: true,
       unread: true,
       status: "running",
@@ -417,13 +414,12 @@ function resetConsent() {
   consentRecipients = [
     { key: "model-key", name: "Fake Model Provider", use: "model", detail: "", allowed: false },
     { key: "memory-key", name: "Fake Memory Provider", use: "memory", detail: "", allowed: false },
+    { key: "voice-key", name: "Fake Voice Provider", use: "voice", detail: "", allowed: false },
   ];
 }
 resetConsent();
 
-// A scripted consent response queue (/__consentScript): each entry answers the next aiConsent
-// request in order — {status?, body?, fail?} — so the device replay reproduces the exact transport
-// conditions the TS fixture recorded (404, failed allow, …). Empty queue = the live fake state.
+// /__consentScript answers the next aiConsent requests in order ({status?, body?, fail?}).
 let consentScript = [];
 let consentScriptIndex = 0;
 
@@ -961,6 +957,7 @@ createServer((req, res) => {
       resetModels();
       resetArtifacts();
       resetConsent();
+      resetVoice();
       consentScript = [];
       consentScriptIndex = 0;
       return json(res, 200, {});
@@ -981,7 +978,10 @@ createServer((req, res) => {
       consentScriptIndex = 0;
       return json(res, 200, { ok: true, count: consentScript.length });
     }
+    if (handleVoiceControl(req, res, body)) return;
+    if (handleVoiceHttp(req, res, body)) return;
     if (handleArtifactRoute(req, res, body)) return;
+    if (handleVoiceRpc(req, res, body)) return;
     if (req.url === "/rpc/notifications/subscribe") return handleNotifications(req, res);
     if (req.url.startsWith("/rpc/aiConsent/")) return handleConsentRpc(req, res, body);
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);

@@ -27,6 +27,13 @@ import threadStreamTest from './ThreadStream.test';
 import threadRealtimeTest from './ThreadRealtime.test';
 import consentGateTest from './ConsentGate.test';
 import attachmentsTest from './Attachments.test';
+import voiceTest from './Voice.test';
+import voiceHostedTest from './VoiceHosted.test';
+import dictationLifecycleTest from './DictationLifecycle.test';
+import voiceClipTest from './VoiceClip.test';
+import deviceSpeechTest from './DeviceSpeech.test';
+import clipPlayerTest from './ClipPlayer.test';
+import voiceSettingsTest from './VoiceSettings.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -62,4 +69,15 @@ export default function testsuite() {
   // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();
   realThreadSmoke();
+  // M7: the voice ports' fixture replay (pure), then the hosted loop against the fixture server.
+  voiceTest();
+  voiceHostedTest();
+  // M7 review round 2: the dictation lifecycles and send semantics, both paths.
+  dictationLifecycleTest();
+  // M7 review round 4: the recording, the device synthesizer and the clip player on scripted
+  // hardware, then the Voice settings store against the fixture server.
+  voiceClipTest();
+  deviceSpeechTest();
+  clipPlayerTest();
+  voiceSettingsTest();
 }

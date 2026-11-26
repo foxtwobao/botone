@@ -8,6 +8,8 @@ import { InboxPage } from '../features/inbox/InboxPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { ArchivedPage } from '../features/archived/ArchivedPage';
 import { ServerPage } from '../features/server/ServerPage';
+import { VoicePage } from '../features/settings/VoicePage';
+import { VoicePlayerBar } from '../features/chat/voice-player-bar';
 import { ThreadPage } from '../features/chat/ThreadPage';
 import type { ThreadRoute } from '../features/chat/thread-route';
 import { ShareTargetSheet } from '../features/chat/share-target-sheet';
@@ -31,6 +33,8 @@ struct Index {
       ArchivedPage({ stack: this.stack })
     } else if (name === 'settings') {
       SettingsPage({ stack: this.stack })
+    } else if (name === 'voice') {
+      VoicePage({ stack: this.stack })
     } else if (name === 'chat') {
       ThreadPage({
         stack: this.stack,
@@ -43,6 +47,7 @@ struct Index {
   }
 
   build() {
+    Column() {
     Navigation(this.stack) {
       if (app.phase === 'signIn') {
         SignInPage({ stack: this.stack })
@@ -63,6 +68,12 @@ struct Index {
     .navDestination(this.destinations)
     .hideTitleBar(true)
     .mode(NavigationMode.Stack)
+    .backgroundColor(appearance.tokens().background)
+    .layoutWeight(1)
+    VoicePlayerBar()
+    }
+    .width('100%')
+    .height('100%')
     .backgroundColor(appearance.tokens().background)
     .bindSheet(app.phase === 'me' && app.me !== null && incomingShare.pending !== null, this.shareTarget(), {
       height: SheetSize.MEDIUM,

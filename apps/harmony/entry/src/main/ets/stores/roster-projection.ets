@@ -44,6 +44,8 @@ export interface InboxRow {
   /** The bot's identity color; empty for a group (bots carry the only color). */
   color: string;
   working: boolean;
+  /** The bot reads its finished replies aloud; false for a group. */
+  autoSpeak: boolean;
 }
 
 /**
@@ -60,6 +62,7 @@ export function projectInbox(bots: BotView[], groups: GroupView[], now: number):
     const row: InboxRow = {
       kind: 'bot', id: bot.id, name: bot.name, preview: bot.preview, updatedAt: bot.updatedAt,
       unread: bot.unread, pinned: bot.pinned, color: bot.color, working: isRunWorking(bot.status),
+      autoSpeak: bot.autoSpeak,
     };
     (bot.pinned ? pinned : rest).push(row);
   }
@@ -69,7 +72,7 @@ export function projectInbox(bots: BotView[], groups: GroupView[], now: number):
     }
     const row: InboxRow = {
       kind: 'group', id: group.id, name: group.name, preview: group.preview, updatedAt: group.updatedAt,
-      unread: group.unread, pinned: group.pinned, color: '', working: false,
+      unread: group.unread, pinned: group.pinned, color: '', working: false, autoSpeak: false,
     };
     (group.pinned ? pinned : rest).push(row);
   }

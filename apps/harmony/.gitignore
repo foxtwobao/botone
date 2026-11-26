@@ -12,12 +12,14 @@
 /.appanalyzer
 
 # Codegen outputs (scripts/gen-tokens.ts, gen-markdown-tables.ts, gen-linkify-patterns.ts,
-# gen-notices.ts, gen-i18n.ts, gen-client-build.ts, embed-fixtures.ts); rebuilt before every build
-# by `pnpm --filter @rakazo/harmony harmony:codegen` and the CI codegen step.
+# gen-notices.ts, gen-i18n.ts, gen-client-build.ts, gen-voice-limits.ts, embed-fixtures.ts);
+# rebuilt before every build by `pnpm --filter @rakazo/harmony harmony:codegen` and the CI codegen
+# step.
 entry/src/main/ets/uikit/tokens.generated.ets
 entry/src/main/ets/thread/markdown-tables.generated.ets
 entry/src/main/ets/thread/link-patterns.generated.ets
 entry/src/main/ets/net/client-build.generated.ets
+entry/src/main/ets/voice/transcribe-limit.generated.ets
 entry/src/main/resources/rawfile/i18n/
 entry/src/main/resources/rawfile/THIRD-PARTY-NOTICES.txt
 entry/src/ohosTest/ets/test/fixtures.generated.ets

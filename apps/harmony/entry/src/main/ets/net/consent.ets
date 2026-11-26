@@ -9,6 +9,7 @@
 // queries status again.
 import { rpc } from './rpc';
 import type { RpcContext } from './rpc';
+import type { RequestCancellation } from './request-cancellation';
 import { RpcError, errorText } from './errors';
 import { currentSessionGeneration } from './session';
 import { asRecord } from '../contract/decode';
@@ -148,8 +149,10 @@ function coalesceKey(context: RpcContext, scope: string, version: string, key: s
   return `${context.apiBase}\u0000${space}\u0000${scope}\u0000${version}\u0000${key}`;
 }
 
-/** One recipient's ask-or-reuse, Allow save included; the map entry clears when it settles. */
-function ensureRecipient(context: RpcContext, status: AiConsentStatus, recipient: AiRecipient): Promise<void> {
+/** One recipient's ask-or-reuse, Allow save included; the map entry clears when it settles.
+ *  `target` is the query's target: a thread's bot or group, or the copy of the settings asked about. */
+function ensureRecipient(context: RpcContext, status: AiConsentStatus, recipient: AiRecipient,
+  target: Record<string, Object>): Promise<void> {
   const key = coalesceKey(context, status.scope, status.version, recipient.key);
   const existing = pending.get(key);
   if (existing !== undefined) {
@@ -172,6 +175,12 @@ function ensureRecipient(context: RpcContext, status: AiConsentStatus, recipient
     body['scope'] = status.scope;
     body['version'] = status.version;
     body['keys'] = [recipient.key];
+    // A query that named a copy of the settings asks about that copy's recipients (core
+    // aiConsentTarget), so the Allow is saved for the same copy.
+    const settingsScope = target['settingsScope'];
+    if (typeof settingsScope === 'string') {
+      body['settingsScope'] = settingsScope;
+    }
     await rpc('aiConsent/allow', body, { context: context });
   })().then((): void => {
     if (pending.get(key) === task) {
@@ -198,7 +207,26 @@ export async function ensureAiDataConsent(proc: string, body: Record<string, Obj
   if (uses.length === 0) {
     return;
   }
-  const target = aiConsentTarget(body);
+  await ensureUsesConsent(uses, aiConsentTarget(body), context);
+}
+
+/**
+ * Asks before audio or text reaches a voice recipient the user has not allowed yet (M7, mobile
+ * ensureVoiceConsent): before a reply is spoken, a sample plays or a recording is transcribed.
+ * `scope` names the copy of the voice settings a speech uses; undefined means the one that applies.
+ * A `cancellation` ends the status read it is asked through.
+ */
+export async function ensureVoiceConsent(context: RpcContext, scope?: string,
+  cancellation?: RequestCancellation): Promise<void> {
+  const target: Record<string, Object> = {};
+  if (scope !== undefined) {
+    target['settingsScope'] = scope;
+  }
+  await ensureUsesConsent(['voice'], target, context, cancellation);
+}
+
+async function ensureUsesConsent(uses: string[], target: Record<string, Object>,
+  context: RpcContext, cancellation?: RequestCancellation): Promise<void> {
   const query: Record<string, Object> = {};
   query['uses'] = uses;
   for (const key of Object.keys(target)) {
@@ -206,7 +234,8 @@ export async function ensureAiDataConsent(proc: string, body: Record<string, Obj
   }
   let status: AiConsentStatus | null;
   try {
-    status = decodeAiConsentStatus(await rpc('aiConsent/status', query, { context: context }));
+    status = decodeAiConsentStatus(
+      await rpc('aiConsent/status', query, { context: context, cancellation: cancellation }));
   } catch (err) {
     const error = err instanceof RpcError ? err as RpcError : null;
     if (error !== null && error.status === 404) {
@@ -224,7 +253,7 @@ export async function ensureAiDataConsent(proc: string, body: Record<string, Obj
       if (recipient.allowed || !uses.includes(recipient.use)) {
         continue;
       }
-      await ensureRecipient(context, status, recipient);
+      await ensureRecipient(context, status, recipient, target);
     }
   } catch (err) {
     if (err instanceof AiConsentBlocked) {

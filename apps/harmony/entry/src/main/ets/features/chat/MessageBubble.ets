@@ -28,6 +28,7 @@ import { userMentionTargets, userTextRuns } from '../../thread/message-mentions'
 import type { MemberLike, UserMentionTarget, UserTextRun } from '../../thread/message-mentions';
 import { sanitizeMarkdownUrl } from '../../thread/message-links';
 import { app } from '../../app/app-state';
+import { speechFromBlocks } from '../../voice/speech-text';
 import { AttachmentBlock } from './media-attachments';
 
 /** Where a link opens, or empty when it opens nothing: only the schemes the app may follow. */
@@ -691,6 +692,8 @@ export struct MessageBubble {
   @Event onJumpTo: (messageId: string) => void = (_messageId: string): void => {};
   /** M6: the Reply menu entry hands the message to the composer's reply flow. */
   @Event onReply: (message: LiveMessage) => void = (_message: LiveMessage): void => {};
+  /** M7: the Speak menu entry reads the chat aloud from this message on. */
+  @Event onSpeak: (message: LiveMessage) => void = (_message: LiveMessage): void => {};
   @Local selectOpen: boolean = false;
   /** The menu of the message shown, found once per change of that message: finding it parses. */
   @Computed
@@ -898,6 +901,15 @@ export struct MessageBubble {
           .onClick((): void => {
             if (this.message !== null) {
               this.onReply(this.message);
+            }
+          })
+      }
+      if (this.message !== null && this.message.role === 'bot'
+        && speechFromBlocks(this.message.blocks)) {
+        MenuItem({ content: t('Speak message') })
+          .onClick((): void => {
+            if (this.message !== null) {
+              this.onSpeak(this.message);
             }
           })
       }

@@ -2,6 +2,9 @@
   "items": {
     "additionalProperties": false,
     "properties": {
+      "autoSpeak": {
+        "type": "boolean"
+      },
       "color": {
         "type": "string"
       },
@@ -31,7 +34,17 @@
         "type": "string"
       }
     },
-    "required": ["id", "name", "color", "pinned", "unread", "preview", "status", "updatedAt"],
+    "required": [
+      "id",
+      "name",
+      "color",
+      "pinned",
+      "unread",
+      "preview",
+      "status",
+      "updatedAt",
+      "autoSpeak"
+    ],
     "type": "object"
   },
   "type": "array"

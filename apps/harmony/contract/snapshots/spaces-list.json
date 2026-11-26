@@ -8,6 +8,9 @@
           "items": {
             "additionalProperties": false,
             "properties": {
+              "autoSpeak": {
+                "type": "boolean"
+              },
               "color": {
                 "type": "string"
               },
@@ -45,7 +48,8 @@
               "unread",
               "preview",
               "status",
-              "updatedAt"
+              "updatedAt",
+              "autoSpeak"
             ],
             "type": "object"
           },

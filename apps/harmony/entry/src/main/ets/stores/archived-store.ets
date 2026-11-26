@@ -23,14 +23,14 @@ function archivedRows(bots: BotView[], groups: GroupView[]): InboxRow[] {
   for (const bot of bots) {
     const row: InboxRow = {
       kind: 'bot', id: bot.id, name: bot.name, preview: bot.preview, updatedAt: bot.updatedAt,
-      unread: false, pinned: false, color: bot.color, working: false,
+      unread: false, pinned: false, color: bot.color, working: false, autoSpeak: false,
     };
     rows.push(row);
   }
   for (const group of groups) {
     const row: InboxRow = {
       kind: 'group', id: group.id, name: group.name, preview: group.preview, updatedAt: group.updatedAt,
-      unread: false, pinned: false, color: '', working: false,
+      unread: false, pinned: false, color: '', working: false, autoSpeak: false,
     };
     rows.push(row);
   }

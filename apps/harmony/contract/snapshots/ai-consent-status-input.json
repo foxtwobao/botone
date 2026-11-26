@@ -7,6 +7,10 @@
     "groupId": {
       "type": "string"
     },
+    "settingsScope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
     "uses": {
       "items": {
         "enum": ["model", "voice", "memory"],

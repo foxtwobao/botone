@@ -15,9 +15,15 @@ import {
   decodeRoster,
   decodeSpaceNavigation,
 } from '../../../main/ets/contract/decode';
+import { decodeVoiceCatalog, decodeVoiceCredential } from '../../../main/ets/contract/decode-voice';
 
 const ME_JSON = '{"userId":"u1","email":"ada@example.com","name":"Ada","spaceId":"s1",'
   + '"needsModel":false,"defaultProvider":null,"defaultModel":"m1","unknownExtra":{"x":1}}';
+/** A voice catalog entry, closed by each case with the optional fields it varies. */
+const VOICE_ENTRY_JSON = '{"id":"fake-voice","name":"Fake Voice","transcribe":true';
+/** A saved voice connection that authenticates without a key. */
+const VOICE_CREDENTIAL_JSON = '{"id":"c1","provider":"fake-voice","hasKey":false,"voiceId":"v1",'
+  + '"speechModel":"","transcribe":false,"endpoint":"","ttsModel":"","sttModel":""}';
 
 export default function decodeTest() {
   describe('ContractDecode', () => {
@@ -99,7 +105,7 @@ export default function decodeTest() {
     });
 
     const BOT_JSON = '{"id":"b1","name":"Alpha","color":"#3EC5A8","pinned":true,"unread":true,'
-      + '"preview":"Hi","status":"running","updatedAt":"2026-11-21T10:00:00.000Z","extra":1}';
+      + '"preview":"Hi","status":"running","updatedAt":"2026-11-21T10:00:00.000Z","autoSpeak":true,"extra":1}';
 
     it('bot_decodes_consumed_fields_and_ignores_extras', 0, () => {
       const bot = decodeBot(JSON.parse(BOT_JSON));
@@ -110,6 +116,7 @@ export default function decodeTest() {
       expect(bot!.unread).assertTrue();
       expect(bot!.status).assertEqual('running');
       expect(bot!.snoozedUntil).assertNull();
+      expect(bot!.autoSpeak).assertTrue();
     });
 
     it('bot_snoozed_until_nullable_optional', 0, () => {
@@ -120,6 +127,51 @@ export default function decodeTest() {
       // A mistyped consumed field fails the row.
       expect(decodeBot(JSON.parse(BOT_JSON.replace('"pinned":true', '"pinned":"yes"')))).assertNull();
       expect(decodeBot(JSON.parse('{"id":"b1"}'))).assertNull();
+    });
+
+    it('bot_autoSpeak_missing_defaults_false_but_a_wrong_type_fails', 0, () => {
+      // An older server's bot row carries no autoSpeak: the row still decodes, without reading
+      // aloud, rather than dropping the whole bot from the list.
+      const old = decodeBot(JSON.parse(BOT_JSON.replace('"autoSpeak":true,', '')));
+      expect(old !== null).assertTrue();
+      expect(old!.autoSpeak).assertFalse();
+      const nulled = decodeBot(JSON.parse(BOT_JSON.replace('"autoSpeak":true', '"autoSpeak":null')));
+      expect(nulled !== null).assertTrue();
+      expect(nulled!.autoSpeak).assertFalse();
+      expect(decodeBot(JSON.parse(BOT_JSON.replace('"autoSpeak":true', '"autoSpeak":"yes"')))).assertNull();
+    });
+
+    it('voice_catalog_model_connections_missing_read_as_none_but_a_wrong_shape_fails', 0, () => {
+      // An older server's catalog entry offers neither model connections nor a sign-in: the row
+      // still decodes, with neither offered. A value of another shape fails the row.
+      const offered = decodeVoiceCatalog(JSON.parse(`[${VOICE_ENTRY_JSON},`
+        + '"modelConnections":[{"id":"model-work","label":"Work"}],"modelSignIn":"Sign in"}]'));
+      expect(offered !== null).assertTrue();
+      expect(offered![0].modelConnections![0].label).assertEqual('Work');
+      expect(offered![0].modelSignIn).assertEqual('Sign in');
+      const older = decodeVoiceCatalog(JSON.parse(`[${VOICE_ENTRY_JSON}}]`));
+      expect(older !== null).assertTrue();
+      expect(older![0].modelConnections).assertUndefined();
+      expect(older![0].modelSignIn).assertUndefined();
+      const nulled = decodeVoiceCatalog(JSON.parse(`[${VOICE_ENTRY_JSON},"modelConnections":null}]`));
+      expect(nulled !== null).assertTrue();
+      expect(nulled![0].modelConnections).assertUndefined();
+      expect(decodeVoiceCatalog(JSON.parse(`[${VOICE_ENTRY_JSON},"modelConnections":"work"}]`))).assertNull();
+      expect(decodeVoiceCatalog(JSON.parse(`[${VOICE_ENTRY_JSON},"modelSignIn":true}]`))).assertNull();
+    });
+
+    it('voice_credential_model_connection_missing_reads_as_none_but_a_wrong_type_fails', 0, () => {
+      // An older server's saved connection names no model connection: the row still decodes. A
+      // value of another type fails the row.
+      const older = decodeVoiceCredential(JSON.parse(VOICE_CREDENTIAL_JSON));
+      expect(older !== null).assertTrue();
+      expect(older!.modelCredentialId).assertUndefined();
+      const bound = decodeVoiceCredential(JSON.parse(VOICE_CREDENTIAL_JSON.replace(
+        '"hasKey":false', '"hasKey":false,"modelCredentialId":"model-work"')));
+      expect(bound !== null).assertTrue();
+      expect(bound!.modelCredentialId).assertEqual('model-work');
+      expect(decodeVoiceCredential(JSON.parse(VOICE_CREDENTIAL_JSON.replace(
+        '"hasKey":false', '"hasKey":false,"modelCredentialId":7')))).assertNull();
     });
 
     it('group_decodes_and_rejects', 0, () => {
@@ -133,7 +185,7 @@ export default function decodeTest() {
     });
 
     it('lists_drop_bad_rows_but_fail_on_non_array', 0, () => {
-      const bots = decodeBotList(JSON.parse(`[${BOT_JSON},{"id":"bad"},${BOT_JSON.replace('"b1"', '"b2"')}]`));
+      const bots = decodeBotList(JSON.parse(`[${BOT_JSON},{"id":"bad"},${BOT_JSON.replace('"id":"b1"', '"id":"b2"')}]`));
       expect(bots !== null).assertTrue();
       expect(bots!.length).assertEqual(2);
       expect(bots![1].id).assertEqual('b2');

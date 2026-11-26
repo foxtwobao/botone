@@ -16,6 +16,7 @@ function botsOf(json: string): BotView[] {
       pinned: boolField(r, 'pinned'), unread: boolField(r, 'unread'), preview: stringField(r, 'preview'),
       status: stringField(r, 'status'), updatedAt: stringField(r, 'updatedAt'),
       snoozedUntil: typeof snoozed === 'string' ? snoozed as string : null,
+      autoSpeak: boolField(r, 'autoSpeak'),
     };
     rows.push(bot);
   }

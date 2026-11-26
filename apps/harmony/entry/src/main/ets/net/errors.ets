@@ -67,12 +67,13 @@ function isTechnicalMessage(message: string): boolean {
 }
 
 /** Text for a failure: human messages pass through; network and implementation detail become copy. */
-export function errorText(error: RpcError | null): string {
+export function errorText(error: RpcError | null,
+  fallback: string = t('Something went wrong. Try again.')): string {
   if (isServerUnreachable(error)) {
     return t('Could not reach the server');
   }
   const message = error === null ? '' : error.message.trim();
-  return message && !isTechnicalMessage(message) ? message : t('Something went wrong. Try again.');
+  return message && !isTechnicalMessage(message) ? message : fallback;
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

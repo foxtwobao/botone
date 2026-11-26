@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "provider": {
+      "type": "string"
+    },
+    "scope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "voiceId": {
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["voiceId"],
+  "type": "object"
+}
