@@ -20,7 +20,8 @@ function throttledReporter(label: string): (error: unknown) => void {
   let suppressed = 0;
   return (error) => {
     const now = Date.now();
-    if (now - lastReportAt < WINDOW_MS) {
+    // A clock that stepped back opens a new window, or reports stay silent until it catches up.
+    if (now >= lastReportAt && now - lastReportAt < WINDOW_MS) {
       suppressed += 1;
       return;
     }
