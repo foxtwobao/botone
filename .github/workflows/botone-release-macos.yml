@@ -2,6 +2,12 @@ name: BotONE macOS release
 
 on:
   workflow_dispatch:
+    inputs:
+      arch:
+        description: macOS architecture target
+        type: choice
+        default: universal
+        options: [universal, arm64, x64]
 
 permissions:
   contents: read
@@ -35,18 +41,18 @@ jobs:
           APPLE_API_KEY: ${{ runner.temp }}/botone-notary-key.p8
         run: node .github/builds/release-config.mjs macos
       - uses: ./.github/actions/build-client-desktop
-      - name: Package signed and notarized universal macOS app
+      - name: Package signed and notarized macOS app (${{ inputs.arch || 'universal' }})
         env: *mac-signing
         run: |
           set -euo pipefail
           umask 077
           node -e 'require("node:fs").writeFileSync(process.env.APPLE_API_KEY, Buffer.from(process.env.APP_STORE_CONNECT_API_KEY_BASE64, "base64"), { mode: 0o600 })'
           pnpm --filter @rakazo/desktop exec electron-builder \
-            --config ../../.github/builds/desktop-release.cjs --mac --universal --publish never
+            --config ../../.github/builds/desktop-release.cjs --mac --${{ inputs.arch || 'universal' }} --publish never
       - name: Verify signature, notarization, and packaged server
         run: |
           set -euo pipefail
-          app="apps/desktop/out/mac-universal/BotONE.app"
+          app="apps/desktop/out/mac-${{ inputs.arch || 'universal' }}/BotONE.app"
           codesign --verify --deep --strict "$app"
           xcrun stapler validate "$app"
           spctl --assess --type execute "$app"
@@ -55,7 +61,7 @@ jobs:
       - name: Retain macOS installers
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: botone-macos-release-${{ github.run_number }}
+          name: botone-macos-release-${{ github.run_number }}-${{ inputs.arch || 'universal' }}
           path: |
             apps/desktop/out/*.dmg
             apps/desktop/out/*.zip
@@ -80,5 +86,5 @@ jobs:
       - uses: ./.github/actions/publish-client-release
         with:
           platform: macos
-          artifact: botone-macos-release-${{ github.run_number }}
+          artifact: botone-macos-release-${{ github.run_number }}-${{ inputs.arch || 'universal' }}
           signing: Developer ID signed and notarized. Download updates manually from this repository.
