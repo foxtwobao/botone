@@ -100,6 +100,7 @@ export const HE_MESSAGES: Record<string, string> = {
   "Almost ready…": "כמעט מוכן…",
   "Rakazo is ready.": "BotONE מוכן.",
   "{size} downloaded": "הורדו {size}",
+  "{done} of {total}": "{done} מתוך {total}",
   "Connecting…": "מתחבר…",
   "Checking…": "בודק…",
   "Rakazo answered at {url}.": "BotONE הגיב בכתובת {url}.",

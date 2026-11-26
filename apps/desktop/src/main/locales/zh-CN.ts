@@ -95,6 +95,7 @@ export const ZH_CN_MESSAGES: Record<string, string> = {
   "Almost ready…": "即将完成…",
   "Rakazo is ready.": "BotONE 已就绪。",
   "{size} downloaded": "已下载 {size}",
+  "{done} of {total}": "{done} / {total}",
   "Connecting…": "正在连接…",
   "Checking…": "正在检查…",
   "Rakazo answered at {url}.": "BotONE 已在 {url} 响应。",

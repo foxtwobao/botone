@@ -112,6 +112,7 @@ export const ES_MESSAGES: Record<string, string> = {
   "Almost ready…": "Casi listo…",
   "Rakazo is ready.": "BotONE está listo.",
   "{size} downloaded": "{size} descargados",
+  "{done} of {total}": "{done} de {total}",
   "Connecting…": "Conectando…",
   "Checking…": "Comprobando…",
   "Rakazo answered at {url}.": "BotONE respondió en {url}.",

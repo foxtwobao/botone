@@ -32,7 +32,11 @@ import {
   oneTimeCodeArgument,
 } from "../../../secrets/bot-secrets.js";
 import { FIND_TOOL, USE_TOOL } from "../../../tools/builtin.tool-definition.js";
-import { findTools, partitionTools } from "../../../tools/builtin-tool-bridge.js";
+import {
+  findTools,
+  partitionTools,
+  unavailableToolReason,
+} from "../../../tools/builtin-tool-bridge.js";
 import { SCHEDULE_TOOL_NAMES } from "../../../tools/schedule-tools.js";
 import { positiveIntegerArg } from "../../../tools/workspace-file-tools.js";
 import { shortenToolResultText } from "../../context/context-selection.js";
@@ -129,7 +133,7 @@ function useToolAgentTool(
           response: host.modelResponses,
         });
         throw new Error(
-          host.request.unavailableToolReasons?.[name] ??
+          unavailableToolReason(host.request.unavailableToolReasons, name) ??
             `${name} is not available. Use a name find_tool lists.`,
         );
       }
@@ -284,7 +288,6 @@ export function describeToolActivity(
   if (toolName === "set_child_bot_model") return "Setting a bot's model";
   if (toolName === "create_child_routine") return `Scheduling routine: ${detail(record.name)}`;
   if (toolName === "remember") return "Saving a note to memory";
-  if (toolName === "save_shared_memory") return `Saving shared memory: ${detail(record.path)}`;
   if (toolName === "delete_shared_memory") return `Deleting shared memory: ${detail(record.path)}`;
   if (toolName === "web_search") return `Searching the web: ${detail(record.query)}`;
   if (toolName === "web_fetch") return `Reading page: ${detail(redactActivityUrl(record.url))}`;
@@ -412,6 +415,7 @@ function toAgentTool(
         return {
           operations: raw.operations,
           ...(typeof raw.path === "string" && raw.path.trim() ? { path: raw.path } : {}),
+          ...(raw.shared === true ? { shared: true } : {}),
         };
       }
       if (tool.name === "request_takeover") {
@@ -649,7 +653,7 @@ function toAgentTool(
                   host.computerModeAllowed && !host.computerModeAllowed()
                     ? deferred.filter((candidate) => !COMPUTER_MODE_TOOLS.has(candidate.name))
                     : deferred;
-                const found = findTools(findable, args);
+                const found = findTools(findable, args, host.request.unavailableToolReasons);
                 return {
                   content: [{ type: "text", text: JSON.stringify(found) }],
                   details: found,

@@ -104,6 +104,7 @@ export const FR_MESSAGES: Record<string, string> = {
   "Almost ready…": "Presque prêt…",
   "Rakazo is ready.": "BotONE est prêt.",
   "{size} downloaded": "{size} téléchargés",
+  "{done} of {total}": "{done} sur {total}",
   "Connecting…": "Connexion…",
   "Checking…": "Vérification…",
   "Rakazo answered at {url}.": "BotONE a répondu à {url}.",
