@@ -1,0 +1,19 @@
+name: t3-fetch-apple-ca
+on: workflow_dispatch
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fetch Apple Developer ID CAs
+        run: |
+          set -euo pipefail
+          mkdir -p ca
+          curl -fsSL -o ca/DeveloperIDG2CA.cer https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          curl -fsSL -o ca/DeveloperIDCA.cer https://www.apple.com/certificateauthority/DeveloperIDCA.cer || true
+          ls -l ca
+          openssl x509 -inform der -in ca/DeveloperIDG2CA.cer -noout -subject -issuer -dates
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: apple-developer-id-ca
+          path: ca
+          if-no-files-found: error
