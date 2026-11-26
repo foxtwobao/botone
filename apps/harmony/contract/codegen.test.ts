@@ -90,8 +90,21 @@ describe("voice transcription limit codegen", () => {
       "8_388_608",
       "8__388__608",
       "0",
+      "08",
+      "00",
     ]) {
       rejected.push(`export const MAX_TRANSCRIBE_BYTES = ${initializer};\n`);
+    }
+    // U+2028 and U+2029 end a line in JavaScript: a comment stops at them, so the block comment
+    // below opens on real code and hides the first declaration, and the module exports 4.
+    for (const lineEnd of ["\u2028", "\u2029"]) {
+      rejected.push(
+        [
+          `//${lineEnd}/*`,
+          "export const MAX_TRANSCRIBE_BYTES = 8;",
+          `//${lineEnd}*/ export const MAX_TRANSCRIBE_BYTES = 4;`,
+        ].join("\n"),
+      );
     }
     rejected.push("export const MAX_TRANSCRIBE_BYTES = 9007199254740991 * 3;\n");
     for (const source of rejected) {

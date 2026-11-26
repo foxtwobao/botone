@@ -13,10 +13,14 @@ const sourceFile = path.resolve(
   "../../../packages/adapters/src/voice/transcribe-limit.ts",
 );
 
-const DECLARATION = new RegExp(`^export const ${NAME}\\s*=\\s*(\\d+(?:\\s*\\*\\s*\\d+)*)\\s*;$`);
+const INTEGER = "(?:0|[1-9]\\d*)";
+const DECLARATION = new RegExp(
+  `^export const ${NAME}\\s*=\\s*(${INTEGER}(?:\\s*\\*\\s*${INTEGER})*)\\s*;$`,
+);
 
 export function readMaxTranscribeBytes(source = readFileSync(sourceFile, "utf8")): number {
-  const lines = source.split(/\r\n|\r|\n/);
+  // JavaScript ends a line at LF, CR, CRLF, U+2028 or U+2029: a comment ends at any of them.
+  const lines = source.split(/\r\n|\r|\n|\u2028|\u2029/);
   const kept: string[] = [];
   for (const line of lines) {
     if (/^\s*\/\//.test(line)) {
