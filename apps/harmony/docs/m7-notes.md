@@ -5,9 +5,9 @@ dictation into the composer, read-aloud from a message, the bot's device voice, 
 settings page. Decisions were written down before any code in [m7-scope.md](m7-scope.md); this
 file records what shipped, what the device showed, and what the scope could not cover.
 
-**Status: verified on the emulator.** Hypium 216/216 (15 lifecycle cases added by the third
-review round), the capability probe's findings hold in the shipped code, every walkthrough row
-measured, 15 captures.
+**Status: verified on the emulator.** Hypium 218/218 (17 cases added after the second review
+round), the capability probe's findings hold in the shipped code, every walkthrough row measured,
+15 captures.
 
 ## What ships
 
@@ -60,8 +60,9 @@ the voice picker (the listing or free-form when the connection allows it), the s
 field when the connection takes one, and 试听. The device voice needs no setup, so it shows none
 of it. `VoiceSettingsStore` owns every read (through the QueryCache) and write (invalidate and
 re-read), keeps fields typed into since the last load across a refresh, and rolls a failed
-device-voice switch back. Its two decisions — which provider to show, what its form offers —
-are ports the fixture pins against the real rules, lifted from mobile's screen file.
+device-voice switch back. Its two decisions are ports the fixture pins against the real rules:
+which provider to show is lifted from mobile's screen file, and what its form offers is the
+contracts package's `voiceConnectionForm`.
 
 ## Copy
 
@@ -79,7 +80,7 @@ collects.
 | `pnpm checks` | all green (160) |
 | `pnpm lint` (Biome) | 0 errors (25 warnings and 24 infos; Biome does not read `.ets`) |
 | `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL** after `devecocli build clean`: **no ArkTS warning in any file M7 added or changed** |
-| hypium on the emulator | **216 / 216** (the full suite, fixture servers on 8787/8788) |
+| hypium on the emulator | **218 / 218** (the full suite, fixture servers on 8787/8788) |
 | screenshots `m7-*.png` | 15 captures covering every row below |
 
 "No warning in an M7 file" is not "no warning in the build". Six warnings remain, all in files
@@ -98,7 +99,8 @@ same build. The one failure was `offline_read_keeps_the_last_rows_painted` in
 `RosterRealtime.test` (M3, the roster's offline banner), which read an empty error right after the
 banner appeared. It passed alone and in the other two runs, and nothing in this round touches the
 roster. Those three ran before the finishing timeout below; with it the full suite ran 215/215,
-and with its cancel 216/216.
+and with its cancel 216/216. After the rebase onto main and the synchronization below it ran
+218/218.
 
 ### The capability probe (before any product code)
 
@@ -267,6 +269,32 @@ composer can run over the real recognizer on scripted hardware.
 **Not verified.** The emulator's microphone records silence, so no screen shows a device send
 keeping its words: the probe is the evidence, and a physical device is still the acceptance.
 
+## Base synchronization
+
+The branch was rebased onto main once the upstream sync (PR #71) and M6 (PR #72) had landed. The
+five commits replayed unchanged, but the sync had changed a rule this milestone ports:
+`voiceConnectionForm` in `packages/contracts/src/models/voice-connection-ui.ts`. The account's
+model connection no longer stands in for a key. A connection's form needs a key, and the account's
+model connections to it are offered as explicit choices, or a sign-in where it has none yet.
+
+- **The port and the fixture follow.** `voice-settings-model.ets` is re-ported from the new rule,
+  and `settingsForm` in `fixtures/voice.json` is regenerated from the real function: 16 cases. The
+  three that described the stand-in gave way to seven, covering the offered choices, a named link,
+  a legacy link with several choices and with one, a link to a connection the account no longer
+  holds, and the sign-in. The rebase had left two contract cases red, `fixture voice matches the
+  committed mobile and core behavior` and `the settings screen shows the connection and the form
+  the real rules choose`; both are green again, 131/131.
+- **The decoders read the new fields** the way S2's `autoSpeak` is read: `modelConnections` and
+  `modelSignIn` on a catalog entry, `modelCredentialId` on a saved connection. Absent or null is
+  none offered; a value of another shape fails the row (`Decode.test`, two cases). The flag they
+  replace, `modelConnection`, is no longer read, and the layer-1 voice snapshots carry the new
+  fields.
+- **The page did not change.** The rule's `modelConnections` and `modelSignIn` are decoded and not
+  rendered. With an empty key and no explicit choice, Connect stays disabled and the key field
+  still asks for one (`Paste your API key`), as it does for any connection without a key: that is
+  what the new rule says. No wording was added, so there is no new msgid and no new capture;
+  `m7-voice-provider-form` already shows this state.
+
 ## Deferred
 
 - **Bot voice picker** (scope D5): no bot settings surface exists here to hang it on, and this
@@ -289,6 +317,11 @@ keeping its words: the probe is the evidence, and a physical device is still the
   adapter's header no longer claims a rotating segment never drops audio.
 - **Recognition quality** on the emulator: its engine hears 「你好今天。」 for a 2.5 s synthesized
   sentence, which shows the wiring and nothing about accuracy.
+- **The voice page's model connection choices** (M11, Models): the rule offers the account's model
+  connections and a sign-in, and the decoders read them, but the page renders neither.
+  `voice/connect`'s `modelCredentialId` goes with that work. **Known limitation until then:** a
+  connection whose voice would authenticate through a model connection needs a pasted API key on
+  this device.
 
 ## Filenames
 

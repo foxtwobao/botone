@@ -443,7 +443,8 @@ export const voiceCatalogEntryView = procedureOutput(appContract.voice.catalog).
   transcribe: true,
   keyless: true,
   speechModel: true,
-  modelConnection: true,
+  modelConnections: true,
+  modelSignIn: true,
   freeformVoice: true,
 });
 export const voiceCatalogView = zod.array(voiceCatalogEntryView);
@@ -452,6 +453,7 @@ export const voiceCredentialView = procedureOutput(appContract.voice.connect).pi
   id: true,
   provider: true,
   hasKey: true,
+  modelCredentialId: true,
   voiceId: true,
   speechModel: true,
   transcribe: true,

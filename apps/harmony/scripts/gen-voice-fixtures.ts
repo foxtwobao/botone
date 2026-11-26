@@ -297,6 +297,8 @@ function connectionFormCases() {
     transcribe: true,
     ...over,
   });
+  const work = { id: "model-work", label: "Work" };
+  const home = { id: "model-home", label: "Home" };
   const cases = [
     {
       name: "a hosted connection with no key yet",
@@ -341,22 +343,50 @@ function connectionFormCases() {
       baseUrl: "",
     },
     {
-      name: "the account's model connection stands in for a key",
-      entry: entry({ modelConnection: true }),
+      name: "the account's model connections are offered, and a key is still needed",
+      entry: entry({ modelConnections: [work, home] }),
       credential: null,
       apiKey: "",
       baseUrl: "",
     },
     {
-      name: "it stands in no longer once the connection is saved",
-      entry: entry({ modelConnection: true }),
-      credential: { hasKey: true },
+      name: "a sign-in is offered where the account holds no model connection yet",
+      entry: entry({ modelSignIn: "Sign in to Fake Maker" }),
+      credential: null,
       apiKey: "",
       baseUrl: "",
     },
     {
-      name: "linked through the model connection",
-      entry: entry({ modelConnection: true }),
+      name: "linked through a named model connection: the others stay offered",
+      entry: entry({ modelConnections: [work, home] }),
+      credential: { hasKey: false, modelCredentialId: work.id },
+      apiKey: "",
+      baseUrl: "",
+    },
+    {
+      name: "a legacy link offers every model connection",
+      entry: entry({ modelConnections: [work, home] }),
+      credential: { hasKey: false },
+      apiKey: "",
+      baseUrl: "",
+    },
+    {
+      name: "a legacy link with one model connection offers none",
+      entry: entry({ modelConnections: [work] }),
+      credential: { hasKey: false },
+      apiKey: "",
+      baseUrl: "",
+    },
+    {
+      name: "a link to a model connection the account no longer holds",
+      entry: entry({ modelConnections: [work] }),
+      credential: { hasKey: false, modelCredentialId: "model-gone" },
+      apiKey: "",
+      baseUrl: "",
+    },
+    {
+      name: "a saved connection without a key is not linked when none is offered",
+      entry: entry({}),
       credential: { hasKey: false },
       apiKey: "",
       baseUrl: "",

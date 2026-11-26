@@ -7766,9 +7766,9 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": false
+        "canConnect": false,
+        "modelConnections": []
       }
     },
     {
@@ -7784,9 +7784,9 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": false
+        "canConnect": false,
+        "modelConnections": []
       }
     },
     {
@@ -7802,9 +7802,9 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": true
+        "canConnect": true,
+        "modelConnections": []
       }
     },
     {
@@ -7820,9 +7820,9 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": true
+        "canConnect": true,
+        "modelConnections": []
       }
     },
     {
@@ -7839,9 +7839,9 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": true
+        "canConnect": true,
+        "modelConnections": []
       }
     },
     {
@@ -7858,59 +7858,121 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": true
+        "canConnect": true,
+        "modelConnections": []
       }
     },
     {
-      "name": "the account's model connection stands in for a key",
+      "name": "the account's model connections are offered, and a key is still needed",
       "input": {
         "entry": {
           "id": "fake-voice",
           "name": "Fake Voice",
           "transcribe": true,
-          "modelConnection": true
+          "modelConnections": [
+            {
+              "id": "model-work",
+              "label": "Work"
+            },
+            {
+              "id": "model-home",
+              "label": "Home"
+            }
+          ]
         },
         "credential": null,
         "apiKey": "",
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": true,
         "linked": false,
-        "canConnect": true
+        "canConnect": false,
+        "modelConnections": [
+          {
+            "id": "model-work",
+            "label": "Work"
+          },
+          {
+            "id": "model-home",
+            "label": "Home"
+          }
+        ]
       }
     },
     {
-      "name": "it stands in no longer once the connection is saved",
+      "name": "a sign-in is offered where the account holds no model connection yet",
       "input": {
         "entry": {
           "id": "fake-voice",
           "name": "Fake Voice",
           "transcribe": true,
-          "modelConnection": true
+          "modelSignIn": "Sign in to Fake Maker"
+        },
+        "credential": null,
+        "apiKey": "",
+        "baseUrl": ""
+      },
+      "expected": {
+        "linked": false,
+        "canConnect": false,
+        "modelConnections": [],
+        "modelSignIn": "Sign in to Fake Maker"
+      }
+    },
+    {
+      "name": "linked through a named model connection: the others stay offered",
+      "input": {
+        "entry": {
+          "id": "fake-voice",
+          "name": "Fake Voice",
+          "transcribe": true,
+          "modelConnections": [
+            {
+              "id": "model-work",
+              "label": "Work"
+            },
+            {
+              "id": "model-home",
+              "label": "Home"
+            }
+          ]
         },
         "credential": {
-          "hasKey": true
+          "hasKey": false,
+          "modelCredentialId": "model-work"
         },
         "apiKey": "",
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
-        "linked": false,
-        "canConnect": false
+        "linked": true,
+        "canConnect": false,
+        "modelConnections": [
+          {
+            "id": "model-home",
+            "label": "Home"
+          }
+        ]
       }
     },
     {
-      "name": "linked through the model connection",
+      "name": "a legacy link offers every model connection",
       "input": {
         "entry": {
           "id": "fake-voice",
           "name": "Fake Voice",
           "transcribe": true,
-          "modelConnection": true
+          "modelConnections": [
+            {
+              "id": "model-work",
+              "label": "Work"
+            },
+            {
+              "id": "model-home",
+              "label": "Home"
+            }
+          ]
         },
         "credential": {
           "hasKey": false
@@ -7919,9 +7981,96 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": true,
-        "canConnect": false
+        "canConnect": false,
+        "modelConnections": [
+          {
+            "id": "model-work",
+            "label": "Work"
+          },
+          {
+            "id": "model-home",
+            "label": "Home"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a legacy link with one model connection offers none",
+      "input": {
+        "entry": {
+          "id": "fake-voice",
+          "name": "Fake Voice",
+          "transcribe": true,
+          "modelConnections": [
+            {
+              "id": "model-work",
+              "label": "Work"
+            }
+          ]
+        },
+        "credential": {
+          "hasKey": false
+        },
+        "apiKey": "",
+        "baseUrl": ""
+      },
+      "expected": {
+        "linked": true,
+        "canConnect": false,
+        "modelConnections": []
+      }
+    },
+    {
+      "name": "a link to a model connection the account no longer holds",
+      "input": {
+        "entry": {
+          "id": "fake-voice",
+          "name": "Fake Voice",
+          "transcribe": true,
+          "modelConnections": [
+            {
+              "id": "model-work",
+              "label": "Work"
+            }
+          ]
+        },
+        "credential": {
+          "hasKey": false,
+          "modelCredentialId": "model-gone"
+        },
+        "apiKey": "",
+        "baseUrl": ""
+      },
+      "expected": {
+        "linked": false,
+        "canConnect": false,
+        "modelConnections": [
+          {
+            "id": "model-work",
+            "label": "Work"
+          }
+        ]
+      }
+    },
+    {
+      "name": "a saved connection without a key is not linked when none is offered",
+      "input": {
+        "entry": {
+          "id": "fake-voice",
+          "name": "Fake Voice",
+          "transcribe": true
+        },
+        "credential": {
+          "hasKey": false
+        },
+        "apiKey": "",
+        "baseUrl": ""
+      },
+      "expected": {
+        "linked": false,
+        "canConnect": false,
+        "modelConnections": []
       }
     },
     {
@@ -7937,9 +8086,9 @@
         "baseUrl": ""
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": false
+        "canConnect": false,
+        "modelConnections": []
       }
     },
     {
@@ -7955,9 +8104,9 @@
         "baseUrl": " http://192.168.1.10:8880/v1 "
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": true
+        "canConnect": true,
+        "modelConnections": []
       }
     },
     {
@@ -7969,9 +8118,9 @@
         "baseUrl": "http://host.test/v1"
       },
       "expected": {
-        "keyOptional": false,
         "linked": false,
-        "canConnect": true
+        "canConnect": true,
+        "modelConnections": []
       }
     }
   ],

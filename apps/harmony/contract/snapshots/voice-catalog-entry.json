@@ -10,8 +10,24 @@
     "keyless": {
       "type": "boolean"
     },
-    "modelConnection": {
-      "type": "boolean"
+    "modelConnections": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "label"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "modelSignIn": {
+      "type": "string"
     },
     "name": {
       "type": "string"

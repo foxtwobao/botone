@@ -14,10 +14,18 @@ export interface VoiceCatalogView {
   keyless?: boolean;
   /** The connection takes an optional speech model id. */
   speechModel?: boolean;
-  /** The account's model connection can authenticate it, so its key is optional. */
-  modelConnection?: boolean;
+  /** The account's model connections to it, which voice can use instead of a key. */
+  modelConnections?: VoiceModelConnectionView[];
+  /** Its sign-in, offered when the account holds no model connection to it yet. */
+  modelSignIn?: string;
   /** A voice id can be typed: a model's voices may be missing from its listing. */
   freeformVoice?: boolean;
+}
+
+/** A model connection the account holds to a provider. */
+export interface VoiceModelConnectionView {
+  id: string;
+  label: string;
 }
 
 /** A saved connection (voice/credentials, connect, setSpeechModel). Never carries the key. */
@@ -32,6 +40,8 @@ export interface VoiceCredentialView {
   endpoint: string;
   ttsModel: string;
   sttModel: string;
+  /** The model connection a connection without a key uses, when it names one. */
+  modelCredentialId?: string;
 }
 
 /** Which voice reads replies aloud, and whether it transcribes (voice/status, setVoice). */
@@ -60,6 +70,40 @@ function readFlag(record: Record<string, Object>, key: string): boolean | undefi
   return typeof value === 'boolean' ? value as boolean : undefined;
 }
 
+/** An optional text, as a catalog entry's sign-in or a credential's model connection: absent or
+ * null reads as none (null); a value of another type fails the row (undefined). */
+function readOptionalText(record: Record<string, Object>, key: string): string | null | undefined {
+  const value = record[key];
+  if (value === undefined || value === null) {
+    return null;
+  }
+  return typeof value === 'string' ? value as string : undefined;
+}
+
+/** A catalog entry's model connections: absent or null reads as none; a value of another shape
+ * fails the row. */
+function readModelConnections(record: Record<string, Object>): VoiceModelConnectionView[] | null {
+  const raw = record['modelConnections'];
+  if (raw === undefined || raw === null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  const out: VoiceModelConnectionView[] = [];
+  for (const item of raw as Object[]) {
+    const row = asRecord(item);
+    const id = row === null ? null : readString(row, 'id');
+    const label = row === null ? null : readString(row, 'label');
+    if (id === null || label === null) {
+      return null;
+    }
+    const view: VoiceModelConnectionView = { id: id, label: label };
+    out.push(view);
+  }
+  return out;
+}
+
 function decodeList(json: Object | null, row: (item: Record<string, Object>) => Object | null): Object[] | null {
   if (!Array.isArray(json)) {
     return null;
@@ -86,15 +130,19 @@ function decodeCredentialRow(record: Record<string, Object>): VoiceCredentialVie
   const endpoint = readString(record, 'endpoint');
   const ttsModel = readString(record, 'ttsModel');
   const sttModel = readString(record, 'sttModel');
+  const modelCredentialId = readOptionalText(record, 'modelCredentialId');
   if (id === null || !id || provider === null || !provider || hasKey === null || voiceId === null
     || speechModel === null || transcribe === null || endpoint === null || ttsModel === null
-    || sttModel === null) {
+    || sttModel === null || modelCredentialId === undefined) {
     return null;
   }
   const view: VoiceCredentialView = {
     id: id, provider: provider, hasKey: hasKey, voiceId: voiceId, speechModel: speechModel,
     transcribe: transcribe, endpoint: endpoint, ttsModel: ttsModel, sttModel: sttModel,
   };
+  if (modelCredentialId !== null) {
+    view.modelCredentialId = modelCredentialId;
+  }
   return view;
 }
 
@@ -115,9 +163,16 @@ export function decodeVoiceCatalog(json: Object | null): VoiceCatalogView[] | nu
     if (speechModel !== undefined) {
       view.speechModel = speechModel;
     }
-    const modelConnection = readFlag(item, 'modelConnection');
-    if (modelConnection !== undefined) {
-      view.modelConnection = modelConnection;
+    const modelConnections = readModelConnections(item);
+    const modelSignIn = readOptionalText(item, 'modelSignIn');
+    if (modelConnections === null || modelSignIn === undefined) {
+      return null;
+    }
+    if (modelConnections.length > 0) {
+      view.modelConnections = modelConnections;
+    }
+    if (modelSignIn !== null) {
+      view.modelSignIn = modelSignIn;
     }
     const freeformVoice = readFlag(item, 'freeformVoice');
     if (freeformVoice !== undefined) {
