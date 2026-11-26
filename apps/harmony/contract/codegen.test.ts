@@ -45,4 +45,37 @@ describe("voice transcription limit codegen", () => {
       readMaxTranscribeBytes("export const MAX_TRANSCRIBE_BYTES = getLimit();\n"),
     ).toThrow("Unsupported MAX_TRANSCRIBE_BYTES expression");
   });
+
+  it("ignores a commented-out older declaration", () => {
+    // The reviewer's case: a block comment keeps the old declaration on its own line, and the real
+    // declaration changed and wraps across lines. A line regex reads the comment and silently keeps
+    // the old value; the generator must read the real declaration.
+    const source = [
+      "/**",
+      " * The transcription service used to cap a clip at 8 MiB:",
+      " * export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;",
+      " */",
+      "export const MAX_TRANSCRIBE_BYTES =",
+      "  4 * 1024 * 1024;",
+      "",
+    ].join("\n");
+    expect(readMaxTranscribeBytes(source)).toBe(4_194_304);
+  });
+
+  it("reads a declaration wrapped across lines", () => {
+    const source = ["export const MAX_TRANSCRIBE_BYTES =", "  4 *", "  1024 *", "  1024;", ""].join(
+      "\n",
+    );
+    expect(readMaxTranscribeBytes(source)).toBe(4_194_304);
+  });
+
+  it("fails when the declaration is duplicated or absent", () => {
+    const twice = [
+      "export const MAX_TRANSCRIBE_BYTES = 4 * 1024 * 1024;",
+      "export const MAX_TRANSCRIBE_BYTES = 6 * 1024 * 1024;",
+      "",
+    ].join("\n");
+    expect(() => readMaxTranscribeBytes(twice)).toThrow("Expected one");
+    expect(() => readMaxTranscribeBytes("export const OTHER = 1;\n")).toThrow("Expected one");
+  });
 });
