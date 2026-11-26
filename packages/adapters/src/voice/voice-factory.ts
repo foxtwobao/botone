@@ -46,8 +46,8 @@ export class NoVoiceConfigured extends Error {
   }
 }
 
+export { MAX_TRANSCRIBE_BYTES } from "./transcribe-limit.js";
 export { isSpeechModelId, MAX_SPEAK_CHARS } from "./voice-http.js";
-export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;
 
 export function voiceDeploymentModelSupported(
   provider: string,

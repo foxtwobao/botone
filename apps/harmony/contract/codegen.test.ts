@@ -37,76 +37,65 @@ describe("fixture embedding", () => {
 });
 
 describe("voice transcription limit codegen", () => {
-  it("reads the literal multiplication the server source declares", () => {
-    expect(readMaxTranscribeBytes("export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;\n")).toBe(
-      8_388_608,
-    );
+  const DECLARATION = "export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;";
+
+  it("reads the declaration the server's limit file holds", () => {
+    expect(readMaxTranscribeBytes(`${DECLARATION}\n`)).toBe(8_388_608);
   });
 
-  it("finds the declaration by its syntax, never by text that looks like one", () => {
-    // The inputs a text scan read wrongly: an old declaration inside a string, a block comment, a
-    // template or a regex, each followed by the real 4 MiB declaration.
-    const cases: string[] = [
-      [
-        'const example = "export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;";',
-        "export const MAX_TRANSCRIBE_BYTES: number = 4 * 1024 * 1024;",
-      ].join("\n"),
-      [
-        "/*",
-        "export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;",
-        "*/",
-        "export const MAX_TRANSCRIBE_BYTES =",
-        "  4 * 1024 * 1024;",
-      ].join("\n"),
-      [
-        // The placeholder is the input: it must stay literal text inside the template.
-        // biome-ignore lint/suspicious/noTemplateCurlyInString: the fixture's `${...}` is text
-        'const note = `history: export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024; ${"history"}`;',
-        "export const MAX_TRANSCRIBE_BYTES: number = 4 * 1024 * 1024;",
-      ].join("\n"),
-      [
-        "const pattern = /[//]/;",
-        'const spaces = /" /;',
-        "export const MAX_TRANSCRIBE_BYTES = 4 * 1024 * 1024;",
-      ].join("\n"),
-      "// a line comment ended by a bare carriage return\rexport const MAX_TRANSCRIBE_BYTES = 4 * 1024 * 1024;",
-    ];
-    for (const source of cases) {
-      expect(readMaxTranscribeBytes(`${source}\n`), source).toBe(4_194_304);
-    }
-  });
-
-  it("reads a declaration wrapped across lines", () => {
-    const source = ["export const MAX_TRANSCRIBE_BYTES =", "  4 *", "  1024 *", "  1024;", ""].join(
-      "\n",
-    );
-    expect(readMaxTranscribeBytes(source)).toBe(4_194_304);
-  });
-
-  it("reports a duplicated, missing or unreadable declaration", () => {
-    const twice = [
-      "export const MAX_TRANSCRIBE_BYTES = 4 * 1024 * 1024;",
-      "export const MAX_TRANSCRIBE_BYTES: number = 6 * 1024 * 1024;",
+  it("lets the declaration wrap and carry line comments above it", () => {
+    const wrapped = [
+      "// The most audio, in bytes, the transcribe route accepts.",
+      "// export const MAX_TRANSCRIBE_BYTES = 4 * 1024 * 1024;",
+      "export const MAX_TRANSCRIBE_BYTES",
+      "  = 4",
+      "    * 1024",
+      "    * 1024;",
       "",
     ].join("\n");
-    expect(() => readMaxTranscribeBytes(twice)).toThrow("Expected one");
-    expect(() => readMaxTranscribeBytes("export const OTHER = 1;\n")).toThrow("Expected one");
+    expect(readMaxTranscribeBytes(wrapped)).toBe(4_194_304);
+  });
+
+  it("reports a file that holds anything but the one declaration", () => {
+    // Each input was, or could be, read as a stale limit by a text scan of the factory: text that
+    // looks like a declaration inside a comment, a string, a template or a regex, beside code a
+    // scanner cannot tokenize (a regex after `if (...)`, a division after `a++`). None may be read.
+    const rejected = [
+      [
+        "if (true) /export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;/.source.length / 2;",
+        "let a = 2;",
+        "a++ / 2; export const MAX_TRANSCRIBE_BYTES = 4 * 1024 * 1024; /end;/",
+      ].join("\n"),
+      ["/*", "export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;", "*/", DECLARATION].join("\n"),
+      ['const example = "export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;";', DECLARATION].join(
+        "\n",
+      ),
+      ["const note = `export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;`;", DECLARATION].join(
+        "\n",
+      ),
+      `${DECLARATION}\nexport const OTHER = 1;\n`,
+      `${DECLARATION} // trailing comment\n`,
+      "export const MAX_TRANSCRIBE_BYTES: number = 8 * 1024 * 1024;\n",
+      "export const MAX_TRANSCRIBE_BYTES = getLimit();\n",
+      "export const MAX_TRANSCRIBE_BYTES = 8388608 as const;\n",
+      "export const MAX_TRANSCRIBE_BYTES = Object.freeze(8 * 1024 * 1024);\n",
+      "export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024\n",
+      "export const OTHER = 1;\n",
+      "",
+    ];
     for (const initializer of [
-      "getLimit()",
-      "4194304 as const",
-      "Object.freeze(4 * 1024 * 1024)",
-      "4 * 1024 * 1024 satisfies number",
+      "0x800000",
+      "8388608.0",
+      "8388608n",
+      "8_388_608",
+      "8__388__608",
+      "0",
     ]) {
-      expect(
-        () => readMaxTranscribeBytes(`export const MAX_TRANSCRIBE_BYTES = ${initializer};\n`),
-        initializer,
-      ).toThrow("Unsupported");
+      rejected.push(`export const MAX_TRANSCRIBE_BYTES = ${initializer};\n`);
     }
-    expect(() =>
-      readMaxTranscribeBytes("/* open\nexport const MAX_TRANSCRIBE_BYTES = 1;\n"),
-    ).toThrow("Unterminated");
-    expect(() =>
-      readMaxTranscribeBytes('const a = "open\nexport const MAX_TRANSCRIBE_BYTES = 1;\n'),
-    ).toThrow("Unterminated");
+    rejected.push("export const MAX_TRANSCRIBE_BYTES = 9007199254740991 * 3;\n");
+    for (const source of rejected) {
+      expect(() => readMaxTranscribeBytes(source), source).toThrow(/Expected|Unsupported/);
+    }
   });
 });

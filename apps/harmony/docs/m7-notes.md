@@ -330,10 +330,14 @@ its cancel, and the third hands the composer a transcriber that answers only to 
 used to talk to whatever server the app had selected.
 
 **Where the transcription limit lives.** `MAX_TRANSCRIBE_BYTES` is defined in
-`packages/adapters/src/voice/voice-factory.ts`, which the API's transcribe route reads. Harmony
-codegen statically reads and validates that literal multiplication without importing or executing
-the adapters package, then writes `voice/transcribe-limit.generated.ets`. The contract test reads
-the same source. The cap is never a number of the app's own.
+`packages/adapters/src/voice/transcribe-limit.ts`, a file that holds that one declaration and
+nothing else, re-exported by `voice-factory.ts` as before; the API's transcribe route still reads
+it from there. Harmony codegen reads the file as text and checks that the whole file is the
+declaration (line comments may precede it), without importing or executing the adapters package,
+then writes `voice/transcribe-limit.generated.ets`. The contract test reads the same source. A
+text scan of the factory was tried first and given up: without a parser it could not tell a
+declaration from text that looked like one inside a comment, a string, a template or a regex.
+The cap is never a number of the app's own.
 
 **What the fixture server learned.** The voice routes take a held transcription answer
 (`holdTranscribe`, released by `releaseTranscribe`), and `__voiceState` reports what each request
