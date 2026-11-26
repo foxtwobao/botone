@@ -7,7 +7,8 @@ file records what shipped, what the device showed, and what the scope could not 
 
 **Status: verified on the emulator.** Hypium 218/218 (17 cases added after the second review
 round), the capability probe's findings hold in the shipped code, every walkthrough row measured,
-15 captures.
+15 captures in `apps/harmony/screenshots/` retaken on the rebased head, each opened and checked
+after it was taken.
 
 ## What ships
 
@@ -81,7 +82,7 @@ collects.
 | `pnpm lint` (Biome) | 0 errors (25 warnings and 24 infos; Biome does not read `.ets`) |
 | `harmony:codegen`, `devecocli build`, `devecocli build --modules entry@ohosTest` | both **BUILD SUCCESSFUL** after `devecocli build clean`: **no ArkTS warning in any file M7 added or changed** |
 | hypium on the emulator | **218 / 218** (the full suite, fixture servers on 8787/8788) |
-| screenshots `m7-*.png` | 15 captures covering every row below |
+| screenshots `apps/harmony/screenshots/m7-*.png` | 15 captures, one for each row below that names one; each opened and checked after it was taken |
 
 "No warning in an M7 file" is not "no warning in the build". Six warnings remain, all in files
 from earlier milestones that M7 never touched, and they are left as they are:
@@ -125,11 +126,18 @@ and with its cancel 216/216. After the rebase onto main and the synchronization 
 | voice consent | 试听 before the use is allowed | the disclosure dialog with 暂不/允许/隐私政策 (`m7-voice-consent`); Allow speaks |
 | Speak message | long-press a bot message | 回复 / 朗读消息 / 选择文本 / 复制, mobile's order (`m7-longpress-menu`) |
 | hosted playback | tap 朗读消息 | the bar shows the speaker (Alpha, its roster color), Pause and Stop while the clip plays (`m7-playback-bar`); Stop clears it |
-| mic button | the composer's 🎙 | the system permission dialog with the reason 听写时把语音转成文字。 (`m7-mic-permission`); Allow opens the bar |
-| dictation bar | after Allow | 取消 / 电平条 / 停止 / 发送 (`m7-dictation-bar`, `m7-dictation-live`); the level row moves with the mic |
+| mic button | the composer's 🎙 (`m7-composer-mic`) | the system permission dialog with the reason 听写时把语音转成文字。 (`m7-mic-permission`); Allow opens the bar |
+| dictation bar | after Allow | 取消 / 电平条 / 停止 / 发送 (`m7-dictation-bar`), with 发送 enabled on an empty draft. The level row rests on this emulator, whose microphone records silence: its movement with the mic was not observed here and waits for a physical device |
 | provider dictation | stop the recording | the fixture's transcription lands in the draft as words, status returns (`m7-dictation-transcribed`) |
-| empty-draft send (review B1) | during a hosted recording, tap 发送 on the empty draft | the recording stops keeping its words, the transcription ("Fake dictated words") lands in the draft and the message sends (`m7-review-empty-draft-send`) |
+| empty-draft send (review B1) | during a hosted recording, tap 发送 on the empty draft | the recording stops keeping its words, the transcription ("Fake dictated words") lands in the draft and the message sends (`m7-review-empty-draft-send` shows it sent, the composer empty again) |
 | backgrounding during dictation (review B3) | Home while the mic records | the session ends: back on the thread the bar is gone and the composer is its own row again |
+
+**The captures were retaken on the rebased head**, and the rows above were walked again there.
+Each file was opened and checked at its final path after it was taken. The playback bar's Stop
+control is the one thing not repeated; the first round saw it clear the bar. Three of the first
+set showed something other than their row: the settings row was a signed-out error screen, the
+playback bar carried a refusal line from an earlier attempt, and the empty-draft send showed the
+moment before the tap.
 
 **ux-declutter pass** (every capture, per `.agents/skills/ux-declutter/SKILL.md`): the playback
 bar is the one accent-less strip the moment needs — speaker name in the bot's color, ink
@@ -292,8 +300,15 @@ model connections to it are offered as explicit choices, or a sign-in where it h
 - **The page did not change.** The rule's `modelConnections` and `modelSignIn` are decoded and not
   rendered. With an empty key and no explicit choice, Connect stays disabled and the key field
   still asks for one (`Paste your API key`), as it does for any connection without a key: that is
-  what the new rule says. No wording was added, so there is no new msgid and no new capture;
-  `m7-voice-provider-form` already shows this state.
+  what the new rule says. No wording was added, so there is no new msgid; `m7-voice-provider-form`
+  shows this state.
+- **The captures moved and were retaken.** The first set was committed under `screenshots/` at
+  the repository root, a path relative to the worktree, while every earlier milestone keeps its
+  captures in `apps/harmony/screenshots/`. No ignore rule was involved: the capture commands were
+  given that shorter path, and nothing compared it with the earlier milestones'. The set was
+  retaken on the rebased head into that folder (see Device verification). The earlier
+  `dictation-live` capture was dropped: on a silent microphone it is the same frame as
+  `m7-dictation-bar`. `m7-voice-picker`, which the table had named without a file, was taken.
 
 ## Deferred
 
@@ -322,10 +337,19 @@ model connections to it are offered as explicit choices, or a sign-in where it h
   `voice/connect`'s `modelCredentialId` goes with that work. **Known limitation until then:** a
   connection whose voice would authenticate through a model connection needs a pasted API key on
   this device.
+- **The consent prompt after leaving the Voice page** (found while retaking the captures, on the
+  rebased head, not fixed): with a provider selected but not connected, the mic button in a thread
+  opens the Voice page over that thread. The page installs the consent dialog when it appears and
+  removes it when it leaves, and the thread beneath, still open, is left without one. Back there, a
+  dictation that still needs the provider's consent does nothing at all, with no bar and no dialog,
+  until the thread is left and opened again. The removal should restore what the page found, or the
+  thread should install the dialog again when it shows.
 
 ## Filenames
 
-The captures live in `screenshots/m7-*.png`: settings-voice-row, voice-device, voice-device-sample-bar,
-voice-provider-menu, voice-provider-form, voice-connected, voice-consent, longpress-menu,
-playback-bar, composer-mic, mic-permission, dictation-bar, dictation-live,
-dictation-transcribed, review-empty-draft-send.
+The captures live in `apps/harmony/screenshots/`, beside the earlier milestones', in the order of
+the table above: `m7-settings-voice-row.png`, `m7-voice-device.png`, `m7-voice-device-sample-bar.png`,
+`m7-voice-provider-menu.png`, `m7-voice-provider-form.png`, `m7-voice-connected.png`,
+`m7-voice-picker.png`, `m7-voice-consent.png`, `m7-longpress-menu.png`, `m7-playback-bar.png`,
+`m7-composer-mic.png`, `m7-mic-permission.png`, `m7-dictation-bar.png`, `m7-review-empty-draft-send.png`,
+`m7-dictation-transcribed.png`.
