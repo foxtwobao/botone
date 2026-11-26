@@ -146,6 +146,42 @@
     },
     {
       "locale": "en",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, one {# image} other {# images}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 images"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, one {# image} other {# images}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 image"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, one {# image} other {# images}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 images"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, one {# image} other {# images}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 images"
+    },
+    {
+      "locale": "en",
       "msgid": "{0, plural, one {# more} other {# more}}",
       "message": "{0, plural, one {# more} other {# more}}",
       "values": {
@@ -287,6 +323,42 @@
         "0": 5
       },
       "expected": "5 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "Show all 0 pictures"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "Show all 1 picture"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "Show all 2 pictures"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "Show all 5 pictures"
     },
     {
       "locale": "en",
@@ -902,6 +974,15 @@
     },
     {
       "locale": "en",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, one {# image} other {# images}}",
+      "values": {
+        "0": 3
+      },
+      "expected": "3 images"
+    },
+    {
+      "locale": "en",
       "msgid": "{0, plural, one {# more} other {# more}}",
       "message": "{0, plural, one {# more} other {# more}}",
       "values": {
@@ -935,6 +1016,15 @@
         "0": 3
       },
       "expected": "3 tools"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "values": {
+        "0": 3
+      },
+      "expected": "Show all 3 pictures"
     },
     {
       "locale": "en",
@@ -1009,6 +1099,15 @@
         "0": 3
       },
       "expected": "3 handling"
+    },
+    {
+      "locale": "en",
+      "msgid": "{0} in credits added",
+      "message": "{0} in credits added",
+      "values": {
+        "0": 3
+      },
+      "expected": "3 in credits added"
     },
     {
       "locale": "en",
@@ -4063,6 +4162,16 @@
     },
     {
       "locale": "en",
+      "msgid": "Open photo {0} of {1}",
+      "message": "Open photo {0} of {1}",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "Open photo 3 of 3"
+    },
+    {
+      "locale": "en",
       "msgid": "Options for {app}",
       "message": "Options for {app}",
       "values": {
@@ -5710,6 +5819,42 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 张图片}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 张图片"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 张图片}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 张图片"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 张图片}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 张图片"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 张图片}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 张图片"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "{0, plural, one {# more} other {# more}}",
       "message": "{0, plural, one {还有 # 个} other {还有 # 个}}",
       "values": {
@@ -5851,6 +5996,42 @@
         "0": 5
       },
       "expected": "5 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {显示全部 # 张图片}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "显示全部 0 张图片"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {显示全部 # 张图片}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "显示全部 1 张图片"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {显示全部 # 张图片}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "显示全部 2 张图片"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {显示全部 # 张图片}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "显示全部 5 张图片"
     },
     {
       "locale": "zh-CN",
@@ -6466,6 +6647,15 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 张图片}}",
+      "values": {
+        "0": 3
+      },
+      "expected": "3 张图片"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "{0, plural, one {# more} other {# more}}",
       "message": "{0, plural, one {还有 # 个} other {还有 # 个}}",
       "values": {
@@ -6499,6 +6689,15 @@
         "0": 3
       },
       "expected": "3 个工具"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {显示全部 # 张图片}}",
+      "values": {
+        "0": 3
+      },
+      "expected": "显示全部 3 张图片"
     },
     {
       "locale": "zh-CN",
@@ -6573,6 +6772,15 @@
         "0": 3
       },
       "expected": "如何处理 3"
+    },
+    {
+      "locale": "zh-CN",
+      "msgid": "{0} in credits added",
+      "message": "已添加 {0} 额度",
+      "values": {
+        "0": 3
+      },
+      "expected": "已添加 3 额度"
     },
     {
       "locale": "zh-CN",
@@ -9627,6 +9835,16 @@
     },
     {
       "locale": "zh-CN",
+      "msgid": "Open photo {0} of {1}",
+      "message": "打开第 {0} 张照片，共 {1} 张",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "打开第 3 张照片，共 3 张"
+    },
+    {
+      "locale": "zh-CN",
       "msgid": "Options for {app}",
       "message": "{app} 选项",
       "values": {
@@ -11274,6 +11492,42 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 張圖片}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "0 張圖片"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 張圖片}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "1 張圖片"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 張圖片}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "2 張圖片"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 張圖片}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "5 張圖片"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "{0, plural, one {# more} other {# more}}",
       "message": "{0, plural, other {另有 # 項}}",
       "values": {
@@ -11415,6 +11669,42 @@
         "0": 5
       },
       "expected": "5 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {顯示全部 # 張圖片}}",
+      "values": {
+        "0": 0
+      },
+      "expected": "顯示全部 0 張圖片"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {顯示全部 # 張圖片}}",
+      "values": {
+        "0": 1
+      },
+      "expected": "顯示全部 1 張圖片"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {顯示全部 # 張圖片}}",
+      "values": {
+        "0": 2
+      },
+      "expected": "顯示全部 2 張圖片"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {顯示全部 # 張圖片}}",
+      "values": {
+        "0": 5
+      },
+      "expected": "顯示全部 5 張圖片"
     },
     {
       "locale": "zh-TW",
@@ -12030,6 +12320,15 @@
     },
     {
       "locale": "zh-TW",
+      "msgid": "{0, plural, one {# image} other {# images}}",
+      "message": "{0, plural, other {# 張圖片}}",
+      "values": {
+        "0": 3
+      },
+      "expected": "3 張圖片"
+    },
+    {
+      "locale": "zh-TW",
       "msgid": "{0, plural, one {# more} other {# more}}",
       "message": "{0, plural, other {另有 # 項}}",
       "values": {
@@ -12063,6 +12362,15 @@
         "0": 3
       },
       "expected": "3 個工具"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0, plural, one {Show all # picture} other {Show all # pictures}}",
+      "message": "{0, plural, other {顯示全部 # 張圖片}}",
+      "values": {
+        "0": 3
+      },
+      "expected": "顯示全部 3 張圖片"
     },
     {
       "locale": "zh-TW",
@@ -12137,6 +12445,15 @@
         "0": 3
       },
       "expected": "3 處理方式"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "{0} in credits added",
+      "message": "已加入 {0} 額度",
+      "values": {
+        "0": 3
+      },
+      "expected": "已加入 3 額度"
     },
     {
       "locale": "zh-TW",
@@ -15188,6 +15505,16 @@
         "name": "Ada"
       },
       "expected": "開啟圖片 Ada"
+    },
+    {
+      "locale": "zh-TW",
+      "msgid": "Open photo {0} of {1}",
+      "message": "開啟第 {0} 張照片，共 {1} 張",
+      "values": {
+        "0": 3,
+        "1": 3
+      },
+      "expected": "開啟第 3 張照片，共 3 張"
     },
     {
       "locale": "zh-TW",
