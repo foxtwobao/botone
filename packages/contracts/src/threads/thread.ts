@@ -13,6 +13,7 @@ export const ChatAlertSchema = z.object({
   spaceId: Id,
   botId: Id,
   threadId: Id,
+  runId: Id.optional(),
   groupId: Id.optional(),
 });
 export type ChatAlert = z.infer<typeof ChatAlertSchema>;

@@ -668,8 +668,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       providerId: meetingProvider.describe().id,
       enabled: (spaceId) => meetings.enabled(spaceId),
     });
-
-  const router = createRouter({
+  const routerDeps: Parameters<typeof createRouter>[0] = {
     // Only computers people paired: nothing clears a routine's "Use my computer" when this
     // server's own screen is turned off and on again.
     userDevices: userDevicesOverride ?? userDevices,
@@ -741,7 +740,8 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       openSignup: env.messagingOpenSignup,
     },
     env: routerEnv(env),
-  });
+  };
+  const router = createRouter(routerDeps);
   const app = new Hono();
   app.onError(handleHttpError);
   const inFlight = trackInFlightRequests();
@@ -838,7 +838,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     await auditAuthResponse(path, ip, response);
     return response;
   });
-  fork.mount(app, { prisma, auth, secrets, sandbox });
+  fork.mount(app, routerDeps, { runtime, resolveModel: executor.resolveModel });
   mountLocalComputerHost(app, {
     token: env.desktopStackToken,
     sandboxProvider: env.sandboxProvider,

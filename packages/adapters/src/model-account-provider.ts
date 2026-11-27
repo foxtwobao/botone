@@ -26,7 +26,7 @@ export interface ExternalModelAccountProvider {
 
 export class ExternalModelAccountError extends Error {
   constructor(
-    readonly reason: "authorization_required" | "rejected" | "unavailable",
+    readonly reason: "authorization_required" | "quota_exhausted" | "rejected" | "unavailable",
     readonly retryable = false,
   ) {
     super(

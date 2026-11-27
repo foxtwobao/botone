@@ -9,6 +9,9 @@ import { loadEnv } from "./env.js";
 import type { ModelAccountEnv } from "./model-account-env.js";
 import { loadModelAccountEnv } from "./model-account-env.js";
 import { createModelAccountFeature } from "./model-account-setup.js";
+import type { PeripheralBridgeRuntime } from "./peripheral/peripheral-setup.js";
+import { loadPeripheralBridge } from "./peripheral/peripheral-setup.js";
+import type { RouterDeps } from "./router.js";
 
 /**
  * The app's configuration before its overrides apply: the environment the API loads, with the
@@ -55,14 +58,20 @@ export async function startForkFeatures(
   getAuth: () => Auth,
 ) {
   const { prisma, events } = foundation;
+  const peripheral = loadPeripheralBridge(process.env);
   const modelAccount = createModelAccountFeature(env, billingOverride);
   const connectedApps = await createConnectedApps({ prisma, artifacts, events, env }, getAuth);
   return {
     connectors: connectedApps.connectors,
     afterRpc: connectedApps.afterRpc,
     /** The fork's routes; the applications start once the app can serve them. */
-    mount(app: Hono, runtime: Parameters<typeof modelAccount.mount>[1]) {
-      modelAccount.mount(app, runtime);
+    mount(app: Hono, deps: RouterDeps, runtime: PeripheralBridgeRuntime) {
+      modelAccount.mount(app, deps);
+      peripheral?.mount(app, deps, {
+        ...runtime,
+        issuer: env.oidc?.issuer,
+        connection: modelAccount.connection,
+      });
       connectedApps.mount(app);
       connectedApps.start();
     },

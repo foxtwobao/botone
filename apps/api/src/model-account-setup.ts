@@ -23,6 +23,7 @@ export function createModelAccountFeature(env: AccountEnv, billingOverride?: Bil
   )
     throw new Error("Model account requires OIDC and local billing disabled");
   return {
+    connection,
     mount(app: Hono, runtime: Runtime) {
       app.route(
         "/api/model-account",

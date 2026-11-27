@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@rakazo/db";
-import { isCurrentOidcAccount } from "./oidc.js";
+import { isCurrentOidcAccount, oidcAccountSubject } from "./oidc.js";
 import type { TokenKey } from "./token-storage.js";
 import { openIdToken } from "./token-storage.js";
 
@@ -41,4 +41,27 @@ export async function readExternalAccountIdentity(
   );
   const current = identities.filter((identity) => identity !== null);
   return current.length === 1 ? current[0]! : null;
+}
+
+/** Resolves an issuer/subject asserted by a trusted service to an active, verified account. */
+export async function findLinkedOidcAccount(
+  prisma: Pick<PrismaClient, "account">,
+  identity: { issuer: string; subject: string },
+  key: TokenKey,
+) {
+  const account = await prisma.account.findFirst({
+    where: {
+      providerId: "oidc",
+      accountId: oidcAccountSubject(identity.issuer, identity.subject),
+      user: { deactivatedAt: null },
+    },
+    select: {
+      id: true,
+      providerId: true,
+      accountId: true,
+      idToken: true,
+      user: { select: { id: true, email: true } },
+    },
+  });
+  return account && (await isCurrentOidcAccount(account, identity.issuer, key)) ? account : null;
 }

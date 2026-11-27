@@ -203,6 +203,13 @@ export class ResellerModelAccountProvider implements ExternalModelAccountProvide
           error.data.error === "APP_USER_AUTHORIZATION_REQUIRED"
         )
           throw new ExternalModelAccountError("authorization_required");
+        if (
+          path === "keys/ensure" &&
+          response.status === 409 &&
+          error.success &&
+          error.data.error === "TOKENONE_KEY_QUOTA_EXHAUSTED"
+        )
+          throw new ExternalModelAccountError("quota_exhausted");
         getLogger().warn("Model account service rejected a request", {
           operation: path,
           httpStatus,

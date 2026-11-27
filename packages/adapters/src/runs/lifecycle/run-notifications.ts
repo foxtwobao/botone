@@ -108,6 +108,8 @@ export async function notifyRun(
     spaceId: run.spaceId,
     recipients,
     message,
+    alertRunId:
+      run.trigger === "routine" && message.kind === "completion" ? message.runId : undefined,
     groupId: notice.groupId,
     bot: notice.bot,
     retryOnFailure: options.retryOnFailure,
@@ -185,12 +187,13 @@ async function deliverChatNotice(
     spaceId: string;
     recipients: string[];
     message: NotificationMessage;
+    alertRunId?: string;
     groupId: string | null;
     bot?: { id: string; name: string; color: string; avatarSet: string };
     retryOnFailure?: boolean;
   },
 ) {
-  const { spaceId, message, groupId, bot } = input;
+  const { spaceId, message, groupId, bot, alertRunId } = input;
   // News in a chat waits for whoever snoozed it. Questions, takeovers and failures still reach
   // the person whose run it is: the chat is hidden, so this is how they would hear of it.
   const snoozing =
@@ -204,7 +207,7 @@ async function deliverChatNotice(
       : new Set<string>();
   const recipients = input.recipients.filter((userId) => !snoozing.has(userId));
   for (const userId of recipients) {
-    publishChatAlert(deps.events, { spaceId, userId }, message, groupId);
+    publishChatAlert(deps.events, { spaceId, userId, alertRunId }, message, groupId);
   }
   const notifications = deps.notifications;
   if (!notifications || !recipients.length) return;
@@ -254,7 +257,7 @@ async function deliverChatNotice(
 /** Open apps alert from the same message. Not awaited, so it never holds up the push. */
 export function publishChatAlert(
   events: Pick<ThreadEvents, "publishChatAlert"> | undefined,
-  run: { spaceId: string; userId: string },
+  run: { spaceId: string; userId: string; alertRunId?: string },
   message: NotificationMessage,
   groupId: string | null,
 ) {
@@ -266,6 +269,7 @@ export function publishChatAlert(
       spaceId: run.spaceId,
       botId: message.botId,
       threadId: message.threadId,
+      ...(run.alertRunId ? { runId: run.alertRunId } : {}),
       ...(groupId ? { groupId } : {}),
     }))().catch((error) => getLogger().error("chat alert publish", error));
 }

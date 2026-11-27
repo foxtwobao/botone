@@ -27,7 +27,7 @@ import {
   runReadsThreadHistory,
 } from "@rakazo/core";
 import { deriveMessageQuote, messageReplyPreview } from "@rakazo/core/message-quote";
-import type { Prisma, PrismaClient, ThreadEvents } from "@rakazo/db";
+import type { Prisma, PrismaClient, SendUserMessageInput, ThreadEvents } from "@rakazo/db";
 import {
   answerWaitingRunWithTextInTransaction,
   appendEventInTransaction,
@@ -507,6 +507,9 @@ export async function sendThreadMessage(
     clientNonce?: string;
     nativeCalendarSessionId?: string;
     nativeCalendarDeviceDigest?: string;
+    /** A model already checked by the server for this one-to-one send. */
+    modelPin?: SendUserMessageInput["modelPin"];
+    modelPins?: ReadonlyMap<string, NonNullable<SendUserMessageInput["modelPin"]>>;
     /** No model to start a turn: the send may only stop active work. */
     noModel?: boolean;
   },
@@ -817,6 +820,7 @@ export async function sendThreadMessage(
             trigger: "user",
             clientNonce: sendRunClientNonce(input.clientNonce, message.id),
             sourceMessageId: message.id,
+            ...(input.modelPin && { ...input.modelPin, modelPinned: true }),
           },
         });
         await tx.message.update({ where: { id: message.id }, data: { runId: run.id } });
@@ -1055,6 +1059,7 @@ export async function sendThreadMessage(
             status: "queued",
           },
         });
+        const modelPin = input.modelPins?.get(botId);
         const run = await tx.run.create({
           data: {
             spaceId: actor.spaceId,
@@ -1067,6 +1072,7 @@ export async function sendThreadMessage(
             groupReplyOptional: namesNobody,
             clientNonce: sendRunClientNonce(input.clientNonce, message.id, botId),
             sourceMessageId: message.id,
+            ...(modelPin && { ...modelPin, modelPinned: true }),
           },
         });
         runs.push(run);
