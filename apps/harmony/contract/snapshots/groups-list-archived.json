@@ -6,6 +6,26 @@
         "minLength": 1,
         "type": "string"
       },
+      "members": {
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "botId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "color": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": ["botId", "name", "color"],
+          "type": "object"
+        },
+        "type": "array"
+      },
       "name": {
         "type": "string"
       },
@@ -25,7 +45,7 @@
         "type": "string"
       }
     },
-    "required": ["id", "name", "pinned", "unread", "preview", "updatedAt"],
+    "required": ["id", "name", "pinned", "unread", "preview", "updatedAt", "members"],
     "type": "object"
   },
   "type": "array"

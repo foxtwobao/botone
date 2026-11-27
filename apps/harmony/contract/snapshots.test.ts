@@ -20,11 +20,17 @@ import {
   botsListArchivedView,
   botsListView,
   botView,
+  groupMemberView,
   groupsListArchivedView,
   groupView,
   messageBlockKindsView,
   meView,
   modelCatalogEntryView,
+  modelConnectInputView,
+  modelConnectOutputView,
+  modelCredentialsView,
+  modelCredentialView,
+  modelProbeInputView,
   modelsListView,
   notificationsSubscribeView,
   runView,
@@ -60,9 +66,15 @@ describe("harmony layer-1 contract snapshots", () => {
     // health is consumed whole: the view IS the procedure's own output schema.
     expect(snapshotViews.health).toBe(appContract.health["~orpc"].outputSchema);
     // Picked views keep the procedure's own field schemas, so a rebind replaces them and goes red.
-    const expectFields = (view: z.ZodObject, source: z.ZodObject, label: string) => {
+    const expectFields = (
+      view: z.ZodObject,
+      source: z.ZodObject,
+      label: string,
+      skip: string[] = [],
+    ) => {
       const shape = source.shape as Record<string, unknown>;
       for (const [key, field] of Object.entries(view.shape)) {
+        if (skip.includes(key)) continue;
         expect(field, `${label}.${key}`).toBe(shape[key]);
       }
     };
@@ -71,11 +83,19 @@ describe("harmony layer-1 contract snapshots", () => {
     const spacesOutput = appContract.spaces.list["~orpc"].outputSchema!;
     expect(spacesListView.shape.current.shape.id).toBe(spacesOutput.shape.current.shape.id);
     expect(spacesListView.shape.current.shape.name).toBe(spacesOutput.shape.current.shape.name);
+    // A1: the switcher's summaries are the real SpaceSchema's own id/name fields.
+    expectFields(spacesListView.shape.spaces.element, spacesOutput.shape.spaces.element, "space");
     // The roster rows project the same Bot/Group schemas the list procedures declare.
     expectFields(botView, appContract.bots.list["~orpc"].outputSchema!.element, "bot");
-    expectFields(groupView, appContract.groups.list["~orpc"].outputSchema!.element, "group");
+    // M8: groupView carries a members field the settings picker reads; it is the narrowed member
+    // projection (asserted below), so the generic field walk skips it.
+    expectFields(groupView, appContract.groups.list["~orpc"].outputSchema!.element, "group", [
+      "members",
+    ]);
     expectFields(spacesListView.shape.current.shape.bots.element, botView, "spaces.bots");
-    expectFields(spacesListView.shape.current.shape.groups.element, groupView, "spaces.groups");
+    expectFields(spacesListView.shape.current.shape.groups.element, groupView, "spaces.groups", [
+      "members",
+    ]);
     expect(botsListView.element).toBe(botView);
     expect(botsListArchivedView.element).toBe(botView);
     expect(groupsListArchivedView.element).toBe(groupView);
@@ -93,7 +113,19 @@ describe("harmony layer-1 contract snapshots", () => {
       groupsListArchivedView.element,
       appContract.groups.listArchived["~orpc"].outputSchema!.element,
       "groups.listArchived",
+      ["members"],
     );
+    // The member row projects the real GroupMemberSchema, and every group view reuses it.
+    expectFields(
+      groupMemberView,
+      appContract.groups.list["~orpc"].outputSchema!.element.shape.members.element,
+      "group.member",
+    );
+    expect(groupView.shape.members.element).toBe(groupMemberView);
+    expect(spacesListView.shape.current.shape.groups.element.shape.members.element).toBe(
+      groupMemberView,
+    );
+    expect(groupsListArchivedView.element.shape.members.element).toBe(groupMemberView);
 
     // archive/restore views ARE the procedures' own input/output schemas.
     const io: [z.ZodType, unknown][] = [
@@ -105,6 +137,10 @@ describe("harmony layer-1 contract snapshots", () => {
       [snapshotViews["group-archive-output"], appContract.groups.archive["~orpc"].outputSchema],
       [snapshotViews["group-restore-input"], appContract.groups.restore["~orpc"].inputSchema],
       [snapshotViews["group-restore-output"], appContract.groups.restore["~orpc"].outputSchema],
+      [snapshotViews["group-create-input"], appContract.groups.create["~orpc"].inputSchema],
+      [snapshotViews["group-update-input"], appContract.groups.update["~orpc"].inputSchema],
+      [snapshotViews["group-remove-input"], appContract.groups.remove["~orpc"].inputSchema],
+      [snapshotViews["group-remove-output"], appContract.groups.remove["~orpc"].outputSchema],
     ];
     for (const [view, schema] of io) {
       expect(view).toBe(schema);
@@ -162,6 +198,28 @@ describe("harmony layer-1 contract snapshots", () => {
     const modelsSource = appContract.models.list["~orpc"].outputSchema!.element;
     expectFields(modelCatalogEntryView, modelsSource, "models.list");
     expect(modelsListView.element).toBe(modelCatalogEntryView);
+    // M9: a saved connection projects the real models/credentials element, and the connect
+    // output reuses the same view.
+    const credentialsSource = appContract.models.credentials["~orpc"].outputSchema!.element;
+    expectFields(modelCredentialView, credentialsSource, "models.credentials");
+    expect(modelCredentialsView.element).toBe(modelCredentialView);
+    expect(modelConnectOutputView).toBe(modelCredentialView);
+    // The connect input is an intersection: every picked field is the left member's own schema.
+    const connectSource = appContract.models.connect["~orpc"].inputSchema!;
+    const connectLeft = connectSource as unknown as {
+      def?: { left?: z.ZodObject };
+      _def?: { left?: z.ZodObject };
+    };
+    const connectInput = connectLeft.def?.left ?? connectLeft._def?.left;
+    if (!connectInput) throw new Error("models.connect input is not an intersection");
+    expectFields(modelConnectInputView, connectInput, "models.connect");
+    // The probe input drops the transformed headers record; its other fields stay the real ones.
+    const probeSource = appContract.models.probeOpenAiCompatible["~orpc"].inputSchema!;
+    for (const [key, field] of Object.entries(modelProbeInputView.shape)) {
+      expect(field, `models.probe.${key}`).toBe(
+        (probeSource.shape as Record<string, unknown>)[key],
+      );
+    }
   });
 
   for (const [name, schema] of Object.entries(snapshotViews)) {

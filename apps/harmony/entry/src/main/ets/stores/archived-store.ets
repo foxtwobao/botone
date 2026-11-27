@@ -10,7 +10,7 @@ import type { BotView, GroupView } from '../contract/decode';
 import { queryCache } from '../query/query-cache';
 import { SaveController } from '../query/save-controller';
 import type { SaveSend } from '../query/save-controller';
-import { selectedSpaceId } from '../net/session';
+import { selectedSpaceId, subscribeSpaceSelection } from '../net/session';
 import { subscribeRoster } from '../realtime/roster';
 import { foreground } from '../realtime/foreground';
 import { ROSTER_STALE } from './roster-projection';
@@ -88,10 +88,15 @@ export class ArchivedStore {
     });
   }
 
+  /** A Space selection change resets this store before the roster stream reopens, so the new
+   *  Space's list is never painted over the old Space's. */
   start(): void {
     if (this.unlisten !== null) {
       return;
     }
+    const offSpace = subscribeSpaceSelection((): void => {
+      this.reset();
+    });
     const offRoster = subscribeRoster((): void => {
       void this.load();
     });
@@ -101,6 +106,7 @@ export class ArchivedStore {
       }
     });
     this.unlisten = (): void => {
+      offSpace();
       offRoster();
       offForeground();
     };

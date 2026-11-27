@@ -2,6 +2,7 @@
 // root screen — sign-in, or the inbox once signed in. Account, archived and server are pushed
 // destinations; system back is Navigation's own.
 import { app } from '../app/app-state';
+import { selectedSpaceId } from '../net/session';
 import { appearance } from '../uikit/theme';
 import { SignInPage } from '../features/signin/SignInPage';
 import { InboxPage } from '../features/inbox/InboxPage';
@@ -13,6 +14,10 @@ import { VoicePage } from '../features/settings/VoicePage';
 import { VoicePlayerBar } from '../features/chat/voice-player-bar';
 import { ThreadPage } from '../features/chat/ThreadPage';
 import type { ThreadRoute } from '../features/chat/thread-route';
+import { NewGroupPage } from '../features/groups/NewGroupPage';
+import { GroupSettingsPage } from '../features/groups/GroupSettingsPage';
+import { ModelsPage } from '../features/models/ModelsPage';
+import { ModelConnectionPage } from '../features/models/ModelConnectionPage';
 import { ShareTargetSheet } from '../features/chat/share-target-sheet';
 import { incomingShare } from '../stores/incoming-share-store';
 
@@ -39,14 +44,26 @@ struct Index {
       SettingsPage({ stack: this.stack })
     } else if (name === 'voice') {
       VoicePage({ stack: this.stack })
+    } else if (name === 'models') {
+      ModelsPage({ stack: this.stack })
+    } else if (name === 'modelConnection') {
+      ModelConnectionPage({ stack: this.stack })
+    } else if (name === 'newGroup') {
+      NewGroupPage({ stack: this.stack })
+    } else if (name === 'groupSettings') {
+      GroupSettingsPage({ stack: this.stack, groupId: route.groupId })
     } else if (name === 'chat') {
-      ThreadPage({
-        stack: this.stack,
-        botId: route.botId,
-        groupId: route.groupId,
-        title: route.title,
-        route: route,
-      })
+      // A chat belongs to the Space it was opened in; a switch drops the old stack (A2), so
+      // rendering one from another Space is a defensive refusal, never a normal path.
+      if (route.spaceId === undefined || route.spaceId === selectedSpaceId()) {
+        ThreadPage({
+          stack: this.stack,
+          botId: route.botId,
+          groupId: route.groupId,
+          title: route.title,
+          route: route,
+        })
+      }
     }
   }
 

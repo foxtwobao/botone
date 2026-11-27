@@ -128,7 +128,9 @@ interface RenderHold {
 function hostedSpeech(context: common.Context, render: RenderHold): void {
   const engines: SpeechEngines = {
     captureContext: (): Promise<SpeechContext> => {
-      const pinned: SpeechContext = { apiBase: 'https://api.example', generation: 1, headers: {} };
+      const pinned: SpeechContext = {
+        apiBase: 'https://api.example', generation: 1, selectionGeneration: 1, headers: {},
+      };
       return Promise.resolve(pinned);
     },
     deviceVoiceEnabled: (): Promise<boolean> => Promise.resolve(false),

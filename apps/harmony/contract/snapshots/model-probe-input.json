@@ -1,0 +1,20 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "apiKey": {
+      "type": "string"
+    },
+    "apiProtocol": {
+      "enum": ["chat-completions", "responses", "anthropic-messages"],
+      "type": "string"
+    },
+    "baseUrl": {
+      "type": "string"
+    },
+    "credentialId": {
+      "type": "string"
+    }
+  },
+  "required": ["baseUrl"],
+  "type": "object"
+}

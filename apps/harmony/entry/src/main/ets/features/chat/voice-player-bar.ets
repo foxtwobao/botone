@@ -46,9 +46,9 @@ export struct VoicePlayerBar {
   build() {
     if (this.status !== 'idle') {
       Row({ space: 10 }) {
-        Text('≋')
-          .fontSize(typeScale.body.fontSize)
-          .fontColor(this.color)
+        SymbolGlyph($r('sys.symbol.waveform'))
+          .fontSize(typeScale.body.fontSize + 'vp')
+          .fontColor([this.color])
           .accessibilityLevel('no')
         Text(this.name)
           .fontSize(typeScale.body.fontSize)
@@ -58,31 +58,40 @@ export struct VoicePlayerBar {
           .textOverflow({ overflow: TextOverflow.Ellipsis })
           .layoutWeight(1)
         if (this.status === 'paused') {
-          Button('▷', { type: ButtonType.Circle })
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.play_fill'))
+              .fontSize('16vp')
+              .fontColor([appearance.tokens().foreground])
+          }
             .width(36)
             .height(36)
             .backgroundColor(appearance.tokens().muted)
-            .fontColor(appearance.tokens().foreground)
             .accessibilityText(t('Play'))
             .onClick((): void => {
               resumeVoicePlayback();
             })
         } else if (this.canPause) {
-          Button('‖', { type: ButtonType.Circle })
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.pause_fill'))
+              .fontSize('16vp')
+              .fontColor([appearance.tokens().foreground])
+          }
             .width(36)
             .height(36)
             .backgroundColor(appearance.tokens().muted)
-            .fontColor(appearance.tokens().foreground)
             .accessibilityText(t('Pause'))
             .onClick((): void => {
               pauseVoicePlayback();
             })
         }
-        Button('■', { type: ButtonType.Circle })
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.square_fill'))
+            .fontSize('14vp')
+            .fontColor([appearance.tokens().foreground])
+        }
           .width(36)
           .height(36)
           .backgroundColor(appearance.tokens().muted)
-          .fontColor(appearance.tokens().foreground)
           .accessibilityText(t('Stop'))
           .onClick((): void => {
             stopVoicePlayback();

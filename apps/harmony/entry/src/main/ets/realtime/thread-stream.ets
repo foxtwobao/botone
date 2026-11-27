@@ -1,10 +1,11 @@
 // The thread stream (design §5.4), ported from apps/mobile/lib/thread/thread-live.ts's loop:
 // threads/get once → subscribe from its cursor → reduce events → commit. Returning to the same
-// chat resumes from the applied cursor (no gaps); another chat or session starts fresh. On a
-// retryable disconnect: refresh first (reconcile, never roll the live cursor back), then resubscribe
-// from the cursor; backoff 250ms→5s, a stream that ended without the server's answer spreads its
-// reconnect 0–5s. A non-retryable 4xx stops the loop and surfaces the error. run terminal /
-// waiting_input events trigger one coalesced snapshot refresh (ask-ownership reconcile).
+// chat resumes from the applied cursor (no gaps); another chat, session or Space starts fresh —
+// a selection change stops the open stream itself. On a retryable disconnect: refresh first
+// (reconcile, never roll the live cursor back), then resubscribe from the cursor; backoff
+// 250ms→5s, a stream that ended without the server's answer spreads its reconnect 0–5s. A
+// non-retryable 4xx stops the loop and surfaces the error. run terminal / waiting_input events
+// trigger one coalesced snapshot refresh (ask-ownership reconcile).
 // No timed re-read: the only reads are the open, the disconnect refresh and the event-driven one.
 import { captureContext, rpc } from '../net/rpc';
 import type { RpcContext } from '../net/rpc';
@@ -12,7 +13,8 @@ import { RpcError, errorText } from '../net/errors';
 import { errorStatus, isRetryableError, reconnectDelayMs, retryDelayMs } from '../net/retry';
 import { subscribeRpcEvents } from '../net/sse';
 import type { SseEvent, SseHandle } from '../net/sse';
-import { currentSessionGeneration } from '../net/session';
+import { subscribeSpaceSelection } from '../net/session';
+import { contextIsCurrent } from '../query/query-cache';
 import { decodeThreadSnapshot } from '../thread/thread-decode';
 import {
   isRunTerminalEvent,
@@ -189,7 +191,7 @@ export class ThreadStream {
    * use; a failure only delays the jump — the live events already carry the state. */
   async refreshNow(input: Record<string, Object>): Promise<void> {
     const context = await captureContext();
-    if (this.stopped || context.generation !== currentSessionGeneration()) {
+    if (this.stopped || !contextIsCurrent(context)) {
       return;
     }
     await this.refreshOnce(context, input);
@@ -198,7 +200,7 @@ export class ThreadStream {
   /** threads/get → reconcile against the live snapshot; a stale answer never rolls state back. */
   private async refresh(context: RpcContext, input: Record<string, Object>): Promise<void> {
     const value = await this.fetch(context, input);
-    if (this.stopped || context.generation !== currentSessionGeneration()) {
+    if (this.stopped || !contextIsCurrent(context)) {
       return;
     }
     const next = decodeThreadSnapshot(value);
@@ -219,78 +221,90 @@ export class ThreadStream {
    */
   async follow(input: Record<string, Object>): Promise<void> {
     const context = await captureContext();
-    if (this.stopped) {
-      return;
-    }
-    if (!this.loaded) {
-      try {
-        await this.refresh(context, input);
-      } catch (err) {
-        const error = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
-        this.deps.onError?.(error);
-        // A failed open read leaves the screen empty with its error; retry is the user's tap
-        // (restart), not a polling loop.
+    // The stream speaks for one session and Space: when that claim moves on, it stops itself
+    // rather than waiting for the screen to clear the stack. The loop's guards hold every later
+    // step (a refresh, a reconnect) to the same rule.
+    const offSpace = subscribeSpaceSelection((): void => {
+      if (!contextIsCurrent(context)) {
+        this.stop();
+      }
+    });
+    try {
+      if (this.stopped || !contextIsCurrent(context)) {
         return;
       }
-    }
-    if (this.stopped || context.generation !== currentSessionGeneration()) {
-      return;
-    }
-    let retryMs = 250;
-    while (!this.stopped && context.generation === currentSessionGeneration()) {
-      let failure: RpcError | null = null;
-      const subscribeInput: Record<string, Object> = {};
-      for (const key of Object.keys(input)) {
-        subscribeInput[key] = input[key];
-      }
-      subscribeInput['cursor'] = this.cursor;
-      try {
-        this.connected = true;
-        this.handle = this.open(context, subscribeInput, (frame: SseEvent): void => {
-          this.applyFrame(context, input, frame);
-        });
-        await this.handle.done;
-      } catch (err) {
-        failure = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
-      }
-      this.connected = false;
-      this.handle = null;
-      if (this.stopped || context.generation !== currentSessionGeneration()) {
-        return;
-      }
-      // A 4xx other than 408/429 is the server's answer; reconnecting only polls it.
-      if (failure !== null && !isRetryableError(failure)) {
-        this.deps.onError?.(failure);
-        return;
-      }
-      // Ended without the server's answer: most likely closed under it, as a deploy closes
-      // every client's stream at once — spread the reconnect.
-      if (errorStatus(failure) === undefined) {
-        await this.waitImpl(reconnectDelayMs(failure, Math.random()));
-        if (this.stopped || context.generation !== currentSessionGeneration()) {
+      if (!this.loaded) {
+        try {
+          await this.refresh(context, input);
+        } catch (err) {
+          const error = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
+          this.deps.onError?.(error);
+          // A failed open read leaves the screen empty with its error; retry is the user's tap
+          // (restart), not a polling loop.
           return;
         }
       }
-      let refreshFailure: RpcError | null = null;
-      try {
-        await this.refresh(context, input);
-      } catch (err) {
-        refreshFailure = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
-      }
-      if (refreshFailure !== null && !isRetryableError(refreshFailure)) {
-        this.deps.onError?.(refreshFailure);
+      if (this.stopped || !contextIsCurrent(context)) {
         return;
       }
-      // Wait as long as either request was asked to (a 429's Retry-After).
-      const delay = Math.max(retryDelayMs(failure, retryMs, Math.random()),
-        retryDelayMs(refreshFailure, retryMs, Math.random()));
-      await this.waitImpl(delay);
-      retryMs = Math.min(retryMs * 2, 5_000);
+      let retryMs = 250;
+      while (!this.stopped && contextIsCurrent(context)) {
+        let failure: RpcError | null = null;
+        const subscribeInput: Record<string, Object> = {};
+        for (const key of Object.keys(input)) {
+          subscribeInput[key] = input[key];
+        }
+        subscribeInput['cursor'] = this.cursor;
+        try {
+          this.connected = true;
+          this.handle = this.open(context, subscribeInput, (frame: SseEvent): void => {
+            this.applyFrame(context, input, frame);
+          });
+          await this.handle.done;
+        } catch (err) {
+          failure = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
+        }
+        this.connected = false;
+        this.handle = null;
+        if (this.stopped || !contextIsCurrent(context)) {
+          return;
+        }
+        // A 4xx other than 408/429 is the server's answer; reconnecting only polls it.
+        if (failure !== null && !isRetryableError(failure)) {
+          this.deps.onError?.(failure);
+          return;
+        }
+        // Ended without the server's answer: most likely closed under it, as a deploy closes
+        // every client's stream at once — spread the reconnect.
+        if (errorStatus(failure) === undefined) {
+          await this.waitImpl(reconnectDelayMs(failure, Math.random()));
+          if (this.stopped || !contextIsCurrent(context)) {
+            return;
+          }
+        }
+        let refreshFailure: RpcError | null = null;
+        try {
+          await this.refresh(context, input);
+        } catch (err) {
+          refreshFailure = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
+        }
+        if (refreshFailure !== null && !isRetryableError(refreshFailure)) {
+          this.deps.onError?.(refreshFailure);
+          return;
+        }
+        // Wait as long as either request was asked to (a 429's Retry-After).
+        const delay = Math.max(retryDelayMs(failure, retryMs, Math.random()),
+          retryDelayMs(refreshFailure, retryMs, Math.random()));
+        await this.waitImpl(delay);
+        retryMs = Math.min(retryMs * 2, 5_000);
+      }
+    } finally {
+      offSpace();
     }
   }
 
   private applyFrame(context: RpcContext, input: Record<string, Object>, frame: SseEvent): void {
-    if (this.stopped || context.generation !== currentSessionGeneration()) {
+    if (this.stopped || !contextIsCurrent(context)) {
       return;
     }
     const event = threadEventFromFrame(frame);

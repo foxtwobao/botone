@@ -15,6 +15,7 @@ import {
 } from './session';
 import { savePendingSignOut, deliverSignOutRecord } from './sign-out';
 import type { PendingSignOut } from './sign-out';
+import { clearSelectedSpace } from './space-selection';
 import { decodeAuthCapabilities } from '../contract/decode';
 import type { AuthCapabilitiesView } from '../contract/decode';
 import { currentLocale, t } from '../i18n/i18n';
@@ -288,6 +289,8 @@ export async function signOut(): Promise<void> {
   if (!(await clearSessionToken())) {
     throw new Error(t('Could not clear the local session'));
   }
+  // The Space belonged to the session that just ended; a later sign-in starts from the default.
+  void clearSelectedSpace();
   if (record !== null) {
     void deliverSignOutRecord(record, persisted);
   }

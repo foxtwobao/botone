@@ -1,10 +1,10 @@
 // SettingsPage (design §7.2 M4): the signed-in account's settings. Read-first — the identity,
 // Space, server and model are calm summary rows; the server row navigates to ServerPage (M1),
 // appearance and language open native menus, the version is a plain row, and sign-out is the one
-// destructive action at the bottom. The model display is read-only (Q6): the server's label when
+// destructive action at the bottom. The model row shows the server's label when
 // me.defaultProvider/defaultModel matches models/list, else the translatable "Space default" —
-// never a raw id. Copy reuses catalog msgids; the locale names are product data (each language in
-// its own name, the same in every locale).
+// never a raw id — and opens the models page (M9) to connect one. Copy reuses catalog msgids; the
+// locale names are product data (each language in its own name, the same in every locale).
 import { bundleManager } from '@kit.AbilityKit';
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
@@ -17,6 +17,7 @@ import { errorText, RpcError } from '../../net/errors';
 import { currentApiBase } from '../../net/server-store';
 import { displaySavedServer } from '../../net/endpoint';
 import { settingsStore } from '../../stores/settings-store';
+import { spaceStore } from '../../stores/space-store';
 import { defaultModelEntry } from '../../stores/model-display';
 
 /** Each shipped language named in itself (core APP_LOCALE_LABELS) — product data, not copy.
@@ -215,8 +216,8 @@ export struct SettingsPage {
 
             // Account facts: Space and model read-only; server navigates to its management page.
             Column() {
-              if (app.spaceName) {
-                ValueRow({ label: t('Space'), value: app.spaceName })
+              if (spaceStore.currentName || app.spaceName) {
+                ValueRow({ label: t('Space'), value: spaceStore.currentName || app.spaceName })
               }
               Row() {
                 Text(t('Server'))
@@ -235,7 +236,23 @@ export struct SettingsPage {
               .onClick((): void => {
                 this.stack.pushPathByName('server', null);
               })
-              ValueRow({ label: t('Model'), value: this.modelLabel() })
+              Row() {
+                Text(t('Model'))
+                  .fontSize(typeScale.secondary.fontSize)
+                  .fontColor(appearance.tokens().mutedForeground)
+                Blank()
+                Text(this.modelLabel())
+                  .fontSize(typeScale.body.fontSize)
+                  .fontColor(appearance.tokens().link)
+                  .maxLines(1)
+                  .textOverflow({ overflow: TextOverflow.Ellipsis })
+                  .constraintSize({ maxWidth: '60%' })
+              }
+              .width('100%')
+              .padding({ top: 12, bottom: 12 })
+              .onClick((): void => {
+                this.stack.pushPathByName('models', null);
+              })
               Row() {
                 Text(t('Voice'))
                   .fontSize(typeScale.secondary.fontSize)

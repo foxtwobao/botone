@@ -9,10 +9,12 @@ import { parseRetryAfter } from './retry';
 import {
   clearSessionToken,
   currentSessionGeneration,
+  currentSpaceSelectionGeneration,
   loadSessionToken,
   selectedSpaceId,
   setSelectedSpace,
 } from './session';
+import { clearSelectedSpace } from './space-selection';
 import { currentApiBase } from './server-store';
 import { serverHeaders } from './server-headers';
 import { clientBuildHeaders } from './client-build';
@@ -26,6 +28,8 @@ import { asRecord } from '../contract/decode';
 export interface RpcContext {
   apiBase: string;
   generation: number;
+  /** The selection claim it was pinned under, so A→B→A never passes a late answer off as new. */
+  selectionGeneration: number;
   headers: Record<string, string>;
 }
 
@@ -71,6 +75,7 @@ export async function authHeaders(spaceId: string | null): Promise<Record<string
 export async function captureContext(spaceId: string | null = null): Promise<RpcContext> {
   const space = spaceId ?? (selectedSpaceId() || null);
   const generation = currentSessionGeneration();
+  const selectionGeneration = currentSpaceSelectionGeneration();
   const apiBase = currentApiBase();
   const headers = await authHeaders(space);
   if (apiBase !== currentApiBase()) {
@@ -79,7 +84,12 @@ export async function captureContext(spaceId: string | null = null): Promise<Rpc
   if (generation !== currentSessionGeneration()) {
     throw new Error(t('Something went wrong. Try again.'));
   }
-  const context: RpcContext = { apiBase: apiBase, generation: generation, headers: headers };
+  const context: RpcContext = {
+    apiBase: apiBase,
+    generation: generation,
+    selectionGeneration: selectionGeneration,
+    headers: headers,
+  };
   return context;
 }
 
@@ -156,6 +166,7 @@ export async function rpc(proc: string, body: Record<string, Object>, options?: 
         await rejectSession();
       } else if (requestSpaceId && requestSpaceId === selectedSpaceId()
         && context.generation === currentSessionGeneration()
+        && context.selectionGeneration === currentSpaceSelectionGeneration()
         && options?.context === undefined && options?.skipSpaceAuthRecovery !== true) {
         // With a Space header the selection may be stale while the session is fine: probe once
         // with a safe read and no Space header. Success clears the selection; a 401 means the
@@ -169,11 +180,20 @@ export async function rpc(proc: string, body: Record<string, Object>, options?: 
         const recovery: RpcContext = {
           apiBase: context.apiBase,
           generation: context.generation,
+          selectionGeneration: context.selectionGeneration,
           headers: recoveryHeaders,
         };
         try {
           await rpc('spaces/list', {}, { context: recovery, skipSpaceAuthRecovery: true });
-          setSelectedSpace('');
+          // A Space chosen while the probe ran owns the selection; only the stale one is cleared
+          // from memory and disk, so the next launch does not repeat this 401. The check repeats
+          // after the disk write, because that await is exactly when a switch can land.
+          if (context.selectionGeneration === currentSpaceSelectionGeneration()) {
+            await clearSelectedSpace();
+            if (context.selectionGeneration === currentSpaceSelectionGeneration()) {
+              setSelectedSpace('');
+            }
+          }
         } catch (retryErr) {
           const retryError = retryErr instanceof RpcError ? retryErr as RpcError : null;
           if (retryError !== null && retryError.status === 401

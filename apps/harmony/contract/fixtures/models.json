@@ -1,0 +1,749 @@
+{
+  "formModel": [
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "credential": null,
+      "defaults": null,
+      "current": "",
+      "expected": "m1"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "credential": null,
+      "defaults": null,
+      "current": "m2",
+      "expected": "m2"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "credential": {
+        "modelId": "m2"
+      },
+      "defaults": null,
+      "current": "",
+      "expected": "m2"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "credential": null,
+      "defaults": {
+        "defaultProvider": "p",
+        "defaultModel": "m2"
+      },
+      "current": "",
+      "expected": "m2"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "credential": null,
+      "defaults": {
+        "defaultProvider": "q",
+        "defaultModel": "m2"
+      },
+      "current": "",
+      "expected": "m1"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "openai-compatible",
+          "id": "custom",
+          "label": "Model custom",
+          "providerName": "OpenAI-compatible",
+          "recommended": false,
+          "auth": null,
+          "placeholder": true
+        }
+      ],
+      "provider": "openai-compatible",
+      "credential": {
+        "modelId": "server-model"
+      },
+      "defaults": null,
+      "current": "",
+      "expected": "server-model"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "openai-compatible",
+          "id": "custom",
+          "label": "Model custom",
+          "providerName": "OpenAI-compatible",
+          "recommended": false,
+          "auth": null,
+          "placeholder": true
+        }
+      ],
+      "provider": "openai-compatible",
+      "credential": null,
+      "defaults": null,
+      "current": "custom",
+      "expected": ""
+    }
+  ],
+  "pick": [
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "preferredId": "m2",
+      "expected": "m2"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "preferredId": null,
+      "expected": "m1"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "gpt-6",
+          "label": "Model gpt-6",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "preferredId": "openai/gpt-6",
+      "expected": "gpt-6"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "azure",
+          "id": "azure-model",
+          "label": "Model azure-model",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "azure-openai-responses",
+      "preferredId": "azure-model",
+      "expected": "azure-model"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "p",
+      "preferredId": null,
+      "expected": "m2"
+    },
+    {
+      "catalog": [
+        {
+          "provider": "p",
+          "id": "m1",
+          "label": "Model m1",
+          "providerName": "Fake Maker",
+          "recommended": true,
+          "auth": null,
+          "placeholder": false
+        },
+        {
+          "provider": "p",
+          "id": "m2",
+          "label": "Model m2",
+          "providerName": "Fake Maker",
+          "recommended": false,
+          "auth": null,
+          "placeholder": false
+        }
+      ],
+      "provider": "none",
+      "preferredId": "m1",
+      "expected": ""
+    },
+    {
+      "catalog": [],
+      "provider": "p",
+      "preferredId": null,
+      "expected": ""
+    }
+  ],
+  "normalize": [
+    {
+      "input": "",
+      "ok": false,
+      "error": "Base URL must be an absolute HTTP(S) URL"
+    },
+    {
+      "input": "   ",
+      "ok": false,
+      "error": "Base URL must be an absolute HTTP(S) URL"
+    },
+    {
+      "input": "example.com",
+      "ok": false,
+      "error": "Base URL must be an absolute HTTP(S) URL"
+    },
+    {
+      "input": "https://example.com",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/v1/",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/v1/chat/completions",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/chat/completions",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/openai",
+      "ok": true,
+      "url": "https://example.com/openai/v1"
+    },
+    {
+      "input": "https://example.com/v4",
+      "ok": true,
+      "url": "https://example.com/v4"
+    },
+    {
+      "input": "https://api.example.com/v1beta",
+      "ok": true,
+      "url": "https://api.example.com/v1beta"
+    },
+    {
+      "input": "https://example.com/completions",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/models",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "ftp://example.com",
+      "ok": false,
+      "error": "Base URL must use http or https"
+    },
+    {
+      "input": "https://user:pass@example.com",
+      "ok": false,
+      "error": "Base URL must not contain credentials"
+    },
+    {
+      "input": "https://model.example:443/v1",
+      "ok": true,
+      "url": "https://model.example/v1"
+    },
+    {
+      "input": "http://model.example:80",
+      "ok": true,
+      "url": "http://model.example/v1"
+    },
+    {
+      "input": "http://[::1]:8080",
+      "ok": true,
+      "url": "http://[::1]:8080/v1"
+    },
+    {
+      "input": "http://[::1]:8080/v1",
+      "ok": true,
+      "url": "http://[::1]:8080/v1"
+    },
+    {
+      "input": "not a url",
+      "ok": false,
+      "error": "Base URL must be an absolute HTTP(S) URL"
+    },
+    {
+      "input": "https://example.com?x=1",
+      "ok": true,
+      "url": "https://example.com/v1"
+    },
+    {
+      "input": "https://example.com/path?x=1#frag",
+      "ok": true,
+      "url": "https://example.com/path/v1"
+    }
+  ],
+  "connectRequest": [
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "",
+        "modelId": "",
+        "apiKey": "short"
+      },
+      "selected": {
+        "provider": "p",
+        "id": "m1",
+        "label": "Model m1",
+        "providerName": "Fake Maker",
+        "recommended": true,
+        "auth": null,
+        "placeholder": false
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "incomplete"
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "",
+        "modelId": "",
+        "apiKey": ""
+      },
+      "selected": {
+        "provider": "p",
+        "id": "m1",
+        "label": "Model m1",
+        "providerName": "Fake Maker",
+        "recommended": true,
+        "auth": null,
+        "placeholder": false
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "incomplete"
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "",
+        "modelId": "",
+        "apiKey": ""
+      },
+      "selected": {
+        "provider": "p",
+        "id": "m1",
+        "label": "Model m1",
+        "providerName": "Fake Maker",
+        "recommended": true,
+        "auth": null,
+        "placeholder": false
+      },
+      "credential": {
+        "modelId": "m1"
+      },
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "ready",
+        "savingWithoutKey": true,
+        "activeModelId": "m1",
+        "input": {
+          "provider": "p",
+          "modelId": "m1",
+          "makeDefault": true,
+          "scope": "account",
+          "label": "Fake Maker",
+          "credentialId": null
+        }
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "",
+        "modelId": "",
+        "apiKey": "12345678"
+      },
+      "selected": {
+        "provider": "p",
+        "id": "m2",
+        "label": "Model m2",
+        "providerName": "Fake Maker",
+        "recommended": false,
+        "auth": null,
+        "placeholder": false
+      },
+      "credential": null,
+      "credentialId": "cred-1",
+      "makeDefault": false,
+      "scope": "account",
+      "expected": {
+        "status": "ready",
+        "savingWithoutKey": false,
+        "activeModelId": "m2",
+        "input": {
+          "provider": "p",
+          "apiKey": "12345678",
+          "modelId": "m2",
+          "makeDefault": false,
+          "scope": "account",
+          "label": "Fake Maker",
+          "credentialId": "cred-1"
+        }
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "",
+        "modelId": "",
+        "apiKey": "12345678"
+      },
+      "selected": {
+        "provider": "p2",
+        "id": "m2",
+        "label": "Model m2",
+        "providerName": null,
+        "recommended": false,
+        "auth": null,
+        "placeholder": false
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "ready",
+        "savingWithoutKey": false,
+        "activeModelId": "m2",
+        "input": {
+          "provider": "p2",
+          "apiKey": "12345678",
+          "modelId": "m2",
+          "makeDefault": true,
+          "scope": "account",
+          "label": "p2",
+          "credentialId": null
+        }
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "",
+        "modelId": "",
+        "apiKey": ""
+      },
+      "selected": {
+        "provider": "openai-compatible",
+        "id": "custom",
+        "label": "Model custom",
+        "providerName": "OpenAI-compatible",
+        "recommended": false,
+        "auth": null,
+        "placeholder": true
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "incomplete"
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "https://models.example/v1",
+        "modelId": "",
+        "apiKey": ""
+      },
+      "selected": {
+        "provider": "openai-compatible",
+        "id": "custom",
+        "label": "Model custom",
+        "providerName": "OpenAI-compatible",
+        "recommended": false,
+        "auth": null,
+        "placeholder": true
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "incomplete"
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": ["a", "m", "b"],
+        "baseUrl": " https://models.example/v1 ",
+        "modelId": " m ",
+        "apiKey": ""
+      },
+      "selected": {
+        "provider": "openai-compatible",
+        "id": "custom",
+        "label": "Model custom",
+        "providerName": "OpenAI-compatible",
+        "recommended": false,
+        "auth": null,
+        "placeholder": true
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": false,
+      "scope": "account",
+      "expected": {
+        "status": "ready",
+        "savingWithoutKey": false,
+        "activeModelId": "m",
+        "input": {
+          "provider": "openai-compatible",
+          "baseUrl": "https://models.example/v1",
+          "modelId": "m",
+          "enabledModelIds": ["a", "b"],
+          "makeDefault": false,
+          "scope": "account",
+          "label": "OpenAI-compatible",
+          "credentialId": null
+        }
+      }
+    },
+    {
+      "form": {
+        "enabledModelIds": [],
+        "baseUrl": "https://models.example/v1",
+        "modelId": "m",
+        "apiKey": "  key-1234  "
+      },
+      "selected": {
+        "provider": "openai-compatible",
+        "id": "custom",
+        "label": "Model custom",
+        "providerName": "OpenAI-compatible",
+        "recommended": false,
+        "auth": null,
+        "placeholder": true
+      },
+      "credential": null,
+      "credentialId": null,
+      "makeDefault": true,
+      "scope": "account",
+      "expected": {
+        "status": "ready",
+        "savingWithoutKey": false,
+        "activeModelId": "m",
+        "input": {
+          "provider": "openai-compatible",
+          "baseUrl": "https://models.example/v1",
+          "modelId": "m",
+          "enabledModelIds": [],
+          "makeDefault": true,
+          "scope": "account",
+          "apiKey": "key-1234",
+          "label": "OpenAI-compatible",
+          "credentialId": null
+        }
+      }
+    }
+  ],
+  "connectReady": [
+    {
+      "baseUrl": "",
+      "modelId": "m",
+      "apiKey": "",
+      "keyRequired": false,
+      "expected": false
+    },
+    {
+      "baseUrl": "https://x.example",
+      "modelId": "",
+      "apiKey": "",
+      "keyRequired": false,
+      "expected": false
+    },
+    {
+      "baseUrl": "https://x.example",
+      "modelId": "m",
+      "apiKey": "",
+      "keyRequired": false,
+      "expected": true
+    },
+    {
+      "baseUrl": "https://x.example",
+      "modelId": "m",
+      "apiKey": "",
+      "keyRequired": true,
+      "expected": false
+    },
+    {
+      "baseUrl": "https://x.example",
+      "modelId": "m",
+      "apiKey": "  ",
+      "keyRequired": true,
+      "expected": false
+    },
+    {
+      "baseUrl": " https://x.example ",
+      "modelId": " m ",
+      "apiKey": "key",
+      "keyRequired": true,
+      "expected": true
+    }
+  ]
+}

@@ -29,9 +29,12 @@ struct AttachmentChip {
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
       if (!this.busy) {
-        Button('×', { type: ButtonType.Circle })
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize('16vp')
+            .fontColor([appearance.tokens().foreground])
+        }
           .width(44).height(44)
-          .fontColor(appearance.tokens().foreground)
           .backgroundColor(appearance.tokens().card)
           .accessibilityText(this.removeLabel())
           .onClick((): void => { this.onRemove(this.item.path); })
@@ -76,6 +79,8 @@ export struct ComposerAttachments {
 @ComponentV2
 export struct ComposerReplyPreview {
   @Param message: LiveMessage | null = null;
+  /** B1: the excerpt the quote sheet confirmed; non-empty shows it instead of the parent preview. */
+  @Param quote: string = '';
   @Param members: ThreadMember[] = [];
   @Param meId: string = '';
   @Param title: string = '';
@@ -110,7 +115,7 @@ export struct ComposerReplyPreview {
     };
     const text = like === null ? '' : previewMessageText(like, labels);
     const replyLabels: ReplyLabels = { photo: labels.photo, attachment: labels.attachment };
-    return replyLabel(undefined, text, this.attachment, replyLabels);
+    return replyLabel(this.quote, text, this.attachment, replyLabels);
   }
 
   build() {
@@ -133,8 +138,12 @@ export struct ComposerReplyPreview {
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Start)
       if (!this.busy) {
-        Button('×', { type: ButtonType.Circle }).width(44).height(44)
-          .fontColor(appearance.tokens().foreground).backgroundColor(appearance.tokens().card)
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize('16vp')
+            .fontColor([appearance.tokens().foreground])
+        }.width(44).height(44)
+          .backgroundColor(appearance.tokens().card)
           .accessibilityText(t('Cancel reply'))
           .onClick((): void => { this.onClose(); })
       }

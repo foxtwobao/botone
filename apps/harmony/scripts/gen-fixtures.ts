@@ -6,7 +6,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { i18n } from "@lingui/core";
-import { isPrivateNetworkHost } from "@rakazo/contracts";
+import { defaultGroupName, isPrivateNetworkHost } from "@rakazo/contracts";
 import {
   chatSnoozed,
   formatTimeSeparator,
@@ -29,6 +29,8 @@ import { formatThreadTime } from "@rakazo/mobile/lib/inbox/inbox.js";
 import { vi } from "vitest";
 import { generateAttachmentsFixture } from "./gen-attachments-fixtures.ts";
 import { generateMarkdownFixture } from "./gen-markdown-fixtures.ts";
+import { generateModelsFixture } from "./gen-models-fixtures.ts";
+import { generateQuoteFixture } from "./gen-quote-fixtures.ts";
 import { generateThreadFixture } from "./gen-thread-fixtures.ts";
 import { readCatalog as readPoCatalog } from "./po.ts";
 
@@ -861,6 +863,39 @@ export function generateInboxFixture(): InboxFixture {
   return { working, snoozed, cases };
 }
 
+// ---------------------------------------------------------------- group
+
+interface GroupFixture {
+  defaultName: { names: string[]; expected: string }[];
+}
+
+/** The group default name (M8): drive the REAL contracts defaultGroupName and record its answer
+ *  for the ArkTS port to replay — pick order, the 80-length cut and the surrogate-pair guard. */
+export function generateGroupFixture(): GroupFixture {
+  const a80 = "A".repeat(80);
+  const scripted: string[][] = [
+    [],
+    ["Alpha"],
+    ["Alpha", "Beta"],
+    ["  Alpha  ", " Beta "],
+    [""],
+    ["", ""],
+    ["   ", "\t"],
+    [a80],
+    [`${a80}B`],
+    ["A".repeat(78), "BB"],
+    ["A".repeat(78), "B"],
+    ["A".repeat(77), "BB"],
+    ["😀".repeat(40)],
+    ["😀".repeat(41)],
+    [`a${"😀".repeat(41)}`],
+    [`a${"😀".repeat(39)}b`],
+  ];
+  return {
+    defaultName: scripted.map((names) => ({ names, expected: defaultGroupName(names) })),
+  };
+}
+
 export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>> = {
   retry: generateRetryFixture,
   endpoint: generateEndpointFixture,
@@ -871,4 +906,7 @@ export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>>
   thread: generateThreadFixture,
   attachments: generateAttachmentsFixture,
   markdown: generateMarkdownFixture,
+  group: generateGroupFixture,
+  models: generateModelsFixture,
+  quote: generateQuoteFixture,
 };

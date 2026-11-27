@@ -11,6 +11,7 @@
 import { markdownPlainText, parseMarkdown } from './markdown-lite';
 import type { MdNode } from './markdown-types';
 import { selectableTextFromMarkdown } from './selectable-text';
+import { hasQuotableText } from './message-quote';
 
 /** Every code block needs a fence, four spaces or a tab; most messages hold none, so they skip the parse. */
 const MAY_HOLD_CODE = /```|~~~| {4}|\t/;
@@ -351,6 +352,8 @@ export interface MessageMenu {
   copyText: string;
   /** What "Select text" shows (bot markdown converted to selectable plain text). */
   selectText: string;
+  /** Any selectable segment: the menu then offers to quote a selection. */
+  quote: boolean;
   /** The one code block's code, when `copyCode` is set. */
   code: string;
 }
@@ -368,6 +371,7 @@ export function messageMenu(message: MessageLike): MessageMenu {
     copyCode: codeBlocks.length === 1,
     copyText: copyableMessageText(message),
     selectText: message.role === 'user' ? messageText : selectableTextFromMarkdown(messageText),
+    quote: hasQuotableText(message.role, message.blocks),
     code: codeBlocks[0] ?? '',
   };
 }

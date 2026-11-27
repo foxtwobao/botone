@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "members": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "avatarSet": {
+            "enum": ["organic", "rakazo"],
+            "type": "string"
+          },
+          "botId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": ["botId", "name", "color"],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["id", "name", "members"],
+  "type": "object"
+}

@@ -10,10 +10,11 @@ import { ErrorText } from '../../uikit/controls';
 import { currentLocale, t } from '../../i18n/i18n';
 import type { common } from '@kit.AbilityKit';
 import { currentScope } from '../../query/query-cache';
-import { subscribeSession, subscribeSpaceSelection } from '../../net/session';
+import { selectedSpaceId, subscribeSession, subscribeSpaceSelection } from '../../net/session';
 import { attachmentMaxBytes, attachmentMaxCount } from '../../thread/attachments';
 import { importAttachmentSources, pickAttachmentSources, removeTemporaryFile } from '../../thread/attachment-files';
 import type { AttachmentSource, DraftAttachment } from '../../thread/attachment-files';
+import { cameraCaptureAvailable, capturePhoto } from '../../thread/camera-capture';
 import { THREAD_MESSAGE_TEXT_MAX_LENGTH } from '../../thread/thread-send';
 import { ComposerAttachments, ComposerReplyPreview } from './composer-attachments';
 import { app } from '../../app/app-state';
@@ -54,10 +55,14 @@ export struct ThreadPage {
   @Local picking: boolean = false;
   private active: boolean = false;
   private scope: string = '';
+  /** The Space this chat was opened in (A2): the route's, or the one selected at open. */
+  private sourceSpace: string = '';
   private offSession: (() => void) | null = null;
   private offSpace: (() => void) | null = null;
   /** M6: the parent whose id the next send carries. Kept on failure for a safe retry. */
   @Local replyTarget: LiveMessage | null = null;
+  /** B1: the excerpt the quote sheet confirmed for that parent; empty on a plain reply. */
+  @Local replyQuote: string = '';
   /** The composer's dictation controller; the draft's merge rule lives in its DraftDictation. */
   @Local dictation: ComposerDictation = new ComposerDictation(
     (message: string, openVoice: boolean): void => {
@@ -109,6 +114,7 @@ export struct ThreadPage {
   aboutToAppear(): void {
     this.active = true;
     this.scope = currentScope();
+    this.sourceSpace = this.route?.spaceId ?? selectedSpaceId();
     this.offSession = subscribeSession((): void => this.sessionChanged());
     this.offSpace = subscribeSpaceSelection((): void => this.sessionChanged());
     this.offConsent = installConsentDialog();
@@ -162,6 +168,7 @@ export struct ThreadPage {
     this.attachments = [];
     this.draft = '';
     this.replyTarget = null;
+    this.replyQuote = '';
     this.attachmentNotice = '';
     this.sendAfterDictation = false;
   }
@@ -198,6 +205,11 @@ export struct ThreadPage {
 
   /** Send during dictation stops it first and sends once its words are in. */
   private sendOrFinish(): void {
+    // While the bot replies the composer's button is Stop; a return key or a dictation finish
+    // must not queue a second send behind it.
+    if (this.store.working()) {
+      return;
+    }
     if (this.dictation.status !== 'idle') {
       this.dictation.finish((): void => {
         this.sendAfterDictation = true;
@@ -307,11 +319,18 @@ export struct ThreadPage {
   }
 
   private sessionChanged(): void {
-    if (this.scope !== currentScope()) {
-      this.store.close();
-      this.clearDraft();
-      this.stack.clear();
+    if (this.scope === currentScope()) {
+      return;
     }
+    // A switch that leaves this chat's Space selected keeps the page (A2); a change of session
+    // or Space closes it, and the navigation behind it (the inbox) owns the screen again.
+    if (this.sourceSpace !== '' && this.sourceSpace === selectedSpaceId()) {
+      this.scope = currentScope();
+      return;
+    }
+    this.store.close();
+    this.clearDraft();
+    this.stack.clear();
   }
 
   private async importShare(share: ShareContent): Promise<void> {
@@ -330,24 +349,36 @@ export struct ThreadPage {
     }
   }
 
-  private async pickFiles(photos: boolean): Promise<void> {
+  /** One attachment round from one source. A camera capture is its own single source: the photo
+   *  the picker wrote into the sandbox draft, imported like any library photo, its capture file
+   *  dropped once the import has read it. */
+  private async pickFiles(source: 'photos' | 'files' | 'camera'): Promise<void> {
     if (this.room === 0 || this.picking || this.store.send.pending) {
       return;
     }
     this.picking = true;
     this.attachmentNotice = '';
     const scope = this.scope;
+    let captured: AttachmentSource | null = null;
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      const sources = await pickAttachmentSources(context, photos, this.room);
+      captured = source === 'camera' ? await capturePhoto(context) : null;
+      if (captured === null && source === 'camera') {
+        return;
+      }
+      const sources: AttachmentSource[] = captured !== null ? [captured]
+        : await pickAttachmentSources(context, source === 'photos', this.room);
       if (this.active && scope === currentScope()) {
-        await this.addAttachments(context, sources, photos);
+        await this.addAttachments(context, sources, source !== 'files');
       }
     } catch (err) {
       if (this.active && scope === currentScope()) {
         this.attachmentNotice = t('Could not attach files');
       }
     } finally {
+      if (captured !== null) {
+        removeTemporaryFile(captured.uri);
+      }
       this.picking = false;
     }
   }
@@ -391,32 +422,74 @@ export struct ThreadPage {
     }
     this.attachmentNotice = '';
     this.atBottom = true;
-    this.store.sendDraft(text, this.attachments, this.replyTarget?.id ?? '', imagesAsFiles);
+    this.store.sendDraft(text, this.attachments, this.replyTarget?.id ?? '',
+      this.replyQuote, imagesAsFiles);
   }
 
-  /** The composer's send button: one builder, because the dictation bar row carries it too. */
+  /** No model is configured yet: retrying the send cannot help; connecting one can (mobile's
+   *  failed-send bubble offers Add model in that case). */
+  private modelRequired(): boolean {
+    return app.me !== null && app.me.needsModel;
+  }
+
+  private sendFailureLabel(): string {
+    if (this.store.imageConfirmation) {
+      return t('Send as file');
+    }
+    return this.modelRequired() ? t('Add model') : t('Retry');
+  }
+
+  private sendFailureTap(): void {
+    if (this.store.imageConfirmation) {
+      this.sendDraft(true);
+      return;
+    }
+    if (this.modelRequired()) {
+      this.stack.pushPathByName('models', null);
+      return;
+    }
+    this.sendDraft(false);
+  }
+
+  /**
+   * The composer's one action button: Stop while the bot is replying (the reply streams in the
+   * transcript, so the composer's job is to end it), otherwise Send. One builder because the
+   * dictation bar row carries it too.
+   */
   @Builder
   sendButton() {
     Button({ type: ButtonType.Circle }) {
-      if (this.store.uploading > 0) {
-        Text('×').fontSize(24).fontColor(appearance.tokens().primaryForeground)
+      if (this.store.working()) {
+        SymbolGlyph($r('sys.symbol.square_fill'))
+          .fontSize('16vp')
+          .fontColor([appearance.tokens().primaryForeground])
+      } else if (this.store.uploading > 0) {
+        SymbolGlyph($r('sys.symbol.xmark'))
+          .fontSize('20vp')
+          .fontColor([appearance.tokens().primaryForeground])
       } else if (this.store.send.pending) {
         LoadingProgress().width(22).height(22).color(appearance.tokens().primaryForeground)
       } else {
         SymbolGlyph($r('sys.symbol.arrow_up')).fontSize('20vp').fontColor([appearance.tokens().primaryForeground])
       }
     }
-    .id('thread-send')
+    .id(this.store.working() ? 'thread-stop' : 'thread-send')
     .width(COMPOSER_CONTROL_SIZE)
     .height(COMPOSER_CONTROL_SIZE)
-    .accessibilityText(t(this.store.uploading > 0 ? 'Cancel' : 'Send'))
+    .accessibilityText(t(this.store.working() ? 'Stop'
+      : (this.store.uploading > 0 ? 'Cancel' : 'Send')))
     .backgroundColor(appearance.tokens().primary)
     // Dictating with an empty draft still sends: the send finishes the session and waits for
     // its words rather than staying greyed out until they land.
-    .enabled(this.canSend || this.store.uploading > 0 || this.dictation.status !== 'idle')
-    .opacity(this.canSend || this.store.send.pending || this.dictation.status !== 'idle' ? 1 : 0.5)
+    .enabled(this.store.working() || this.canSend || this.store.uploading > 0
+      || this.dictation.status !== 'idle')
+    .opacity(this.canSend || this.store.send.pending || this.store.working()
+      || this.dictation.status !== 'idle' ? 1 : 0.5)
     .onClick((): void => {
-      if (this.store.uploading > 0) {
+      if (this.store.working()) {
+        const input: Record<string, Object> = {};
+        this.store.stop.run(input);
+      } else if (this.store.uploading > 0) {
         this.store.cancelUpload();
       } else {
         this.sendOrFinish();
@@ -427,8 +500,11 @@ export struct ThreadPage {
   @Builder
   attachmentMenu() {
     Menu() {
-      MenuItem({ content: t('Photo library') }).onClick((): void => { void this.pickFiles(true); })
-      MenuItem({ content: t('File') }).onClick((): void => { void this.pickFiles(false); })
+      MenuItem({ content: t('Photo library') }).onClick((): void => { void this.pickFiles('photos'); })
+      if (cameraCaptureAvailable()) {
+        MenuItem({ content: t('Camera') }).onClick((): void => { void this.pickFiles('camera'); })
+      }
+      MenuItem({ content: t('File') }).onClick((): void => { void this.pickFiles('files'); })
     }
   }
 
@@ -475,6 +551,14 @@ export struct ThreadPage {
           if (!this.store.send.pending && this.scope === currentScope()) {
             this.store.resetAttempt();
             this.replyTarget = message;
+            this.replyQuote = '';
+          }
+        },
+        onQuote: (message: LiveMessage, excerpt: string): void => {
+          if (!this.store.send.pending && this.scope === currentScope()) {
+            this.store.resetAttempt();
+            this.replyTarget = message;
+            this.replyQuote = excerpt;
           }
         },
         onJumpTo: (messageId: string): void => {
@@ -507,31 +591,37 @@ export struct ThreadPage {
     NavDestination() {
       Column() {
       Row({ space: 12 }) {
-        Text('‹')
-          .fontSize(28)
-          .fontColor(appearance.tokens().foreground)
+        SymbolGlyph($r('sys.symbol.chevron_left'))
+          .fontSize('24vp')
+          .fontColor([appearance.tokens().foreground])
           .padding({ left: 8, right: 8 })
           .accessibilityText(t('Back'))
           .onClick((): void => {
             this.stack.pop();
           })
-        Text(this.title)
-          .fontSize(typeScale.title.fontSize)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(appearance.tokens().foreground)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .layoutWeight(1)
-        if (this.store.working()) {
-          Text(t('Stop'))
-            .fontSize(typeScale.secondary.fontSize)
-            .fontColor(appearance.tokens().destructive)
-            .padding(8)
-            .onClick((): void => {
-              const input: Record<string, Object> = {};
-              this.store.stop.run(input);
-            })
-        } else if (this.store.connected) {
+        Row({ space: 4 }) {
+          Text(this.title)
+            .fontSize(typeScale.title.fontSize)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(appearance.tokens().foreground)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .layoutWeight(1)
+          if (this.groupId) {
+            SymbolGlyph($r('sys.symbol.chevron_right'))
+              .fontSize(typeScale.title.fontSize + 'vp')
+              .fontColor([appearance.tokens().mutedForeground])
+          }
+        }
+        .layoutWeight(1)
+        .accessibilityText(this.groupId ? `${this.title}, ${t('Group settings')}` : this.title)
+        .onClick((): void => {
+          if (this.groupId) {
+            const route: ThreadRoute = { botId: '', groupId: this.groupId, title: this.title };
+            this.stack.pushPathByName('groupSettings', route);
+          }
+        })
+        if (this.store.connected) {
           Circle()
             .width(8)
             .height(8)
@@ -637,11 +727,11 @@ export struct ThreadPage {
       if (this.store.send.error) {
         Row({ space: 8 }) {
           ErrorText({ message: this.store.send.error }).layoutWeight(1)
-          Button(this.store.imageConfirmation ? t('Send as file') : t('Retry'))
+          Button(this.sendFailureLabel())
             .fontSize(typeScale.secondary.fontSize)
             .backgroundColor(appearance.tokens().card)
             .fontColor(appearance.tokens().foreground)
-            .onClick((): void => { this.sendDraft(this.store.imageConfirmation); })
+            .onClick((): void => { this.sendFailureTap(); })
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 4 })
@@ -653,11 +743,13 @@ export struct ThreadPage {
 
       if (this.replyTarget !== null) {
         ComposerReplyPreview({
-          message: this.replyTarget, members: this.store.snapshot?.members ?? [], meId: app.me?.userId ?? '',
+          message: this.replyTarget, quote: this.replyQuote,
+          members: this.store.snapshot?.members ?? [], meId: app.me?.userId ?? '',
           title: this.title, botId: this.botId, groupId: this.groupId, busy: this.store.send.pending,
           onClose: (): void => {
             this.store.resetAttempt();
             this.replyTarget = null;
+            this.replyQuote = '';
           },
         }).padding({ left: 16, right: 16, top: 4 })
       }
@@ -677,12 +769,14 @@ export struct ThreadPage {
       }
       if (this.dictation.status !== 'idle') {
         Row({ space: 8 }) {
-          Button('×', { type: ButtonType.Circle })
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.xmark'))
+              .fontSize('20vp')
+              .fontColor([appearance.tokens().foreground])
+          }
             .width(COMPOSER_CONTROL_SIZE)
             .height(COMPOSER_CONTROL_SIZE)
             .backgroundColor(appearance.tokens().muted)
-            .fontColor(appearance.tokens().foreground)
-            .fontSize(24)
             .accessibilityText(t('Cancel dictation'))
             .onClick((): void => {
               this.discardDictation();
@@ -695,11 +789,14 @@ export struct ThreadPage {
             DictationLevels({ dictation: this.dictation })
               .height(COMPOSER_CONTROL_SIZE)
           }
-          Button('■', { type: ButtonType.Circle })
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.square_fill'))
+              .fontSize('16vp')
+              .fontColor([appearance.tokens().foreground])
+          }
             .width(COMPOSER_CONTROL_SIZE)
             .height(COMPOSER_CONTROL_SIZE)
             .backgroundColor(appearance.tokens().muted)
-            .fontColor(appearance.tokens().foreground)
             .accessibilityText(t('Stop dictating'))
             .enabled(this.dictation.status !== 'transcribing')
             .opacity(this.dictation.status === 'transcribing' ? 0.5 : 1)
@@ -742,11 +839,15 @@ export struct ThreadPage {
             }
           })
           .onSubmit((): void => { this.sendOrFinish(); })
-        Button('🎙', { type: ButtonType.Circle })
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.mic'))
+            .fontSize('20vp')
+            .fontColor([appearance.tokens().foreground])
+        }
+          .id('thread-mic')
           .width(COMPOSER_CONTROL_SIZE)
           .height(COMPOSER_CONTROL_SIZE)
           .backgroundColor(appearance.tokens().card)
-          .fontSize(22)
           .accessibilityText(t('Dictate'))
           .enabled(!this.store.send.pending)
           .onClick((): void => {

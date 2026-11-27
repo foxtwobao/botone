@@ -25,6 +25,12 @@ export interface SpaceNavigationView {
   currentName: string;
 }
 
+/** One Space as a switcher names it (A1): identity only, none of the roster arrays. */
+export interface SpaceSummaryView {
+  id: string;
+  name: string;
+}
+
 /** A bot inbox row (M2): identity color, unread, preview, run status, pinned order, snooze. */
 export interface BotView {
   id: string;
@@ -40,7 +46,15 @@ export interface BotView {
   autoSpeak: boolean;
 }
 
-/** A group inbox row (M2): no identity color (bots carry the only color). */
+/** One group member (M8 settings): the identity the picker shows, no avatar set or run status. */
+export interface GroupMemberView {
+  botId: string;
+  name: string;
+  color: string;
+}
+
+/** A group inbox row (M2): no identity color (bots carry the only color). members is the
+ *  settings surface's read (decode-groups); the inbox row carries none. */
 export interface GroupView {
   id: string;
   name: string;
@@ -49,6 +63,7 @@ export interface GroupView {
   preview: string;
   updatedAt: string;
   snoozedUntil: string | null;
+  members: GroupMemberView[];
 }
 
 /** The default Space's roster: its bots and groups, each decoded row by row. */
@@ -233,6 +248,34 @@ export function decodeSpaceNavigation(json: Object | null): SpaceNavigationView 
   return result;
 }
 
+/** spaces/list's Space list, row by row: a missing or non-array field fails whole; a row without
+ *  a non-empty id or a name is dropped, like the roster rows. */
+export function decodeSpaceSummaries(json: Object | null): SpaceSummaryView[] | null {
+  const record = asRecord(json);
+  if (record === null) {
+    return null;
+  }
+  const rows = record['spaces'];
+  if (!Array.isArray(rows)) {
+    return null;
+  }
+  const spaces: SpaceSummaryView[] = [];
+  for (const item of rows as Object[]) {
+    const row = asRecord(item);
+    if (row === null) {
+      continue;
+    }
+    const id = readString(row, 'id');
+    const name = readString(row, 'name');
+    if (id === null || !id || name === null) {
+      continue;
+    }
+    const summary: SpaceSummaryView = { id: id, name: name };
+    spaces.push(summary);
+  }
+  return spaces;
+}
+
 /** snoozedUntil is nullable-optional: absent or null means not snoozed; a non-string is a failure. */
 function readSnoozed(record: Record<string, Object>): string | null | undefined {
   const value = record['snoozedUntil'];
@@ -297,13 +340,13 @@ export function decodeGroup(json: Object | null): GroupView | null {
   }
   const result: GroupView = {
     id: id, name: name, pinned: pinned, unread: unread, preview: preview,
-    updatedAt: updatedAt, snoozedUntil: snoozedUntil,
+    updatedAt: updatedAt, snoozedUntil: snoozedUntil, members: [],
   };
   return result;
 }
 
 /** A list of rows: a non-array fails; a row that cannot decode is dropped, not fatal (per-entry). */
-function decodeRows<T>(json: Object | null, decode: (item: Object | null) => T | null): T[] | null {
+export function decodeRows<T>(json: Object | null, decode: (item: Object | null) => T | null): T[] | null {
   if (json === null || json === undefined || !Array.isArray(json)) {
     return null;
   }
@@ -325,8 +368,11 @@ export function decodeGroupList(json: Object | null): GroupView[] | null {
   return decodeRows(json, decodeGroup);
 }
 
-/** spaces/list roster: current.bots + current.groups. Identity stays with decodeSpaceNavigation. */
-export function decodeRoster(json: Object | null): RosterView | null {
+/** spaces/list roster: current.bots + current.groups. Identity stays with decodeSpaceNavigation.
+ *  The group rows decode with the caller's reader: the inbox's, or the settings one that also
+ *  reads each group's members. */
+export function decodeRoster(json: Object | null,
+  decodeGroups: (value: Object | null) => GroupView[] | null = decodeGroupList): RosterView | null {
   const record = asRecord(json);
   if (record === null) {
     return null;
@@ -336,7 +382,7 @@ export function decodeRoster(json: Object | null): RosterView | null {
     return null;
   }
   const bots = decodeBotList(current['bots']);
-  const groups = decodeGroupList(current['groups']);
+  const groups = decodeGroups(current['groups']);
   if (bots === null || groups === null) {
     return null;
   }
@@ -423,13 +469,27 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
   return result;
 }
 
-/** One models/list entry (M4 read-only display): the four whitelisted fields. providerName is
- * optional (older servers and ordinary chat connections omit it); a non-string is a failure. */
+/** An optional boolean flag: absent or null reads false; a value of another type fails the row. */
+function readOptionalFlag(record: Record<string, Object>, key: string): boolean | undefined {
+  const value = record[key];
+  if (value === undefined || value === null) {
+    return false;
+  }
+  return typeof value === 'boolean' ? value as boolean : undefined;
+}
+
+/** One models/list entry (M4 display, M9 connection forms): the consumed fields. providerName
+ * is optional (older servers and ordinary chat connections omit it); a non-string is a failure.
+ * recommended marks the provider's preselected model; auth is api-key | oauth | both, absent
+ * reading as an API key; placeholder marks a catalog stand-in, not a real model. */
 export interface ModelCatalogEntryView {
   provider: string;
   id: string;
   label: string;
   providerName: string | null;
+  recommended: boolean;
+  auth: string | null;
+  placeholder: boolean;
 }
 
 export function decodeModelCatalogEntry(json: Object | null): ModelCatalogEntryView | null {
@@ -446,11 +506,21 @@ export function decodeModelCatalogEntry(json: Object | null): ModelCatalogEntryV
   const providerName: string | null | undefined = rawName === undefined || rawName === null
     ? null
     : typeof rawName === 'string' ? rawName as string : undefined;
-  if (provider === null || !provider || id === null || !id || label === null || providerName === undefined) {
+  // recommended/placeholder are optional flags: absent reads false, another type fails the row.
+  const recommended = readOptionalFlag(record, 'recommended');
+  const placeholder = readOptionalFlag(record, 'placeholder');
+  // auth is optional: absent reads null, which the connect screens treat as an API key.
+  const rawAuth = record['auth'];
+  const auth: string | null | undefined = rawAuth === undefined || rawAuth === null
+    ? null
+    : typeof rawAuth === 'string' ? rawAuth as string : undefined;
+  if (provider === null || !provider || id === null || !id || label === null || providerName === undefined
+    || recommended === undefined || placeholder === undefined || auth === undefined) {
     return null;
   }
   const result: ModelCatalogEntryView = {
     provider: provider, id: id, label: label, providerName: providerName,
+    recommended: recommended, auth: auth, placeholder: placeholder,
   };
   return result;
 }

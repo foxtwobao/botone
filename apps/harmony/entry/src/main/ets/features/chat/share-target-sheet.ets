@@ -1,6 +1,7 @@
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
 import { t } from '../../i18n/i18n';
+import { selectedSpaceId } from '../../net/session';
 import { RosterHolder } from '../../realtime/roster-holder';
 import { rosterStore } from '../../stores/roster-store';
 import { incomingShare } from '../../stores/incoming-share-store';
@@ -38,6 +39,7 @@ export struct ShareTargetSheet {
       botId: row.kind === 'bot' ? row.id : '',
       groupId: row.kind === 'group' ? row.id : '',
       title: row.name,
+      spaceId: selectedSpaceId(),
       share: share,
     };
     // A share starts fresh (mobile resets to home + chat): back leaves the chat for the inbox.
@@ -59,9 +61,12 @@ export struct ShareTargetSheet {
           .fontWeight(FontWeight.Medium)
           .fontColor(appearance.tokens().foreground)
           .layoutWeight(1)
-        Button('×', { type: ButtonType.Circle }).width(44).height(44)
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize('16vp')
+            .fontColor([appearance.tokens().foreground])
+        }.width(44).height(44)
           .backgroundColor(appearance.tokens().card)
-          .fontColor(appearance.tokens().foreground)
           .accessibilityText(t('Close'))
           .onClick((): void => { incomingShare.cancel(); })
       }

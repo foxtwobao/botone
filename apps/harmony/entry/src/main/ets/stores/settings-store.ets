@@ -8,7 +8,7 @@ import { RpcError, errorText, isServerUnreachable } from '../net/errors';
 import { decodeModelCatalog } from '../contract/decode';
 import type { ModelCatalogEntryView } from '../contract/decode';
 import { queryCache } from '../query/query-cache';
-import { selectedSpaceId } from '../net/session';
+import { selectedSpaceId, subscribeSpaceSelection } from '../net/session';
 import { subscribeRoster } from '../realtime/roster';
 import { foreground } from '../realtime/foreground';
 
@@ -24,11 +24,15 @@ export class SettingsStore {
   private requestId: number = 0;
   private unlisten: (() => void) | null = null;
 
-  /** Wires the signal + foreground catch-up once (bootstrap). */
+  /** Wires the signal + foreground catch-up once (bootstrap); a Space selection change resets
+   *  the painted catalog before the roster stream reopens. */
   start(): void {
     if (this.unlisten !== null) {
       return;
     }
+    const offSpace = subscribeSpaceSelection((): void => {
+      this.reset();
+    });
     const offRoster = subscribeRoster((): void => {
       void this.load();
     });
@@ -38,6 +42,7 @@ export class SettingsStore {
       }
     });
     this.unlisten = (): void => {
+      offSpace();
       offRoster();
       offForeground();
     };

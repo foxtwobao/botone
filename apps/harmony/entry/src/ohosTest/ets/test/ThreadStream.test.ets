@@ -381,6 +381,57 @@ export default function threadStreamTest() {
       expect(openFixture.conns.length).assertEqual(1);
     });
 
+    it('space_change_stops_the_open_stream', 0, async () => {
+      // A1: the stream speaks for one Space. Switching does not wait for the screen to close the
+      // chat — the open connection is closed by the stream itself and nothing reconnects.
+      const fetchFixture = new FetchFixture();
+      fetchFixture.answers = [snapshotJson(2)];
+      const openFixture = new OpenFixture((_conn: FakeConn, _index: number): void => {});
+      const stream = new ThreadStream({
+        fetch: fetchFixture.fetch,
+        open: openFixture.open,
+        commit: (_snapshot: ThreadSnapshot | null): void => {},
+      });
+      const running = stream.follow(target());
+      await waitFor((): boolean => openFixture.conns.length === 1, 'subscribe');
+      expect(stream.connected).assertTrue();
+      setSelectedSpace('space-second');
+      await running;
+      expect(stream.connected).assertFalse();
+      expect(openFixture.conns.length).assertEqual(1);
+      expect(fetchFixture.calls.length).assertEqual(1);
+    });
+
+    it('late_snapshot_from_the_previous_space_never_commits', 0, async () => {
+      // The open read was pinned to A; the switch happened while it was in flight. Its answer
+      // must not paint A's messages into the session now showing B.
+      let resolveFetch: (answer: Object) => void = (): void => {};
+      let started = false;
+      const pending = new Promise<Object>((resolve: (answer: Object) => void): void => {
+        resolveFetch = resolve;
+      });
+      const openFixture = new OpenFixture((_conn: FakeConn, _index: number): void => {});
+      const commits: (ThreadSnapshot | null)[] = [];
+      const stream = new ThreadStream({
+        fetch: (context: RpcContext, _input: Record<string, Object>): Promise<Object> => {
+          started = true;
+          return pending;
+        },
+        open: openFixture.open,
+        commit: (snapshot: ThreadSnapshot | null): void => {
+          commits.push(snapshot);
+        },
+      });
+      const running = stream.follow(target());
+      await waitFor((): boolean => started, 'open read in flight');
+      setSelectedSpace('space-second');
+      resolveFetch(snapshotJson(4));
+      await running;
+      expect(stream.current()).assertNull();
+      expect(commits.length).assertEqual(0);
+      expect(openFixture.conns.length).assertEqual(0);
+    });
+
     it('failed_open_read_surfaces_the_error_without_subscribing', 0, async () => {
       const fetchFixture = new FetchFixture();
       fetchFixture.failures = [new RpcError('Thread access refused', 403)];

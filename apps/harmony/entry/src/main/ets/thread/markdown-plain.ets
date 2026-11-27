@@ -199,7 +199,7 @@ function takeInlineCode(text: string, stash: (payload: string) => string): strin
   return out;
 }
 
-function findInlineCodeClose(text: string, from: number, n: number): number {
+export function findInlineCodeClose(text: string, from: number, n: number): number {
   for (let i = from; i < text.length; i += 1) {
     if (text[i] !== '`') {
       continue;

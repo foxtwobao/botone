@@ -17,23 +17,28 @@ let writes: Promise<void> = Promise.resolve();
 const listeners: Set<() => void> = new Set();
 const spaceListeners: Set<() => void> = new Set();
 
-// Phase 1 is single-Space: every read/write uses me.spaceId (design Q5). The cache lives with
-// the session because a sign-out or server switch must drop it, and it is never persisted —
-// the first me read after launch re-establishes it.
+// Every read/write uses the selected Space (design Q5). It lives with the session because a
+// sign-out or server switch must drop it; its durable copy lives in net/space-selection.
 let cachedSpaceId = '';
+// Bumped on every selection claim, even for the same id, so a delayed answer cannot treat a
+// later reselection of the same Space as its own (mobile api.ts's spaceSelectionGeneration).
+let spaceSelectionGeneration = 0;
 
 export function selectedSpaceId(): string {
   return cachedSpaceId;
 }
 
+/** Claims the selection in memory before anything persists it; listeners hear every claim. */
 export function setSelectedSpace(id: string): void {
-  if (cachedSpaceId === id) {
-    return;
-  }
   cachedSpaceId = id;
+  spaceSelectionGeneration += 1;
   for (const listener of spaceListeners) {
     listener();
   }
+}
+
+export function currentSpaceSelectionGeneration(): number {
+  return spaceSelectionGeneration;
 }
 
 /** The roster stream reopens when the selected Space changes, as it does on a session change. */

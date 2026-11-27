@@ -7,11 +7,24 @@
 import { captureContext } from '../net/rpc';
 import type { RpcContext } from '../net/rpc';
 import { currentApiBase } from '../net/server-store';
-import { currentSessionGeneration, selectedSpaceId } from '../net/session';
+import {
+  currentSessionGeneration,
+  currentSpaceSelectionGeneration,
+  selectedSpaceId,
+} from '../net/session';
 
 /** The three-layer scope a read is cached under and judged by. */
 export function currentScope(): string {
   return `server:${currentApiBase()}\nsession:${currentSessionGeneration()}\nspace:${selectedSpaceId()}`;
+}
+
+/** Whether a pinned context still speaks for the live server, session and selection claim. The
+ *  selection generation (not the id) keeps A→B→A honest: the cache keeps reusing A's entry, while
+ *  a request pinned before the detour never answers as if it were the current attempt. */
+export function contextIsCurrent(context: RpcContext): boolean {
+  return context.apiBase === currentApiBase()
+    && context.generation === currentSessionGeneration()
+    && context.selectionGeneration === currentSpaceSelectionGeneration();
 }
 
 /** The scope a pinned request carries, read from what the request itself presents. */

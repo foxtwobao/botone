@@ -31,7 +31,7 @@ function groupsOf(json: string): GroupView[] {
     const group: GroupView = {
       id: stringField(r, 'id'), name: stringField(r, 'name'), pinned: boolField(r, 'pinned'),
       unread: boolField(r, 'unread'), preview: stringField(r, 'preview'), updatedAt: stringField(r, 'updatedAt'),
-      snoozedUntil: typeof snoozed === 'string' ? snoozed as string : null,
+      snoozedUntil: typeof snoozed === 'string' ? snoozed as string : null, members: [],
     };
     rows.push(group);
   }

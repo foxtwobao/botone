@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botIds": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 2,
+      "type": "array"
+    },
+    "name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["name", "botIds"],
+  "type": "object"
+}

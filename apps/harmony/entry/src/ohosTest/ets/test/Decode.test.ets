@@ -269,22 +269,37 @@ export default function decodeTest() {
       expect(decodeOk(null)).assertFalse();
     });
 
-    it('model_catalog_reads_the_four_whitelisted_fields', 0, () => {
+    it('model_catalog_reads_the_whitelisted_fields', 0, () => {
       const entry = decodeModelCatalogEntry(JSON.parse(
         '{"provider":"p1","id":"m1","label":"Fast Model","providerName":"Maker",'
+        + '"recommended":true,"auth":"both","placeholder":true,'
         + '"billing":"credits","managed":true,"unknownExtra":{"x":1}}'));
       expect(entry !== null).assertTrue();
       expect(entry!.provider).assertEqual('p1');
       expect(entry!.id).assertEqual('m1');
       expect(entry!.label).assertEqual('Fast Model');
       expect(entry!.providerName).assertEqual('Maker');
+      expect(entry!.recommended).assertTrue();
+      expect(entry!.auth).assertEqual('both');
+      expect(entry!.placeholder).assertTrue();
       // providerName is optional: absent and null both read as null, a non-string fails.
-      expect(decodeModelCatalogEntry(JSON.parse('{"provider":"p","id":"m","label":"L"}'))!.providerName)
-        .assertNull();
+      const plain = decodeModelCatalogEntry(JSON.parse('{"provider":"p","id":"m","label":"L"}'));
+      expect(plain!.providerName).assertNull();
+      // recommended/placeholder are optional flags (absent reads false); auth absent reads null,
+      // which the connect screens treat as an API key.
+      expect(plain!.recommended).assertFalse();
+      expect(plain!.placeholder).assertFalse();
+      expect(plain!.auth).assertNull();
       expect(decodeModelCatalogEntry(JSON.parse(
         '{"provider":"p","id":"m","label":"L","providerName":null}'))!.providerName).assertNull();
       expect(decodeModelCatalogEntry(JSON.parse(
         '{"provider":"p","id":"m","label":"L","providerName":7}'))).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse(
+        '{"provider":"p","id":"m","label":"L","recommended":"yes"}'))).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse(
+        '{"provider":"p","id":"m","label":"L","placeholder":1}'))).assertNull();
+      expect(decodeModelCatalogEntry(JSON.parse(
+        '{"provider":"p","id":"m","label":"L","auth":7}'))).assertNull();
     });
 
     it('model_catalog_rejects_missing_consumed_fields_and_drops_bad_rows', 0, () => {
