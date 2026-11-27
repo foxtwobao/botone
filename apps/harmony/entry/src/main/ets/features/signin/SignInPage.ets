@@ -30,6 +30,7 @@ import {
   emailSuggestion,
   headline,
   primaryLabel,
+  sendStillCurrent,
   signInView,
   switchLabels,
 } from './sign-in-view';
@@ -168,7 +169,7 @@ export struct SignInPage {
     const apiBase = currentApiBase();
     const generation = currentSessionGeneration();
     const stillCurrent = (): boolean =>
-      currentApiBase() === apiBase && currentSessionGeneration() === generation;
+      sendStillCurrent(apiBase, generation, currentApiBase(), currentSessionGeneration());
     this.pending = true;
     this.error = '';
     try {

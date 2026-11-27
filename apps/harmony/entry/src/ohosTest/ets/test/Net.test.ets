@@ -25,6 +25,7 @@ import {
   tokenFromCallbackCookie,
 } from '../../../main/ets/net/sso';
 import { currentApiBase, initServerStore, switchServer } from '../../../main/ets/net/server-store';
+import { sendStillCurrent } from '../../../main/ets/features/signin/sign-in-view';
 import { serverHeaders } from '../../../main/ets/net/server-headers';
 import { probeApiBase } from '../../../main/ets/net/endpoint';
 import { getJson, parseJsonObject } from '../../../main/ets/net/http';
@@ -505,19 +506,21 @@ export default function netTest() {
       // The interleaving the page's staleness guard exists for: the send is in flight while
       // the server switches away and back, so the address matches again but the generation
       // does not. Without a guard, the answer would update the new page state.
+      expect(currentApiBase()).assertEqual(BASE);
       const sentFrom = currentApiBase();
       const generation = currentSessionGeneration();
       const send = sendSignInCode('slow@example.com');
-      const switched = await switchServer(BASE2, {});
-      expect(switched.ok).assertTrue();
-      await send;
-      // Back at the same address, but the session generation moved: the conjunction the page
-      // guard checks no longer holds, so the answer is dropped.
-      expect(currentApiBase()).assertEqual(sentFrom);
-      expect(currentApiBase() === sentFrom
-        && currentSessionGeneration() === generation).assertFalse();
+      const away = await switchServer(BASE2, {});
+      expect(away.ok).assertTrue();
       const back = await switchServer(BASE, {});
       expect(back.ok).assertTrue();
+      await send;
+      // Back at the same address, but the session generation moved: the page guard's verdict
+      // no longer holds, so the answer is dropped.
+      expect(currentApiBase()).assertEqual(sentFrom);
+      expect(currentSessionGeneration() === generation).assertFalse();
+      expect(sendStillCurrent(sentFrom, generation, currentApiBase(), currentSessionGeneration()))
+        .assertFalse();
     });
 
     it('auth_error_with_a_bare_identifier_message_shows_local_copy', 0, async () => {

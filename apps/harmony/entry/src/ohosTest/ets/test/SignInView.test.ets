@@ -8,6 +8,7 @@ import {
   defaultName,
   headline,
   providerGroups,
+  sendStillCurrent,
   signInView,
   switchLabels,
 } from '../../../main/ets/features/signin/sign-in-view';
@@ -181,6 +182,14 @@ export default function signInViewTest() {
       expect(defaultName('', 'ada@example.com')).assertEqual('ada');
       expect(defaultName('', '@example.com')).assertEqual('User');
       expect(defaultName('', '')).assertEqual('User');
+    });
+
+    it('send_still_current_requires_the_same_address_and_generation', 0, () => {
+      // The page guard's verdict: only a send started on this address and session generation
+      // may write. A switch away and back keeps the address but moves the generation.
+      expect(sendStillCurrent('http://a:1', 3, 'http://a:1', 3)).assertTrue();
+      expect(sendStillCurrent('http://a:1', 3, 'http://a:1', 4)).assertFalse();
+      expect(sendStillCurrent('http://a:1', 3, 'http://b:2', 3)).assertFalse();
     });
   });
 }

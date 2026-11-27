@@ -144,6 +144,17 @@ export function emailSuggestion(mode: SignInMode, suggestion: string | null): st
   return mode === 'up' ? suggestion : null;
 }
 
+/** Whether a send that started on (sentFrom, sentGeneration) still owns the page: a server
+ *  switch moves the generation, so switching away and back keeps the address yet still fails. */
+export function sendStillCurrent(
+  sentFrom: string,
+  sentGeneration: number,
+  currentBase: string,
+  currentGeneration: number,
+): boolean {
+  return currentBase === sentFrom && currentGeneration === sentGeneration;
+}
+
 /** The switch row's two labels: the question may be empty (forgot mode shows only the link). */
 export interface SwitchRowLabels {
   question: string;
