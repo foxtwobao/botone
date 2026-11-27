@@ -57,9 +57,66 @@ export interface RosterView {
   groups: GroupView[];
 }
 
+/** A provider button's icon: a viewBox and up to 8 path d strings, each with an optional brand
+ *  fill (#rrggbb; absent means the button's text color). Optional end to end: an older server
+ *  sends no presentation and the button renders its label alone. */
+export interface ProviderMarkPathView {
+  d: string;
+  fill: string | null;
+}
+
+export interface ProviderMarkView {
+  viewBox: string;
+  paths: ProviderMarkPathView[];
+}
+
+/** One sign-in provider button: id, display name and optional presentation. */
 export interface SignInProviderView {
   id: string;
   name: string;
+  /** solid | outline; absent reads as solid. */
+  variant: string | null;
+  mark: ProviderMarkView | null;
+}
+
+/** presentation is optional: absent or null reads as no mark; a broken one fails the row. */
+function readPresentation(record: Record<string, Object>): [string | null, ProviderMarkView | null] | undefined {
+  const value = record['presentation'];
+  if (value === undefined || value === null) {
+    return [null, null];
+  }
+  const presentation = asRecord(value);
+  if (presentation === null) {
+    return undefined;
+  }
+  const variantRaw = readString(presentation, 'variant');
+  const variant = variantRaw === null ? null : variantRaw;
+  const markValue = presentation['mark'];
+  if (markValue === undefined || markValue === null) {
+    return [variant, null];
+  }
+  const mark = asRecord(markValue);
+  const viewBox = mark !== null ? readString(mark, 'viewBox') : null;
+  const pathsRaw = mark !== null ? mark['paths'] : undefined;
+  if (viewBox === null || !Array.isArray(pathsRaw)) {
+    return undefined;
+  }
+  const paths: ProviderMarkPathView[] = [];
+  for (const item of pathsRaw as Object[]) {
+    const path = asRecord(item);
+    if (path === null) {
+      return undefined;
+    }
+    const d = readString(path, 'd');
+    const fill = readNullableString(path, 'fill');
+    if (d === null || fill === undefined) {
+      return undefined;
+    }
+    const row: ProviderMarkPathView = { d: d, fill: fill };
+    paths.push(row);
+  }
+  const view: ProviderMarkView = { viewBox: viewBox, paths: paths };
+  return [variant, view];
 }
 
 export interface AuthCapabilitiesView {
@@ -325,11 +382,17 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
       if (id === null || !id || name === null || !name) {
         return null;
       }
-      const view: SignInProviderView = { id: id, name: name };
+      const presentation = readPresentation(provider);
+      if (presentation === undefined) {
+        return null;
+      }
+      const view: SignInProviderView = {
+        id: id, name: name, variant: presentation[0], mark: presentation[1],
+      };
       providers.push(view);
     }
   } else if (ssoName !== null) {
-    const legacy: SignInProviderView = { id: 'oidc', name: ssoName };
+    const legacy: SignInProviderView = { id: 'oidc', name: ssoName, variant: null, mark: null };
     providers.push(legacy);
   }
   const result: AuthCapabilitiesView = {

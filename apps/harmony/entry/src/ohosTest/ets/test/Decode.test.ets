@@ -77,6 +77,33 @@ export default function decodeTest() {
       expect(caps!.providers[0].name).assertEqual('Org SSO');
     });
 
+    it('provider_presentation_decodes_optional_and_rejects_broken', 0, () => {
+      // A full presentation: variant and mark with brand-colored and inherited paths.
+      const full = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"variant":"outline","mark":{"viewBox":"0 0 24 24","paths":['
+        + '{"d":"M1 1L3 3","fill":"#3EC5A8"},{"d":"M4 4L6 6"}]}}}]}'));
+      expect(full !== null).assertTrue();
+      expect(full!.providers[0].variant).assertEqual('outline');
+      expect(full!.providers[0].mark!.viewBox).assertEqual('0 0 24 24');
+      expect(full!.providers[0].mark!.paths.length).assertEqual(2);
+      expect(full!.providers[0].mark!.paths[0].fill).assertEqual('#3EC5A8');
+      expect(full!.providers[0].mark!.paths[1].fill).assertNull();
+      // Absent presentation (older servers): no variant, no mark, still decodes.
+      const bare = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1"}]}'));
+      expect(bare !== null).assertTrue();
+      expect(bare!.providers[0].variant).assertNull();
+      expect(bare!.providers[0].mark).assertNull();
+      // A broken mark (paths missing, or a path without d) fails the whole decode.
+      expect(decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"mark":{"viewBox":"0 0 24 24"}}}]}'))).assertNull();
+      expect(decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"mark":{"viewBox":"0 0 24 24","paths":[{"fill":"#000000"}]}}}]}'))).assertNull();
+    });
+
     it('capabilities_legacy_shape_defaults_password', 0, () => {
       const caps = decodeAuthCapabilities(JSON.parse('{"passwordReset":false,"resetUrl":null}'));
       expect(caps !== null).assertTrue();
