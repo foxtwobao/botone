@@ -22,6 +22,17 @@ export class SpaceStore {
     }
   }
 
+  /** Names the Space a switch is heading to, from the list already read: the title follows a
+   *  claim before the server's own answer names it again (A2). */
+  noteSelection(id: string): void {
+    for (const space of this.spaces) {
+      if (space.id === id) {
+        this.currentName = space.name;
+        return;
+      }
+    }
+  }
+
   reset(): void {
     this.spaces = [];
     this.currentName = '';

@@ -2,6 +2,7 @@
 // root screen — sign-in, or the inbox once signed in. Account, archived and server are pushed
 // destinations; system back is Navigation's own.
 import { app } from '../app/app-state';
+import { selectedSpaceId } from '../net/session';
 import { appearance } from '../uikit/theme';
 import { SignInPage } from '../features/signin/SignInPage';
 import { InboxPage } from '../features/inbox/InboxPage';
@@ -52,13 +53,17 @@ struct Index {
     } else if (name === 'groupSettings') {
       GroupSettingsPage({ stack: this.stack, groupId: route.groupId })
     } else if (name === 'chat') {
-      ThreadPage({
-        stack: this.stack,
-        botId: route.botId,
-        groupId: route.groupId,
-        title: route.title,
-        route: route,
-      })
+      // A chat belongs to the Space it was opened in; a switch drops the old stack (A2), so
+      // rendering one from another Space is a defensive refusal, never a normal path.
+      if (route.spaceId === undefined || route.spaceId === selectedSpaceId()) {
+        ThreadPage({
+          stack: this.stack,
+          botId: route.botId,
+          groupId: route.groupId,
+          title: route.title,
+          route: route,
+        })
+      }
     }
   }
 

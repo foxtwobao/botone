@@ -17,6 +17,7 @@ import { errorText, RpcError } from '../../net/errors';
 import { currentApiBase } from '../../net/server-store';
 import { displaySavedServer } from '../../net/endpoint';
 import { settingsStore } from '../../stores/settings-store';
+import { spaceStore } from '../../stores/space-store';
 import { defaultModelEntry } from '../../stores/model-display';
 
 /** Each shipped language named in itself (core APP_LOCALE_LABELS) — product data, not copy.
@@ -215,8 +216,8 @@ export struct SettingsPage {
 
             // Account facts: Space and model read-only; server navigates to its management page.
             Column() {
-              if (app.spaceName) {
-                ValueRow({ label: t('Space'), value: app.spaceName })
+              if (spaceStore.currentName || app.spaceName) {
+                ValueRow({ label: t('Space'), value: spaceStore.currentName || app.spaceName })
               }
               Row() {
                 Text(t('Server'))

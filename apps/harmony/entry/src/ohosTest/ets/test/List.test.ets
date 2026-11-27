@@ -40,6 +40,7 @@ import groupWriteTest from './GroupWrite.test';
 import modelConnectTest from './ModelConnect.test';
 import modelWriteTest from './ModelWrite.test';
 import spaceSelectionTest from './SpaceSelection.test';
+import spaceSwitchTest from './SpaceSwitch.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -83,6 +84,8 @@ export default function testsuite() {
   modelWriteTest();
   // M10 A1: the selected Space's persistence, isolation and stale-Space recovery.
   spaceSelectionTest();
+  // M10 A2: the switch's claim, proof read, rollback and retry against the fixture server.
+  spaceSwitchTest();
   // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();
   realThreadSmoke();

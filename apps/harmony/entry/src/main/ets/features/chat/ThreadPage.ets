@@ -10,7 +10,7 @@ import { ErrorText } from '../../uikit/controls';
 import { currentLocale, t } from '../../i18n/i18n';
 import type { common } from '@kit.AbilityKit';
 import { currentScope } from '../../query/query-cache';
-import { subscribeSession, subscribeSpaceSelection } from '../../net/session';
+import { selectedSpaceId, subscribeSession, subscribeSpaceSelection } from '../../net/session';
 import { attachmentMaxBytes, attachmentMaxCount } from '../../thread/attachments';
 import { importAttachmentSources, pickAttachmentSources, removeTemporaryFile } from '../../thread/attachment-files';
 import type { AttachmentSource, DraftAttachment } from '../../thread/attachment-files';
@@ -54,6 +54,8 @@ export struct ThreadPage {
   @Local picking: boolean = false;
   private active: boolean = false;
   private scope: string = '';
+  /** The Space this chat was opened in (A2): the route's, or the one selected at open. */
+  private sourceSpace: string = '';
   private offSession: (() => void) | null = null;
   private offSpace: (() => void) | null = null;
   /** M6: the parent whose id the next send carries. Kept on failure for a safe retry. */
@@ -109,6 +111,7 @@ export struct ThreadPage {
   aboutToAppear(): void {
     this.active = true;
     this.scope = currentScope();
+    this.sourceSpace = this.route?.spaceId ?? selectedSpaceId();
     this.offSession = subscribeSession((): void => this.sessionChanged());
     this.offSpace = subscribeSpaceSelection((): void => this.sessionChanged());
     this.offConsent = installConsentDialog();
@@ -307,11 +310,18 @@ export struct ThreadPage {
   }
 
   private sessionChanged(): void {
-    if (this.scope !== currentScope()) {
-      this.store.close();
-      this.clearDraft();
-      this.stack.clear();
+    if (this.scope === currentScope()) {
+      return;
     }
+    // A switch that leaves this chat's Space selected keeps the page (A2); a change of session
+    // or Space closes it, and the navigation behind it (the inbox) owns the screen again.
+    if (this.sourceSpace !== '' && this.sourceSpace === selectedSpaceId()) {
+      this.scope = currentScope();
+      return;
+    }
+    this.store.close();
+    this.clearDraft();
+    this.stack.clear();
   }
 
   private async importShare(share: ShareContent): Promise<void> {

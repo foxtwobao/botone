@@ -2,7 +2,8 @@
 // (pinned first), each row showing its identity color, unread dot, preview, time and working dot.
 // The list reads once and refreshes only on a roster signal or foreground (RosterStore); a failed
 // read keeps the last rows painted under an offline banner. Archiving is a long-press context menu
-// (the native pattern M1 uses for removal); opening a chat arrives with M3. Copy reuses catalog
+// (the native pattern M1 uses for removal); opening a chat arrives with M3. The title names the
+// selected Space and, with more than one Space, opens the switcher (A2). Copy reuses catalog
 // msgids; the account and server entries stay reachable from the header.
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
@@ -12,6 +13,11 @@ import { ListSource } from '../../uikit/list-source';
 import { ActionButton, ErrorText } from '../../uikit/controls';
 import { t } from '../../i18n/i18n';
 import { app } from '../../app/app-state';
+import { selectedSpaceId } from '../../net/session';
+import { spaceStore } from '../../stores/space-store';
+import { spaceSwitcher } from '../spaces/space-switch-controller';
+import type { SpaceSwitchController } from '../spaces/space-switch-controller';
+import type { SpaceSummaryView } from '../../contract/decode';
 import { rosterStore } from '../../stores/roster-store';
 import type { RosterStore } from '../../stores/roster-store';
 import { rowKey } from '../../stores/roster-projection';
@@ -54,8 +60,20 @@ export struct InboxPage {
   @Param stack: NavPathStack = new NavPathStack();
   @Param store: RosterStore = rosterStore;
   @Local source: ListSource<DisplayItem> = new ListSource<DisplayItem>([]);
+  @Local switcher: SpaceSwitchController = spaceSwitcher;
   private holder: RosterHolder = new RosterHolder();
   private offChanges: (() => void) | null = null;
+
+  /** The Space the person is in; the neutral title until the first read names it. */
+  @Computed
+  get spaceTitle(): string {
+    return spaceStore.currentName || t('Chats');
+  }
+
+  @Computed
+  get switchable(): boolean {
+    return spaceStore.spaces.length > 1;
+  }
 
   aboutToAppear(): void {
     this.source.reload(inboxDisplayItems(this.store.rows));
@@ -144,9 +162,57 @@ export struct InboxPage {
         botId: row.kind === 'bot' ? row.id : '',
         groupId: row.kind === 'group' ? row.id : '',
         title: row.name,
+        spaceId: selectedSpaceId(),
       };
       this.stack.pushPathByName('chat', route);
     })
+  }
+
+  @Builder
+  spaceMenu() {
+    Menu() {
+      ForEach(spaceStore.spaces, (space: SpaceSummaryView): void => {
+        MenuItem({ content: space.name })
+          .selected(space.id === selectedSpaceId())
+          .selectIcon(true)
+          .contentFontColor(appearance.tokens().foreground)
+          .onClick((): void => {
+            void this.switchToSpace(space.id);
+          })
+      }, (space: SpaceSummaryView): string => space.id)
+    }
+  }
+
+  /** The switcher's one outcome the page owns: a completed switch leaves no old chat in front. */
+  private async switchToSpace(id: string): Promise<void> {
+    if (await this.switcher.switchTo(id)) {
+      this.stack.clear();
+    }
+  }
+
+  private async retrySwitch(): Promise<void> {
+    if (await this.switcher.retry()) {
+      this.stack.clear();
+    }
+  }
+
+  @Builder
+  switchFailure() {
+    Row({ space: 8 }) {
+      ErrorText({ message: this.switcher.error })
+        .layoutWeight(1)
+      if (this.switcher.state.reason === 'unreachable') {
+        Text(t('Try again.'))
+          .fontSize(typeScale.secondary.fontSize)
+          .fontColor(appearance.tokens().link)
+          .padding(4)
+          .onClick((): void => {
+            void this.retrySwitch();
+          })
+      }
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 8 })
   }
 
   @Builder
@@ -182,10 +248,28 @@ export struct InboxPage {
   build() {
     Column() {
       Row({ space: 12 }) {
-        Text(t('Chats'))
-          .fontSize(typeScale.title.fontSize)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(appearance.tokens().foreground)
+        if (this.switchable) {
+          Row({ space: 4 }) {
+            Text(this.spaceTitle)
+              .fontSize(typeScale.title.fontSize)
+              .fontWeight(FontWeight.Bold)
+              .fontColor(appearance.tokens().foreground)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            Text('▾')
+              .fontSize(typeScale.body.fontSize)
+              .fontColor(appearance.tokens().mutedForeground)
+              .accessibilityLevel('no')
+          }
+          .bindMenu(this.spaceMenu)
+        } else {
+          Text(this.spaceTitle)
+            .fontSize(typeScale.title.fontSize)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(appearance.tokens().foreground)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
         Blank()
         Text('+')
           .fontSize(24)
@@ -241,7 +325,11 @@ export struct InboxPage {
         .width('100%')
         .padding(20)
       } else {
-        if (this.store.offline) {
+        if (this.switcher.error) {
+          this.switchFailure()
+        } else if (this.store.offline) {
+          // One row per failure: a switch that failed because the server was unreachable already
+          // says so and carries its own retry, so the offline banner would only repeat it.
           this.offlineBanner()
         }
         if (this.store.error && !this.store.offline) {
