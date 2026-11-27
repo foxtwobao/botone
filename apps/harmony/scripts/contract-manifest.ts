@@ -158,6 +158,7 @@ export const capabilitiesView = authCapabilitiesSchema.pick({
   passwordReset: true,
   resetUrl: true,
   emailCode: true,
+  registrationOpen: true,
 });
 
 // ── M3: the chat surface (design §4.3.1 threads/* + aiConsent/*, §6.4 block whitelist) ──

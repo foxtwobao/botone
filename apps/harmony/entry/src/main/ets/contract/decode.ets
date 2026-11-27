@@ -59,7 +59,8 @@ export interface RosterView {
 
 /** A provider button's icon: a viewBox and up to 8 path d strings, each with an optional brand
  *  fill (#rrggbb; absent means the button's text color). Optional end to end: an older server
- *  sends no presentation and the button renders its label alone. */
+ *  sends no presentation and the button renders its label alone. A presentation that does not
+ *  match the wire schema fails its provider row; the rest of the capabilities still decode. */
 export interface ProviderMarkPathView {
   d: string;
   fill: string | null;
@@ -108,9 +109,18 @@ function readPresentation(record: Record<string, Object>): [string | null, Provi
       return undefined;
     }
     const d = readString(path, 'd');
-    const fill = readNullableString(path, 'fill');
-    if (d === null || fill === undefined) {
+    if (d === null) {
       return undefined;
+    }
+    // The wire schema makes fill optional: absent (or null) inherits the button's text color;
+    // a value present but not #rrggbb is invalid and fails the row.
+    const fillRaw = path['fill'];
+    let fill: string | null = null;
+    if (fillRaw !== undefined && fillRaw !== null) {
+      if (typeof fillRaw !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(fillRaw as string)) {
+        return undefined;
+      }
+      fill = fillRaw as string;
     }
     const row: ProviderMarkPathView = { d: d, fill: fill };
     paths.push(row);
@@ -124,6 +134,8 @@ export interface AuthCapabilitiesView {
   passwordReset: boolean;
   resetUrl: string | null;
   emailCode: boolean;
+  /** Whether this request may create an account; absent reads as open (older servers omit it). */
+  registrationOpen: boolean;
   ssoName: string | null;
   providers: SignInProviderView[];
 }
@@ -357,6 +369,9 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
   const passwordAuth = passwordAuthRaw === null ? true : passwordAuthRaw;
   const emailCodeRaw = readBoolean(record, 'emailCode');
   const emailCode = emailCodeRaw === null ? false : emailCodeRaw;
+  // Optional: older servers omit it, and a mistyped value reads as its absence (open).
+  const registrationOpenRaw = readBoolean(record, 'registrationOpen');
+  const registrationOpen = registrationOpenRaw === null ? true : registrationOpenRaw;
   let ssoName: string | null = null;
   const sso = asRecord(record['sso']);
   if (sso !== null) {
@@ -383,8 +398,9 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
         return null;
       }
       const presentation = readPresentation(provider);
+      // A presentation that does not match the wire schema fails its own row only.
       if (presentation === undefined) {
-        return null;
+        continue;
       }
       const view: SignInProviderView = {
         id: id, name: name, variant: presentation[0], mark: presentation[1],
@@ -400,6 +416,7 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
     passwordReset: passwordReset,
     resetUrl: resetUrl,
     emailCode: emailCode,
+    registrationOpen: registrationOpen,
     ssoName: ssoName,
     providers: providers,
   };

@@ -70,6 +70,9 @@
       "maxItems": 8,
       "type": "array"
     },
+    "registrationOpen": {
+      "type": "boolean"
+    },
     "resetUrl": {
       "anyOf": [
         {
