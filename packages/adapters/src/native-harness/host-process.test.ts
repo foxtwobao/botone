@@ -17,7 +17,7 @@ import { promisify } from "node:util";
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { createHostCodexDriver } from "@rakazo/native-runtime/codex";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
-import { safeHostConfiguration, startRequest } from "@rakazo/native-runtime/testing";
+import { startRequest } from "@rakazo/native-runtime/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { launchHostProcess } from "./host-process.js";
 import {
@@ -151,12 +151,10 @@ describe.skipIf(!supported)("host protocol process", () => {
         const frame = JSON.parse(line);
         const result = value => send({ id: frame.id, result: value });
         if (frame.method === 'initialize') result({});
-        if (frame.method === 'config/read') result({ config: ${JSON.stringify(safeHostConfiguration())} });
         if (frame.method === 'thread/start') result({
           thread: { id: 'thread' }, cwd: process.cwd(),
-          approvalPolicy: 'on-request', approvalsReviewer: 'user',
-          sandbox: { type: 'workspaceWrite', writableRoots: [process.cwd()],
-            networkAccess: false, excludeTmpdirEnvVar: true, excludeSlashTmp: true }
+          approvalPolicy: 'never', approvalsReviewer: 'user',
+          sandbox: { type: 'dangerFullAccess' }
         });
         if (frame.method === 'turn/start') {
           result({ turn: { id: 'turn' } });

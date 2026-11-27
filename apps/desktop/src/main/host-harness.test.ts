@@ -149,6 +149,7 @@ describe("desktop harness boundary", () => {
       await f.options.confirm({
         origin: "https://product.example.test",
         workspace: "fixture-workspace",
+        botName: "Fixture bot",
         target: "workspace",
       }),
     ).toBe(false);

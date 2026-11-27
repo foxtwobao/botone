@@ -31,7 +31,9 @@ describe("host descendant ownership admission", () => {
       if (process.platform === "linux") {
         const adapter = await inspectHostHarness();
         expect(adapter.profile.status).toBe("unsupported");
-        await expect(adapter.launch("/fixture/workspace")).rejects.toThrow("unavailable");
+        await expect(adapter.launch("/fixture/workspace", "this-device")).rejects.toThrow(
+          "unavailable",
+        );
       }
       expect(mocks.launch).not.toHaveBeenCalled();
     },

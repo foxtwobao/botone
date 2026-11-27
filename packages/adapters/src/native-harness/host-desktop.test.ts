@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { ContractRouterClient } from "@orpc/contract";
@@ -34,7 +34,8 @@ function fixture() {
       const process = new FakeHarnessProcess();
       Object.defineProperty(process, "workspace", { value: workspace });
       // The fake driver uses the same main-process callback as a native dynamic tool.
-      process.externalTools = tools ? { ...tools, permissions: "fixture-read-only" } : undefined;
+      process.externalTools =
+        tools !== "this-device" ? { ...tools, permissions: "fixture-read-only" } : undefined;
       processes.push(process);
       return process;
     }),
@@ -95,7 +96,7 @@ function fixture() {
   });
   const rpc = {
     me: vi.fn(async () => ({ userId: account, spaceId: "space" })),
-    bots: { get: vi.fn(async () => ({ id: "bot" })) },
+    bots: { get: vi.fn(async () => ({ id: "bot", name: "Notes" })) },
     executions: {
       host: {
         start,
@@ -444,6 +445,28 @@ describe("desktop-owned execution", () => {
     f.setOrigin("https://another.example.test");
     await expect(f.controller.profiles(origin, input)).rejects.toThrow("Local agent unavailable");
     expect(f.adapter.launch).not.toHaveBeenCalled();
+  });
+
+  it("asks once before upgrading a saved folder grant, including after a declined send", async () => {
+    const f = fixture();
+    await f.configure();
+    const file = path.join(f.root, "settings.json");
+    const state = JSON.parse(readFileSync(file, "utf8"));
+    for (const saved of Object.values(state.selections) as { fullDeviceAccess?: true }[])
+      delete saved.fullDeviceAccess;
+    writeFileSync(file, JSON.stringify(state));
+    const restarted = new DesktopHarness(f.options);
+    cleanups.push(() => restarted.close());
+    f.options.confirm.mockClear().mockResolvedValueOnce(false);
+    await expect(restarted.send(origin, input)).rejects.toThrow("access declined");
+    expect(f.adapter.launch).not.toHaveBeenCalled();
+    expect(f.rpc.executions.host.start).not.toHaveBeenCalled();
+    await restarted.send(origin, input);
+    expect(f.adapter.launch).toHaveBeenCalledWith(expect.any(String), "this-device");
+    expect(JSON.parse(readFileSync(file, "utf8")).selections).toMatchObject({
+      [Object.keys(state.selections)[0]!]: { fullDeviceAccess: true },
+    });
+    expect(f.options.confirm).toHaveBeenCalledTimes(2);
   });
 
   it("cancels on disconnect and reconciles a journal after restart without replaying the prompt", async () => {

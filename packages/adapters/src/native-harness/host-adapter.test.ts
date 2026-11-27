@@ -75,19 +75,16 @@ describe("native host admission", () => {
     },
   );
 
-  it.each([false, true])(
-    "adds only the per-run sandbox label to readOnly=%s permissions",
-    (readOnly) => {
-      const override = hostFilesystemOverride("fixture", readOnly, {
-        directory: "/private/tmp/fixture-markers",
-        allow: "/private/tmp/fixture-markers/fixture-allow",
-        deny: "/private/tmp/fixture-markers/fixture-deny",
-      });
-      expect(override).toBe(
-        `permissions.fixture.filesystem={":root"="${readOnly ? "deny" : "read"}",${readOnly ? "" : '":minimal"="read",'}":workspace_roots"={"."="${readOnly ? "read" : "write"}"},"/private/tmp/fixture-markers"="deny","/private/tmp/fixture-markers/fixture-allow"="read","/private/tmp/fixture-markers/fixture-deny"="deny"}`,
-      );
-    },
-  );
+  it("adds the per-run sandbox label to remote read-only permissions", () => {
+    const override = hostFilesystemOverride("fixture", {
+      directory: "/private/tmp/fixture-markers",
+      allow: "/private/tmp/fixture-markers/fixture-allow",
+      deny: "/private/tmp/fixture-markers/fixture-deny",
+    });
+    expect(override).toBe(
+      `permissions.fixture.filesystem={":root"="deny",":workspace_roots"={"."="read"},"/private/tmp/fixture-markers"="deny","/private/tmp/fixture-markers/fixture-allow"="read","/private/tmp/fixture-markers/fixture-deny"="deny"}`,
+    );
+  });
   it("quotes MCP names as TOML value keys instead of dotted override paths", () => {
     expect(hostMcpOverride(["plain", "server.with.dots", 'quoted"name'])).toBe(
       'mcp_servers={"plain"={enabled=false},"server.with.dots"={enabled=false},"quoted\\"name"={enabled=false}}',

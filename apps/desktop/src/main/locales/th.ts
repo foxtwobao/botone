@@ -1,4 +1,6 @@
 export const TH_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "อนุญาตให้ {bot} เรียกใช้คำสั่ง เข้าถึงไฟล์ของคุณ และใช้เครือข่ายด้วยสิทธิ์ของคุณบนคอมพิวเตอร์เครื่องนี้หรือไม่",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "เกี่ยวกับ {name}",

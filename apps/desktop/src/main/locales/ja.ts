@@ -1,4 +1,6 @@
 export const JA_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "{bot} がこのコンピュータであなたの権限でコマンドを実行し、ファイルやネットワークにアクセスすることを許可しますか？",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "{name}について",

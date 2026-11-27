@@ -39,17 +39,13 @@ export function hostMcpOverride(servers: string[]) {
   return value;
 }
 
-export function hostFilesystemOverride(
-  permissions: string,
-  readOnly: boolean,
-  marker?: HostProcessMarker,
-) {
+export function hostFilesystemOverride(permissions: string, marker?: HostProcessMarker) {
   const entries = [
-    `":root"="${readOnly ? "deny" : "read"}"`,
+    '":root"="deny"',
     // macOS platform defaults include writable scratch directories. Remote runs
     // disable native tools, so they need no implicit platform filesystem access.
-    ...(readOnly && marker ? [] : ['":minimal"="read"']),
-    `":workspace_roots"={"."="${readOnly ? "read" : "write"}"}`,
+    ...(marker ? [] : ['":minimal"="read"']),
+    '":workspace_roots"={"."="read"}',
     ...(marker
       ? [
           `${JSON.stringify(marker.directory)}="deny"`,
@@ -180,7 +176,7 @@ export interface HostHarnessAdapter {
   identity?: string;
   launch(
     workspace: string,
-    tools?: Omit<NonNullable<HarnessProcess["externalTools"]>, "permissions">,
+    target: "this-device" | Omit<NonNullable<HarnessProcess["externalTools"]>, "permissions">,
   ): Promise<HarnessProcess>;
   driver: HarnessDriverFactory;
 }
@@ -192,9 +188,18 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
   const executable = owned ? await resolveHostExecutable() : undefined;
   const adapter: HostHarnessAdapter = {
     profile: { ...profile, status: owned ? "missing" : "unsupported" },
-    launch: async (directory, tools) => {
+    launch: async (directory, target) => {
       if (!executable || adapter.profile.status !== "ready")
         throw new Error("Local agent unavailable");
+      if (target === "this-device") {
+        // The process owner labels the CLI itself on macOS, so even detached tools inherit it.
+        return launchHostProcess({
+          executable,
+          args: ["app-server"],
+          workspace: directory,
+          env: { ...env, SHELL: process.env.SHELL, SSH_AUTH_SOCK: process.env.SSH_AUTH_SOCK },
+        });
+      }
       const args = hostLaunchArguments();
       const probe = await launchHostProcess({
         executable,
@@ -230,22 +235,21 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
       // Empty TOML maps merge with user/project maps. Disable each effective server explicitly.
       args.splice(args.length - 1, 0, "-c", hostMcpOverride(servers));
       const marker = process.platform === "darwin" ? await createHostProcessMarker() : undefined;
-      const permissions =
-        tools || marker ? `rakazo_host_${randomUUID().replaceAll("-", "")}` : undefined;
-      if (permissions)
-        args.splice(
-          args.length - 1,
-          0,
-          ...(tools ? ["shell_tool", "unified_exec", "view_image", "code_mode"] : []).flatMap(
-            (feature) => ["--disable", feature],
-          ),
-          "-c",
-          hostFilesystemOverride(permissions, !!tools, marker),
-          "-c",
-          `permissions.${permissions}.network.enabled=false`,
-          "-c",
-          `default_permissions=${JSON.stringify(permissions)}`,
-        );
+      const permissions = `rakazo_host_${randomUUID().replaceAll("-", "")}`;
+      args.splice(
+        args.length - 1,
+        0,
+        ...["shell_tool", "unified_exec", "view_image", "code_mode"].flatMap((feature) => [
+          "--disable",
+          feature,
+        ]),
+        "-c",
+        hostFilesystemOverride(permissions, marker),
+        "-c",
+        `permissions.${permissions}.network.enabled=false`,
+        "-c",
+        `default_permissions=${JSON.stringify(permissions)}`,
+      );
       const launched = await launchHostProcess({
         executable,
         args,
@@ -253,8 +257,8 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
         env,
         marker,
       });
-      if (tools && permissions) launched.externalTools = { ...tools, permissions };
-      if (marker && permissions) launched.hostPermissions = { id: permissions, ...marker };
+      launched.externalTools = { ...target, permissions };
+      if (marker) launched.hostPermissions = { id: permissions, ...marker };
       return launched;
     },
     driver: createHostCodexDriver,

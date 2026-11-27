@@ -1,17 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { access, mkdir, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { access, mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
 import type { HarnessProcess } from "@rakazo/native-runtime/driver";
 import { record } from "@rakazo/native-runtime/driver";
-import {
-  assertLabeledHostConfiguration,
-  assertRemoteHostConfiguration,
-} from "@rakazo/native-runtime/host-policy";
+import { assertRemoteHostConfiguration } from "@rakazo/native-runtime/host-policy";
 import { HarnessProtocolError, HarnessRpc } from "@rakazo/native-runtime/rpc";
 import koffi from "koffi";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   hostFilesystemOverride,
   hostLaunchArguments,
@@ -93,22 +91,27 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
         mkdir(path.join(workspace, ".git")),
         mkdir(path.join(workspace, ".codex")),
       ]);
-    const marker = await createHostProcessMarker();
+    const marker = readOnly ? await createHostProcessMarker() : undefined;
     const permissions = `fixture_${randomUUID().replaceAll("-", "")}`;
-    const label = { id: permissions, ...marker };
-    const args = hostLaunchArguments();
+    const args = readOnly ? hostLaunchArguments() : ["app-server"];
+    if (marker)
+      args.splice(
+        args.length - 1,
+        0,
+        ...["shell_tool", "unified_exec", "view_image", "code_mode"].flatMap((feature) => [
+          "--disable",
+          feature,
+        ]),
+        "-c",
+        hostFilesystemOverride(permissions, marker),
+        "-c",
+        `permissions.${permissions}.network.enabled=false`,
+        "-c",
+        `default_permissions=${JSON.stringify(permissions)}`,
+      );
     args.splice(
       args.length - 1,
       0,
-      ...(readOnly ? ["shell_tool", "unified_exec", "view_image", "code_mode"] : []).flatMap(
-        (feature) => ["--disable", feature],
-      ),
-      "-c",
-      hostFilesystemOverride(permissions, readOnly, marker),
-      "-c",
-      `permissions.${permissions}.network.enabled=false`,
-      "-c",
-      `default_permissions=${JSON.stringify(permissions)}`,
       "-c",
       'model_provider="offline_fixture"',
       "-c",
@@ -151,16 +154,15 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
     const effective = record(
       await rpc.request("config/read", { cwd: workspace, includeLayers: false }, 5_000),
     );
-    if (readOnly) assertRemoteHostConfiguration(effective.config, permissions, label);
-    else assertLabeledHostConfiguration(effective.config, label, false);
+    if (marker)
+      assertRemoteHostConfiguration(effective.config, permissions, { id: permissions, ...marker });
     const thread = record(
       await rpc.request(
         "thread/start",
         {
           cwd: workspace,
           ephemeral: true,
-          permissions,
-          environments: [],
+          ...(readOnly ? { permissions, environments: [] } : { sandbox: "danger-full-access" }),
           approvalPolicy: "never",
           approvalsReviewer: "user",
           ...(readOnly
@@ -183,8 +185,10 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
         10_000,
       ),
     );
-    expect(record(thread.activePermissionProfile).id).toBe(permissions);
-    expect(record(thread.sandbox)).toMatchObject({ type: "readOnly", networkAccess: false });
+    if (readOnly) expect(record(thread.activePermissionProfile).id).toBe(permissions);
+    expect(record(thread.sandbox)).toMatchObject(
+      readOnly ? { type: "readOnly", networkAccess: false } : { type: "dangerFullAccess" },
+    );
     const command = async (script: string, timeoutMs = 3_000) =>
       record(
         await rpc.request(
@@ -192,7 +196,9 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
           {
             command: ["/bin/sh", "-c", script],
             cwd: workspace,
-            permissionProfile: permissions,
+            ...(readOnly
+              ? { permissionProfile: permissions }
+              : { sandboxPolicy: { type: "dangerFullAccess" } }),
             timeoutMs,
           },
           timeoutMs + 5_000,
@@ -201,36 +207,38 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
     return { child, workspace, marker, command, config: effective.config, thread };
   }
 
-  it("keeps workspace writes, protects metadata, labels the actual tool sandbox and cleans it on stop", async ({
-    skip,
-  }) => {
+  it("connects to a local app socket outside the workspace", async ({ skip }) => {
     if (!executable) return skip();
-    const { child, workspace, marker, command } = await launch(false);
-    expect((await command("printf fixture > ordinary-file")).exitCode).toBe(0);
-    expect(await readFile(path.join(workspace, "ordinary-file"), "utf8")).toBe("fixture");
-    for (const directory of [".git", ".codex"]) {
-      expect((await command(`printf fixture > ${directory}/forbidden-file`)).exitCode).not.toBe(0);
-      await expect(access(path.join(workspace, directory, "forbidden-file"))).rejects.toThrow();
+    const { command } = await launch(false);
+    const socket = path.join(root, "app.sock");
+    const server = createServer((connection) => connection.end("connected"));
+    try {
+      await new Promise<void>((resolve, reject) =>
+        server.once("error", reject).listen(socket, resolve),
+      );
+      const result = await command(`/usr/bin/nc -U "${socket}" < /dev/null`);
+      expect(result).toMatchObject({ exitCode: 0, stdout: "connected" });
+    } finally {
+      server.close();
     }
+  }, 60_000);
+
+  it("stops a local command running with full account access", async ({ skip }) => {
+    if (!executable) return skip();
+    const { child, workspace, command } = await launch(false);
     const running = command('printf "%s" "$$" > tool-pid; exec /bin/sleep 10', 12_000);
     // Attach immediately: stopping the owner may reject the pending command RPC.
     const settled = running.catch((error: unknown) => {
       expect(error).toBeInstanceOf(HarnessProtocolError);
     });
-    let pid = 0;
-    const deadline = Date.now() + 5_000;
-    while (!pid && Date.now() < deadline) {
-      try {
-        pid = Number(await readFile(path.join(workspace, "tool-pid"), "utf8"));
-      } catch {}
-      if (!pid) await delay(20);
-    }
-    expect(Number.isSafeInteger(pid) && pid > 0).toBe(true);
-    const sandbox = koffi.load("/usr/lib/libsandbox.dylib");
-    const check = sandbox.func("int sandbox_check(int, const char *, int, ...)");
-    const flags = 1 | koffi.decode(sandbox.symbol("SANDBOX_CHECK_NO_REPORT"), "int");
-    expect(check(pid, "file-read-data", flags, "str", marker.allow)).toBe(0);
-    expect(check(pid, "file-read-data", flags, "str", marker.deny)).toBeGreaterThan(0);
+    const pid = await vi.waitUntil(
+      async () => {
+        const file = path.join(workspace, "tool-pid");
+        if (!existsSync(file)) return;
+        return Number(await readFile(file, "utf8")) || undefined;
+      },
+      { timeout: 5_000 },
+    );
     const info = koffi
       .load("/usr/lib/libproc.dylib")
       .func("int proc_pidinfo(int, int, uint64_t, void *, int)");
@@ -262,52 +270,22 @@ describe.skipIf(process.platform !== "darwin")("native CLI macOS policies", () =
     });
   }, 60_000);
 
-  it("protects both runs' markers and their shared directory inside a writable workspace", async ({
+  it("protects the process owner's markers even when the starting folder contains them", async ({
     skip,
   }) => {
     if (!executable) return skip();
-    // This workspace deliberately contains the reserved directory. More specific
-    // deny/read entries must win over the workspace's broad write permission.
-    const first = await launch(false, "/private/tmp");
-    const second = await launch(false, "/private/tmp");
-    const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
-    const objects = [
-      first.marker.directory,
-      first.marker.allow,
-      first.marker.deny,
-      second.marker.allow,
-      second.marker.deny,
-    ];
-    const original = await Promise.all(objects.map((file) => stat(file)));
-    expect((await first.command(`cat ${quote(first.marker.allow)} > /dev/null`)).exitCode).toBe(0);
-    for (const file of [first.marker.deny, second.marker.allow, second.marker.deny])
-      expect((await first.command(`cat ${quote(file)} > /dev/null`)).exitCode).not.toBe(0);
-    for (const file of objects) {
-      for (const script of [
-        `chmod 0777 ${quote(file)}`,
-        `mv ${quote(file)} ${quote(`${file}-moved`)}`,
-        ...(file === first.marker.directory
-          ? []
-          : [`rm ${quote(file)}`, `printf fixture > ${quote(file)}`]),
-      ])
-        expect((await first.command(script)).exitCode).not.toBe(0);
+    const local = await launch(false, "/private/tmp");
+    const remote = await launch(true);
+    const marker = remote.marker!;
+    for (const file of [marker.allow, marker.deny]) {
+      expect((await local.command(`cat "${file}"`)).exitCode).not.toBe(0);
+      expect((await local.command(`printf fixture > "${file}"`)).exitCode).not.toBe(0);
     }
-    for (const [index, file] of objects.entries()) {
-      const current = await stat(file);
-      expect([current.dev, current.ino, current.mode]).toEqual([
-        original[index]!.dev,
-        original[index]!.ino,
-        original[index]!.mode,
-      ]);
-    }
-    await first.child.stop();
-    children.delete(first.child);
-    // The first owner's cleanup must remove only its own two markers.
-    await expect(access(first.marker.allow)).rejects.toThrow();
-    await expect(access(first.marker.deny)).rejects.toThrow();
-    expect((await second.command(`cat ${quote(second.marker.allow)} > /dev/null`)).exitCode).toBe(
-      0,
-    );
-    await access(second.marker.deny);
+    await local.child.stop();
+    children.delete(local.child);
+    await access(marker.allow);
+    await remote.child.stop();
+    children.delete(remote.child);
+    await expect(access(marker.allow)).rejects.toThrow();
   }, 60_000);
 });

@@ -1,4 +1,6 @@
 export const KO_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "{bot}이 이 컴퓨터에서 내 계정의 권한으로 명령을 실행하고 내 파일과 네트워크에 접근하도록 허용할까요?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "{name}에 관하여",

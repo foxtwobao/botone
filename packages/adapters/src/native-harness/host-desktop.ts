@@ -34,6 +34,7 @@ const selectionSchema = z.object({
   workspace: z.string(),
   target: z.enum(["workspace", "computer"]),
   model: z.string().optional(),
+  fullDeviceAccess: z.literal(true).optional(),
 });
 const stateSchema = z.object({
   installationId: z.string(),
@@ -82,6 +83,7 @@ export interface DesktopHarnessOptions {
   fetch: typeof fetch;
   chooseDirectory(): Promise<string | null>;
   confirm(input: {
+    botName: string;
     origin: string;
     workspace: string;
     target: "workspace" | "computer";
@@ -257,7 +259,7 @@ export class DesktopHarness {
                         ).result;
                       },
                     }
-                  : undefined,
+                  : "this-device",
               );
             },
           },
@@ -349,7 +351,7 @@ export class DesktopHarness {
     const intent = this.intent(origin, input);
     try {
       const { rpc, userId } = await this.owner(origin, input.spaceId);
-      await rpc.bots.get({ botId: input.botId });
+      const bot = await rpc.bots.get({ botId: input.botId });
       this.assertIntent(intent);
       const id = this.selectionKey(origin, userId, input.spaceId, input.botId);
       if (
@@ -378,7 +380,7 @@ export class DesktopHarness {
       this.assertIntent(intent);
       if (!picked) return this.state.selections[id] ?? null;
       const workspace = await realpath(picked);
-      if (!(await this.options.confirm({ origin, workspace, target })))
+      if (!(await this.options.confirm({ origin, workspace, target, botName: bot.name })))
         return this.state.selections[id] ?? null;
       if ((await this.owner(origin, input.spaceId)).userId !== userId)
         throw new Error("Local execution scope changed");
@@ -393,7 +395,12 @@ export class DesktopHarness {
         )
       )
         throw new Error("Stop the current local task before changing its agent");
-      const selection = { profileId: input.profileId, workspace, target };
+      const selection = {
+        profileId: input.profileId,
+        workspace,
+        target,
+        ...(target === "workspace" ? { fullDeviceAccess: true as const } : {}),
+      };
       this.state.selections[id] = selection;
       this.saveState();
       return selection;
@@ -428,15 +435,33 @@ export class DesktopHarness {
     input: { botId: string; spaceId: string; text: string; clientNonce: string },
   ) {
     const { origin } = intent;
-    const selection =
-      this.state.selections[this.selectionKey(origin, userId, input.spaceId, input.botId)];
+    const scope = this.selectionKey(origin, userId, input.spaceId, input.botId);
+    const selection = this.state.selections[scope];
     if (!selection) throw new Error("Choose a local workspace first");
+    if (selection.target === "workspace" && !selection.fullDeviceAccess) {
+      const bot = await rpc.bots.get({ botId: input.botId });
+      this.assertIntent(intent);
+      if (
+        !(await this.options.confirm({
+          origin,
+          workspace: selection.workspace,
+          target: selection.target,
+          botName: bot.name,
+        }))
+      )
+        throw new Error("Local computer access declined");
+      if (
+        (await this.owner(origin, input.spaceId)).userId !== userId ||
+        this.state.selections[scope] !== selection
+      )
+        throw new Error("Local execution scope changed");
+      this.assertIntent(intent);
+      selection.fullDeviceAccess = true;
+      this.saveState();
+    }
     const adapter = await (this.options.inspect ?? inspectHostHarness)();
     this.assertIntent(intent);
-    if (
-      this.state.selections[this.selectionKey(origin, userId, input.spaceId, input.botId)] !==
-      selection
-    )
+    if (this.state.selections[scope] !== selection)
       throw new Error("Local execution scope changed");
     if (
       adapter.profile.status !== "ready" ||

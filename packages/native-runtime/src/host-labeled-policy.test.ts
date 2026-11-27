@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createHostCodexDriver } from "./codex.js";
 import { record } from "./driver.js";
-import { assertLabeledHostConfiguration, assertRemoteHostConfiguration } from "./host-policy.js";
+import { assertRemoteHostConfiguration } from "./host-policy.js";
 import { safeHostConfiguration } from "./host-policy.test-support.js";
 import { FakeHarnessProcess, startRequest, tick } from "./protocol.test-support.js";
 
@@ -11,22 +11,22 @@ const label = {
   allow: "/private/tmp/fixture-markers/fixture-allow",
   deny: "/private/tmp/fixture-markers/fixture-deny",
 };
-function config(readOnly: boolean) {
+function config() {
   const safe = safeHostConfiguration();
   return {
     ...safe,
     features: {
       ...safe.features,
-      ...(readOnly
-        ? { shell_tool: false, unified_exec: false, view_image: false, code_mode: false }
-        : {}),
+      shell_tool: false,
+      unified_exec: false,
+      view_image: false,
+      code_mode: false,
     },
     permissions: {
       fixture: {
         filesystem: {
-          ":root": readOnly ? "deny" : "read",
-          ...(!readOnly ? { ":minimal": "read" } : {}),
-          ":workspace_roots": { ".": readOnly ? "read" : "write" },
+          ":root": "deny",
+          ":workspace_roots": { ".": "read" },
           [label.directory]: "deny",
           [label.allow]: "read",
           [label.deny]: "deny",
@@ -36,15 +36,14 @@ function config(readOnly: boolean) {
     },
   };
 }
-function fixture(readOnly: boolean, override: Record<string, unknown> = {}) {
+function fixture(override: Record<string, unknown> = {}) {
   const process = Object.assign(new FakeHarnessProcess(), { hostPermissions: label });
-  if (readOnly)
-    process.externalTools = { permissions: label.id, specs: [], invoke: async () => "" };
+  process.externalTools = { permissions: label.id, specs: [], invoke: async () => "" };
   process.reply = (frame) => {
     if (frame.method === "initialize" || frame.method === "turn/interrupt")
       process.receive({ id: frame.id, result: {} });
     if (frame.method === "config/read")
-      process.receive({ id: frame.id, result: { config: config(readOnly) } });
+      process.receive({ id: frame.id, result: { config: config() } });
     if (frame.method === "thread/start" || frame.method === "thread/resume")
       process.receive({
         id: frame.id,
@@ -66,9 +65,9 @@ function fixture(readOnly: boolean, override: Record<string, unknown> = {}) {
   return process;
 }
 
-describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly) => {
+describe("labeled remote permissions", () => {
   it.each([false, true])("retains the precise native profile when resuming=%s", async (resume) => {
-    const process = fixture(readOnly);
+    const process = fixture();
     const driver = createHostCodexDriver(process, "test", () => {});
     await driver.start(
       startRequest(resume ? { session: { id: "thread", engineVersion: "test" } } : {}),
@@ -81,8 +80,7 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
         approvalPolicy: "never",
         approvalsReviewer: "user",
       });
-      if (readOnly) expect(frame.params).toHaveProperty("environments", []);
-      else expect(frame.params).not.toHaveProperty("environments");
+      expect(frame.params).toHaveProperty("environments", []);
       expect(frame.params).not.toHaveProperty("sandboxPolicy");
       expect(frame.params).not.toHaveProperty("sandbox");
     }
@@ -90,7 +88,7 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
   });
 
   it("rejects profile changes before sending the prompt", async () => {
-    const process = fixture(readOnly, { activePermissionProfile: { id: "different" } });
+    const process = fixture({ activePermissionProfile: { id: "different" } });
     const driver = createHostCodexDriver(process, "test", () => {});
     await expect(driver.start(startRequest())).rejects.toThrow("not_confirmed");
     expect(process.sent.some((frame) => frame.method === "turn/start")).toBe(false);
@@ -98,7 +96,7 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
   });
 
   it("refuses native approval retries that would discard the descendant label", async () => {
-    const process = fixture(readOnly);
+    const process = fixture();
     const driver = createHostCodexDriver(process, "test", () => {});
     await driver.start(startRequest());
     for (const method of [
@@ -119,15 +117,13 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
   });
 
   it.each(["directory", "allow", "deny"])("requires the exact %s probe permission", (probe) => {
-    const effective = config(readOnly);
+    const effective = config();
     record(effective.permissions.fixture.filesystem)[
       label[probe as "directory" | "allow" | "deny"]
     ] = "write";
-    expect(() =>
-      readOnly
-        ? assertRemoteHostConfiguration(effective, label.id, label)
-        : assertLabeledHostConfiguration(effective, label, false),
-    ).toThrow("not_confirmed");
+    expect(() => assertRemoteHostConfiguration(effective, label.id, label)).toThrow(
+      "not_confirmed",
+    );
   });
 });
 
@@ -140,7 +136,7 @@ const workspaceProjection = {
 };
 
 it("requests only live session metadata when resuming a desktop conversation", async () => {
-  const process = fixture(false);
+  const process = fixture();
   const driver = createHostCodexDriver(process, "test", () => {});
   try {
     await driver.start(startRequest({ session: { id: "thread", engineVersion: "test" } }));
@@ -153,21 +149,8 @@ it("requests only live session metadata when resuming a desktop conversation", a
   }
 });
 
-it("resumes a local workspace when the named profile has a legacy workspace-write projection", async () => {
-  const process = fixture(false, { sandbox: workspaceProjection });
-  const driver = createHostCodexDriver(process, "test", () => {});
-  try {
-    await driver.start(startRequest({ session: { id: "thread", engineVersion: "test" } }));
-    expect(process.sent.find((frame) => frame.method === "turn/start")?.params).toMatchObject({
-      permissions: label.id,
-    });
-  } finally {
-    await driver.cancel();
-  }
-});
-
 it("rejects a writable projection for remote computer runs", async () => {
-  const process = fixture(true, { sandbox: workspaceProjection });
+  const process = fixture({ sandbox: workspaceProjection });
   const driver = createHostCodexDriver(process, "test", () => {});
   try {
     await expect(driver.start(startRequest())).rejects.toThrow(
@@ -180,7 +163,7 @@ it("rejects a writable projection for remote computer runs", async () => {
 });
 
 it("rejects implicit platform scratch access in a remote profile", () => {
-  const effective = config(true);
+  const effective = config();
   effective.permissions.fixture.filesystem[":minimal"] = "read";
   expect(() => assertRemoteHostConfiguration(effective, label.id, label)).toThrow(
     "host_remote_boundary_not_confirmed",
