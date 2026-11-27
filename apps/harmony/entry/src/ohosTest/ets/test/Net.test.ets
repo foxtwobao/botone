@@ -9,6 +9,7 @@ import { RpcError } from '../../../main/ets/net/errors';
 import { decodeMe } from '../../../main/ets/contract/decode';
 import {
   clearSessionToken,
+  currentSessionGeneration,
   loadSessionToken,
   saveSessionToken,
   selectedSpaceId,
@@ -20,6 +21,7 @@ import {
   continueWithSso,
   proxyUrl,
   stateCookieFromHeaders,
+  stateValueFromHeaders,
   tokenFromCallbackCookie,
 } from '../../../main/ets/net/sso';
 import { currentApiBase, initServerStore, switchServer } from '../../../main/ets/net/server-store';
@@ -77,6 +79,9 @@ async function saveToken(token: string): Promise<void> {
 interface SsoStart {
   provider: string;
   disableRedirect: boolean;
+  skipProxy: boolean;
+  callbackURL: string;
+  errorCallbackURL: string;
 }
 
 interface ResetEmail {
@@ -99,6 +104,10 @@ async function fixtureState(): Promise<FixtureState> {
       const start: SsoStart = {
         provider: typeof record['provider'] === 'string' ? record['provider'] as string : '',
         disableRedirect: record['disableRedirect'] === true,
+        skipProxy: record['skipProxy'] === true,
+        callbackURL: typeof record['callbackURL'] === 'string' ? record['callbackURL'] as string : '',
+        errorCallbackURL: typeof record['errorCallbackURL'] === 'string'
+          ? record['errorCallbackURL'] as string : '',
       };
       state.ssoStarts.push(start);
     }
@@ -361,11 +370,18 @@ export default function netTest() {
     });
 
     it('sso_state_cookie_extracts_and_callback_token_parses', 0, () => {
+      // The jar write takes the raw Set-Cookie entry (name=value plus attributes, encoded);
+      // the proxy's oauthState parameter takes the decoded value alone.
       expect(stateCookieFromHeaders('__Secure-better-auth.oauth_state=abc%3Adef; Path=/; HttpOnly'))
-        .assertEqual('abc:def');
-      expect(stateCookieFromHeaders('other=1, better-auth.oauth_state=abc; Path=/')).assertEqual('abc');
+        .assertEqual('__Secure-better-auth.oauth_state=abc%3Adef; Path=/; HttpOnly');
+      expect(stateCookieFromHeaders('other=1, better-auth.oauth_state=abc; Path=/'))
+        .assertEqual('better-auth.oauth_state=abc; Path=/');
       expect(stateCookieFromHeaders('unrelated=1')).assertEqual('');
-      expect(stateCookieFromHeaders('better-auth.oauth_state=%zz; Path=/')).assertEqual('');
+      expect(stateValueFromHeaders('__Secure-better-auth.oauth_state=abc%3Adef; Path=/; HttpOnly'))
+        .assertEqual('abc:def');
+      expect(stateValueFromHeaders('better-auth.oauth_state=abc; Path=/')).assertEqual('abc');
+      expect(stateValueFromHeaders('unrelated=1')).assertEqual('');
+      expect(stateValueFromHeaders('better-auth.oauth_state=%zz; Path=/')).assertEqual('');
       expect(tokenFromCallbackCookie('better-auth.session_token=cookie-token; Path=/'))
         .assertEqual('cookie-token');
       expect(tokenFromCallbackCookie('__Secure-better-auth.session_token=t2; Path=/')).assertEqual('t2');
@@ -394,14 +410,20 @@ export default function netTest() {
         });
       expect(saved).assertTrue();
       expect(openedUrl.startsWith(`${BASE}/api/auth/expo-authorization-proxy?`)).assertTrue();
-      // The proxy URL must carry the authorization URL; the state cookie went to the jar.
+      // The proxy URL must carry the authorization URL; the jar takes the raw Set-Cookie
+      // entry (name=value with attributes), and the oauthState param carries the decoded value.
       expect(openedUrl.includes('authorizationURL=')).assertTrue();
-      expect(openedCookie).assertEqual('abc:def');
+      expect(openedUrl.includes('oauthState=abc%3Adef')).assertTrue();
+      expect(openedCookie).assertEqual('__Secure-better-auth.oauth_state=abc%3Adef; Path=/; HttpOnly');
       expect(await loadSessionToken()).assertEqual('fake-token');
       const state = await fixtureState();
       expect(state.ssoStarts.length).assertEqual(1);
       expect(state.ssoStarts[0].provider).assertEqual('google');
       expect(state.ssoStarts[0].disableRedirect).assertTrue();
+      // The wire shape the flow pins: the proxy header and both callback URLs.
+      expect(state.ssoStarts[0].skipProxy).assertTrue();
+      expect(state.ssoStarts[0].callbackURL).assertEqual('rakazo://sign-in');
+      expect(state.ssoStarts[0].errorCallbackURL).assertEqual('rakazo://sign-in');
     });
 
     it('sso_flow_closed_auth_session_changes_nothing', 0, async () => {
@@ -479,16 +501,33 @@ export default function netTest() {
       expect(await loadSessionToken()).assertEqual('');
     });
 
-    it('code_sent_by_a_server_that_switched_away_is_ignored', 0, async () => {
-      // The guard in the page (sendSignInCode's sentFrom check) is the pure comparison the
-      // fixture proves here: the address changes under the send, so the answer is dropped.
+    it('code_send_in_flight_across_a_switch_and_back_lands_stale', 0, async () => {
+      // The interleaving the page's staleness guard exists for: the send is in flight while
+      // the server switches away and back, so the address matches again but the generation
+      // does not. Without a guard, the answer would update the new page state.
       const sentFrom = currentApiBase();
-      await sendSignInCode('code@example.com');
+      const generation = currentSessionGeneration();
+      const send = sendSignInCode('slow@example.com');
       const switched = await switchServer(BASE2, {});
       expect(switched.ok).assertTrue();
-      expect(currentApiBase() !== sentFrom).assertTrue();
+      await send;
+      // Back at the same address, but the session generation moved: the conjunction the page
+      // guard checks no longer holds, so the answer is dropped.
+      expect(currentApiBase()).assertEqual(sentFrom);
+      expect(currentApiBase() === sentFrom
+        && currentSessionGeneration() === generation).assertFalse();
       const back = await switchServer(BASE, {});
       expect(back.ok).assertTrue();
+    });
+
+    it('auth_error_with_a_bare_identifier_message_shows_local_copy', 0, async () => {
+      let message = '';
+      try {
+        await signIn('ada@example.com', 'codey');
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).assertEqual('Could not continue');
     });
   });
 }

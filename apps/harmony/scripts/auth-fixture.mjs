@@ -19,7 +19,8 @@ export function resetAuth() {
 
 export function handleAuth(req, res, body) {
   const input = body ? JSON.parse(body) : {};
-  const path = req.url;
+  // The proxy URL carries a query string; routes match on the pathname alone.
+  const path = new URL(req.url, `http://${req.headers.host ?? "localhost"}`).pathname;
   if (path === "/api/auth/capabilities" && req.method === "GET") {
     return json(res, 200, {
       passwordAuth: true,
@@ -34,6 +35,16 @@ export function handleAuth(req, res, body) {
     // The SSO flow reads who its issued bearer belongs to before keeping it.
     if (bearer(req) !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     return json(res, 200, { user: { id: "user-fake" } });
+  }
+  if (path === "/api/auth/expo-authorization-proxy" && req.method === "GET") {
+    // The real proxy 302s into the provider; the suites exercise the client's network layer,
+    // so this only exists for a manual walk-through.
+    const target = new URL(req.url, `http://${req.headers.host}`).searchParams.get(
+      "authorizationURL",
+    );
+    if (!target) return json(res, 400, {});
+    res.writeHead(302, { location: target });
+    return res.end();
   }
   if (req.method !== "POST") return json(res, 405, {});
   if (path === "/api/auth/sign-in/email") {
@@ -50,6 +61,10 @@ export function handleAuth(req, res, body) {
       );
     }
     if (input.password === "body") return json(res, 200, { token: "body-token" });
+    if (input.password === "codey") {
+      // A server echoing an unknown code into the message field: the client shows its own copy.
+      return json(res, 401, { code: "example_failure", message: "example_failure" });
+    }
     return json(res, 401, {
       code: "INVALID_LOGIN_CREDENTIALS",
       message: "Invalid email or password",
@@ -59,13 +74,27 @@ export function handleAuth(req, res, body) {
     if (String(input.email).startsWith("verify")) return json(res, 200, { token: null });
     return json(res, 200, {}, { "set-auth-token": "fake-token" });
   }
-  if (path === "/api/auth/email-otp/send-verification-otp") return json(res, 200, {});
+  if (path === "/api/auth/email-otp/send-verification-otp") {
+    if (input.email === "slow@example.com") {
+      // A send that is still in flight while a test switches servers (the race window the
+      // page's staleness guard closes).
+      setTimeout(() => json(res, 200, {}), 400);
+      return;
+    }
+    return json(res, 200, {});
+  }
   if (path === "/api/auth/sign-in/email-otp") {
     if (input.otp === "123456") return json(res, 200, {}, { "set-auth-token": "fake-token" });
     return json(res, 400, { code: "INVALID_OTP", message: "Invalid code" });
   }
   if (path === "/api/auth/sign-in/social") {
-    ssoStarts.push({ provider: input.provider, disableRedirect: input.disableRedirect });
+    ssoStarts.push({
+      provider: input.provider,
+      disableRedirect: input.disableRedirect === true,
+      skipProxy: req.headers["x-skip-oauth-proxy"] === "true",
+      callbackURL: input.callbackURL ?? "",
+      errorCallbackURL: input.errorCallbackURL ?? "",
+    });
     // The provider id drives the branch so a test needs no config endpoint; the good path is
     // an https authorization URL plus the state cookie the incognito jar must receive.
     if (input.provider === "insecure") {
@@ -85,16 +114,6 @@ export function handleAuth(req, res, body) {
       { url: "https://id.example.com/authorize?state=abc&client_id=fake" },
       { "set-cookie": "__Secure-better-auth.oauth_state=abc%3Adef; Path=/; HttpOnly" },
     );
-  }
-  if (path === "/api/auth/expo-authorization-proxy" && req.method === "GET") {
-    // The real proxy 302s into the provider; the suites exercise the client's network layer,
-    // so this only exists for a manual walk-through.
-    const target = new URL(req.url, `http://${req.headers.host}`).searchParams.get(
-      "authorizationURL",
-    );
-    if (!target) return json(res, 400, {});
-    res.writeHead(302, { location: target });
-    return res.end();
   }
   if (path === "/api/auth/request-password-reset") {
     if (String(input.email) === "fail@example.com") {
