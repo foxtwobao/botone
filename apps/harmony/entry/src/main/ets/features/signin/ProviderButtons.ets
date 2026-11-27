@@ -14,8 +14,8 @@ const MARK_SIZE = 20;
 @ComponentV2
 export struct ProviderMark {
   @Param mark: ProviderMarkView = { viewBox: '0 0 24 24', paths: [] } as ProviderMarkView;
-  /** The color a path carries when the server sent none for it. */
-  @Param color: string = '#111111';
+  /** The color a path carries when the server sent none for it (the caller's theme token). */
+  @Require @Param color: string;
 
   /** "0 0 24 24" → [x, y, width, height]; a broken viewBox draws nothing. */
   private bounds(): number[] {
@@ -119,7 +119,7 @@ export struct ProviderTextLink {
 /** The envelope mark on "Continue with email": two stroked paths, mobile's MailMark. */
 @ComponentV2
 export struct MailMark {
-  @Param color: string = '#111111';
+  @Require @Param color: string;
 
   build() {
     Shape() {
