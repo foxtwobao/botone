@@ -255,10 +255,19 @@ struct AudioAttachment {
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
       Row({ space: 8 }) {
-        Button(this.playing ? 'Ⅱ' : '▷', { type: ButtonType.Circle })
+        Button({ type: ButtonType.Circle }) {
+          if (this.playing) {
+            SymbolGlyph($r('sys.symbol.pause_fill'))
+              .fontSize('18vp')
+              .fontColor([appearance.tokens().foreground])
+          } else {
+            SymbolGlyph($r('sys.symbol.play_fill'))
+              .fontSize('18vp')
+              .fontColor([appearance.tokens().foreground])
+          }
+        }
           .width(44).height(44)
           .backgroundColor(appearance.tokens().muted)
-          .fontColor(appearance.tokens().foreground)
           .accessibilityText(t(this.playing ? 'Pause' : 'Play'))
           .enabled(!this.loading)
           .onClick((): void => { void this.toggle(); })
@@ -266,10 +275,13 @@ struct AudioAttachment {
           .fontSize(typeScale.caption.fontSize)
           .fontColor(appearance.tokens().mutedForeground)
           .layoutWeight(1)
-        Button('↓', { type: ButtonType.Circle })
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.arrow_down'))
+            .fontSize('16vp')
+            .fontColor([appearance.tokens().foreground])
+        }
           .width(44).height(44)
           .backgroundColor(appearance.tokens().muted)
-          .fontColor(appearance.tokens().foreground)
           .accessibilityText(t('Download'))
           .onClick((): void => { this.onSave(); })
       }
@@ -386,10 +398,17 @@ export struct AttachmentBlock {
           onSave: (): void => { void this.save(); } })
       } else {
         Row({ space: 10 }) {
-          Text(this.kind === 'video' ? '▷' : (artifactTypeLabel(this.view.mimeType) || '↓'))
-            .fontSize(this.kind === 'video' ? typeScale.body.fontSize : typeScale.caption.fontSize)
-            .fontColor(appearance.tokens().mutedForeground)
-            .accessibilityLevel('no')
+          if (this.kind === 'video') {
+            SymbolGlyph($r('sys.symbol.play_fill'))
+              .fontSize(typeScale.body.fontSize + 'vp')
+              .fontColor([appearance.tokens().mutedForeground])
+              .accessibilityLevel('no')
+          } else {
+            Text(artifactTypeLabel(this.view.mimeType) || '↓')
+              .fontSize(typeScale.caption.fontSize)
+              .fontColor(appearance.tokens().mutedForeground)
+              .accessibilityLevel('no')
+          }
           Column({ space: 3 }) {
             Text(this.label)
               .fontSize(typeScale.secondary.fontSize)

@@ -256,9 +256,9 @@ export struct InboxPage {
               .fontColor(appearance.tokens().foreground)
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
-            Text('▾')
-              .fontSize(typeScale.body.fontSize)
-              .fontColor(appearance.tokens().mutedForeground)
+            SymbolGlyph($r('sys.symbol.chevron_down'))
+              .fontSize(typeScale.body.fontSize + 'vp')
+              .fontColor([appearance.tokens().mutedForeground])
               .accessibilityLevel('no')
           }
           .bindMenu(this.spaceMenu)

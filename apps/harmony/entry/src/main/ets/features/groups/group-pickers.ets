@@ -33,9 +33,9 @@ export struct BotChecklist {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .layoutWeight(1)
           if (this.selected.includes(bot.id)) {
-            Text('✓')
-              .fontSize(18)
-              .fontColor(appearance.tokens().primary)
+            SymbolGlyph($r('sys.symbol.checkmark'))
+              .fontSize('18vp')
+              .fontColor([appearance.tokens().primary])
           }
         }
         .width('100%')

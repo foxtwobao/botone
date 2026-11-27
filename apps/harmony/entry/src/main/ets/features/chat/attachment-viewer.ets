@@ -165,8 +165,12 @@ export struct AttachmentViewer {
   build() {
     Column() {
       Row({ space: 8 }) {
-        Button('×', { type: ButtonType.Circle }).width(44).height(44)
-          .backgroundColor(appearance.tokens().muted).fontColor(appearance.tokens().foreground)
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize('16vp')
+            .fontColor([appearance.tokens().foreground])
+        }.width(44).height(44)
+          .backgroundColor(appearance.tokens().muted)
           .accessibilityText(t('Close')).onClick((): void => { this.onClose(); })
         Text(this.name)
           .fontSize(typeScale.body.fontSize)
@@ -183,8 +187,12 @@ export struct AttachmentViewer {
             .maxLines(1)
         }
         if (this.path && this.kind !== 'file' && !this.previewFailed) {
-          Button('↓', { type: ButtonType.Circle }).width(44).height(44)
-            .backgroundColor(appearance.tokens().muted).fontColor(appearance.tokens().foreground)
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.arrow_down'))
+              .fontSize('16vp')
+              .fontColor([appearance.tokens().foreground])
+          }.width(44).height(44)
+            .backgroundColor(appearance.tokens().muted)
             .accessibilityText(t('Download')).enabled(!this.saving)
             .onClick((): void => { void this.save(); })
         }

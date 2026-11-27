@@ -61,9 +61,12 @@ export struct ShareTargetSheet {
           .fontWeight(FontWeight.Medium)
           .fontColor(appearance.tokens().foreground)
           .layoutWeight(1)
-        Button('×', { type: ButtonType.Circle }).width(44).height(44)
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.xmark'))
+            .fontSize('16vp')
+            .fontColor([appearance.tokens().foreground])
+        }.width(44).height(44)
           .backgroundColor(appearance.tokens().card)
-          .fontColor(appearance.tokens().foreground)
           .accessibilityText(t('Close'))
           .onClick((): void => { incomingShare.cancel(); })
       }

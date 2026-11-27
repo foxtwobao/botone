@@ -292,9 +292,9 @@ export struct ModelConnectionPage {
       Scroll() {
         Column({ space: 20 }) {
           Row({ space: 12 }) {
-            Text('‹')
-              .fontSize(28)
-              .fontColor(appearance.tokens().foreground)
+            SymbolGlyph($r('sys.symbol.chevron_left'))
+              .fontSize('24vp')
+              .fontColor([appearance.tokens().foreground])
               .padding({ left: 8, right: 8 })
               .accessibilityText(t('Back'))
               .onClick((): void => {
