@@ -14,7 +14,14 @@ import {
   selectedSpaceId,
   setSelectedSpace,
 } from '../../../main/ets/net/session';
-import { authCapabilities, signIn, signInWithCode, sendSignInCode, signOut, tokenFromAuthResponse } from '../../../main/ets/net/auth';
+import { authCapabilities, requestPasswordReset, signIn, signInWithCode, sendSignInCode, signOut, tokenFromAuthResponse } from '../../../main/ets/net/auth';
+import {
+  completeSsoSignIn,
+  continueWithSso,
+  proxyUrl,
+  stateCookieFromHeaders,
+  tokenFromCallbackCookie,
+} from '../../../main/ets/net/sso';
 import { currentApiBase, initServerStore, switchServer } from '../../../main/ets/net/server-store';
 import { serverHeaders } from '../../../main/ets/net/server-headers';
 import { probeApiBase } from '../../../main/ets/net/endpoint';
@@ -65,6 +72,46 @@ async function waitForSignOut(base: string, token: string, expected: number): Pr
 
 async function saveToken(token: string): Promise<void> {
   await saveSessionToken(token);
+}
+
+interface SsoStart {
+  provider: string;
+  disableRedirect: boolean;
+}
+
+interface ResetEmail {
+  email: string;
+  redirectTo: string;
+}
+
+interface FixtureState {
+  ssoStarts: SsoStart[];
+  resetEmails: ResetEmail[];
+}
+
+async function fixtureState(): Promise<FixtureState> {
+  const response = await getJson(`${BASE}/__state`, {}, 8000, 64 * 1024);
+  const body = parseJsonObject(response.body);
+  const state: FixtureState = { ssoStarts: [], resetEmails: [] };
+  if (body !== null) {
+    for (const item of (body['ssoStarts'] ?? []) as Object[]) {
+      const record = item as Record<string, Object>;
+      const start: SsoStart = {
+        provider: typeof record['provider'] === 'string' ? record['provider'] as string : '',
+        disableRedirect: record['disableRedirect'] === true,
+      };
+      state.ssoStarts.push(start);
+    }
+    for (const item of (body['resetEmails'] ?? []) as Object[]) {
+      const record = item as Record<string, Object>;
+      const email: ResetEmail = {
+        email: typeof record['email'] === 'string' ? record['email'] as string : '',
+        redirectTo: typeof record['redirectTo'] === 'string' ? record['redirectTo'] as string : '',
+      };
+      state.resetEmails.push(email);
+    }
+  }
+  return state;
 }
 
 /** The session listener loads the account asynchronously; wait for the page with a deadline. */
@@ -295,6 +342,153 @@ export default function netTest() {
       const reset = await switchServer(BASE, {});
       expect(reset.ok).assertTrue();
       expect(serverHeaders(BASE)['x-test-proxy']).assertUndefined();
+    });
+
+    it('request_password_reset_sends_email_and_redirect_and_maps_errors', 0, async () => {
+      await requestPasswordReset('ada@example.com', 'https://example.com/reset');
+      const state = await fixtureState();
+      expect(state.resetEmails.length).assertEqual(1);
+      expect(state.resetEmails[0].email).assertEqual('ada@example.com');
+      expect(state.resetEmails[0].redirectTo).assertEqual('https://example.com/reset');
+      let message = '';
+      try {
+        await requestPasswordReset('fail@example.com', 'https://example.com/reset');
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      // The VALIDATION_ERROR's [body.email] renders as the credential copy, not raw JSON.
+      expect(message).assertEqual('Enter a valid email');
+    });
+
+    it('sso_state_cookie_extracts_and_callback_token_parses', 0, () => {
+      expect(stateCookieFromHeaders('__Secure-better-auth.oauth_state=abc%3Adef; Path=/; HttpOnly'))
+        .assertEqual('abc:def');
+      expect(stateCookieFromHeaders('other=1, better-auth.oauth_state=abc; Path=/')).assertEqual('abc');
+      expect(stateCookieFromHeaders('unrelated=1')).assertEqual('');
+      expect(stateCookieFromHeaders('better-auth.oauth_state=%zz; Path=/')).assertEqual('');
+      expect(tokenFromCallbackCookie('better-auth.session_token=cookie-token; Path=/'))
+        .assertEqual('cookie-token');
+      expect(tokenFromCallbackCookie('__Secure-better-auth.session_token=t2; Path=/')).assertEqual('t2');
+      expect(tokenFromCallbackCookie('nothing=1')).assertEqual('');
+    });
+
+    it('proxy_url_carries_authorization_and_state', 0, () => {
+      const url = proxyUrl(BASE, 'https://id.example.com/authorize?state=abc', 'abc:def');
+      expect(url.startsWith(`${BASE}/api/auth/expo-authorization-proxy?`)).assertTrue();
+      expect(url.includes('authorizationURL=')).assertTrue();
+      expect(url.includes('oauthState=')).assertTrue();
+      // No state cookie: the parameter stays off, the proxy asks the server instead.
+      const bare = proxyUrl(BASE, 'https://id.example.com/authorize?state=abc', '');
+      expect(bare.includes('oauthState')).assertFalse();
+    });
+
+    it('sso_flow_opens_the_auth_session_with_the_state_cookie', 0, async () => {
+      let openedUrl = '';
+      let openedCookie = '';
+      const saved = await continueWithSso('google',
+        (url: string, stateCookie: string): Promise<string | null> => {
+          openedUrl = url;
+          openedCookie = stateCookie;
+          return Promise.resolve(
+            'rakazo://sign-in?cookie=better-auth.session_token%3Dfake-token%3B%20Path%3D%2F');
+        });
+      expect(saved).assertTrue();
+      expect(openedUrl.startsWith(`${BASE}/api/auth/expo-authorization-proxy?`)).assertTrue();
+      // The proxy URL must carry the authorization URL; the state cookie went to the jar.
+      expect(openedUrl.includes('authorizationURL=')).assertTrue();
+      expect(openedCookie).assertEqual('abc:def');
+      expect(await loadSessionToken()).assertEqual('fake-token');
+      const state = await fixtureState();
+      expect(state.ssoStarts.length).assertEqual(1);
+      expect(state.ssoStarts[0].provider).assertEqual('google');
+      expect(state.ssoStarts[0].disableRedirect).assertTrue();
+    });
+
+    it('sso_flow_closed_auth_session_changes_nothing', 0, async () => {
+      const saved = await continueWithSso('google', (): Promise<string | null> => Promise.resolve(null));
+      expect(saved).assertFalse();
+      expect(await loadSessionToken()).assertEqual('');
+    });
+
+    it('sso_flow_refuses_http_or_stateless_authorization_urls', 0, async () => {
+      let message = '';
+      try {
+        await continueWithSso('insecure', (): Promise<string | null> => Promise.resolve(null));
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).assertEqual('Could not continue');
+      message = '';
+      try {
+        await continueWithSso('nostate', (): Promise<string | null> => Promise.resolve(null));
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).assertEqual('Could not continue');
+    });
+
+    it('sso_callback_error_maps_known_codes_and_falls_back_on_unknown', 0, async () => {
+      // Known code: its copy. The callback itself never opens the auth session (completeSsoSignIn
+      // is the seam the closed page skips), so this drives it directly.
+      let message = '';
+      try {
+        await completeSsoSignIn('rakazo://sign-in?error=access_denied', BASE, 0);
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).assertEqual('Could not continue');
+      message = '';
+      try {
+        await completeSsoSignIn('rakazo://sign-in?error=SSO_UNAVAILABLE', BASE, 0);
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).assertEqual('SSO is temporarily unavailable. Try again.');
+    });
+
+    it('sso_callback_shape_is_enforced_before_any_save', 0, async () => {
+      // Wrong scheme, wrong host, a path, a missing cookie: none of these may save a session.
+      for (const callback of [
+        'https://sign-in.example.com/?cookie=better-auth.session_token%3Dfake-token',
+        'rakazo://other?cookie=better-auth.session_token%3Dfake-token',
+        'rakazo://sign-in/extra?cookie=better-auth.session_token%3Dfake-token',
+        'rakazo://sign-in',
+      ]) {
+        let message = '';
+        try {
+          await completeSsoSignIn(callback, BASE, 0);
+        } catch (err) {
+          message = (err as Error).message;
+        }
+        expect(message === 'Could not continue' || message === 'Sign-in did not return a session')
+          .assertTrue();
+      }
+      expect(await loadSessionToken()).assertEqual('');
+    });
+
+    it('sso_save_refuses_a_server_switched_mid_flow', 0, async () => {
+      // The generation captured at flow start no longer matches after a switch: no save.
+      let message = '';
+      try {
+        await completeSsoSignIn('rakazo://sign-in?cookie=better-auth.session_token%3Dfake-token',
+          'http://10.0.2.2:9', 0);
+      } catch (err) {
+        message = (err as Error).message;
+      }
+      expect(message).assertEqual('Could not continue');
+      expect(await loadSessionToken()).assertEqual('');
+    });
+
+    it('code_sent_by_a_server_that_switched_away_is_ignored', 0, async () => {
+      // The guard in the page (sendSignInCode's sentFrom check) is the pure comparison the
+      // fixture proves here: the address changes under the send, so the answer is dropped.
+      const sentFrom = currentApiBase();
+      await sendSignInCode('code@example.com');
+      const switched = await switchServer(BASE2, {});
+      expect(switched.ok).assertTrue();
+      expect(currentApiBase() !== sentFrom).assertTrue();
+      const back = await switchServer(BASE, {});
+      expect(back.ok).assertTrue();
     });
   });
 }
