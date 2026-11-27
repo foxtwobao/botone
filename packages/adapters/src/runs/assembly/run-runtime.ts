@@ -35,6 +35,7 @@ import { createConnectorStack } from "../../integrations/connector-registry.js";
 import type { RemoteConnectorDependencies } from "../../integrations/installed-connectors.js";
 import { InstalledConnectorProvider } from "../../integrations/installed-connectors.js";
 import { IntegrationProviderSettings } from "../../integrations/integration-provider-settings.js";
+import { peripheralDeviceConnector } from "../../integrations/peripheral-device.js";
 import { McpConnector, mcpStdioOptionsFromEnv } from "../../mcp/mcp-connector.js";
 import { McpOAuthBroker } from "../../mcp/mcp-oauth.js";
 import { reconcileMediaVideos } from "../../media/media-video-poll.js";
@@ -202,6 +203,7 @@ export function createConnectorRuntime(
   });
   const stack = createConnectorStack(composio, [
     installed,
+    ...peripheralDeviceConnector(prisma, process.env),
     ...integrationSettings
       .providers()
       .filter((provider) => !composio || provider.describe().id !== "composio"),

@@ -16,6 +16,7 @@ import { getLogger } from "@rakazo/logging";
 import { createApprovedEffectReplayQueue } from "../../approvals/approval-effect.js";
 import { appendOutsideText, taskPromptIsOutside } from "../../approvals/review-target-sources.js";
 import { loadGroupContext } from "../../bots/group-handoff.js";
+import { canReceiveBotCall } from "../../calls/call-availability.js";
 import { USER_CLOUD_AGENT_KEY_PREFIX } from "../../cloud-agents/cloud-agent-factory.js";
 import { diskNoteInstruction, recordComputerDisk } from "../../computers/computer-disk.js";
 import { scheduleComputerSleep } from "../../computers/computer-idle.js";
@@ -717,12 +718,7 @@ export async function selectRunTools(
         deps.phoneCallsEnabled &&
         run.userId === bot.userId &&
         !conversationThread.externalConversationId &&
-        Boolean(
-          await deps.prisma.userVoiceCredential.findFirst({
-            where: { userId: run.userId },
-            select: { id: true },
-          }),
-        ),
+        (await canReceiveBotCall(deps.prisma, run.userId)),
       historyRetrievalEnabled: contextStrategy !== "current" && !unknownChannelSourceId,
       meetingTranscriptsAvailable: parts.meetingTranscriptsAvailable,
       graphicalToolsAllowed,

@@ -5,7 +5,7 @@ import type { RouterDeps } from "./router.js";
 
 /** Null lets the existing thread answer handler continue for built-in prompts. */
 export async function answerExecutionInput(
-  deps: RouterDeps,
+  deps: Pick<RouterDeps, "prisma" | "events">,
   actor: Actor,
   threadId: string,
   input: { runId: string; messageId: string; answer: string },

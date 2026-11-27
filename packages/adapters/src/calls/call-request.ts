@@ -28,6 +28,7 @@ import { getLogger } from "@rakazo/logging";
 import { advisoryLock } from "../locks/advisory-lock.js";
 import { publishMessage, runLeaseFor } from "../runs/assembly/run-messages.js";
 import type { ExecutorDeps } from "../runs/executor/executor-deps.js";
+import { canReceiveBotCall } from "./call-availability.js";
 
 const REASON_MAX = 120;
 const OPENING_MAX = 240;
@@ -40,11 +41,7 @@ export async function callRequestRefusal(
   input: { userId: string; groupChat: boolean; now?: number; phoneCallCooldownMinutes?: number },
 ): Promise<string | null> {
   if (input.groupChat) return "Calls work in a one-to-one chat only. Send a message instead.";
-  const voice = await prisma.userVoiceCredential.findFirst({
-    where: { userId: input.userId },
-    select: { id: true },
-  });
-  if (!voice) {
+  if (!(await canReceiveBotCall(prisma, input.userId))) {
     return "The user has not connected a voice provider, so they cannot take a call. Send a message instead.";
   }
   const minutes = input.phoneCallCooldownMinutes ?? phoneCallSettings().phoneCallCooldownMinutes;

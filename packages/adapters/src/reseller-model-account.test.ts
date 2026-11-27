@@ -188,6 +188,14 @@ describe("external model account protocol", () => {
     ).rejects.toMatchObject({ reason: "rejected" });
   });
 
+  it("reports a depleted key as quota exhaustion on ensure", async () => {
+    const { provider } = fixture({ error: "TOKENONE_KEY_QUOTA_EXHAUSTED", retryable: false }, 409);
+    await expect(provider.ensure(identity)).rejects.toMatchObject({
+      reason: "quota_exhausted",
+      retryable: false,
+    });
+  });
+
   it("does not automatically retry writes or expose upstream error details", async () => {
     const { fetch, provider } = fixture(
       { error: "APP_DATABASE_UNAVAILABLE", retryable: true, detail: "private upstream detail" },

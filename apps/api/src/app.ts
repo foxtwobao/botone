@@ -196,6 +196,8 @@ import type { ModelAccountEnv } from "./model-account-env.js";
 import { loadModelAccountEnv } from "./model-account-env.js";
 import { createModelAccountFeature } from "./model-account-setup.js";
 import { recordSignInEnded } from "./models/model-connect-analytics.js";
+import { loadPeripheralBridge } from "./peripheral/peripheral-setup.js";
+import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
 import {
   DATABASE_RETRY_AFTER_SECONDS,
@@ -313,6 +315,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     ...withEnvOverrides(loadEnv(process.env), envOverrides),
     ...loadModelAccountEnv(process.env),
   };
+  const peripheral = loadPeripheralBridge(process.env);
   const runtimeEnv: RunRuntimeEnv = { ...env, inboundEmailDomain: env.inboundEmail?.domain };
   const logger = loggerOverride ?? createServiceLogger({ service: SERVICE_NAMES.api });
   installLogger(logger);
@@ -861,7 +864,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       enabled: (spaceId) => meetings.enabled(spaceId),
     });
 
-  const router = createRouter({
+  const routerDeps = {
     pageRevisions,
     meetings,
     meetingCalendar,
@@ -961,7 +964,8 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       mcpStdioEnabled: env.mcpStdioEnabled,
       mcpStdioAllowedCommands: env.mcpStdioAllowedCommands,
     },
-  });
+  } satisfies RouterDeps;
+  const router = createRouter(routerDeps);
   const rpc = new RPCHandler(router, {
     clientInterceptors: [onError((error, { path, signal }) => handleRpcError(error, path, signal))],
   });
@@ -1042,6 +1046,12 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     } satisfies AuthCapabilities);
   });
   modelAccount.mount(app, { prisma, auth, secrets, sandbox });
+  peripheral?.mount(app, routerDeps, {
+    issuer: env.oidc?.issuer,
+    connection: modelAccount.connection,
+    runtime,
+    resolveModel: executor.resolveModel,
+  });
   mountAppAssociation(app, env);
   if (localEmailEmulator && env.nodeEnv === "development") {
     app.get(
