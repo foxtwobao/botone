@@ -7,12 +7,21 @@ import { parsePoFile } from "@lingui/format-po";
 
 export function readCatalog(localesDir: string, locale: string): Record<string, string> {
   const po = parsePoFile(readFileSync(path.join(localesDir, locale, "messages.po"), "utf8"));
-  const messages: Record<string, string> = {};
+  // The device runtime keys by msgid alone and has no context form. A msgctxt entry is a
+  // different message (web's "email sign-in" Code) that must not shadow the plain msgid the
+  // mobile ports read: the context-free value wins.
+  const plain: Record<string, string> = {};
+  const contextual: Record<string, string> = {};
   for (const item of po.items) {
     if (!item.msgid || item.obsolete) continue;
     const translation = item.msgstr[0] ?? "";
     // An empty translation falls back to the source string at runtime, like lingui.
-    if (translation) messages[item.msgid] = translation;
+    if (!translation) continue;
+    if (item.msgctxt === null || item.msgctxt === undefined) {
+      plain[item.msgid] = translation;
+    } else {
+      contextual[item.msgid] = translation;
+    }
   }
-  return messages;
+  return { ...contextual, ...plain };
 }

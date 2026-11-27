@@ -14,14 +14,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(here, "../entry");
 const outDir = mkdtempSync(path.join(tmpdir(), "harmony-signin-port-"));
 // The port reads only i18n's t() through no import at all: email-typo.ets is standalone, so
-// the copy gets a plain .ts extension and loads without its neighbors.
+// the copy gets a plain .ts extension and loads without its neighbors. Its COM_TYPOS is an
+// array (ArkTS forbids Set literals) whose includes() matches the reference's Set.has.
 mkdirSync(path.join(outDir, "signin"), { recursive: true });
 writeFileSync(
   path.join(outDir, "signin", "email-typo.ts"),
-  readFileSync(path.join(appRoot, "src/main/ets/features/signin/email-typo.ets"), "utf8")
-    // ArkTS forbids Set literals; the reference uses one. The port's array includes() matches
-    // it, so only the syntax needs smoothing for TS to load the file.
-    .replace(/const COM_TYPOS: string\[\] = /, "const COM_TYPOS: string[] = "),
+  readFileSync(path.join(appRoot, "src/main/ets/features/signin/email-typo.ets"), "utf8"),
 );
 
 afterAll(() => {
