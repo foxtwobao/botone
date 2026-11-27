@@ -48,10 +48,18 @@ export struct Field {
   @Param value: string = '';
   @Param secure: boolean = false;
   @Param email: boolean = false;
+  /** Numeric keyboard with a hard length cap: the one-time code field. */
+  @Param numeric: boolean = false;
+  /** Maximum characters, 0 for the platform default. */
+  @Param maxLength: number = 0;
+  /** The system's show/hide icon on a password field (non-TV default true). */
+  @Param passwordIcon: boolean = true;
   @Param disabled: boolean = false;
   @Event onChange: (value: string) => void = (): void => {};
   /** The keyboard's own send: a form that acts on the whole value when it is submitted. */
   @Event onSubmit: () => void = (): void => {};
+  /** The field lost focus: the moment an email typo suggestion becomes visible. */
+  @Event lostFocus: () => void = (): void => {};
 
   build() {
     Column({ space: 6 }) {
@@ -60,7 +68,11 @@ export struct Field {
         .fontColor(appearance.tokens().mutedForeground)
         .alignSelf(ItemAlign.Start)
       TextInput({ text: this.value, placeholder: this.placeholder })
-        .type(this.secure ? InputType.Password : this.email ? InputType.Email : InputType.Normal)
+        .type(this.secure ? InputType.Password
+          : this.numeric ? InputType.Number
+            : this.email ? InputType.Email : InputType.Normal)
+        .maxLength(this.maxLength > 0 ? this.maxLength : Number.MAX_SAFE_INTEGER)
+        .showPasswordIcon(this.secure && this.passwordIcon)
         .height(46)
         .fontSize(typeScale.body.fontSize)
         .fontColor(appearance.tokens().foreground)
@@ -75,6 +87,9 @@ export struct Field {
         })
         .onSubmit((): void => {
           this.onSubmit();
+        })
+        .onBlur((): void => {
+          this.lostFocus();
         })
     }
     .width('100%')

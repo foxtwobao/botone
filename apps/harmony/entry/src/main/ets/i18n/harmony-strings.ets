@@ -2,9 +2,6 @@
 // place. They render in English until the translation workflow extracts .ets sources; feature
 // PRs never run intl:extract or edit messages.po. Everything else reuses the shared catalog.
 
-/** A server that offers only SSO/provider sign-in, which Phase 1 does not implement yet. */
-export const SSO_ONLY_SERVER = 'Sign-in with this provider is not available on this device yet.';
-
 /** The consent gate's blocked-dispatch reason (the contract's AI_CONSENT_REQUIRED constant; the
  * catalog has no entry for it yet, so it renders in English until the translation workflow). */
 export const AI_CONSENT_REQUIRED = 'Review AI data sharing in Account settings before continuing.';
