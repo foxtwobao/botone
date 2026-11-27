@@ -287,11 +287,12 @@ function codexDriver(
         else if (label) assertLabeledHostConfiguration(effective.config, label, false);
         else assertHostConfiguration(effective.config);
       }
+      const profileSelection = { permissions, ...(remote ? { environments: [] } : {}) };
       const params = {
         developerInstructions: request.instructions,
         cwd: process.workspace,
         approvalPolicy,
-        ...(permissions ? { permissions, environments: [] } : {}),
+        ...(permissions ? profileSelection : {}),
         ...(remote
           ? {
               ...(!request.session
@@ -334,13 +335,21 @@ function codexDriver(
       if (host) {
         const sandbox = record(result.sandbox);
         if (permissions) {
+          // The local tool environment can project the named profile as the legacy workspace policy.
+          const workspaceProjection =
+            !remote &&
+            sandbox.type === "workspaceWrite" &&
+            Array.isArray(sandbox.writableRoots) &&
+            sandbox.writableRoots.length === 0 &&
+            sandbox.excludeTmpdirEnvVar === true &&
+            sandbox.excludeSlashTmp === true;
           if (
             result.cwd !== process.workspace ||
             result.approvalPolicy !== "never" ||
             result.approvalsReviewer !== "user" ||
             record(result.activePermissionProfile).id !== permissions ||
             sandbox.networkAccess !== false ||
-            sandbox.type !== "readOnly"
+            (sandbox.type !== "readOnly" && !workspaceProjection)
           )
             throw new HarnessProtocolError(
               remote ? "host_remote_boundary_not_confirmed" : "host_sandbox_not_confirmed",
@@ -371,7 +380,7 @@ function codexDriver(
           approvalPolicy,
           ...(host ? { approvalsReviewer: "user" } : {}),
           ...(permissions
-            ? { permissions, environments: [] }
+            ? profileSelection
             : {
                 sandboxPolicy: host
                   ? {
