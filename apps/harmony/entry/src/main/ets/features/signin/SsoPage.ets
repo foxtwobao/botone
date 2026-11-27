@@ -31,14 +31,16 @@ export struct SsoPage {
           })
           .onErrorReceive((event: OnErrorReceiveEvent): void => {
             // A failed load ends the flow like a closed page would; only the main frame counts.
-            if (event.request.isMainFrame()) {
-              this.cancel();
+            if (event.request.isMainFrame() && this.cancel()) {
+              this.popQuiet();
             }
           })
           .onSslErrorEventReceive((event: OnSslErrorEventReceiveEvent): void => {
             // An untrusted certificate is never this server: cancel, do not proceed.
             event.handler.handleCancel();
-            this.cancel();
+            if (this.cancel()) {
+              this.popQuiet();
+            }
           })
           .javaScriptAccess(true)
           .domStorageAccess(true)
@@ -62,13 +64,13 @@ export struct SsoPage {
     })
   }
 
-  /** The one completion: a rakazo://sign-in main-frame navigation. Subframes are ignored
-   *  (blocked, never completed). */
+  /** Every rakazo://sign-in navigation is blocked (a duplicate never navigates); only the
+   *  first main-frame event settles the flow. Subframes are ignored (blocked, never completed). */
   private intercept(target: string, mainFrame: boolean): boolean {
-    if (this.completed || !this.isCallback(target)) {
+    if (!this.isCallback(target)) {
       return false;
     }
-    if (!mainFrame) {
+    if (!mainFrame || this.completed) {
       return true;
     }
     this.completed = true;
@@ -88,14 +90,16 @@ export struct SsoPage {
     return parsed.protocol.toLowerCase() === 'rakazo:' && parsed.host === 'sign-in';
   }
 
-  /** The person closed the page (back gesture, dismiss, a failed load): not an error. */
-  private cancel(): void {
+  /** The person closed the page (back gesture, dismiss, a failed load): not an error. Returns
+   *  true only when this call settled the flow, so the caller knows the page is still up. */
+  private cancel(): boolean {
     if (this.completed) {
-      return;
+      return false;
     }
     this.completed = true;
     completeAuthSession(null);
     this.clearIncognitoJar();
+    return true;
   }
 
   private popQuiet(): void {

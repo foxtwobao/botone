@@ -96,9 +96,9 @@ export interface AuthenticateResult {
  * flow was away means the token is not saved here — it is recorded for revocation instead.
  * Throws with user copy when the session could not be kept or saved.
  */
-export async function saveIssuedSession(token: string, apiBase: string, generation: number): Promise<void> {
+export async function saveIssuedSession(token: string, apiBase: string, generation: number,
+  headers: Record<string, string> = serverHeaders(apiBase)): Promise<void> {
   // A switch replaces the stored headers; the cleanup below may still need this server's.
-  const headers = serverHeaders(apiBase);
   const current = (): boolean =>
     apiBase === currentApiBase() && generation === currentSessionGeneration();
   let saved = false;
@@ -130,6 +130,9 @@ async function authenticate(path: string, input: Record<string, Object>,
   missingSession: string): Promise<AuthenticateResult> {
   const apiBase = currentApiBase();
   const generation = currentSessionGeneration();
+  // Captured before the request: a switch mid-flight replaces the saved set, and the
+  // revocation record for the token this flow issues must still carry this server's headers.
+  const headers = serverHeaders(apiBase);
   const auth = await postAuth(path, input, apiBase);
   const ok = auth.response.status >= 200 && auth.response.status < 300;
   if (!ok || auth.invalidJson) {
@@ -144,7 +147,7 @@ async function authenticate(path: string, input: Record<string, Object>,
   if (!token) {
     throw new Error(missingSession);
   }
-  await saveIssuedSession(token, apiBase, generation);
+  await saveIssuedSession(token, apiBase, generation, headers);
   const result: AuthenticateResult = { verificationRequired: false };
   return result;
 }
@@ -223,14 +226,21 @@ export async function requestPasswordReset(email: string, redirectTo: string): P
 }
 
 /** Who a bearer token belongs to: better-auth's get-session, read the way mobile does before
- *  an SSO token is kept. Returns the user id, '' when the answer is not a session. */
-export async function sessionUser(apiBase: string, token: string): Promise<string> {
-  const headers: Record<string, string> = {};
-  headers['origin'] = 'rakazo://';
-  headers['authorization'] = `Bearer ${token}`;
+ *  an SSO token is kept. `headers` are the access headers captured when the flow started
+ *  (same-origin only; a third-party authorization domain never receives them). Returns the
+ *  user id, '' when the answer is not a session. */
+export async function sessionUser(apiBase: string, token: string,
+  headers: Record<string, string> = serverHeaders(apiBase)): Promise<string> {
+  const requestHeaders: Record<string, string> = {};
+  for (const key of Object.keys(headers)) {
+    requestHeaders[key] = headers[key];
+  }
+  requestHeaders['origin'] = 'rakazo://';
+  requestHeaders['authorization'] = `Bearer ${token}`;
   let response: HttpResponseView;
   try {
-    response = await getJson(`${apiBase}/api/auth/get-session`, headers, RPC_TIMEOUT_MS, MAX_AUTH_RESPONSE_BYTES);
+    response = await getJson(`${apiBase}/api/auth/get-session`, requestHeaders, RPC_TIMEOUT_MS,
+      MAX_AUTH_RESPONSE_BYTES);
   } catch (err) {
     return '';
   }

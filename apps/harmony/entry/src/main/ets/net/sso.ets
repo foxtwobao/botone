@@ -6,6 +6,7 @@
 // never logged.
 import { authErrorText, authResponseErrorText } from './errors';
 import { currentApiBase } from './server-store';
+import { serverHeaders } from './server-headers';
 import { currentSessionGeneration } from './session';
 import { postAuth, saveIssuedSession, sessionUser, tokenFromAuthResponse } from './auth';
 import { url } from '@kit.ArkTS';
@@ -26,10 +27,23 @@ export function proxyUrl(apiBase: string, authorizationUrl: string, oauthState: 
   return `${apiBase}/api/auth/expo-authorization-proxy?${params.toString()}`;
 }
 
-/** The OAuth state cookie from a sign-in/social response's set-cookie header, '' when absent. */
+/** The raw Set-Cookie entry (name=value plus attributes) the incognito jar must receive, ''
+ *  when absent. configCookieSync writes entries in this form; the value stays encoded as the
+ *  server sent it. */
 export function stateCookieFromHeaders(setCookie: string): string {
-  const match = /(?:^|,\s*)(?:__Secure-)?better-auth\.oauth_state=([^;,]*)/.exec(setCookie);
-  const encoded = match !== null ? match[1] : '';
+  const match = /(?:^|,\s*)((?:__Secure-)?better-auth\.oauth_state=[^,]*)/.exec(setCookie);
+  return match !== null ? match[1] : '';
+}
+
+/** The decoded state value the proxy URL's oauthState parameter carries, '' when absent or
+ *  undecodable. Never the jar write's form — that is stateCookieFromHeaders's raw entry. */
+export function stateValueFromHeaders(setCookie: string): string {
+  const entry = stateCookieFromHeaders(setCookie);
+  const eq = entry.indexOf('=');
+  if (eq < 0) {
+    return '';
+  }
+  const encoded = entry.slice(eq + 1).split(';')[0] ?? '';
   if (!encoded) {
     return '';
   }
@@ -53,6 +67,9 @@ export async function continueWithSso(provider: string,
   openSession: (url: string, stateCookie: string) => Promise<string | null>): Promise<boolean> {
   const apiBase = currentApiBase();
   const generation = currentSessionGeneration();
+  // The access headers the original server was opened with: captured now, so the verify and
+  // any late revocation still carry them even after a switch (which replaces the saved set).
+  const headers = serverHeaders(apiBase);
   const requireCurrentSession = (): void => {
     if (apiBase !== currentApiBase() || generation !== currentSessionGeneration()) {
       throw new Error(t('Could not continue'));
@@ -82,14 +99,16 @@ export async function continueWithSso(provider: string,
   if (authorizationUrl === null) {
     throw new Error(t('Could not continue'));
   }
-  const stateCookie = stateCookieFromHeaders(auth.response.headers['set-cookie'] ?? '');
+  const setCookie = auth.response.headers['set-cookie'] ?? '';
+  const stateCookie = stateCookieFromHeaders(setCookie);
+  const stateValue = stateValueFromHeaders(setCookie);
   requireCurrentSession();
-  const callback = await openSession(proxyUrl(apiBase, authorizationUrl, stateCookie), stateCookie);
+  const callback = await openSession(proxyUrl(apiBase, authorizationUrl, stateValue), stateCookie);
   if (callback === null) {
     // The person closed the auth session: no error, no state change.
     return false;
   }
-  return await completeSsoSignIn(callback, apiBase, generation);
+  return await completeSsoSignIn(callback, apiBase, generation, headers);
 }
 
 /** https only, with a state parameter; anything else is a flow the server cannot answer. */
@@ -107,19 +126,19 @@ function parseAuthorizationUrl(raw: string): string | null {
 }
 
 /** Parses and saves the callback the auth session returned. Exported for the seam: a system
- *  browser fallback lands in the same place. */
-export async function completeSsoSignIn(callbackUrl: string, apiBase: string,
-  generation: number): Promise<boolean> {
+ *  browser fallback lands in the same place. `headers` are the access headers captured when
+ *  the flow started, for the same-origin verify and any late revocation record. */
+export async function completeSsoSignIn(callbackUrl: string, apiBase: string, generation: number,
+  headers: Record<string, string> = serverHeaders(apiBase)): Promise<boolean> {
   const callback = parseCallbackUrl(callbackUrl);
   if (callback === null) {
     throw new Error(t('Could not continue'));
   }
   const params = callback.params;
-  const errorValue = params.get('error');
-  const error = errorValue !== null && errorValue !== undefined ? errorValue : '';
-  if (error) {
+  // Presence decides (mobile parity): `error=` with an empty value is an error too.
+  if (params.has('error')) {
     const body: Record<string, Object> = {};
-    body['code'] = error;
+    body['code'] = params.get('error') ?? '';
     throw new Error(authErrorText(body, t('Could not continue')));
   }
   if (currentApiBase() !== apiBase || generation !== currentSessionGeneration()) {
@@ -131,14 +150,14 @@ export async function completeSsoSignIn(callbackUrl: string, apiBase: string,
   if (!token) {
     throw new Error(t('Sign-in did not return a session'));
   }
-  const user = await sessionUser(apiBase, token);
+  const user = await sessionUser(apiBase, token, headers);
   if (!user) {
     throw new Error(t('Could not continue'));
   }
   if (currentApiBase() !== apiBase || generation !== currentSessionGeneration()) {
     throw new Error(t('Could not continue'));
   }
-  await saveIssuedSession(token, apiBase, generation);
+  await saveIssuedSession(token, apiBase, generation, headers);
   return true;
 }
 

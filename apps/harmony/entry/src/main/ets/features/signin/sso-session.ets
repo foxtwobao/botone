@@ -9,7 +9,7 @@ import { t } from '../../i18n/i18n';
 
 export interface SsoRoute {
   url: string;
-  /** The state cookie (Set-Cookie form) the flow must hand the incognito jar. */
+  /** The raw state-cookie Set-Cookie entry (name=value with attributes) the jar must hold. */
   stateCookie: string;
 }
 
@@ -62,4 +62,3 @@ export function takeSsoRoute(param: Object | null | undefined): SsoRoute | null 
   const route = param as SsoRoute;
   return typeof route.url === 'string' && route.url !== '' ? route : null;
 }
-
