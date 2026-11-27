@@ -27,7 +27,8 @@ describe("host descendant ownership admission", () => {
         callback(new Error(diagnostic)),
       );
       expect(await hostProcessOwnershipAvailable("linux")).toBe(false);
-      if (process.platform !== "win32") {
+      // inspectHostHarness() reads the real platform, and probes the host its own way off Linux.
+      if (process.platform === "linux") {
         const adapter = await inspectHostHarness();
         expect(adapter.profile.status).toBe("unsupported");
         await expect(adapter.launch("/fixture/workspace")).rejects.toThrow("unavailable");

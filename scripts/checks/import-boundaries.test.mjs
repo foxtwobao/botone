@@ -66,6 +66,11 @@ function isTestCode(file) {
   );
 }
 
+/** Build and codegen scripts run at dev time only, so devDependencies suffice for them too. */
+function isBuildScript(file) {
+  return /(?:^|\/)scripts\//.test(file);
+}
+
 const RULES = {
   leaf: {
     title: "leaf packages import no workspace package",
@@ -105,7 +110,11 @@ const RULES = {
   },
   undeclared: {
     title: "imported workspace packages are declared dependencies",
-    fix: 'Add it to this package.json as "workspace:*": under dependencies when shipped code imports it, under devDependencies when only tests do.',
+    fix: 'Add it to this package.json as "workspace:*": under dependencies when shipped code imports it, under devDependencies when only tests or build scripts do.',
+  },
+  bundled: {
+    title: "the desktop app lists the workspace packages it bundles as devDependencies",
+    fix: "The build compiles workspace code into the app, and the packager would also ship each of the package's own dependencies. Move it to devDependencies.",
   },
   unused: {
     title: "declared workspace dependencies are imported",
@@ -187,7 +196,7 @@ function findEagerImports(sources) {
   const shipped = sources.filter(
     ({ file }) =>
       !isTestCode(file) &&
-      !/(?:^|\/)scripts\//.test(file) &&
+      !isBuildScript(file) &&
       !client.some((dir) => file.startsWith(`${dir}/`)),
   );
   const lazy = new Set(
@@ -290,7 +299,7 @@ function findViolations(sources, workspaces) {
         // package reached by path must stay declared until that import goes through its name.
         used.any.add(target);
         if (!relative) used.named.add(target);
-        if (!relative && !testCode) used.shipped.add(target);
+        if (!relative && !testCode && !isBuildScript(file)) used.shipped.add(target);
       }
       if (LEAF_PACKAGES.includes(owner)) flag("leaf");
       if (owner === CORE && !CORE_MAY_IMPORT.includes(target)) flag("core");
@@ -312,7 +321,13 @@ function findViolations(sources, workspaces) {
     const file = `${workspace.dir}/package.json`;
     const dirOf = (name) => byName.get(name)?.dir;
     const declared = [...workspace.dependencies, ...workspace.devDependencies];
-    const shippable = BUNDLED.includes(workspace.dir) ? declared : workspace.dependencies;
+    const bundled = BUNDLED.includes(workspace.dir);
+    const shippable = bundled ? declared : workspace.dependencies;
+    if (bundled) {
+      for (const name of workspace.dependencies) {
+        violations.push({ rule: "bundled", file, specifier: name });
+      }
+    }
     for (const target of used.named) {
       const names = used.shipped.has(target) ? shippable : declared;
       if (!names.some((name) => dirOf(name) === target)) {
@@ -439,7 +454,9 @@ test("resolves specifiers to packages and reports each rule", () => {
     });
   const workspaces = [
     workspace("apps/api", ["core", "testkit"]),
-    workspace("apps/desktop", [], { devDependencies: { [scoped("core")]: "workspace:*" } }),
+    workspace("apps/desktop", ["contracts"], {
+      devDependencies: { [scoped("core")]: "workspace:*" },
+    }),
     workspace("apps/web", ["ui-web", "db", "contracts"], {
       devDependencies: { [scoped("core")]: "workspace:*" },
     }),
@@ -452,7 +469,10 @@ test("resolves specifiers to packages and reports each rule", () => {
   const sources = [
     { file: "apps/api/src/index.ts", specifiers: [scoped("core"), scoped("testkit")] },
     { file: "apps/api/src/index.test.ts", specifiers: [scoped("testkit"), "./index.js"] },
-    { file: "apps/desktop/src/main/main.ts", specifiers: [scoped("core")] },
+    // A build script may use a devDependency; an undeclared package is still undeclared.
+    { file: "apps/web/scripts/codegen.ts", specifiers: [scoped("core")] },
+    { file: "apps/api/scripts/seed.ts", specifiers: [scoped("db")] },
+    { file: "apps/desktop/src/main/main.ts", specifiers: [scoped("core"), scoped("contracts")] },
     {
       file: "apps/web/src/app.tsx",
       specifiers: [
@@ -497,6 +517,7 @@ test("resolves specifiers to packages and reports each rule", () => {
       "app: packages/db/src/index.ts -> @rakazo/api",
       "app: packages/testkit/src/browser.ts -> @rakazo/web",
       "app: packages/testkit/src/index.ts -> ../../../apps/api/src/app.ts",
+      "bundled: apps/desktop/package.json -> @rakazo/contracts",
       "core: packages/core/src/index.ts -> @rakazo/db",
       "exports: apps/web/src/app.tsx -> @rakazo/ui-web/src/internal",
       "leaf: packages/contracts/src/index.ts -> @rakazo/core",
@@ -508,6 +529,7 @@ test("resolves specifiers to packages and reports each rule", () => {
       "runtime: apps/web/src/page.tsx -> @rakazo/core/node/screen",
       "server: apps/web/src/app.tsx -> @rakazo/db",
       "testkit: apps/api/src/index.ts -> @rakazo/testkit",
+      "undeclared: apps/api/package.json -> @rakazo/db",
       "undeclared: apps/web/package.json -> @rakazo/core",
       "unused: packages/ui-web/package.json -> @rakazo/contracts",
       "vendor: packages/adapters/src/providers/computer/one/one-sandbox.ts -> ../two/two-sandbox.js",

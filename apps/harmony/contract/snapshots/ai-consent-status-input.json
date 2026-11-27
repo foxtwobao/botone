@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "type": "string"
+    },
+    "groupId": {
+      "type": "string"
+    },
+    "settingsScope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "uses": {
+      "items": {
+        "enum": ["model", "voice", "memory"],
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "type": "object"
+}

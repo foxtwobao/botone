@@ -54,7 +54,11 @@ import {
 } from "../tools/lazy-tool-catalog.js";
 import { mcpToolAppResourceUri, readMcpApp } from "./mcp-app.js";
 import { closeMcpResource } from "./mcp-close.js";
-import { UNAVAILABLE_TOOL, unavailableTool } from "./mcp-connector.tool-definition.js";
+import {
+  mcpCatalogGroups,
+  UNAVAILABLE_TOOL,
+  unavailableTool,
+} from "./mcp-connector.tool-definition.js";
 import type { McpOAuthBroker, OAuthMaterial } from "./mcp-oauth.js";
 import {
   accessTokenExpiresAt,
@@ -72,6 +76,7 @@ import {
   isNpxCommand,
   parseNpxLaunch,
 } from "./mcp-package-installer.js";
+import { reportExpiredMcpSignIn } from "./mcp-reconnect-card.js";
 import type { McpServerHealthUpdate } from "./mcp-server-health.js";
 import { needsMcpOAuthClient, recordMcpServerHealth } from "./mcp-server-health.js";
 import { mcpToolAllowed } from "./mcp-tool-permissions.js";
@@ -254,8 +259,9 @@ export type McpConnectorOptions = {
   stdioEnabled?: boolean;
   allowedCommands?: string[];
   network?: RemoteTransportDependencies;
-  /** Audit sink for failed discovery. Without it the log line stays the only trace. */
-  events?: Pick<ThreadEvents, "append">;
+  /** Audit sink for failed discovery. Without it the log line stays the only trace. With
+   * `notify`, an expired sign-in also leaves its authorization card in the run's chat. */
+  events?: Pick<ThreadEvents, "append"> & Partial<Pick<ThreadEvents, "notify">>;
   allowPrivateEndpoint?: boolean;
   /** Where `npx` packages are installed; see `defaultMcpPackagesRoot`. */
   packagesDir?: string;
@@ -507,10 +513,12 @@ export class McpConnector implements ConnectorProvider {
       }),
     ]);
     const assignments = [...assigned, ...shared.map(sharedAssignment)];
+    const catalogGroups = mcpCatalogGroups(assignments.map(({ server }) => server));
     const groups = await Promise.all(
       assignments.map(async (assignment): Promise<ConnectorTool[]> => {
         const startedAt = Date.now();
         const server = assignment.server;
+        const catalogGroup = catalogGroups.get(server.id);
         const key = this.sessionKey(server, context);
         const live = this.sessions.get(key)?.revision === server.revision;
         // As an idle connection that is closed and reopened would, a session nobody used for
@@ -524,6 +532,7 @@ export class McpConnector implements ConnectorProvider {
             unavailableTool(
               server,
               "it is still installing its package; its tools will be available on a later turn",
+              catalogGroup,
             ),
           ];
         // A server that just failed is not retried on every turn; a live session, a new
@@ -536,7 +545,7 @@ export class McpConnector implements ConnectorProvider {
           Date.now() < backoff.until &&
           !recoveredSince(server, backoff.since)
         )
-          return [unavailableTool(server, backoff.reason)];
+          return [unavailableTool(server, backoff.reason, catalogGroup)];
         let entry: SessionEntry | undefined;
         // Past the deadline this run stops waiting for its own tools/list request only;
         // the session and other calls on it carry on.
@@ -573,7 +582,7 @@ export class McpConnector implements ConnectorProvider {
                 resourceId: assignment.serverId,
                 resourceRevision: assignment.server.revision,
                 toolName: tool.name,
-                catalogGroup: assignment.server.slug,
+                catalogGroup,
                 appResourceUri: mcpToolAppResourceUri(tool),
               },
             }));
@@ -637,7 +646,15 @@ export class McpConnector implements ConnectorProvider {
             startedAt,
             secrets,
           );
-          return [unavailableTool(assignment.server, reason)];
+          // Only the bot's own assignment: the card's Authorize re-approves it.
+          if ("botId" in assignment)
+            await reportExpiredMcpSignIn(
+              { prisma: this.prisma, events: this.options.events },
+              context,
+              server,
+              error,
+            );
+          return [unavailableTool(server, reason, catalogGroup)];
         }
       }),
     );
@@ -1267,7 +1284,9 @@ export class McpConnector implements ConnectorProvider {
           const tokens = await provider?.tokens();
           const expiresAt = accessTokenExpiresAt(material.oauth);
           if (!tokens || (expiresAt !== undefined && Date.now() >= expiresAt))
-            throw new McpReauthorizationRequiredError(server.id);
+            throw provider?.renewalPending
+              ? new McpConnectFailure("MCP sign-in could not be renewed yet", "unreachable")
+              : new McpReauthorizationRequiredError(server.id);
           values = {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,

@@ -7,7 +7,7 @@ import type { createApp } from "@rakazo/api/app";
 import type { HostFrame, HostStart } from "@rakazo/contracts";
 import { computerUsingRuns } from "@rakazo/core";
 import { createThreadMessageInTransaction, runAsSystem, runAsTenant } from "@rakazo/db";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
 import { asSystem } from "./system-db.js";
 
@@ -50,6 +50,9 @@ integration("desktop-originated runs through the authenticated API", () => {
         notifyOnFinish: false,
       })
     ).id;
+  });
+  // Vitest undoes spies before each test, so the guard is set again before each one.
+  beforeEach(() => {
     vi.spyOn(app.runtime, "run").mockImplementation(() => {
       throw new Error("Desktop work must never reach the server model");
     });

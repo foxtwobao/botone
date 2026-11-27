@@ -1,9 +1,22 @@
+import type { ThinkingLevel } from "@rakazo/contracts";
 import { expect, it, vi } from "vitest";
 import {
   createModelAccountClient,
   ModelAccountClientError,
   parseAccountModelLimits,
 } from "./model-account-client.js";
+
+it("sends a chosen thinking level, or null to follow the connection again", async () => {
+  const transport = vi.fn<typeof fetch>(async () => Response.json({ ok: true }));
+  const client = createModelAccountClient(transport);
+  await client.saveLimits("fixture", "model", parseAccountModelLimits("", "", "high")!);
+  await client.saveLimits("fixture", "model", parseAccountModelLimits("", "", null)!);
+  expect(transport.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).limits)).toEqual([
+    { thinkingLevel: "high" },
+    { thinkingLevel: null },
+  ]);
+  expect(parseAccountModelLimits("", "", "turbo" as ThinkingLevel)).toBeNull();
+});
 
 it("saves or clears one model's limits without starting authorization", async () => {
   const transport = vi.fn<typeof fetch>(async () => Response.json({ ok: true }));

@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "configured": {
+      "type": "boolean"
+    },
+    "provider": {
+      "type": ["string", "null"]
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "transcribe": {
+      "type": "boolean"
+    },
+    "voiceId": {
+      "type": "string"
+    }
+  },
+  "required": ["configured", "ready", "transcribe", "provider", "voiceId"],
+  "type": "object"
+}

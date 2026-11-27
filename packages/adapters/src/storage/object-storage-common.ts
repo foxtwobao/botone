@@ -8,12 +8,10 @@ export const PART_BYTES = 16 * 1024 * 1024;
  */
 export const PART_CONCURRENCY = 3;
 
-export interface ObjectStorageConnection {
+export interface ObjectStorageTarget {
   bucket: string;
   /** Service URL; empty uses the backend's default endpoint. */
   endpoint?: string;
-  accessKeyId: string;
-  secretAccessKey: string;
   /** Prepended to every key, so one bucket can hold several deployments. */
   prefix: string;
 }
@@ -31,22 +29,21 @@ export class ObjectStorageUnavailableError extends ClientError {
   }
 }
 
+export interface ObjectStorageConnection extends ObjectStorageTarget {
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
 /**
- * The `OBJECT_STORAGE_*` settings every backend shares. `OBJECT_STORAGE_BUCKET` turns object
- * storage on. Credentials are required rather than taken from an SDK's default chain, so object
- * storage never borrows credentials configured for something else.
+ * The `OBJECT_STORAGE_*` settings every backend shares, apart from credentials: the bucket turns
+ * object storage on, the endpoint overrides the backend's default and the prefix keeps one bucket
+ * per deployment. `OBJECT_STORAGE_BUCKET` unset means object storage is off.
  */
-export function objectStorageConnectionFromEnv(
+export function objectStorageTargetFromEnv(
   env: NodeJS.ProcessEnv,
-): ObjectStorageConnection | undefined {
+): ObjectStorageTarget | undefined {
   const bucket = env.OBJECT_STORAGE_BUCKET?.trim();
   if (!bucket) return undefined;
-  const accessKeyId = env.OBJECT_STORAGE_ACCESS_KEY_ID?.trim();
-  const secretAccessKey = env.OBJECT_STORAGE_SECRET_ACCESS_KEY?.trim();
-  if (!accessKeyId || !secretAccessKey)
-    throw new Error(
-      "OBJECT_STORAGE_ACCESS_KEY_ID and OBJECT_STORAGE_SECRET_ACCESS_KEY are required with OBJECT_STORAGE_BUCKET",
-    );
   const endpoint = env.OBJECT_STORAGE_ENDPOINT?.trim() || undefined;
   if (endpoint && !/^https?:\/\//.test(endpoint))
     throw new Error("OBJECT_STORAGE_ENDPOINT must be an http(s) URL");
@@ -57,7 +54,27 @@ export function objectStorageConnectionFromEnv(
   while (start < end && rawPrefix[start] === "/") start += 1;
   while (end > start && rawPrefix[end - 1] === "/") end -= 1;
   const prefix = rawPrefix.slice(start, end);
-  return { bucket, endpoint, accessKeyId, secretAccessKey, prefix: prefix ? `${prefix}/` : "" };
+  return { bucket, endpoint, prefix: prefix ? `${prefix}/` : "" };
+}
+
+/**
+ * The shared settings plus key-based credentials. Credentials are required rather than taken from
+ * an SDK's default chain, so object storage never borrows credentials configured for something
+ * else. Backends that authenticate differently, such as the Azure backend's Entra ID kinds, read
+ * their own credentials and take only the target from {@link objectStorageTargetFromEnv}.
+ */
+export function objectStorageConnectionFromEnv(
+  env: NodeJS.ProcessEnv,
+): ObjectStorageConnection | undefined {
+  const target = objectStorageTargetFromEnv(env);
+  if (!target) return undefined;
+  const accessKeyId = env.OBJECT_STORAGE_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = env.OBJECT_STORAGE_SECRET_ACCESS_KEY?.trim();
+  if (!accessKeyId || !secretAccessKey)
+    throw new Error(
+      "OBJECT_STORAGE_ACCESS_KEY_ID and OBJECT_STORAGE_SECRET_ACCESS_KEY are required with OBJECT_STORAGE_BUCKET",
+    );
+  return { ...target, accessKeyId, secretAccessKey };
 }
 
 /** Regroups a stream into buffers of exactly `size` bytes, except a shorter last one. */

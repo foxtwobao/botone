@@ -1,0 +1,16 @@
+{
+  "items": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "label": {
+        "type": "string"
+      }
+    },
+    "required": ["id", "label"],
+    "type": "object"
+  },
+  "type": "array"
+}

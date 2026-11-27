@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "steps",
+      "type": "string"
+    },
+    "steps": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": ["label", "count"],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": ["kind", "steps"],
+  "type": "object"
+}

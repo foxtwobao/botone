@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "BotONE"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "BotONE"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "BotONE"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "Turn your voice into text as you dictate a message."
+    }
+  ]
+}

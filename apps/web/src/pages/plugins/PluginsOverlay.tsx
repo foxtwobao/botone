@@ -9,6 +9,7 @@ import type {
 import { MCP_OAUTH_CLIENT_REQUIRED, mcpServerConnection } from "@rakazo/contracts";
 import type { connectedAppMarks } from "@rakazo/core";
 import {
+  addedMcpEndpoints,
   CONNECTION_CATALOG_PAGE_SIZE,
   catalogItemKey,
   customMcpServerInput,
@@ -82,7 +83,7 @@ export function PluginsOverlay({
   const sourceAction = useRef(0);
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [view, setView] = useState<OverlayView>("browse");
-  const [publicCatalogQuery, setPublicCatalogQuery] = useState("");
+  const [publicTerm, setPublicTerm] = useState("");
   // Where a source form returns: the domain search that prefilled it, or browse.
   const [sourceBack, setSourceBack] = useState<OverlayView>("browse");
   const [plugin, setPlugin] = useState<PluginSelection | null>(null);
@@ -241,6 +242,10 @@ export function PluginsOverlay({
   };
 
   function beginSource(kind: SourceKind, preset: McpSourcePreset | null = null) {
+    if (preset?.url && addedMcpEndpoints(sources, mcpServers).has(preset.url)) {
+      openAddView("manage");
+      return;
+    }
     setPlugin(null);
     setDetailKey(null);
     setSourceBack("browse");
@@ -259,7 +264,7 @@ export function PluginsOverlay({
     if (!surface.source || (surface.kind !== "mcp" && surface.kind !== "openapi")) return;
     setSourceBack("domain");
     setView("source");
-    sourceForm.startFromCatalog(result, surface, surface.source);
+    sourceForm.startFromCatalog(surface.kind, result.name, surface.source, surface.auth);
     setSourceError(null);
     setOauthError(null);
     sourceAction.current += 1;
@@ -468,10 +473,7 @@ export function PluginsOverlay({
                 presets={sourcePresets}
                 onGithub={() => openAddView("github")}
                 onSource={beginSource}
-                onBrowseMcp={() => {
-                  setPublicCatalogQuery("");
-                  openAddView("browseMcp");
-                }}
+                onBrowseMcp={() => openAddView("browseMcp")}
                 onDomainSearch={catalogFeedEnabled ? () => openAddView("domain") : undefined}
                 onOpenMcp={onOpenMcp}
               />
@@ -653,7 +655,6 @@ export function PluginsOverlay({
               />
               <IntegrationSetup
                 botId={activeBotId}
-                initialQuery={publicCatalogQuery || undefined}
                 onDone={() => {
                   setView("manage");
                   void refresh().catch((err: unknown) =>
@@ -668,9 +669,16 @@ export function PluginsOverlay({
               state={state}
               tileContext={tileContext}
               onOpenPlugin={openPlugin}
-              onSearchPublic={(publicQuery) => {
-                setPublicCatalogQuery(publicQuery);
-                openAddView("browseMcp");
+              publicTerm={publicTerm}
+              onSearchPublic={setPublicTerm}
+              onOpenPreset={(preset) => beginSource("mcp", preset)}
+              onOpenMcp={(server) => {
+                if (addedMcpEndpoints(sources, mcpServers).has(server.source)) {
+                  openAddView("manage");
+                  return;
+                }
+                beginSource("mcp");
+                sourceForm.startFromCatalog("mcp", server.name, server.source, server.auth);
               }}
             />
           )}

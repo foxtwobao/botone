@@ -11,6 +11,7 @@
     "./host-screen": "./src/computers/screens/host-screen.ts",
     "./meeting-media": "./src/meetings/meeting-media-grant.ts",
     "./model-json": "./src/models/model-json.ts",
+    "./personal-cli-runtime": "./src/cli-models/personal-cli-runtime.ts",
     "./host-execution": "./src/native-harness/host-execution.ts",
     "./host-computer": "./src/native-harness/host-computer.ts",
     "./host-harness": "./src/native-harness/host-desktop.ts",
@@ -18,7 +19,7 @@
     "./user-device-client": "./src/computers/host/user-device-client.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit -p tsconfig.json",
+    "check": "tsrs --noEmit -p tsconfig.json",
     "test": "vitest run --root ../.. packages/adapters/src"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@alicloud/openapi-core": "1.0.9",
     "@aws-sdk/client-kms": "3.1164.0",
     "@aws-sdk/client-s3": "3.1164.0",
+    "@azure/identity": "4.14.1",
     "@azure/storage-blob": "12.34.0",
     "@boatdev/sdk": "1.13.0",
     "@boxd-sh/sdk": "0.3.0",
@@ -80,7 +82,6 @@
     "railway": "3.16.0",
     "sendblue": "3.21.2",
     "sharp": "0.35.5",
-    "shell-quote": "1.12.0",
     "typebox": "1.4.6",
     "undici": "8.12.4",
     "ws": "8.22.0",
@@ -95,6 +96,7 @@
     "@types/pg": "8.23.1",
     "@types/ws": "8.18.2",
     "fast-check": "4.10.2",
+    "shell-quote": "1.12.0",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
   }

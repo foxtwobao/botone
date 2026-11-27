@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "text": {
+      "maxLength": 20000,
+      "type": "string"
+    },
+    "voiceId": {
+      "maxLength": 120,
+      "type": "string"
+    }
+  },
+  "required": ["text"],
+  "type": "object"
+}

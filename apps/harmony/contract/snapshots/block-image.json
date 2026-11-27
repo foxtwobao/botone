@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifactId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "const": "image",
+      "type": "string"
+    },
+    "mimeType": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": ["kind", "artifactId", "name", "mimeType"],
+  "type": "object"
+}

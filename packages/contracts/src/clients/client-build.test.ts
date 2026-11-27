@@ -33,6 +33,10 @@ describe("client builds", () => {
       kind: "mobile",
       build: "20261001000000",
     });
+    expect(parseClientBuild(formatClientBuild("harmony", "20261001000000"))).toEqual({
+      kind: "harmony",
+      build: "20261001000000",
+    });
     for (const header of [null, "", "web", "web/", "cli/20261022093015", "web/2026/1", "web/abc"]) {
       expect(parseClientBuild(header)).toBeNull();
     }
@@ -43,6 +47,9 @@ describe("client builds", () => {
     expect(parseMinimumClientBuilds(" web=20261022093015 , mobile=20261001000000 ")).toEqual({
       web: "20261022093015",
       mobile: "20261001000000",
+    });
+    expect(parseMinimumClientBuilds("harmony=20261001000000")).toEqual({
+      harmony: "20261001000000",
     });
     expect(() => parseMinimumClientBuilds("20261022093015")).toThrow(/RAKAZO_MIN_CLIENT_BUILD/);
     expect(() => parseMinimumClientBuilds("desktop=20261022093015")).toThrow();
@@ -59,6 +66,12 @@ describe("client builds", () => {
     expect(clientUpdateRequired(null, minimums)).toBe(false);
     expect(clientUpdateRequired("web/old", minimums)).toBe(false);
     expect(clientUpdateRequired("web/20200101000000", {})).toBe(false);
+    // Each kind is gated by its own minimum only: harmony has none here, and a harmony minimum
+    // leaves mobile alone.
+    const harmonyMinimums = { harmony: "20261022093015" };
+    expect(clientUpdateRequired("harmony/20261022093014", harmonyMinimums)).toBe(true);
+    expect(clientUpdateRequired("mobile/20200101000000", harmonyMinimums)).toBe(false);
+    expect(clientUpdateRequired("harmony/20200101000000", minimums)).toBe(false);
   });
 
   it("recognizes the update-required error by code or status", () => {

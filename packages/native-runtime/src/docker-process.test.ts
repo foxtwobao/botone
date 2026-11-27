@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { Duplex, PassThrough } from "node:stream";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it as itEverywhere } from "vitest";
 import { computerMcpServer } from "./bridge-tools.js";
 import type { ComputerExec } from "./docker-process.js";
 import { launchDockerProcess } from "./docker-process.js";
@@ -54,6 +54,9 @@ async function fixture() {
   return dir;
 }
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// The process host program needs prctl(PR_SET_CHILD_SUBREAPER), /proc and abstract unix
+// sockets, which only the Linux computer has.
+const it = itEverywhere.skipIf(process.platform !== "linux");
 
 it("exchanges multiple protocol frames, Unicode and a confirmed natural exit", async () => {
   const workspace = await fixture();

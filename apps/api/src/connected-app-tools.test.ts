@@ -16,19 +16,19 @@ const actor: Actor = {
 
 function fixture(tools: ConnectorTool[], connected = true) {
   const discoverTools = vi.fn(async () => tools);
-  const findFirst = vi.fn(async () =>
-    connected ? { id: "connection-a", displayName: "Example", providerRef: "binding-a" } : null,
+  const findMany = vi.fn(async () =>
+    connected ? [{ id: "connection-a", displayName: "Example", providerRef: "binding-a" }] : [],
   );
   const deps = {
-    prisma: { connection: { findFirst } },
+    prisma: { connection: { findMany } },
     connectors: { managed: () => ({ discoverTools }) },
     env: { webOrigin: "https://example.test" },
   } as unknown as RouterDeps;
   const client = createRouterClient(createRouter(deps), { context: { actor } as never });
-  return { client, discoverTools, findFirst };
+  return { client, discoverTools, findMany };
 }
 
-it("displays app-defined names through the unchanged list API and preserves every run's identities", async () => {
+it("lists routed app tools by their identity names and preserves every run's identities", async () => {
   const f = creativeFixture();
   await f.connect();
   const before = await f.connector.discoverTools(f.context());
@@ -45,9 +45,9 @@ it("displays app-defined names through the unchanged list API and preserves ever
     provider: "creative",
   });
   expect(displayed.map((tool) => tool.name)).toEqual([
-    "View models",
-    "Create media",
-    "Check progress",
+    "creative_capabilities",
+    "creative_submit",
+    "creative_result",
   ]);
   for (const context of [f.context(), { ...f.context(), operationId: "connections.tools" }]) {
     const runtime = await f.connector.discoverTools(context);
@@ -62,7 +62,7 @@ it("preserves existing names for other adapters", async () => {
   const tool = { name: "example_action__1234567890abcdef", description: "Read", inputSchema: {} };
   const f = fixture([tool]);
   expect(await f.client.connections.tools({ connectorId: "example", provider: "example" })).toEqual(
-    [{ name: tool.name, description: tool.description }],
+    [{ name: tool.name, description: tool.description, approvalKey: tool.name }],
   );
 });
 

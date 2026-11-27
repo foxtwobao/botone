@@ -46,8 +46,8 @@ export class NoVoiceConfigured extends Error {
   }
 }
 
+export { MAX_TRANSCRIBE_BYTES } from "./transcribe-limit.js";
 export { isSpeechModelId, MAX_SPEAK_CHARS } from "./voice-http.js";
-export const MAX_TRANSCRIBE_BYTES = 8 * 1024 * 1024;
 
 export function voiceDeploymentModelSupported(
   provider: string,
@@ -82,10 +82,9 @@ export function voiceDeploymentConnectionSupported(
 }
 
 /** Undefined requires explicit operator acceptance of manual cost reconciliation. */
-export function voiceDeploymentUsageUnit(
+export function voiceTranscriptionUsageUnit(
   provider: string,
   model: string,
-  operation: "synthesize" | "transcribe",
 ): VoiceUsage["unit"] | undefined {
-  return knownVoiceProvider(provider)?.deploymentUsageUnit?.(operation, model);
+  return knownVoiceProvider(provider)?.transcriptionUsageUnit?.(model);
 }

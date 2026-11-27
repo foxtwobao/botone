@@ -65,6 +65,8 @@
       "change-password",
       "models",
       "integrations",
+      "mcp-server",
+      "tool-source",
       "voice",
       "ai-data-sharing",
       "labs",
@@ -117,6 +119,7 @@
       "approval-rule-add",
       "vault",
       "archived-bots",
+      "spaces",
       "space",
       "space-members"
     ]

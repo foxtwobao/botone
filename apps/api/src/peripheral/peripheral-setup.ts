@@ -4,8 +4,10 @@ import { answerComputerRequest } from "../computers/computer-control.js";
 import type { RouterDeps } from "../router.js";
 import { mountPeripheralRoutes } from "./peripheral-routes.js";
 
+export type PeripheralBridgeRuntime = Omit<Parameters<typeof createSpeechSummarizer>[0], "prisma">;
+
 type BridgeOptions = Pick<Parameters<typeof mountPeripheralRoutes>[2], "issuer" | "connection"> &
-  Omit<Parameters<typeof createSpeechSummarizer>[0], "prisma">;
+  PeripheralBridgeRuntime;
 
 export function loadPeripheralBridge(source: NodeJS.ProcessEnv) {
   const bridgeSecret = source.PERIPHERAL_BRIDGE_SECRET?.trim();

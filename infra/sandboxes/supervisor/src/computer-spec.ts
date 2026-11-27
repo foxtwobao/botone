@@ -7,6 +7,8 @@ import {
   screenPorts,
 } from "@rakazo/core/node/desktop-runtime";
 import type Docker from "dockerode";
+import type { ComputerGpu } from "./computer-gpu.js";
+import { BROWSER_GPU_ENV, computerGpuHostConfig } from "./computer-gpu.js";
 import type { ComputerLocale } from "./computer-locale.js";
 import { computerLocaleEnv } from "./computer-locale.js";
 
@@ -43,6 +45,7 @@ export const COMPUTER_IMAGE_CONTEXT_FILES = [
   "page_secrets.py",
   "install-agent-browser.sh",
   "rakazo-browser.desktop",
+  "mimeapps.list",
   "browser-policy.json",
   "embed.html",
   "clipboard-bridge.js",
@@ -666,6 +669,7 @@ export interface ComputerCreateInput {
   publishControlPort?: boolean;
   dns?: string[];
   mounts?: ComputerMount[];
+  gpu?: ComputerGpu;
   /** Docker's GPU device count, where -1 means all (see resolveComputerComputeGpus). */
   computeGpus?: number;
   /** PAC URL for the bot browser (see resolveComputerBrowserProxyPacUrl). */
@@ -702,6 +706,8 @@ export function containerCreateOptions(input: ComputerCreateInput) {
       "NPM_CONFIG_PREFIX=/home/rakazo/.local",
       "PIP_USER=1",
       ...(input.controlToken ? [`RAKAZO_COMPUTER_CONTROL_TOKEN=${input.controlToken}`] : []),
+      // Only the render node setting is for the browser; compute GPUs alone keep it in software.
+      ...(input.gpu ? [BROWSER_GPU_ENV] : []),
       ...computerLocaleEnv(input.locale),
       ...(input.browserProxyPacUrl ? [`${BROWSER_PROXY_PAC_ENV}=${input.browserProxyPacUrl}`] : []),
     ],
@@ -743,6 +749,7 @@ export function containerCreateOptions(input: ComputerCreateInput) {
       AutoRemove: false,
       NetworkMode: input.networkMode ?? "bridge",
       ...(input.dns ? { Dns: input.dns } : {}),
+      ...computerGpuHostConfig(input.gpu),
       // No driver named: Docker picks whichever one on the host provides GPUs.
       ...(input.computeGpus !== undefined
         ? { DeviceRequests: [{ Count: input.computeGpus, Capabilities: [["gpu"]] }] }

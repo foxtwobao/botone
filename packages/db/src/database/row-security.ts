@@ -109,6 +109,7 @@ export const ROW_SECURITY_MODELS: ReadonlySet<string> = new Set([
   "NativeInteraction",
   "BillingAuditEvent",
   "ComputerAllowanceGrant",
+  "MediaCharge",
   "PushRegistration",
   "CallPushDevice",
   "WorkActivityToken",
@@ -173,7 +174,6 @@ export const ROW_SECURITY_MODELS: ReadonlySet<string> = new Set([
   "ExternalMessage",
   "SteeringMessage",
   "UsageRecord",
-  "SpeechAllowance",
   "SpeechCost",
   "ScratchpadItem",
   "BotEmailMessage",
@@ -190,8 +190,10 @@ export const ROW_SECURITY_MODELS: ReadonlySet<string> = new Set([
   "AuditEvent",
   "Page",
   "PageVersion",
+  "PageImage",
   "PageGrant",
   "PageComment",
+  "PageReaderState",
   "PageRevisionRequest",
 ]);
 

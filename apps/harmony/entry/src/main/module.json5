@@ -1,0 +1,76 @@
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "EntryAbility",
+    "deviceTypes": [
+      "phone"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.INTERNET"
+      },
+      {
+        "name": "ohos.permission.MICROPHONE",
+        "reason": "$string:microphone_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "inuse"
+        }
+      }
+    ],
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "description": "$string:EntryAbility_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:EntryAbility_label",
+        "startWindowIcon": "$media:startIcon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          },
+          {
+            // The system share panel matches by type family (UTD), each declared on its own.
+            "actions": ["ohos.want.action.sendData"],
+            "uris": [
+              { "scheme": "file", "utd": "general.image", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.audio", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.video", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.text", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.composite-object", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.archive", "maxFileSupported": 100 },
+              { "scheme": "file", "utd": "general.file", "maxFileSupported": 100 }
+            ]
+          }
+        ]
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "EntryBackupAbility",
+        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
+        "type": "backup",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.backup",
+            "resource": "$profile:backup_config"
+          }
+        ],
+      }
+    ]
+  }
+}

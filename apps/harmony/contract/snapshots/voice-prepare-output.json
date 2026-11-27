@@ -1,0 +1,16 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "ready": {
+      "type": "boolean"
+    },
+    "utterances": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": ["ready", "utterances"],
+  "type": "object"
+}

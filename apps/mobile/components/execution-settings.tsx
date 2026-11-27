@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import type { BotExecutionConfiguration, ExecutionConnectionView } from "@rakazo/contracts";
 import { BotExecutionSchema, ExecutionConnectionSchema } from "@rakazo/contracts";
+import { bestEffort } from "@rakazo/logging/best-effort";
 import type { ComponentProps } from "react";
 import { useEffect, useState } from "react";
 import { Alert } from "react-native";
@@ -24,24 +25,25 @@ export function ExecutionSettings({
   useEffect(() => {
     let active = true;
     setRefreshing(true);
-    void (async () => {
-      const context = await captureApiRequestContext();
-      const [list, current] = await Promise.all([
-        rpc("executions/list", { botId }, { requestContext: context }),
-        rpc("executions/get", { botId }, { requestContext: context }),
-      ]);
-      const parsedConnections = ExecutionConnectionSchema.array().parse(list);
-      const parsedConfiguration = BotExecutionSchema.nullable().parse(current);
-      if (active) {
-        setRequestContext(context);
-        setConnections(parsedConnections);
-        setConfiguration(parsedConfiguration);
-      }
-    })()
-      .catch(() => {})
-      .finally(() => {
-        if (active) setRefreshing(false);
-      });
+    void bestEffort(
+      "load execution settings",
+      (async () => {
+        const context = await captureApiRequestContext();
+        const [list, current] = await Promise.all([
+          rpc("executions/list", { botId }, { requestContext: context }),
+          rpc("executions/get", { botId }, { requestContext: context }),
+        ]);
+        const parsedConnections = ExecutionConnectionSchema.array().parse(list);
+        const parsedConfiguration = BotExecutionSchema.nullable().parse(current);
+        if (active) {
+          setRequestContext(context);
+          setConnections(parsedConnections);
+          setConfiguration(parsedConfiguration);
+        }
+      })(),
+    ).finally(() => {
+      if (active) setRefreshing(false);
+    });
     return () => {
       active = false;
     };

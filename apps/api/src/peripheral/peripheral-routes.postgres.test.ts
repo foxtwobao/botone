@@ -21,9 +21,11 @@ import {
   runAsTenant,
 } from "@rakazo/db";
 import { Hono } from "hono";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import type { MockInstance } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeModelAccountSecret } from "../model-account-secret.js";
 import { mountPeripheralRoutes } from "./peripheral-routes.js";
+import { ensureVoiceBot } from "./voice-bot.js";
 
 const databaseUrl = process.env.VERIFY_DATABASE === "1" ? process.env.DATABASE_URL : undefined;
 const userId = "peripheral-fixture-user";
@@ -40,7 +42,6 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
   const app = new Hono();
   const secrets = new EncryptedSecretStore("fixture-encryption-key");
   const jobs = new InMemoryJobQueue();
-  vi.spyOn(jobs, "enqueue").mockResolvedValue(undefined);
   const connection = configuredModelAccount(
     JSON.stringify({
       provider: "reseller",
@@ -49,7 +50,7 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
       baseUrl: "https://models.example.test/v1",
     }),
   )!;
-  const ensure = vi.spyOn(connection.provider, "ensure").mockResolvedValue({ apiKey });
+  let ensure: MockInstance<typeof connection.provider.ensure>;
   let db: ReturnType<typeof createDb>;
   let events: ReturnType<typeof createThreadEvents>;
   let actor: { userId: string; spaceId: string; email: string; isDeploymentOwner: boolean };
@@ -75,6 +76,11 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
       if (text.startsWith(`event: ${event}\n`)) return JSON.parse(text.split("data: ")[1]!);
     }
   }
+
+  beforeEach(() => {
+    vi.spyOn(jobs, "enqueue").mockResolvedValue(undefined);
+    ensure = vi.spyOn(connection.provider, "ensure").mockResolvedValue({ apiKey });
+  });
 
   beforeAll(async () => {
     db = createDb(databaseUrl!);
@@ -256,12 +262,13 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
   });
 
   it("uses the voice model sent by the device even when the voice bot has a saved override", async () => {
-    const bot = await runAsTenant(actor, () =>
-      db.prisma.bot.update({
-        where: { spaceId_spawnKey: { spaceId: actor.spaceId, spawnKey: "peripheral:podone" } },
+    const bot = await runAsTenant(actor, async () => {
+      const botId = await ensureVoiceBot(db.prisma, actor);
+      return db.prisma.bot.update({
+        where: { id: botId },
         data: { modelId: mainModelId, modelProvider: OPENAI_COMPATIBLE_PROVIDER_ID },
-      }),
-    );
+      });
+    });
     const response = await chat("voice-model-updated", bridgeSecret, subject, nextModelId);
     expect(response.status).toBe(200);
     const reader = response.body!.getReader();

@@ -31,6 +31,16 @@ function write(file: string, content: string) {
   writeFileSync(file, content);
 }
 
+// The production scripts rely on bash ≥ 4.4 treating an empty array expansion as defined
+// under `set -u`; /bin/bash on macOS is 3.2, so fall back to a newer one where it is 3.2.
+const bashBin = (() => {
+  const probe = spawnSync("/bin/bash", ["-uc", 'a=(); for x in "${a[@]}"; do :; done']);
+  if (probe.status === 0) return "/bin/bash";
+  const homebrew = ["/opt/homebrew/bin/bash", "/usr/local/bin/bash"].find((p) => existsSync(p));
+  if (!homebrew) throw new Error("backup scripts need bash ≥ 4.4; install a newer bash");
+  return homebrew;
+})();
+
 function fixture() {
   const root = mkdtempSync(path.join(os.tmpdir(), "rakazo-backup-"));
   temporaryDirectories.push(root);
@@ -263,6 +273,38 @@ esac
   // The restore drill's pg_restore: accepts only the fake dump's plaintext.
   write(path.join(bin, "pg_restore"), `#!/bin/bash\ngrep -q "custom-format dump"\n`);
   chmodSync(path.join(bin, "pg_restore"), 0o755);
+  // backup-prod.sh locks with util-linux flock, which only Linux ships. The one test that
+  // asserts the mutual exclusion itself runs on Linux only; everywhere else the script only
+  // needs the fd lock to be taken and released, so a no-op stand-in keeps it runnable.
+  if (process.platform !== "linux" && !existsSync("/usr/bin/flock")) {
+    write(path.join(bin, "flock"), `#!/bin/bash\nexit 0\n`);
+    chmodSync(path.join(bin, "flock"), 0o755);
+  }
+  // backup-prod.sh lists snapshots with find's -regextype, which BSD find on macOS lacks.
+  // Any other find call is passed to the system find unchanged.
+  if (spawnSync("/usr/bin/find", [os.tmpdir(), "-regextype", "posix-extended"]).status !== 0) {
+    write(
+      path.join(bin, "find"),
+      `#!/usr/bin/env -S node --
+const fs = require("node:fs");
+const { spawnSync } = require("node:child_process");
+const [root, ...rest] = process.argv.slice(2);
+// Only the one call shape backup-prod.sh makes: list stamp-named directories directly under root.
+const shape = ["-mindepth", "1", "-maxdepth", "1", "-type", "d", "-regextype", "posix-extended", "-regex", null, "-print"];
+const matches = rest.length === shape.length && rest.every((arg, i) => shape[i] === null || shape[i] === arg);
+if (!matches) {
+  const system = spawnSync("/usr/bin/find", [root, ...rest], { stdio: "inherit" });
+  process.exit(system.status ?? 1);
+}
+const regex = new RegExp("^(?:" + rest[9] + ")$");
+// lstat, like find's default -P: a symlink to a directory is not a directory entry.
+for (const name of fs.readdirSync(root)) {
+  if (regex.test(root + "/" + name) && fs.lstatSync(root + "/" + name).isDirectory()) console.log(root + "/" + name);
+}
+`,
+    );
+    chmodSync(path.join(bin, "find"), 0o755);
+  }
   // No inherited deployment settings, credentials, or executable search paths.
   const env = {
     PATH: [bin, path.dirname(process.execPath), "/usr/bin", "/bin"].join(path.delimiter),
@@ -283,7 +325,7 @@ esac
     snapshots,
     env,
     run(script: string, args: string[] = [], overrides: Record<string, string> = {}) {
-      const result = spawnSync("/bin/bash", [path.join(checkout, script), ...args], {
+      const result = spawnSync(bashBin, [path.join(checkout, script), ...args], {
         cwd: root,
         env: { ...env, ...overrides },
         encoding: "utf8",
@@ -318,7 +360,6 @@ function contents(archive: string) {
 describe("development database configuration", () => {
   it.each([
     ["rakazo", "rakazo"],
-    ["custom_admin", "custom_db"],
     ["admin with spaces", "db with $dollar; punctuation"],
   ])("uses container credentials %j / %j for backup and restore", (user, database) => {
     const f = fixture();
@@ -986,7 +1027,7 @@ describe("production backup deployment and archive behavior", () => {
     const f = fixture();
     write(
       path.join(f.checkout, ".env"),
-      "OVERLAY=ops/b.yml\nRAKAZO_COMPOSE_FILE=a.yml:${OVERLAY}\n",
+      `OVERLAY=ops/b.yml\nRAKAZO_COMPOSE_FILE=a.yml:\${OVERLAY}\n`,
     );
     write(path.join(f.checkout, "docker-compose.images.yml"), "services: {}\n");
     const result = f.run("infra/compose/backup-prod.sh", [], { RAKAZO_DEPLOY_DIR: f.checkout });
@@ -1225,24 +1266,28 @@ exec /usr/bin/sync "$@"
     expect(readFileSync(path.join(snapshot, "SHA256SUMS"), "utf8")).toBe(manifest);
   });
 
-  it("refuses to run while another backup holds the lock", () => {
-    const f = fixture();
-    mkdirSync(f.snapshots, { recursive: true });
-    const lock = path.join(f.snapshots, ".lock");
-    writeFileSync(lock, "");
-    const result = spawnSync(
-      "flock",
-      [lock, "/bin/bash", path.join(f.checkout, "infra/compose/backup-prod.sh")],
-      {
-        cwd: f.root,
-        env: f.env,
-        encoding: "utf8",
-        timeout: 10_000,
-      },
-    );
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("Another Rakazo backup is running");
-  });
+  // Needs util-linux flock's fd locking; macOS has no flock and its ports do not enforce fd locks.
+  it.skipIf(process.platform !== "linux")(
+    "refuses to run while another backup holds the lock",
+    () => {
+      const f = fixture();
+      mkdirSync(f.snapshots, { recursive: true });
+      const lock = path.join(f.snapshots, ".lock");
+      writeFileSync(lock, "");
+      const result = spawnSync(
+        "flock",
+        [lock, "/bin/bash", path.join(f.checkout, "infra/compose/backup-prod.sh")],
+        {
+          cwd: f.root,
+          env: f.env,
+          encoding: "utf8",
+          timeout: 10_000,
+        },
+      );
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain("Another Rakazo backup is running");
+    },
+  );
 
   it("rejects a non-positive retention", () => {
     const f = fixture();

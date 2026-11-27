@@ -1,0 +1,20 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "cursor": {
+      "maximum": 9007199254740991,
+      "minimum": -1,
+      "type": "integer"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["cursor"],
+  "type": "object"
+}

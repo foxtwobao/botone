@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "change": {
+      "enum": ["created", "updated", "enabled", "disabled", "deleted", "ended"],
+      "type": "string"
+    },
+    "kind": {
+      "const": "routine_event",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 200,
+      "type": "string"
+    },
+    "webhook": {
+      "const": true,
+      "type": "boolean"
+    }
+  },
+  "required": ["kind", "change", "name"],
+  "type": "object"
+}

@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_LOCAL_WEB_URL,
@@ -12,6 +15,7 @@ import {
   probeFailureMessage,
   RAKAZO_CLOUD_URL,
   readProbeJson,
+  resolvePackagedStartupTarget,
   resolveStartupTarget,
   safeExternalUrl,
   serializeSetup,
@@ -225,6 +229,25 @@ describe("startup target", () => {
       expect(resolveStartupTarget({ defaultUrl })).toEqual({ kind: "setup" });
     },
   );
+
+  it("reads the packaged default from the app's package.json", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "packaged-default-"));
+    const write = (packageJson: Record<string, unknown>) =>
+      writeFileSync(path.join(dir, "package.json"), JSON.stringify(packageJson));
+    try {
+      write({ defaultServerUrl: "https://app.example.com/" });
+      expect(resolvePackagedStartupTarget(dir, { saved })).toMatchObject({ source: "saved" });
+      expect(resolvePackagedStartupTarget(dir, {})).toEqual({
+        kind: "app",
+        url: "https://app.example.com",
+        source: "default",
+      });
+      write({ defaultServerUrl: "" });
+      expect(resolvePackagedStartupTarget(dir, {})).toEqual({ kind: "setup" });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 
   it("lets RAKAZO_WEB_URL point the shell anywhere without touching saved setup", () => {
     expect(resolveStartupTarget({ envUrl: "http://127.0.0.1:4321", saved })).toEqual({

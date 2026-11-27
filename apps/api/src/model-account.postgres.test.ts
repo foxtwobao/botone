@@ -9,6 +9,7 @@ import type { Auth } from "@rakazo/auth";
 import type { ModelAccountLimits } from "@rakazo/contracts";
 import type { PrismaClient } from "@rakazo/db";
 import { asSystem, createDb } from "@rakazo/db";
+import type { MockInstance } from "vitest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveModelKey } from "../../../packages/adapters/src/runs/turn/run-model.js";
 import { modelAccountRoutes } from "./model-account.js";
@@ -58,21 +59,8 @@ postgres("external model account isolated PostgreSQL", () => {
   );
   let authorized = false;
   let authorizedState = "";
-  const ensure = vi.spyOn(connection.provider, "ensure").mockImplementation(async () => {
-    if (!authorized) throw new ExternalModelAccountError("authorization_required");
-    return { apiKey: "fake-model-key" };
-  });
-  const complete = vi.spyOn(connection.provider, "complete").mockImplementation(async () => {
-    authorized = true;
-  });
-  vi.spyOn(connection.provider, "authorize").mockImplementation(async (input) => {
-    authorizedState = input.state;
-    return { url: "https://gateway.example.test/authorize", expiresIn: 300 };
-  });
-  vi.spyOn(connection.provider, "revoke").mockImplementation(async () => {
-    authorized = false;
-  });
-  vi.spyOn(connection.provider, "balance").mockResolvedValue({ amount: "-12.34", unit: "CNY" });
+  let ensure: MockInstance<typeof connection.provider.ensure>;
+  let complete: MockInstance<typeof connection.provider.complete>;
   const request = (path: string, options: RequestInit = {}) =>
     app.request(`https://api.example.test${path}`, {
       ...options,
@@ -178,13 +166,26 @@ postgres("external model account isolated PostgreSQL", () => {
     app = modelAccountRoutes(routeOptions);
   });
   beforeEach(async () => {
+    // Vitest undoes spies before each test, so they are set again here.
+    ensure = vi.spyOn(connection.provider, "ensure").mockImplementation(async () => {
+      if (!authorized) throw new ExternalModelAccountError("authorization_required");
+      return { apiKey: "fake-model-key" };
+    });
+    complete = vi.spyOn(connection.provider, "complete").mockImplementation(async () => {
+      authorized = true;
+    });
+    vi.spyOn(connection.provider, "authorize").mockImplementation(async (input) => {
+      authorizedState = input.state;
+      return { url: "https://gateway.example.test/authorize", expiresIn: 300 };
+    });
+    vi.spyOn(connection.provider, "revoke").mockImplementation(async () => {
+      authorized = false;
+    });
+    vi.spyOn(connection.provider, "balance").mockResolvedValue({ amount: "-12.34", unit: "CNY" });
     routeOptions.defaultModel = undefined;
     app = modelAccountRoutes(routeOptions);
     authorized = false;
     await prisma.task.deleteMany({ where: { userId } });
-    complete.mockClear();
-    ensure.mockClear();
-    vi.mocked(connection.provider.authorize).mockClear();
     await prisma.userModelCredential.deleteMany({ where: { userId } });
     await prisma.modelOAuthSession.deleteMany({ where: { userId } });
     await prisma.session.update({
@@ -549,9 +550,11 @@ postgres("external model account isolated PostgreSQL", () => {
       ["/connect", {}],
     ] as const)
       expect((await post(path, body)).status).toBe(200);
-    expect(await storedModels()).toEqual({ "example-model": limits, "second-model": limits });
-    expect((await update("example-model", { reasoning: null })).status).toBe(200);
-    expect(await storedModels()).toEqual({ "second-model": limits });
+    // An older app's switch on is saved as the default thinking level.
+    const stored = { ...limits, thinkingLevel: "medium" };
+    expect(await storedModels()).toEqual({ "example-model": stored, "second-model": stored });
+    expect((await update("example-model", { thinkingLevel: null })).status).toBe(200);
+    expect(await storedModels()).toEqual({ "second-model": stored });
     expect(await (await request("/status")).json()).toMatchObject({
       connected: true,
       apiProtocol: "responses",

@@ -2,8 +2,11 @@ import type {
   ModelAccountErrorCode,
   ModelAccountLimits,
   ModelAccountStatus,
+  ModelCredential,
+  ThinkingLevel,
 } from "@rakazo/contracts";
 import {
+  DEFAULT_THINKING_LEVEL,
   modelAccountBalanceSchema,
   modelAccountConfigSchema,
   modelAccountConnectSchema,
@@ -15,11 +18,40 @@ import {
 } from "@rakazo/contracts";
 import { readBoundedJsonResponse } from "../primitives/http-response.js";
 
-export function parseAccountModelLimits(context: string, output: string, reasoning?: boolean) {
+/**
+ * The thinking level an account's limit stands for: its own, else the boolean an older app sends
+ * or saved, where on meant thinking at the default effort. Null follows the connection, and
+ * undefined says nothing was set.
+ *
+ * Reading what is saved passes the connection and the model too. A model's own settings replace
+ * the connection's, so saving a limit carries a thinking connection's on-switch into the model's
+ * row. There the bare switch still follows the connection; it is a chosen level only where the
+ * connection's default is off.
+ */
+export function accountModelThinkingLevel(
+  settings: { reasoning?: boolean | null; thinkingLevel?: ThinkingLevel | null } | undefined,
+  connection?: Pick<ModelCredential, "reasoning" | "defaultReasoningModelIds">,
+  modelId?: string,
+): ThinkingLevel | null | undefined {
+  const { reasoning, thinkingLevel } = settings ?? {};
+  if (thinkingLevel !== undefined) return thinkingLevel;
+  if (reasoning === undefined) return undefined;
+  if (reasoning === null) return null;
+  if (!reasoning) return "off";
+  const defaultOn =
+    connection?.reasoning || connection?.defaultReasoningModelIds?.includes(modelId ?? "");
+  return defaultOn ? null : DEFAULT_THINKING_LEVEL;
+}
+
+export function parseAccountModelLimits(
+  context: string,
+  output: string,
+  thinkingLevel?: ThinkingLevel | null,
+) {
   const contextWindow = parseModelContextWindow(context.trim());
   const maxTokens = parseModelMaxTokens(output.trim());
   if ((context.trim() && !contextWindow) || (output.trim() && !maxTokens)) return null;
-  const result = modelAccountLimitsSchema.safeParse({ contextWindow, maxTokens, reasoning });
+  const result = modelAccountLimitsSchema.safeParse({ contextWindow, maxTokens, thinkingLevel });
   return result.success ? result.data : null;
 }
 

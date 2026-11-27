@@ -1,0 +1,51 @@
+{
+  "items": {
+    "additionalProperties": false,
+    "properties": {
+      "autoSpeak": {
+        "type": "boolean"
+      },
+      "color": {
+        "type": "string"
+      },
+      "id": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "pinned": {
+        "type": "boolean"
+      },
+      "preview": {
+        "type": "string"
+      },
+      "snoozedUntil": {
+        "type": ["string", "null"]
+      },
+      "status": {
+        "type": "string"
+      },
+      "unread": {
+        "type": "boolean"
+      },
+      "updatedAt": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "color",
+      "pinned",
+      "unread",
+      "preview",
+      "status",
+      "updatedAt",
+      "autoSpeak"
+    ],
+    "type": "object"
+  },
+  "type": "array"
+}

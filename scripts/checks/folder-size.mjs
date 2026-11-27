@@ -12,7 +12,7 @@ export const BASELINE = path.join(
   "folder-size.baseline.json",
 );
 
-const CODE = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|astro|py|sh|swift|kt|c|h|m|mm|sql|prisma)$/;
+const CODE = /\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|astro|py|sh|swift|kt|ets|c|h|m|mm|sql|prisma)$/;
 // Generated output, migrations and vendored registry components are not organised by hand.
 const IGNORED = [/\/generated\//, /\/migrations\//, /^packages\/ui-web\/src\/components\/ui\//];
 

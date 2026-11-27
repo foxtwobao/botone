@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "keys": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "type": "array"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "settingsScope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": ["scope", "version", "keys"],
+  "type": "object"
+}

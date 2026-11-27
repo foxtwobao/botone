@@ -1,0 +1,11 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "delivery",
+      "type": "string"
+    }
+  },
+  "required": ["kind"],
+  "type": "object"
+}

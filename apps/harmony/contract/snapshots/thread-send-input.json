@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "artifactIds": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
+    "botId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "clientNonce": {
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "imageHandling": {
+      "enum": ["confirm", "file"],
+      "type": "string"
+    },
+    "replyToMessageId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "text": {
+      "maxLength": 100000,
+      "type": "string"
+    }
+  },
+  "type": "object"
+}
