@@ -78,10 +78,11 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
     )) {
       expect(frame.params).toMatchObject({
         permissions: label.id,
-        environments: [],
         approvalPolicy: "never",
         approvalsReviewer: "user",
       });
+      if (readOnly) expect(frame.params).toHaveProperty("environments", []);
+      else expect(frame.params).not.toHaveProperty("environments");
       expect(frame.params).not.toHaveProperty("sandboxPolicy");
       expect(frame.params).not.toHaveProperty("sandbox");
     }
@@ -128,6 +129,40 @@ describe.each([false, true])("labeled native permissions readOnly=%s", (readOnly
         : assertLabeledHostConfiguration(effective, label, false),
     ).toThrow("not_confirmed");
   });
+});
+
+const workspaceProjection = {
+  type: "workspaceWrite",
+  writableRoots: [],
+  networkAccess: false,
+  excludeTmpdirEnvVar: true,
+  excludeSlashTmp: true,
+};
+
+it("resumes a local workspace when the named profile has a legacy workspace-write projection", async () => {
+  const process = fixture(false, { sandbox: workspaceProjection });
+  const driver = createHostCodexDriver(process, "test", () => {});
+  try {
+    await driver.start(startRequest({ session: { id: "thread", engineVersion: "test" } }));
+    expect(process.sent.find((frame) => frame.method === "turn/start")?.params).toMatchObject({
+      permissions: label.id,
+    });
+  } finally {
+    await driver.cancel();
+  }
+});
+
+it("rejects a writable projection for remote computer runs", async () => {
+  const process = fixture(true, { sandbox: workspaceProjection });
+  const driver = createHostCodexDriver(process, "test", () => {});
+  try {
+    await expect(driver.start(startRequest())).rejects.toThrow(
+      "host_remote_boundary_not_confirmed",
+    );
+    expect(process.sent.some((frame) => frame.method === "turn/start")).toBe(false);
+  } finally {
+    await driver.cancel();
+  }
 });
 
 it("rejects implicit platform scratch access in a remote profile", () => {
