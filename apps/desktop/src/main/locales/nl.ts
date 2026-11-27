@@ -1,4 +1,6 @@
 export const NL_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "Mag {bot} op deze computer met jouw account opdrachten uitvoeren, je bestanden openen en het netwerk gebruiken?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "Over {name}",

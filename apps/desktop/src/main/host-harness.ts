@@ -56,14 +56,17 @@ export function prepareDesktopHarness(options: {
       });
       return result.canceled ? null : (result.filePaths[0] ?? null);
     },
-    confirm: async ({ origin, workspace, target }) => {
+    confirm: async ({ origin, workspace, target, botName }) => {
       const result = await dialog.showMessageBox({
         type: "question",
         title: "Use local agent?",
         message:
           target === "computer"
             ? "Allow the local agent to use this server's computer when you send a message on this device?"
-            : "Allow the local agent to work in this folder when you send a message on this device?",
+            : t(
+                "Allow {bot} to run commands, access your files and use the network as you on this computer?",
+                { bot: botName },
+              ),
         detail: target === "computer" ? origin : `${origin}\n${workspace}`,
         buttons: [t("Allow"), t("Cancel")],
         defaultId: 1,

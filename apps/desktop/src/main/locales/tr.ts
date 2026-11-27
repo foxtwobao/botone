@@ -1,4 +1,6 @@
 export const TR_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "{bot} bu bilgisayarda hesabınızın yetkileriyle komut çalıştırabilsin, dosyalarınıza erişebilsin ve ağı kullanabilsin mi?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "{name} Hakkında",

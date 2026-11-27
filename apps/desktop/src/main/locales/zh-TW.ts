@@ -1,4 +1,6 @@
 export const ZH_TW_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "允許「{bot}」以你的身分在這台電腦上執行指令、存取檔案並使用網路嗎？",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "關於 {name}",

@@ -1,4 +1,6 @@
 export const HI_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "क्या {bot} को इस कंप्यूटर पर आपके खाते से कमांड चलाने, आपकी फ़ाइलों तक पहुँचने और नेटवर्क का उपयोग करने की अनुमति दें?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "{name} के बारे में",

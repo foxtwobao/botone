@@ -1,4 +1,6 @@
 export const DE_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "Darf {bot} auf diesem Computer in deinem Namen Befehle ausführen, auf deine Dateien zugreifen und das Netzwerk nutzen?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "Über {name}",

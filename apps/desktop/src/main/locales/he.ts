@@ -1,4 +1,6 @@
 export const HE_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "לאפשר ל־{bot} להריץ פקודות, לגשת לקבצים שלך ולהשתמש ברשת במחשב הזה עם ההרשאות שלך?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   "About {name}": "אודות {name}",

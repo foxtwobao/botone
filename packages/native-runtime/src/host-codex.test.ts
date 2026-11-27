@@ -1,30 +1,21 @@
 import type { NativeExecutionEvent } from "@rakazo/adapter-kit";
 import { describe, expect, it } from "vitest";
 import { createHostCodexDriver } from "./codex.js";
-import { safeHostConfiguration } from "./host-policy.test-support.js";
 import { FakeHarnessProcess, startRequest, tick } from "./protocol.test-support.js";
 
 describe("host sandbox policy", () => {
-  const sandbox = {
-    type: "workspaceWrite",
-    writableRoots: ["/workspace"],
-    networkAccess: false,
-    excludeTmpdirEnvVar: true,
-    excludeSlashTmp: true,
-  };
+  const sandbox = { type: "dangerFullAccess" };
   function fixture(overrides: Record<string, unknown> = {}) {
     const process = new FakeHarnessProcess();
     process.reply = (frame) => {
       if (frame.method === "initialize") process.receive({ id: frame.id, result: {} });
-      if (frame.method === "config/read")
-        process.receive({ id: frame.id, result: { config: safeHostConfiguration() } });
       if (frame.method === "thread/start" || frame.method === "thread/resume")
         process.receive({
           id: frame.id,
           result: {
             thread: { id: "thread" },
             cwd: process.workspace,
-            approvalPolicy: "on-request",
+            approvalPolicy: "never",
             approvalsReviewer: "user",
             sandbox,
             ...overrides,
@@ -37,7 +28,7 @@ describe("host sandbox policy", () => {
     return process;
   }
 
-  it.each([false, true])("reapplies restricted permissions when resuming=%s", async (resume) => {
+  it.each([false, true])("uses the local account permissions when resuming=%s", async (resume) => {
     const process = fixture();
     const driver = createHostCodexDriver(process, "test", () => {});
     await driver.start(
@@ -47,12 +38,12 @@ describe("host sandbox policy", () => {
       ["thread/start", "thread/resume"].includes(String(frame.method)),
     );
     expect(thread?.params).toMatchObject({
-      approvalPolicy: "on-request",
+      approvalPolicy: "never",
       approvalsReviewer: "user",
-      sandbox: "workspace-write",
+      sandbox: "danger-full-access",
     });
     expect(process.sent.find((frame) => frame.method === "turn/start")?.params).toMatchObject({
-      approvalPolicy: "on-request",
+      approvalPolicy: "never",
       approvalsReviewer: "user",
       sandboxPolicy: sandbox,
     });
@@ -60,13 +51,8 @@ describe("host sandbox policy", () => {
   });
 
   it.each([
-    { sandbox: { ...sandbox, type: "externalSandbox" } },
-    { sandbox: { ...sandbox, networkAccess: true } },
-    { sandbox: { ...sandbox, writableRoots: ["/another-workspace"] } },
-    { sandbox: { ...sandbox, excludeSlashTmp: false } },
-    { sandbox: { ...sandbox, excludeTmpdirEnvVar: false } },
-    { sandbox: null },
-    { approvalPolicy: "never" },
+    { sandbox: { type: "workspaceWrite" } },
+    { approvalPolicy: "on-request" },
     { approvalsReviewer: "auto_review" },
     { cwd: "/another-workspace" },
   ])("does not send a prompt when effective restrictions differ: %j", async (override) => {

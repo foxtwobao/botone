@@ -1,4 +1,6 @@
 export const ES_MESSAGES: Record<string, string> = {
+  "Allow {bot} to run commands, access your files and use the network as you on this computer?":
+    "¿Permitir que {bot} ejecute comandos, acceda a tus archivos y use la red con tu cuenta en este equipo?",
   Rakazo: "BotONE",
   "Rakazo Cloud": "BotONE Cloud",
   // Menus
