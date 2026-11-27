@@ -3,10 +3,12 @@ import { access, realpath, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { DesktopHostProfile } from "@rakazo/contracts";
+import { ExecutionModelsSchema } from "@rakazo/contracts";
 import { createHostCodexDriver } from "@rakazo/native-runtime/codex";
 import type { HarnessDriverFactory, HarnessProcess } from "@rakazo/native-runtime/driver";
 import { hostDisabledFeatures } from "@rakazo/native-runtime/host-policy";
 import { HarnessRpc } from "@rakazo/native-runtime/rpc";
+import { z } from "zod";
 import { launchHostProcess } from "./host-process.js";
 import type { HostProcessMarker } from "./host-process-macos.js";
 import { createHostProcessMarker } from "./host-process-macos.js";
@@ -181,7 +183,33 @@ export interface HostHarnessAdapter {
   driver: HarnessDriverFactory;
 }
 
-export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
+const modelPage = z.object({
+  data: z.array(
+    z.object({ model: z.string(), displayName: z.string(), hidden: z.boolean().optional() }),
+  ),
+  nextCursor: z.string().nullish(),
+});
+
+async function listDeviceModels(rpc: HarnessRpc) {
+  const models = new Map<string, { id: string; label: string }>();
+  const visited = new Set<string>();
+  let cursor: string | undefined;
+  do {
+    const page = modelPage.parse(
+      await rpc.request("model/list", { cursor, limit: 100, includeHidden: false }, 5_000),
+    );
+    for (const item of page.data) {
+      if (!item.hidden)
+        models.set(item.model, { id: item.model, label: item.displayName || item.model });
+    }
+    cursor = page.nextCursor ?? undefined;
+    if (cursor && visited.has(cursor)) throw new Error("Invalid model list cursor");
+    if (cursor) visited.add(cursor);
+  } while (cursor);
+  return ExecutionModelsSchema.parse([...models.values()]);
+}
+
+export async function inspectHostHarness(includeModels = false): Promise<HostHarnessAdapter> {
   const workspace = os.homedir();
   const env = hostEnvironment();
   const owned = await hostProcessOwnershipAvailable();
@@ -302,6 +330,14 @@ export async function inspectHostHarness(): Promise<HostHarnessAdapter> {
           )
           .digest("hex");
         adapter.profile.status = "ready";
+        if (includeModels) {
+          try {
+            adapter.profile.models = await listDeviceModels(rpc);
+          } catch {
+            // A catalog failure still permits runs using the CLI's configured default.
+            adapter.profile.modelsUnavailable = true;
+          }
+        }
       }
     } finally {
       await child.stop();

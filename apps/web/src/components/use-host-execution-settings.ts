@@ -33,13 +33,18 @@ export function useHostExecutionSettings(botId: string) {
     async stop() {
       if (bridge && spaceId) await bridge.stop({ botId, spaceId });
     },
-    async select(profileId: string | null, target?: "workspace" | "computer") {
+    async select(
+      profileId: string | null,
+      target?: "workspace" | "computer",
+      model?: string | null,
+    ) {
       if (!bridge || !spaceId) return;
       const next = await bridge.configure({
         botId,
         spaceId,
         profileId,
         ...(target ? { target } : {}),
+        ...(model !== undefined ? { model } : {}),
       });
       cache.setQueryData(["device-agent", userId, spaceId, botId], next);
     },

@@ -10,7 +10,7 @@ export function HostExecutionTarget({
 }: {
   selection: DesktopHostSelection;
   busy: boolean;
-  onChange(target: "workspace" | "computer"): Promise<void>;
+  onChange(target: "workspace" | "computer"): void;
 }) {
   const id = useId();
   const { t } = useLingui();
