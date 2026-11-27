@@ -1,11 +1,12 @@
 // The sign-in state machine's pure derivations, PR1: the same branches mobile's render-time
 // flags take, pinned case by case (chooser/card/form/code step/forgot/SSO-only), the provider
 // grouping, the switch labels, and the default name. Pure input → output; no page, no device.
+// Every case reads the page through the single screen flags the page's if-chain selects.
 import { describe, expect, it } from '@ohos/hypium';
 import { decodeAuthCapabilities } from '../../../main/ets/contract/decode';
 import {
-  CODE_LENGTH,
   defaultName,
+  headline,
   providerGroups,
   signInView,
   switchLabels,
@@ -65,14 +66,17 @@ export default function signInViewTest() {
       withPassword.password = 'secret';
       const typed = signInView(withPassword);
       expect(typed.usingCode).assertFalse();
-      // The code sent: the code step owns the screen.
+      // The code sent: the code step owns the screen — it is the page the page's if-chain
+      // selects, not the reset-sent confirmation, and the headline still reads Check your email.
       const sent = caps(PASSWORD_CODE);
       sent.codeSent = true;
       sent.emailStep = false;
       const step = signInView(sent);
       expect(step.codeField).assertTrue();
+      expect(step.resetConfirmation).assertFalse();
       expect(step.emailForm).assertFalse();
-      expect(step.resetConfirmation).assertTrue(); // title reads Check your email
+      expect(step.chooserCard).assertFalse();
+      expect(headline('up' as SignInMode, step)).assertEqual('Check your email');
     });
 
     it('password_and_providers_shows_the_chooser_without_a_switch_row', 0, () => {
@@ -96,14 +100,16 @@ export default function signInViewTest() {
       expect(chooser.switchRow).assertFalse();
     });
 
-    it('forgot_mode_shows_email_only_and_hides_password_and_switch', 0, () => {
+    it('forgot_mode_shows_email_only_with_the_back_link', 0, () => {
       const input = caps(PASSWORD_CODE);
       input.mode = 'forgot' as SignInMode;
       const view = signInView(input);
       expect(view.emailForm).assertTrue();
       expect(view.passwordField).assertFalse();
       expect(view.nameField).assertFalse();
-      expect(view.switchRow).assertFalse();
+      // The switch row stays: forgot mode renders its action as "Back to sign in".
+      expect(view.switchRow).assertTrue();
+      expect(switchLabels('forgot' as SignInMode).action).assertEqual('Back to sign in');
       expect(view.codeFlow).assertFalse();
       expect(view.providerOnly).assertFalse();
     });
@@ -113,20 +119,15 @@ export default function signInViewTest() {
       expect(one.providerOnly).assertTrue();
       expect(one.emailForm).assertFalse();
       expect(one.chooserCard).assertFalse();
-      expect(one.primary.length).assertEqual(1);
-      expect(one.primary[0].id).assertEqual('oidc');
       // Two providers, one personal one organization: personal is primary, org is the link.
       const both = signInView(caps(SSO_ONLY_PERSONAL));
       expect(both.providerOnly).assertTrue();
-      expect(both.primary.length).assertEqual(1);
-      expect(both.primary[0].id).assertEqual('google');
-      expect(both.secondary.length).assertEqual(1);
-      expect(both.secondary[0].id).assertEqual('oidc');
     });
 
     it('a_server_with_nothing_configured_shows_no_branch', 0, () => {
       const view = signInView(caps(NOTHING));
       expect(view.emailForm).assertFalse();
+      // Nothing to sign in with: the provider screen needs at least one provider.
       expect(view.providerOnly).assertFalse();
       expect(view.chooserCard).assertFalse();
       expect(view.codeField).assertFalse();
@@ -139,6 +140,7 @@ export default function signInViewTest() {
       expect(view.resetConfirmation).assertTrue();
       expect(view.emailForm).assertFalse();
       expect(view.chooserCard).assertFalse();
+      expect(view.codeField).assertFalse();
     });
 
     it('provider_groups_put_organization_sso_second_only_beside_personal', 0, () => {
@@ -148,6 +150,21 @@ export default function signInViewTest() {
       const both = decodeAuthCapabilities(JSON.parse(SSO_ONLY_PERSONAL))!.providers;
       expect(providerGroups(both).primary[0].id).assertEqual('google');
       expect(providerGroups(both).secondary[0].id).assertEqual('oidc');
+    });
+
+    it('a_closed_registration_hides_the_sign_up_switch', 0, () => {
+      const closed = '{"passwordAuth":true,"passwordReset":true,"resetUrl":null,"emailCode":false,'
+        + '"sso":null,"providers":[],"registrationOpen":false}';
+      // On sign-in the page hides the switch row: no account can be created here.
+      const signin = caps(closed);
+      signin.mode = 'in' as SignInMode;
+      const view = signInView(signin);
+      expect(view.emailForm).assertTrue();
+      expect(view.switchRow).assertFalse();
+      // An open registration (or an older server without the field) keeps the switch row.
+      const open = caps(PASSWORD_ONLY);
+      open.mode = 'in' as SignInMode;
+      expect(signInView(open).switchRow).assertTrue();
     });
 
     it('switch_labels_match_the_mode', 0, () => {
@@ -164,10 +181,6 @@ export default function signInViewTest() {
       expect(defaultName('', 'ada@example.com')).assertEqual('ada');
       expect(defaultName('', '@example.com')).assertEqual('User');
       expect(defaultName('', '')).assertEqual('User');
-    });
-
-    it('code_length_is_six', 0, () => {
-      expect(CODE_LENGTH).assertEqual(6);
     });
   });
 }

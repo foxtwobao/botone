@@ -20,6 +20,7 @@ import {
 import { continueWithSso } from '../../net/sso';
 import { credentialIssue, errorText, RpcError } from '../../net/errors';
 import { currentApiBase } from '../../net/server-store';
+import { currentSessionGeneration } from '../../net/session';
 import { displaySavedServer } from '../../net/endpoint';
 import { openAuthSession, ssoStackOf } from './sso-session';
 import { suggestEmailCorrection } from './email-typo';
@@ -81,7 +82,9 @@ export struct SignInPage {
 
   aboutToAppear(): void {
     void hasSignedInBefore().then((returning: boolean): void => {
-      this.mode = returning ? 'in' : 'up';
+      // A closed registration starts on sign-in too, whichever answer lands first.
+      const closed = this.capabilities !== null && !this.capabilities.registrationOpen;
+      this.mode = returning || closed ? 'in' : 'up';
     });
     void this.loadCapabilities();
   }
@@ -116,6 +119,10 @@ export struct SignInPage {
         return;
       }
       this.capabilities = capabilities;
+      // A closed registration starts everyone on sign-in (web's Navigate to /sign-in).
+      if (!capabilities.registrationOpen && this.mode === 'up') {
+        this.mode = 'in';
+      }
     } catch (err) {
       if (generation !== this.capsGeneration) {
         return;
@@ -156,6 +163,12 @@ export struct SignInPage {
     if (view.codeStep && typedCode.length !== CODE_LENGTH) {
       return;
     }
+    // The server this submit started on owns every answer: a switch while it is away (even
+    // switched back to the same address) leaves its result behind (checked before each write).
+    const apiBase = currentApiBase();
+    const generation = currentSessionGeneration();
+    const stillCurrent = (): boolean =>
+      currentApiBase() === apiBase && currentSessionGeneration() === generation;
     this.pending = true;
     this.error = '';
     try {
@@ -165,12 +178,13 @@ export struct SignInPage {
           throw new Error(t('Password recovery is not configured for this server'));
         }
         await requestPasswordReset(email, resetUrl);
+        if (!stillCurrent()) {
+          return;
+        }
         this.resetSent = true;
       } else if (view.usingCode && !this.codeSent) {
-        const sentFrom = currentApiBase();
         await sendSignInCode(email);
-        // A switch mid-send leaves the code with the old server; the new one starts clean.
-        if (currentApiBase() !== sentFrom) {
+        if (!stillCurrent()) {
           return;
         }
         this.code = '';
@@ -181,18 +195,26 @@ export struct SignInPage {
           await signInWithCode(email, typedCode, this.mode === 'up' ? defaultName(this.name, email) : null);
         } catch (err) {
           // A wrong code never keeps its input (web parity).
-          this.code = '';
+          if (stillCurrent()) {
+            this.code = '';
+          }
           throw err as Error;
         }
       } else if (this.mode === 'up') {
         const result = await signUp(email, this.password, defaultName(this.name, email));
         if (result.verificationRequired) {
+          if (!stillCurrent()) {
+            return;
+          }
           this.resetSent = true;
         }
       } else {
         await signIn(email, this.password);
       }
     } catch (err) {
+      if (!stillCurrent()) {
+        return;
+      }
       const rpcError = err instanceof RpcError ? err as RpcError : null;
       this.error = rpcError !== null ? errorText(rpcError)
         : err instanceof Error ? (err as Error).message : t('Could not continue');
@@ -268,17 +290,6 @@ export struct SignInPage {
         onTap: (): void => {
           this.error = '';
           this.emailStep = true;
-        },
-      })
-    }
-    if (this.view.passkeyChoice) {
-      ProviderButton({
-        label: t('Continue with passkey'),
-        mark: null,
-        stroked: true,
-        outlined: true,
-        disabled: this.pending,
-        onTap: (): void => {
         },
       })
     }
@@ -461,15 +472,6 @@ export struct SignInPage {
               void this.submit();
             },
           })
-          if (this.view.passkeyForm) {
-            ActionButton({
-              label: t('Sign in with passkey'),
-              kind: 'secondary',
-              disabled: this.pending,
-              onTap: (): void => {
-              },
-            })
-          }
           if (this.view.forgotRow) {
             Text(t('Forgot password?'))
               .fontSize(typeScale.secondary.fontSize)

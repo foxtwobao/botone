@@ -91,8 +91,11 @@ export function signInView(input: SignInViewInput): SignInView {
   // A blank password asks for an emailed code, so code-only accounts need no toggle.
   const usingCode = codeFlow && (input.codeSent || input.password === '');
   const codeStep = codeFlow && input.codeSent;
+  // The reset-sent confirmation owns the screen; the code step renders beside the same
+  // headline only when no confirmation was sent (mobile renders them as exclusive branches).
+  const confirmation = input.resetSent && !codeStep;
   const chooser = passwordAuth && providers.length > 0 && !input.emailStep && input.mode !== 'forgot'
-    && !codeStep;
+    && !codeStep && !input.resetSent;
   const presented = passwordAuth && providers.length > 0 && input.mode !== 'forgot' && !codeStep
     && !input.resetSent;
   // The form branch (mobile's `reset?.passwordAuth ?`): every mode but chooser, code step and
@@ -116,12 +119,12 @@ export function signInView(input: SignInViewInput): SignInView {
     passkeyForm: emailForm && input.passkeys && input.mode === 'in' && !presented,
     forgotRow: emailForm && input.mode === 'in' && hasReset && reset.passwordReset
       && reset.resetUrl !== null,
-    switchRow: emailForm,
+    switchRow: emailForm && (input.mode !== 'in' || hasReset && reset.registrationOpen),
     codeField: codeStep,
     emailChoice: chooser,
     passkeyChoice: chooser && input.passkeys,
-    resetConfirmation: input.resetSent || codeStep,
-    providerOnly: hasReset && !passwordAuth && input.mode !== 'forgot',
+    resetConfirmation: confirmation,
+    providerOnly: hasReset && !passwordAuth && providers.length > 0 && input.mode !== 'forgot',
     chooserHeadline: chooser,
   };
 }
@@ -164,7 +167,7 @@ export function switchLabels(mode: SignInMode): SwitchRowLabels {
 
 /** Headline copy for the step in view, the mobile title ladder word for word. */
 export function headline(mode: SignInMode, view: SignInView): string {
-  if (view.resetConfirmation) {
+  if (view.resetConfirmation || view.codeStep) {
     return t('Check your email');
   }
   if (view.chooser) {
