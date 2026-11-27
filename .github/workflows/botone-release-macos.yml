@@ -52,7 +52,13 @@ jobs:
       - name: Verify signature, notarization, and packaged server
         run: |
           set -euo pipefail
-          app="apps/desktop/out/mac-${{ inputs.arch || 'universal' }}/BotONE.app"
+          arch="${{ inputs.arch || 'universal' }}"
+          case "$arch" in
+            universal) dir="mac-universal" ;;
+            arm64) dir="mac-arm64" ;;
+            *) dir="mac" ;;
+          esac
+          app="apps/desktop/out/$dir/BotONE.app"
           codesign --verify --deep --strict "$app"
           xcrun stapler validate "$app"
           spctl --assess --type execute "$app"
