@@ -270,7 +270,7 @@ export async function startHostExecution(
       botId: bot.id,
       runId: run.id,
       type: "thread.message.created",
-      payload: { messageId: message.id, role: "user", blocks: message.blocks },
+      payload: { messageId: message.id, seq: message.seq, role: "user", blocks: message.blocks },
     });
     const started = await appendEventInTransaction(tx, {
       spaceId: actor.spaceId,
