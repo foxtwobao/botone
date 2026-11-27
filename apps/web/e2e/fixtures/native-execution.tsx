@@ -1,5 +1,5 @@
 import { I18nProvider } from "@lingui/react";
-import type { BotExecutionConfiguration, MessageBlock } from "@rakazo/contracts";
+import type { BotExecutionConfiguration, MessageBlock, ThinkingLevel } from "@rakazo/contracts";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -141,8 +141,7 @@ function Settings() {
       value={value}
       onModelChange={setValue}
       thinkingOptions={[]}
-      thinkingLevel=""
-      defaultThinkingLevel="medium"
+      thinkingLevel={"medium" satisfies ThinkingLevel}
       onThinkingLevelChange={() => {}}
     />
   );

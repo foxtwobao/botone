@@ -37,9 +37,14 @@ const processes: string[] = JSON.parse(
 // Database runs give every file its own database, so they never share.
 const mutatesSharedState =
   /vi\.(mock|doMock|resetModules)\(|globalThis\.\w+ *=[^=]|(globalThis|global|window)\[[^\]]+\] *=[^=]|process\.env(\.\w+|\[[^\]]+\]) *=[^=]|delete process\.env|defineProperty\((globalThis|global|window|document|navigator|process)|process\.chdir|@vitest-environment|\.prototype\.\w+ *=[^=]|stubEnv\(\s*["'`](RAKAZO_LOCAL_|RAKAZO_OPENAI_COMPATIBLE|PI_)/;
+// The harmony contract fixtures encode localized dates for the shipped Chinese locales, so
+// their expected values are generated in a fixed zone. Pinning it here keeps the committed
+// fixtures valid on every host and on CI, which runs in UTC.
+const harmonyContract = globSync("apps/harmony/contract/**/*.test.ts", { cwd: root });
 const isolated = include
   .flatMap((pattern) => globSync(pattern, { cwd: root }))
   .filter((file) => !processes.includes(file))
+  .filter((file) => !harmonyContract.includes(file))
   .filter(
     (file) =>
       // biome-ignore lint/suspicious/noUndeclaredEnvVars: set by the testkit harness so each database test runs on its own copy.
@@ -107,11 +112,20 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 60_000,
     projects: [
+      {
+        extends: true,
+        test: { name: "harmony", include: harmonyContract, env: { TZ: "Asia/Shanghai" } },
+      },
       { extends: true, test: { name: "processes", include: processes } },
       { extends: true, test: { name: "isolated", include: isolated } },
       {
         extends: true,
-        test: { name: "shared", include, exclude: [...processes, ...isolated], isolate: false },
+        test: {
+          name: "shared",
+          include,
+          exclude: [...processes, ...isolated, ...harmonyContract],
+          isolate: false,
+        },
       },
     ],
   },
