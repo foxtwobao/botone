@@ -142,6 +142,18 @@ integration("desktop-originated runs through the authenticated API", () => {
     await sync(grant, [{ sequence: 1, event: { type: "cancelled" } }]);
   });
 
+  it("puts the stored message sequence on the live echo of a desktop send", async () => {
+    const grant = await start();
+    try {
+      const event = await db.event.findFirstOrThrow({
+        where: { runId: grant.runId, type: "thread.message.created" },
+      });
+      expect(event.payload).toMatchObject({ role: "user", seq: grant.seq });
+    } finally {
+      await sync(grant, [{ sequence: 1, event: { type: "cancelled" } }]);
+    }
+  });
+
   it("replays only unacknowledged events and requires this desktop's proof for an approval", async () => {
     const input = request();
     const grant = await start(input);
