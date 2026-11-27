@@ -19,7 +19,7 @@ export function resetAuth() {
 
 export function handleAuth(req, res, body) {
   const input = body ? JSON.parse(body) : {};
-  // The proxy URL carries a query string; routes match on the pathname alone.
+  // Routes match on the pathname alone, never the query string.
   const path = new URL(req.url, `http://${req.headers.host ?? "localhost"}`).pathname;
   if (path === "/api/auth/capabilities" && req.method === "GET") {
     return json(res, 200, {
@@ -35,16 +35,6 @@ export function handleAuth(req, res, body) {
     // The SSO flow reads who its issued bearer belongs to before keeping it.
     if (bearer(req) !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     return json(res, 200, { user: { id: "user-fake" } });
-  }
-  if (path === "/api/auth/expo-authorization-proxy" && req.method === "GET") {
-    // The real proxy 302s into the provider; the suites exercise the client's network layer,
-    // so this only exists for a manual walk-through.
-    const target = new URL(req.url, `http://${req.headers.host}`).searchParams.get(
-      "authorizationURL",
-    );
-    if (!target) return json(res, 400, {});
-    res.writeHead(302, { location: target });
-    return res.end();
   }
   if (req.method !== "POST") return json(res, 405, {});
   if (path === "/api/auth/sign-in/email") {
