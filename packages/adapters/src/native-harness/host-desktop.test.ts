@@ -27,7 +27,12 @@ function fixture() {
   let offline = false;
   const frames: HostFrame[] = [];
   const adapter: HostHarnessAdapter = {
-    profile: { id: "fixture-cli", label: "Device agent", status: "ready" },
+    profile: {
+      id: "fixture-cli",
+      label: "Device agent",
+      status: "ready",
+      models: [{ id: "fixture-model", label: "Device model" }],
+    },
     version: "fixture-version",
     identity: "fixture-account",
     launch: vi.fn(async (workspace, tools) => {
@@ -445,6 +450,22 @@ describe("desktop-owned execution", () => {
     f.setOrigin("https://another.example.test");
     await expect(f.controller.profiles(origin, input)).rejects.toThrow("Local agent unavailable");
     expect(f.adapter.launch).not.toHaveBeenCalled();
+  });
+
+  it("sends the selected device model after restart using the original folder grant", async () => {
+    const f = fixture();
+    const initial = await f.configure();
+    await f.controller.configure(origin, {
+      ...input,
+      profileId: initial!.profileId,
+      model: "fixture-model",
+    });
+    const restarted = new DesktopHarness(f.options);
+    cleanups.push(() => restarted.close());
+    await restarted.send(origin, input);
+    expect(f.dispatches[0]?.model).toBe("fixture-model");
+    expect(f.options.chooseDirectory).toHaveBeenCalledOnce();
+    expect(f.options.confirm).toHaveBeenCalledOnce();
   });
 
   it("asks once before upgrading a saved folder grant, including after a declined send", async () => {

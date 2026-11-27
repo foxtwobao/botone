@@ -101,6 +101,8 @@ export const hostExecutionContract = {
 export interface DesktopHostProfile {
   id: string;
   label: string;
+  models?: { id: string; label: string }[];
+  modelsUnavailable?: true;
   status: "ready" | "missing" | "unsupported" | "unauthenticated";
 }
 export interface DesktopHostSelection {
@@ -117,6 +119,7 @@ export interface DesktopHostBridge {
     spaceId: string;
     profileId: string | null;
     target?: "workspace" | "computer";
+    model?: string | null;
   }): Promise<DesktopHostSelection | null>;
   send(input: {
     botId: string;

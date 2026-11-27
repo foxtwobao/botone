@@ -1,21 +1,26 @@
 import { expect, test } from "@playwright/test";
+import type { DesktopHostBridge, DesktopHostSelection } from "@rakazo/contracts";
 import { captureScreenshot } from "./helpers/helpers";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    let selection: {
-      profileId: string;
-      target: "workspace" | "computer";
-      workspace: string;
-    } | null = null;
+    let selection: DesktopHostSelection | null = null;
     const harness = {
-      profiles: async () => [{ id: "device-account", label: "Device account", status: "ready" }],
+      profiles: async () => [
+        {
+          id: "device-account",
+          label: "Device account",
+          status: "ready",
+          models: [{ id: "fixture-model", label: "Device model" }],
+        },
+      ],
       selection: async () => selection,
-      configure: async (input: { profileId: string | null; target?: "workspace" | "computer" }) => {
+      configure: async (input: Parameters<DesktopHostBridge["configure"]>[0]) => {
         selection = input.profileId
           ? {
               profileId: input.profileId,
-              target: input.target ?? "workspace",
+              target: input.target ?? selection?.target ?? "workspace",
+              model: input.model === undefined ? selection?.model : (input.model ?? undefined),
               workspace: "/workspace/sample-project",
             }
           : null;
@@ -41,7 +46,10 @@ test("device agents disclose a workspace or remote computer only after selection
   await expect(page.getByRole("button", { name: "Change workspace", exact: true })).toHaveText(
     "sample-project",
   );
-  await expect(page.getByRole("button", { name: /^Model/ })).toHaveCount(0);
+  const model = page.getByRole("button", { name: /^Model/ });
+  await model.click();
+  await page.getByRole("option", { name: "Device model", exact: true }).click();
+  await expect(model).toContainText("Device model");
   await captureScreenshot(page, testInfo, "host-local-workspace");
   await target.selectOption("computer");
   await expect(target).toHaveValue("computer");

@@ -5,12 +5,15 @@ import { Button, NativeSelect, NativeSelectOption } from "@rakazo/ui-web";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useId, useState } from "react";
-import { useSpaceQueries } from "../lib/query/query";
-import { useSpaceRpc } from "../lib/query/space-rpc";
+import { useSave, useSpaceQueries } from "../lib/query/query";
 import { errorCode, errorText } from "../lib/query/user-error";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { HostExecutionTarget } from "./HostExecutionTarget";
 import { useHostExecutionSettings } from "./use-host-execution-settings";
+
+type AgentChange =
+  | { profileId: string; target?: "workspace" | "computer"; model?: string | null }
+  | { configuration: BotExecutionConfiguration | null; stopActiveRuns?: boolean };
 
 /** Advanced configuration stays beside the model it replaces. Electron shares this screen. */
 export function ExecutionSettings({
@@ -28,17 +31,14 @@ export function ExecutionSettings({
 }) {
   const { t } = useLingui();
   const ids = useId();
-  const rpc = useSpaceRpc();
   const queries = useSpaceQueries();
   const local = useHostExecutionSettings(botId);
   const list = useQuery(queries.executions.list.queryOptions({ input: { botId } }));
   const saved = useQuery(queries.executions.get.queryOptions({ input: { botId } }));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
   const [pending, setPending] = useState<{ configuration: BotExecutionConfiguration | null }>();
   const needsRetry =
     local.error ||
-    local.profiles.some((profile) => profile.status !== "ready") ||
+    local.profiles.some((profile) => profile.status !== "ready" || profile.modelsUnavailable) ||
     (!local.selected &&
       (list.data ?? []).some(
         (connection) =>
@@ -79,30 +79,39 @@ export function ExecutionSettings({
     : saved.data
       ? JSON.stringify([saved.data.connectionId, saved.data.profileId, saved.data.revision])
       : "";
-  const profile = options.find((option) => option.key === value)?.profile;
-  const models = new Map((profile?.models ?? []).map((model) => [model.id, model.label]));
-  for (const model of [profile?.defaultModel, saved.data?.model]) {
-    if (model && !models.has(model)) models.set(model, model);
+  const deviceProfile = local.profiles.find(({ id }) => id === local.selected?.profileId);
+  const serverProfile = options.find((option) => option.key === value)?.profile;
+  const active = local.selected ?? saved.data;
+  const defaultModel = local.selected ? undefined : serverProfile?.defaultModel;
+  const catalog = local.selected ? deviceProfile?.models : serverProfile?.models;
+  const models = new Map((catalog ?? []).map((model) => [model.id, model.label]));
+  for (const model of [defaultModel, active?.model]) {
+    if (model && !models.has(model)) models.set(model, local.selected ? t`Unavailable` : model);
   }
-  async function save(configuration: BotExecutionConfiguration | null, stopActiveRuns = false) {
-    if (busy) return;
-    setBusy(true);
-    setError(undefined);
-    try {
-      if (local.selected && stopActiveRuns) {
-        await local.stop();
-      }
+  const change = useSave<AgentChange>({
+    save: async (input, rpc) => {
+      if ("profileId" in input) return local.select(input.profileId, input.target, input.model);
+      const { configuration, stopActiveRuns = false } = input;
+      if (local.selected && stopActiveRuns) await local.stop();
       await rpc.executions.configure({ botId, configuration, stopActiveRuns });
       if (local.selected) await local.select(null);
-      setPending(undefined);
-      await saved.refetch();
-    } catch (error) {
-      if (errorCode(error) === "CONFLICT" && !stopActiveRuns) setPending({ configuration });
-      else setError(errorText(error));
-    } finally {
-      setBusy(false);
-    }
-  }
+    },
+    stale: (input) =>
+      "configuration" in input
+        ? [queries.executions.get.queryOptions({ input: { botId } }).queryKey]
+        : [],
+    onSaved: () => setPending(undefined),
+    onFailed: (error, input) => {
+      if ("configuration" in input && !input.stopActiveRuns && errorCode(error) === "CONFLICT")
+        setPending({ configuration: input.configuration });
+    },
+  });
+  const busy = change.pending;
+  const error =
+    change.error &&
+    !(pending && change.input && "configuration" in change.input && !change.input.stopActiveRuns)
+      ? errorText(change.error)
+      : undefined;
   return (
     <>
       {list.data?.length || saved.data || local.profiles.length || local.selected || local.error ? (
@@ -129,22 +138,14 @@ export function ExecutionSettings({
             id={ids}
             value={value}
             disabled={busy || local.loading}
-            onChange={async (event) => {
+            onChange={(event) => {
               const value = event.target.value;
               if (value.startsWith("device:")) {
-                setBusy(true);
-                setError(undefined);
-                try {
-                  await local.select(value.slice(7));
-                } catch (error) {
-                  setError(errorText(error));
-                } finally {
-                  setBusy(false);
-                }
+                change.run({ profileId: value.slice(7) });
                 return;
               }
               const option = options.find((option) => option.key === value);
-              if (!value || option) void save(option?.configuration ?? null);
+              if (!value || option) change.run({ configuration: option?.configuration ?? null });
             }}
           >
             <NativeSelectOption value="">
@@ -195,17 +196,7 @@ export function ExecutionSettings({
             <HostExecutionTarget
               selection={local.selected}
               busy={busy}
-              onChange={async (target) => {
-                setBusy(true);
-                setError(undefined);
-                try {
-                  await local.select(local.selected!.profileId, target);
-                } catch (error) {
-                  setError(errorText(error));
-                } finally {
-                  setBusy(false);
-                }
-              }}
+              onChange={(target) => change.run({ profileId: local.selected!.profileId, target })}
             />
           ) : null}
           {(error || local.error) && !pending ? (
@@ -215,22 +206,25 @@ export function ExecutionSettings({
           ) : null}
         </div>
       ) : null}
-      {!local.selected ? (
+      {!local.selected || catalog ? (
         <fieldset disabled={busy || local.loading} className="min-w-0">
           {children(
-            saved.data
+            active
               ? {
                   choices: [
                     {
                       key: "",
-                      label: profile?.defaultModel
-                        ? `${t`Default`} (${models.get(profile.defaultModel) ?? profile.defaultModel})`
+                      label: defaultModel
+                        ? `${t`Default`} (${models.get(defaultModel) ?? defaultModel})`
                         : t`Default`,
                     },
                     ...[...models].map(([key, label]) => ({ key, label })),
                   ],
-                  value: saved.data.model ?? "",
-                  onChange: (model) => void save({ ...saved.data!, model: model || null }),
+                  value: active.model ?? "",
+                  onChange: (model) =>
+                    local.selected
+                      ? change.run({ profileId: local.selected.profileId, model: model || null })
+                      : change.run({ configuration: { ...saved.data!, model: model || null } }),
                 }
               : null,
           )}
@@ -247,10 +241,10 @@ export function ExecutionSettings({
           error={error}
           onCancel={() => {
             setPending(undefined);
-            setError(undefined);
+            change.reset();
           }}
           onConfirm={() => {
-            if (pending) void save(pending.configuration, true);
+            if (pending) change.run({ configuration: pending.configuration, stopActiveRuns: true });
           }}
         />
       ) : null}

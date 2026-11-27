@@ -88,7 +88,7 @@ export interface DesktopHarnessOptions {
     workspace: string;
     target: "workspace" | "computer";
   }): Promise<boolean>;
-  inspect?: () => Promise<HostHarnessAdapter>;
+  inspect?: typeof inspectHostHarness;
   client?: (origin: string, spaceId: string) => Client;
 }
 
@@ -329,7 +329,7 @@ export class DesktopHarness {
   async profiles(origin: string, input: { spaceId: string }) {
     const { userId } = await this.owner(origin, input.spaceId);
     await this.restore(origin, userId, input.spaceId);
-    return [(await (this.options.inspect ?? inspectHostHarness)()).profile];
+    return [(await (this.options.inspect ?? inspectHostHarness)(true)).profile];
   }
   async selection(origin: string, input: { spaceId: string; botId: string }) {
     const { userId } = await this.owner(origin, input.spaceId);
@@ -345,6 +345,7 @@ export class DesktopHarness {
       spaceId: string;
       profileId: string | null;
       target?: "workspace" | "computer";
+      model?: string | null;
     },
   ) {
     this.revoke(origin, input);
@@ -354,26 +355,46 @@ export class DesktopHarness {
       const bot = await rpc.bots.get({ botId: input.botId });
       this.assertIntent(intent);
       const id = this.selectionKey(origin, userId, input.spaceId, input.botId);
-      if (
-        [...this.runs.values()].some(
-          (run) =>
-            !run.finished &&
-            run.meta.origin === origin &&
-            run.meta.spaceId === input.spaceId &&
-            run.meta.botId === input.botId,
+      const assertIdle = () => {
+        if (
+          [...this.runs.values()].some(
+            (run) =>
+              !run.finished &&
+              run.meta.origin === origin &&
+              run.meta.spaceId === input.spaceId &&
+              run.meta.botId === input.botId,
+          )
         )
-      )
-        throw new Error("Stop the current local task before changing its agent");
+          throw new Error("Stop the current local task before changing its agent");
+      };
+      assertIdle();
       if (input.profileId === null) {
         delete this.state.selections[id];
         this.saveState();
         return null;
       }
-      const adapter = await (this.options.inspect ?? inspectHostHarness)();
+      const adapter = await (this.options.inspect ?? inspectHostHarness)(
+        typeof input.model === "string",
+      );
       this.assertIntent(intent);
       if (adapter.profile.id !== input.profileId || adapter.profile.status !== "ready")
         throw new Error("Local agent unavailable");
-      const target = input.target ?? this.state.selections[id]?.target ?? "workspace";
+      const current = this.state.selections[id];
+      if (input.model !== undefined) {
+        if (!current || current.profileId !== input.profileId || input.target !== undefined)
+          throw new Error("Choose a local agent first");
+        if (input.model !== null && !adapter.profile.models?.some(({ id }) => id === input.model))
+          throw new Error("Model unavailable");
+        if ((await this.owner(origin, input.spaceId)).userId !== userId)
+          throw new Error("Local execution scope changed");
+        this.assertIntent(intent);
+        assertIdle();
+        const updated = { ...current, model: input.model ?? undefined };
+        this.state.selections[id] = updated;
+        this.saveState();
+        return updated;
+      }
+      const target = input.target ?? current?.target ?? "workspace";
       const scratch = path.join(this.options.root, "scratch", id);
       if (target === "computer") mkdirSync(scratch, { recursive: true, mode: 0o700 });
       const picked = target === "computer" ? scratch : await this.options.chooseDirectory();
@@ -385,20 +406,14 @@ export class DesktopHarness {
       if ((await this.owner(origin, input.spaceId)).userId !== userId)
         throw new Error("Local execution scope changed");
       this.assertIntent(intent);
-      if (
-        [...this.runs.values()].some(
-          (run) =>
-            !run.finished &&
-            run.meta.origin === origin &&
-            run.meta.spaceId === input.spaceId &&
-            run.meta.botId === input.botId,
-        )
-      )
-        throw new Error("Stop the current local task before changing its agent");
+      assertIdle();
       const selection = {
         profileId: input.profileId,
         workspace,
         target,
+        ...(current?.model && current.profileId === input.profileId
+          ? { model: current.model }
+          : {}),
         ...(target === "workspace" ? { fullDeviceAccess: true as const } : {}),
       };
       this.state.selections[id] = selection;
@@ -785,6 +800,7 @@ export const hostIpcSchemas = {
       ...scopeInput,
       profileId: z.string().max(256).nullable(),
       target: z.enum(["workspace", "computer"]).optional(),
+      model: z.string().trim().min(1).max(256).nullable().optional(),
     })
     .strict(),
   send: z
