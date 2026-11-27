@@ -156,20 +156,10 @@ export function helperCardState(block: { status: string; result?: string; progre
 /** A helper only holds up computer operations after a worker claimed that computer. */
 export function computerUsingRuns(now: Date = new Date()) {
   return {
-    AND: [
-      {
-        OR: [
-          { trigger: { not: BACKGROUND_HELPER_TRIGGER } },
-          { computerUseStartedAt: { not: null }, leaseExpiresAt: { gt: now } },
-        ],
-      },
-      // Device workspace runs do not reserve the bot's server computer unless they target it.
-      {
-        OR: [
-          { trigger: { not: "host" } },
-          { hostExecution: { is: { targetComputerId: { not: null } } } },
-        ],
-      },
+    runsInLocalWorkspace: false,
+    OR: [
+      { trigger: { not: BACKGROUND_HELPER_TRIGGER } },
+      { computerUseStartedAt: { not: null }, leaseExpiresAt: { gt: now } },
     ],
   };
 }

@@ -66,6 +66,7 @@ export async function findContinuableRun(
     include: {
       routine: { select: { name: true, inChat: true } },
       nativeExecution: true,
+      hostExecution: { select: { runId: true } },
       bot: { select: { executionConfiguration: true } },
     },
   });
@@ -81,7 +82,7 @@ export async function findContinuableRun(
     ...(run.userId ? { "user.id": run.userId } : {}),
   });
   // Host runs finish through the device harness, even when the run already ended elsewhere.
-  if (run.trigger === "host") {
+  if (run.hostExecution) {
     const { finishHostExecution } = await import("../../native-harness/host-execution.js");
     await finishHostExecution(deps, runId);
     return;

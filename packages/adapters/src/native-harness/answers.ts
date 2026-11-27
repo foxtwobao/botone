@@ -55,15 +55,15 @@ export async function answerNativeInteraction(
     await tx.$queryRaw`SELECT id FROM runs WHERE id = ${input.runId} FOR UPDATE`;
     const run = await tx.run.findFirst({
       where: { id: input.runId, threadId: input.threadId, userId: input.userId, status: "running" },
+      select: {
+        hostExecution: { select: { generation: true } },
+        nativeExecution: { select: { generation: true } },
+      },
     });
+    if (!run || (run.hostExecution && !input.hostAuthorized)) return false;
     const current = await tx.nativeInteraction.findUniqueOrThrow({ where: { id: interaction.id } });
-    const execution = await tx.nativeExecution.findUnique({ where: { runId: input.runId } });
-    const host =
-      run?.trigger === "host"
-        ? await tx.hostExecution.findUnique({ where: { runId: input.runId } })
-        : null;
-    if (host && !input.hostAuthorized) return false;
-    if (!run || current.generation !== (host?.generation ?? execution?.generation)) return false;
+    const execution = run.hostExecution ?? run.nativeExecution;
+    if (current.generation !== execution?.generation) return false;
     const message = await tx.message.findUniqueOrThrow({ where: { id: input.messageId } });
     const block = (message.blocks as MessageBlock[]).find(
       (block) => block.kind === "ask" && block.nativeRequestId === current.requestId,

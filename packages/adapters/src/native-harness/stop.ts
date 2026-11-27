@@ -26,11 +26,15 @@ export async function stopNativeThreadRuns(
         status: { in: [...ACTIVE_RUN_STATUSES] },
         ...(onlyBotId ? { botId: onlyBotId } : {}),
       },
-      include: { nativeExecution: true, bot: { include: { executionConfiguration: true } } },
+      include: {
+        nativeExecution: true,
+        hostExecution: { select: { runId: true } },
+        bot: { include: { executionConfiguration: true } },
+      },
     });
     await Promise.all(
       runs.map(async (run) => {
-        if (run.trigger === "host") {
+        if (run.hostExecution) {
           const events = await deps.prisma.$transaction(async (tx) => {
             await tx.$queryRaw`SELECT id FROM threads WHERE id = ${threadId} FOR UPDATE`;
             await tx.$queryRaw`SELECT id FROM runs WHERE id = ${run.id} FOR UPDATE`;
