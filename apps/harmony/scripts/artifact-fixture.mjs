@@ -135,6 +135,7 @@ export function attachmentSendPayload(input, messages) {
     parent?.blocks.find((block) => block.kind === "file");
   return {
     blocks,
+    ...(input.replyQuote && { replyQuote: input.replyQuote }),
     ...(parent && {
       replyToMessageId,
       replyPreview: {

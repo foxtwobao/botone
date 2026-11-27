@@ -26,6 +26,11 @@
       "enum": ["confirm", "file"],
       "type": "string"
     },
+    "replyQuote": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "type": "string"
+    },
     "replyToMessageId": {
       "minLength": 1,
       "type": "string"

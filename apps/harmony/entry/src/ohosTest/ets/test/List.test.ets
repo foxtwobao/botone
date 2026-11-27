@@ -41,6 +41,7 @@ import modelConnectTest from './ModelConnect.test';
 import modelWriteTest from './ModelWrite.test';
 import spaceSelectionTest from './SpaceSelection.test';
 import spaceSwitchTest from './SpaceSwitch.test';
+import messageQuoteTest from './MessageQuote.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -63,6 +64,8 @@ export default function testsuite() {
   groupRulesTest();
   // M9: the model connection ports' fixture replay (pure).
   modelConnectTest();
+  // B1: the quote sheet's text, cap, offer rule and send body (pure), then the server loop.
+  messageQuoteTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();

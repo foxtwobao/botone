@@ -99,6 +99,7 @@ it("matches the two mobile send bodies and their server-side attachment blocks",
       "",
       "nonce-probe",
       false,
+      "",
     ),
   ).toEqual(first!.calls.at(-1)?.body);
   expect(
@@ -110,6 +111,7 @@ it("matches the two mobile send bodies and their server-side attachment blocks",
       "message-probe",
       "nonce-probe",
       true,
+      "",
     ),
   ).toEqual(second!.calls.at(-1)?.body);
 });

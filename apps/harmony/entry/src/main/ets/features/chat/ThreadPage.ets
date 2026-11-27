@@ -60,6 +60,8 @@ export struct ThreadPage {
   private offSpace: (() => void) | null = null;
   /** M6: the parent whose id the next send carries. Kept on failure for a safe retry. */
   @Local replyTarget: LiveMessage | null = null;
+  /** B1: the excerpt the quote sheet confirmed for that parent; empty on a plain reply. */
+  @Local replyQuote: string = '';
   /** The composer's dictation controller; the draft's merge rule lives in its DraftDictation. */
   @Local dictation: ComposerDictation = new ComposerDictation(
     (message: string, openVoice: boolean): void => {
@@ -165,6 +167,7 @@ export struct ThreadPage {
     this.attachments = [];
     this.draft = '';
     this.replyTarget = null;
+    this.replyQuote = '';
     this.attachmentNotice = '';
     this.sendAfterDictation = false;
   }
@@ -201,6 +204,11 @@ export struct ThreadPage {
 
   /** Send during dictation stops it first and sends once its words are in. */
   private sendOrFinish(): void {
+    // While the bot replies the composer's button is Stop; a return key or a dictation finish
+    // must not queue a second send behind it.
+    if (this.store.working()) {
+      return;
+    }
     if (this.dictation.status !== 'idle') {
       this.dictation.finish((): void => {
         this.sendAfterDictation = true;
@@ -401,7 +409,8 @@ export struct ThreadPage {
     }
     this.attachmentNotice = '';
     this.atBottom = true;
-    this.store.sendDraft(text, this.attachments, this.replyTarget?.id ?? '', imagesAsFiles);
+    this.store.sendDraft(text, this.attachments, this.replyTarget?.id ?? '',
+      this.replyQuote, imagesAsFiles);
   }
 
   /** No model is configured yet: retrying the send cannot help; connecting one can (mobile's
@@ -429,29 +438,45 @@ export struct ThreadPage {
     this.sendDraft(false);
   }
 
-  /** The composer's send button: one builder, because the dictation bar row carries it too. */
+  /**
+   * The composer's one action button: Stop while the bot is replying (the reply streams in the
+   * transcript, so the composer's job is to end it), otherwise Send. One builder because the
+   * dictation bar row carries it too.
+   */
   @Builder
   sendButton() {
     Button({ type: ButtonType.Circle }) {
-      if (this.store.uploading > 0) {
-        Text('×').fontSize(24).fontColor(appearance.tokens().primaryForeground)
+      if (this.store.working()) {
+        SymbolGlyph($r('sys.symbol.square_fill'))
+          .fontSize('16vp')
+          .fontColor([appearance.tokens().primaryForeground])
+      } else if (this.store.uploading > 0) {
+        SymbolGlyph($r('sys.symbol.xmark'))
+          .fontSize('20vp')
+          .fontColor([appearance.tokens().primaryForeground])
       } else if (this.store.send.pending) {
         LoadingProgress().width(22).height(22).color(appearance.tokens().primaryForeground)
       } else {
         SymbolGlyph($r('sys.symbol.arrow_up')).fontSize('20vp').fontColor([appearance.tokens().primaryForeground])
       }
     }
-    .id('thread-send')
+    .id(this.store.working() ? 'thread-stop' : 'thread-send')
     .width(COMPOSER_CONTROL_SIZE)
     .height(COMPOSER_CONTROL_SIZE)
-    .accessibilityText(t(this.store.uploading > 0 ? 'Cancel' : 'Send'))
+    .accessibilityText(t(this.store.working() ? 'Stop'
+      : (this.store.uploading > 0 ? 'Cancel' : 'Send')))
     .backgroundColor(appearance.tokens().primary)
     // Dictating with an empty draft still sends: the send finishes the session and waits for
     // its words rather than staying greyed out until they land.
-    .enabled(this.canSend || this.store.uploading > 0 || this.dictation.status !== 'idle')
-    .opacity(this.canSend || this.store.send.pending || this.dictation.status !== 'idle' ? 1 : 0.5)
+    .enabled(this.store.working() || this.canSend || this.store.uploading > 0
+      || this.dictation.status !== 'idle')
+    .opacity(this.canSend || this.store.send.pending || this.store.working()
+      || this.dictation.status !== 'idle' ? 1 : 0.5)
     .onClick((): void => {
-      if (this.store.uploading > 0) {
+      if (this.store.working()) {
+        const input: Record<string, Object> = {};
+        this.store.stop.run(input);
+      } else if (this.store.uploading > 0) {
         this.store.cancelUpload();
       } else {
         this.sendOrFinish();
@@ -510,6 +535,14 @@ export struct ThreadPage {
           if (!this.store.send.pending && this.scope === currentScope()) {
             this.store.resetAttempt();
             this.replyTarget = message;
+            this.replyQuote = '';
+          }
+        },
+        onQuote: (message: LiveMessage, excerpt: string): void => {
+          if (!this.store.send.pending && this.scope === currentScope()) {
+            this.store.resetAttempt();
+            this.replyTarget = message;
+            this.replyQuote = excerpt;
           }
         },
         onJumpTo: (messageId: string): void => {
@@ -542,9 +575,9 @@ export struct ThreadPage {
     NavDestination() {
       Column() {
       Row({ space: 12 }) {
-        Text('‹')
-          .fontSize(28)
-          .fontColor(appearance.tokens().foreground)
+        SymbolGlyph($r('sys.symbol.chevron_left'))
+          .fontSize('24vp')
+          .fontColor([appearance.tokens().foreground])
           .padding({ left: 8, right: 8 })
           .accessibilityText(t('Back'))
           .onClick((): void => {
@@ -559,9 +592,9 @@ export struct ThreadPage {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
             .layoutWeight(1)
           if (this.groupId) {
-            Text('›')
-              .fontSize(typeScale.title.fontSize)
-              .fontColor(appearance.tokens().mutedForeground)
+            SymbolGlyph($r('sys.symbol.chevron_right'))
+              .fontSize(typeScale.title.fontSize + 'vp')
+              .fontColor([appearance.tokens().mutedForeground])
           }
         }
         .layoutWeight(1)
@@ -572,16 +605,7 @@ export struct ThreadPage {
             this.stack.pushPathByName('groupSettings', route);
           }
         })
-        if (this.store.working()) {
-          Text(t('Stop'))
-            .fontSize(typeScale.secondary.fontSize)
-            .fontColor(appearance.tokens().destructive)
-            .padding(8)
-            .onClick((): void => {
-              const input: Record<string, Object> = {};
-              this.store.stop.run(input);
-            })
-        } else if (this.store.connected) {
+        if (this.store.connected) {
           Circle()
             .width(8)
             .height(8)
@@ -703,11 +727,13 @@ export struct ThreadPage {
 
       if (this.replyTarget !== null) {
         ComposerReplyPreview({
-          message: this.replyTarget, members: this.store.snapshot?.members ?? [], meId: app.me?.userId ?? '',
+          message: this.replyTarget, quote: this.replyQuote,
+          members: this.store.snapshot?.members ?? [], meId: app.me?.userId ?? '',
           title: this.title, botId: this.botId, groupId: this.groupId, busy: this.store.send.pending,
           onClose: (): void => {
             this.store.resetAttempt();
             this.replyTarget = null;
+            this.replyQuote = '';
           },
         }).padding({ left: 16, right: 16, top: 4 })
       }
@@ -727,12 +753,14 @@ export struct ThreadPage {
       }
       if (this.dictation.status !== 'idle') {
         Row({ space: 8 }) {
-          Button('×', { type: ButtonType.Circle })
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.xmark'))
+              .fontSize('20vp')
+              .fontColor([appearance.tokens().foreground])
+          }
             .width(COMPOSER_CONTROL_SIZE)
             .height(COMPOSER_CONTROL_SIZE)
             .backgroundColor(appearance.tokens().muted)
-            .fontColor(appearance.tokens().foreground)
-            .fontSize(24)
             .accessibilityText(t('Cancel dictation'))
             .onClick((): void => {
               this.discardDictation();
@@ -745,11 +773,14 @@ export struct ThreadPage {
             DictationLevels({ dictation: this.dictation })
               .height(COMPOSER_CONTROL_SIZE)
           }
-          Button('■', { type: ButtonType.Circle })
+          Button({ type: ButtonType.Circle }) {
+            SymbolGlyph($r('sys.symbol.square_fill'))
+              .fontSize('16vp')
+              .fontColor([appearance.tokens().foreground])
+          }
             .width(COMPOSER_CONTROL_SIZE)
             .height(COMPOSER_CONTROL_SIZE)
             .backgroundColor(appearance.tokens().muted)
-            .fontColor(appearance.tokens().foreground)
             .accessibilityText(t('Stop dictating'))
             .enabled(this.dictation.status !== 'transcribing')
             .opacity(this.dictation.status === 'transcribing' ? 0.5 : 1)
@@ -792,11 +823,15 @@ export struct ThreadPage {
             }
           })
           .onSubmit((): void => { this.sendOrFinish(); })
-        Button('🎙', { type: ButtonType.Circle })
+        Button({ type: ButtonType.Circle }) {
+          SymbolGlyph($r('sys.symbol.mic'))
+            .fontSize('20vp')
+            .fontColor([appearance.tokens().foreground])
+        }
+          .id('thread-mic')
           .width(COMPOSER_CONTROL_SIZE)
           .height(COMPOSER_CONTROL_SIZE)
           .backgroundColor(appearance.tokens().card)
-          .fontSize(22)
           .accessibilityText(t('Dictate'))
           .enabled(!this.store.send.pending)
           .onClick((): void => {

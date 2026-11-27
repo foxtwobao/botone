@@ -160,7 +160,7 @@ export default function attachmentsTest() {
         const body = threadSendBody(wire['botId'] as string ?? '', wire['groupId'] as string ?? '',
           wire['text'] as string ?? '', records(row['blocks']).map((block: Record<string, Object>): string =>
             block['artifactId'] as string), wire['replyToMessageId'] as string ?? '',
-          wire['clientNonce'] as string, wire['imageHandling'] === 'file');
+          wire['clientNonce'] as string, wire['imageHandling'] === 'file', '');
         expect(stableJson(body)).assertEqual(stableJson(wire));
       }
     });
@@ -268,11 +268,11 @@ export default function attachmentsTest() {
         await eventually((): boolean => store.snapshot !== null);
         const parent = store.snapshot!.messages[0];
         await fixture('__artifactControl', '{"failName":"second.txt"}');
-        store.sendDraft('', [first, second], parent.id);
+        store.sendDraft('', [first, second], parent.id, '');
         await eventually((): boolean => !store.send.pending);
         expect(store.send.error.length > 0).assertTrue();
         await fixture('__artifactControl', '{}');
-        store.sendDraft('', [first, second], parent.id);
+        store.sendDraft('', [first, second], parent.id, '');
         await eventually((): boolean => !store.send.pending);
         expect(store.sentRevision).assertEqual(1);
         const snap = decodeThreadSnapshot(await rpc('threads/get', recordOf('{"botId":"bot-1"}')));
@@ -315,7 +315,7 @@ export default function attachmentsTest() {
       store.open('bot-1', '', 'user-fake');
       try {
         await fixture('__artifactControl', '{"slowBody":true}');
-        store.sendDraft('Cancel probe', [item], '');
+        store.sendDraft('Cancel probe', [item], '', '');
         await new Promise<void>((resolve: () => void): void => {
           setTimeout(resolve, 700);
         });
@@ -326,7 +326,7 @@ export default function attachmentsTest() {
         const log = await getJson(`${BASE}/__requests`, {}, 8000, 256 * 1024);
         expect(log.body.includes('/rpc/threads/send')).assertFalse();
         await fixture('__artifactControl', '{}');
-        store.sendDraft('Cancel probe', [item], '');
+        store.sendDraft('Cancel probe', [item], '', '');
         await eventually((): boolean => !store.send.pending);
         expect(store.sentRevision).assertEqual(1);
       } finally {

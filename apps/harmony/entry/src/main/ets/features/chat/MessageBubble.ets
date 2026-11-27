@@ -30,6 +30,7 @@ import { sanitizeMarkdownUrl } from '../../thread/message-links';
 import { app } from '../../app/app-state';
 import { speechFromBlocks } from '../../voice/speech-text';
 import { AttachmentBlock } from './media-attachments';
+import { QuoteSheet } from './quote-sheet';
 
 /** Where a link opens, or empty when it opens nothing: only the schemes the app may follow. */
 function openableHref(href: string): string {
@@ -473,9 +474,9 @@ struct ChoiceCard {
             .fontWeight(option.id === this.choice.answerId ? FontWeight.Bold : FontWeight.Normal)
             .layoutWeight(1)
           if (option.id === this.choice.answerId) {
-            Text('✓')
-              .fontSize(typeScale.secondary.fontSize)
-              .fontColor(appearance.tokens().success)
+            SymbolGlyph($r('sys.symbol.checkmark'))
+              .fontSize(typeScale.secondary.fontSize + 'vp')
+              .fontColor([appearance.tokens().success])
           }
         }
         .width('100%')
@@ -602,24 +603,31 @@ struct ReplyLine {
   @Param author: string = '';
   @Param text: string = '';
   @Param unavailable: boolean = false;
+  /** A reply under the person's own message hugs the right edge, as the message does. */
+  @Param alignEnd: boolean = false;
   @Event onJump: () => void = (): void => {};
 
   build() {
     Row({ space: 4 }) {
       if (!this.unavailable) {
-        Text('↩')
-          .fontSize(12)
-          .fontColor(appearance.tokens().mutedForeground)
+        SymbolGlyph($r('sys.symbol.arrowshape_turn_up_left'))
+          .fontSize('12vp')
+          .fontColor([appearance.tokens().mutedForeground])
+          .accessibilityLevel('no')
       }
       Text(this.unavailable ? t('Original message unavailable') : `${this.author}: ${this.text}`)
         .fontSize(typeScale.caption.fontSize)
         .fontColor(appearance.tokens().mutedForeground)
         .maxLines(1)
+        .textAlign(this.alignEnd ? TextAlign.End : TextAlign.Start)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-        .layoutWeight(1)
+        .layoutWeight(this.alignEnd ? 0 : 1)
+        .constraintSize({ maxWidth: this.alignEnd ? '78%' : '100%' })
     }
     .width('100%')
+    .padding(this.alignEnd ? { left: 16, right: 16 } : { left: 16, right: 48 })
     .alignItems(VerticalAlign.Center)
+    .justifyContent(this.alignEnd ? FlexAlign.End : FlexAlign.Start)
     .margin({ bottom: 6 })
     .onClick((): void => {
       if (!this.unavailable) {
@@ -694,13 +702,18 @@ export struct MessageBubble {
   @Event onReply: (message: LiveMessage) => void = (_message: LiveMessage): void => {};
   /** M7: the Speak menu entry reads the chat aloud from this message on. */
   @Event onSpeak: (message: LiveMessage) => void = (_message: LiveMessage): void => {};
-  @Local selectOpen: boolean = false;
+  /** B1: the Quote sheet's confirmed excerpt, for the composer's reply line. */
+  @Event onQuote: (message: LiveMessage, excerpt: string) => void =
+    (_message: LiveMessage, _excerpt: string): void => {};
+  /** Which sheet the long-press menu opened: ArkUI's bindSheet is one slot per node, so one
+   *  sheet holds either panel and its kind picks the content. */
+  @Local sheetKind: string = 'none';
   /** The menu of the message shown, found once per change of that message: finding it parses. */
   @Computed
   get menu(): MessageMenu {
     const message = this.message;
     if (message === null) {
-      return { select: false, copyCode: false, copyText: '', selectText: '', code: '' };
+      return { select: false, copyCode: false, copyText: '', selectText: '', quote: false, code: '' };
     }
     const like: MessageLike = { id: message.id, role: message.role, blocks: message.blocks };
     return messageMenu(like);
@@ -867,6 +880,7 @@ export struct MessageBubble {
             author: this.reply!.author,
             text: this.reply!.text,
             unavailable: this.reply!.unavailable,
+            alignEnd: this.message!.role === 'user',
             onJump: (): void => {
               const parentId = this.message?.replyToMessageId;
               if (parentId !== undefined) {
@@ -878,18 +892,40 @@ export struct MessageBubble {
         this.bodyOf(this.message!)
       }
       .bindContextMenu(this.menuBuilder(), ResponseType.LongPress)
-      .bindSheet($$this.selectOpen, this.selectSheet(), { height: SheetSize.MEDIUM, showClose: false })
+      .bindSheet(this.sheetKind !== 'none', this.messageSheet(), {
+        height: SheetSize.MEDIUM,
+        showClose: false,
+        onWillDismiss: (action: DismissSheetAction): void => {
+          this.sheetKind = 'none';
+          action.dismiss();
+        },
+      })
     }
   }
 
   @Builder
-  selectSheet() {
-    SelectTextSheet({
-      text: this.menu.selectText,
-      onClose: (): void => {
-        this.selectOpen = false;
-      },
-    })
+  messageSheet() {
+    if (this.sheetKind === 'quote') {
+      QuoteSheet({
+        message: this.message,
+        onCancel: (): void => {
+          this.sheetKind = 'none';
+        },
+        onQuote: (excerpt: string): void => {
+          this.sheetKind = 'none';
+          if (this.message !== null) {
+            this.onQuote(this.message, excerpt);
+          }
+        },
+      })
+    } else {
+      SelectTextSheet({
+        text: this.menu.selectText,
+        onClose: (): void => {
+          this.sheetKind = 'none';
+        },
+      })
+    }
   }
 
   /** The mobile menu's subset, in its order. */
@@ -903,6 +939,12 @@ export struct MessageBubble {
               this.onReply(this.message);
             }
           })
+        if (this.menu.quote) {
+          MenuItem({ content: t('Quote') })
+            .onClick((): void => {
+              this.sheetKind = 'quote';
+            })
+        }
       }
       if (this.message !== null && this.message.role === 'bot'
         && speechFromBlocks(this.message.blocks)) {
@@ -916,7 +958,7 @@ export struct MessageBubble {
       if (this.menu.select) {
         MenuItem({ content: t('Select text') })
           .onClick((): void => {
-            this.selectOpen = true;
+            this.sheetKind = 'select';
           })
       }
       MenuItem({ content: t('Copy') })

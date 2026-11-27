@@ -18,6 +18,7 @@ import { expectLinearTime } from "@rakazo/contracts/test-timing";
 import * as core from "@rakazo/core";
 import { blockText } from "@rakazo/mobile/lib/api/mobile-types.js";
 import * as mobileMentions from "@rakazo/mobile/lib/messages/message-mentions.js";
+import { hasQuotableText as mobileHasQuotableText } from "@rakazo/mobile/lib/messages/message-presentation.js";
 import * as mobileSelectable from "@rakazo/mobile/lib/messages/selectable-text.js";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import type * as markdownPlain from "../entry/src/main/ets/thread/markdown-plain.ets";
@@ -641,6 +642,7 @@ describe("harmony message-text port", () => {
             message.role === "user"
               ? messageText
               : mobileSelectable.selectableTextFromMarkdown(messageText),
+          quote: mobileHasQuotableText(message.role, message.blocks),
           code: codeBlocks[0] ?? "",
         },
         port.messageMenu(message),

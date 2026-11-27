@@ -18,7 +18,8 @@ export function sendTarget(botId: string, groupId: string): Record<string, Objec
 
 /** Wire shape of the mobile composer's regular send. The server assembles the blocks. */
 export function threadSendBody(botId: string, groupId: string, text: string, artifactIds: string[],
-  replyToMessageId: string, nonce: string, imagesAsFiles: boolean): Record<string, Object> {
+  replyToMessageId: string, nonce: string, imagesAsFiles: boolean,
+  replyQuote: string): Record<string, Object> {
   const body = sendTarget(botId, groupId);
   body['clientNonce'] = nonce;
   body['imageHandling'] = imagesAsFiles ? 'file' : 'confirm';
@@ -30,6 +31,9 @@ export function threadSendBody(botId: string, groupId: string, text: string, art
   }
   if (replyToMessageId) {
     body['replyToMessageId'] = replyToMessageId;
+  }
+  if (replyQuote) {
+    body['replyQuote'] = replyQuote;
   }
   return body;
 }

@@ -201,13 +201,13 @@ export class ThreadStore {
   }
 
   sendDraft(text: string, attachments: DraftAttachment[], replyToMessageId: string,
-    imagesAsFiles: boolean = false): void {
+    replyQuote: string, imagesAsFiles: boolean = false): void {
     if (!this.started || this.send.pending || (!text.trim() && !attachments.length)) {
       return;
     }
     // A retry of the same draft reuses both its upload ids and the final message nonce.
     const key = JSON.stringify([currentScope(), text.trim(), attachments.map((item: DraftAttachment) => item.path),
-      replyToMessageId]);
+      replyToMessageId, replyQuote]);
     if (key !== this.attemptKey) {
       this.resetAttempt();
       this.attemptKey = key;
@@ -217,6 +217,7 @@ export class ThreadStore {
     input['text'] = text;
     input['attachments'] = attachments;
     input['replyToMessageId'] = replyToMessageId;
+    input['replyQuote'] = replyQuote;
     this.imagesAsFiles = this.imagesAsFiles || imagesAsFiles;
     this.imageConfirmation = false;
     this.send.run(input);
@@ -269,7 +270,7 @@ export class ThreadStore {
       throw new RequestCancelled();
     }
     const body = threadSendBody(botId, groupId, input['text'] as string, ids,
-      input['replyToMessageId'] as string, nonce, this.imagesAsFiles);
+      input['replyToMessageId'] as string, nonce, this.imagesAsFiles, input['replyQuote'] as string);
     const output = decodeSendOutput(await sendRpc('threads/send', body));
     if (output === null) {
       throw new RpcError('Unexpected response from the server');

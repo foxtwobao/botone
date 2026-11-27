@@ -306,6 +306,7 @@ export const threadSendInputView = pickRefined(procedureInput(appContract.thread
   "clientNonce",
   "artifactIds",
   "replyToMessageId",
+  "replyQuote",
   "imageHandling",
 ]);
 
