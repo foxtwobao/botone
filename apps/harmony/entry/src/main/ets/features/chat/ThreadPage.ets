@@ -14,6 +14,7 @@ import { selectedSpaceId, subscribeSession, subscribeSpaceSelection } from '../.
 import { attachmentMaxBytes, attachmentMaxCount } from '../../thread/attachments';
 import { importAttachmentSources, pickAttachmentSources, removeTemporaryFile } from '../../thread/attachment-files';
 import type { AttachmentSource, DraftAttachment } from '../../thread/attachment-files';
+import { cameraCaptureAvailable, capturePhoto } from '../../thread/camera-capture';
 import { THREAD_MESSAGE_TEXT_MAX_LENGTH } from '../../thread/thread-send';
 import { ComposerAttachments, ComposerReplyPreview } from './composer-attachments';
 import { app } from '../../app/app-state';
@@ -348,24 +349,36 @@ export struct ThreadPage {
     }
   }
 
-  private async pickFiles(photos: boolean): Promise<void> {
+  /** One attachment round from one source. A camera capture is its own single source: the photo
+   *  the picker wrote into the sandbox draft, imported like any library photo, its capture file
+   *  dropped once the import has read it. */
+  private async pickFiles(source: 'photos' | 'files' | 'camera'): Promise<void> {
     if (this.room === 0 || this.picking || this.store.send.pending) {
       return;
     }
     this.picking = true;
     this.attachmentNotice = '';
     const scope = this.scope;
+    let captured: AttachmentSource | null = null;
     try {
       const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
-      const sources = await pickAttachmentSources(context, photos, this.room);
+      captured = source === 'camera' ? await capturePhoto(context) : null;
+      if (captured === null && source === 'camera') {
+        return;
+      }
+      const sources: AttachmentSource[] = captured !== null ? [captured]
+        : await pickAttachmentSources(context, source === 'photos', this.room);
       if (this.active && scope === currentScope()) {
-        await this.addAttachments(context, sources, photos);
+        await this.addAttachments(context, sources, source !== 'files');
       }
     } catch (err) {
       if (this.active && scope === currentScope()) {
         this.attachmentNotice = t('Could not attach files');
       }
     } finally {
+      if (captured !== null) {
+        removeTemporaryFile(captured.uri);
+      }
       this.picking = false;
     }
   }
@@ -487,8 +500,11 @@ export struct ThreadPage {
   @Builder
   attachmentMenu() {
     Menu() {
-      MenuItem({ content: t('Photo library') }).onClick((): void => { void this.pickFiles(true); })
-      MenuItem({ content: t('File') }).onClick((): void => { void this.pickFiles(false); })
+      MenuItem({ content: t('Photo library') }).onClick((): void => { void this.pickFiles('photos'); })
+      if (cameraCaptureAvailable()) {
+        MenuItem({ content: t('Camera') }).onClick((): void => { void this.pickFiles('camera'); })
+      }
+      MenuItem({ content: t('File') }).onClick((): void => { void this.pickFiles('files'); })
     }
   }
 

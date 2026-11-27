@@ -42,6 +42,7 @@ import modelWriteTest from './ModelWrite.test';
 import spaceSelectionTest from './SpaceSelection.test';
 import spaceSwitchTest from './SpaceSwitch.test';
 import messageQuoteTest from './MessageQuote.test';
+import cameraCaptureTest from './CameraCapture.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -66,6 +67,8 @@ export default function testsuite() {
   modelConnectTest();
   // B1: the quote sheet's text, cap, offer rule and send body (pure), then the server loop.
   messageQuoteTest();
+  // B2: the camera capture's contract over a scripted picker (pure).
+  cameraCaptureTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();
