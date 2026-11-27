@@ -49,6 +49,9 @@ const TECHNICAL_MESSAGE: RegExp[] = [
   /^rpc \S+ failed|\(\d{3}\)|\bstatus(?: code)? \d{3}\b/i,
   /\bE(?:CONN[A-Z]+|TIMEDOUT|NOTFOUND|AI_AGAIN|PIPE|HOSTUNREACH|NETUNREACH)\b/,
   /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/,
+  // A bare snake_case identifier is a code a server echoed into the message field
+  // ({code: "example_failure", message: "example_failure"}), never copy for people.
+  /^[a-z0-9]+(?:_[a-z0-9]+)+$/,
   /\d+ bytes\b/,
   /unexpected token|is not a function|cannot read propert|undefined is not|null is not an object|json parse error/i,
   /^input validation failed\b/i,

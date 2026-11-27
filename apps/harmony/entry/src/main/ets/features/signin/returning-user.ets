@@ -8,9 +8,11 @@ const PREFS_NAME = 'rakazo.signin';
 const MARK_KEY = 'rakazo.signed-in-before';
 
 let store: preferences.Preferences | null = null;
+/** The store read bootstrap started; readers await it so a cold start never sees unset. */
+let init: Promise<void> | null = null;
 
 export function initReturningUser(context: common.Context): void {
-  preferences.getPreferences(context, PREFS_NAME).then((found: preferences.Preferences): void => {
+  init = preferences.getPreferences(context, PREFS_NAME).then((found: preferences.Preferences): void => {
     store = found;
   }).catch((): void => {
     // Without a readable store the mark reads as unset; the flow falls back to sign-up.
@@ -18,6 +20,9 @@ export function initReturningUser(context: common.Context): void {
 }
 
 export async function hasSignedInBefore(): Promise<boolean> {
+  if (init !== null) {
+    await init;
+  }
   if (store === null) {
     return false;
   }
