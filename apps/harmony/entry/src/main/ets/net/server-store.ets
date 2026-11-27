@@ -17,6 +17,7 @@ import {
 } from './session';
 import { loadServerHeaders, saveServerHeaders, serverHeaders } from './server-headers';
 import { loadSavedServers, recordSavedServer } from './saved-servers';
+import { clearSelectedSpace } from './space-selection';
 import { flushPendingSignOut, promotePendingSignOut, removePendingSignOut, savePendingSignOut } from './sign-out';
 import type { PendingSignOut, SignOutContext } from './sign-out';
 
@@ -135,6 +136,8 @@ async function changeServer(input: string, headers: Record<string, string>): Pro
       return failure('Could not clear the previous server session');
     }
     setSelectedSpace('');
+    // The Space belonged to the server that just ended; a failed switch above keeps it.
+    void clearSelectedSpace();
   }
   if (!(await saveServerHeaders(parsed.url, headers))) {
     if (switching) {

@@ -538,7 +538,7 @@ async function runSpeechScenario(scenario: SpeechScenarioInput): Promise<SpeechR
   const engines: speechPort.SpeechEngines = {
     captureContext: async (): Promise<speechPort.SpeechContext> => {
       hit('capture');
-      return { apiBase: 'https://api.example', generation: 1, headers: {} };
+      return { apiBase: 'https://api.example', generation: 1, selectionGeneration: 1, headers: {} };
     },
     deviceVoiceEnabled: (): Promise<boolean> => deviceVoicePort.loadDeviceVoiceEnabled(),
     deviceVoiceFor: async (botId: string): Promise<string | undefined> => {

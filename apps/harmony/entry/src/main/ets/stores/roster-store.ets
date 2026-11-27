@@ -5,17 +5,18 @@
 import { rpc } from '../net/rpc';
 import type { RpcContext } from '../net/rpc';
 import { RpcError, errorText, isServerUnreachable } from '../net/errors';
-import { decodeOk } from '../contract/decode';
+import { decodeOk, decodeSpaceNavigation, decodeSpaceSummaries } from '../contract/decode';
 import type { BotView, GroupView } from '../contract/decode';
 import { decodeRosterWithMembers } from '../contract/decode-groups';
 import { queryCache } from '../query/query-cache';
 import { SaveController } from '../query/save-controller';
 import type { SaveSend } from '../query/save-controller';
-import { selectedSpaceId } from '../net/session';
+import { selectedSpaceId, subscribeSpaceSelection } from '../net/session';
 import { subscribeRoster } from '../realtime/roster';
 import { foreground } from '../realtime/foreground';
 import { projectInbox, ROSTER_STALE } from './roster-projection';
 import type { InboxRow } from './roster-projection';
+import { spaceStore } from './space-store';
 
 const EMPTY_INPUT: Record<string, Object> = {};
 
@@ -74,11 +75,16 @@ export class RosterStore {
     });
   }
 
-  /** Wires the signal + foreground catch-up once (bootstrap). */
+  /** Wires the signal + foreground catch-up once (bootstrap). A Space selection change resets
+   *  this store before the roster stream (also listening) reopens and signals its catch-up read,
+   *  so the new Space's rows are never painted over the old Space's. */
   start(): void {
     if (this.unlisten !== null) {
       return;
     }
+    const offSpace = subscribeSpaceSelection((): void => {
+      this.reset();
+    });
     const offRoster = subscribeRoster((): void => {
       void this.load();
     });
@@ -88,6 +94,7 @@ export class RosterStore {
       }
     });
     this.unlisten = (): void => {
+      offSpace();
       offRoster();
       offForeground();
     };
@@ -139,6 +146,8 @@ export class RosterStore {
       if (roster === null) {
         throw new RpcError('Unexpected response from the server');
       }
+      // The navigation rides the same answer; the Space screens read it without another request.
+      spaceStore.updateFromNavigation(decodeSpaceNavigation(value), decodeSpaceSummaries(value));
       this.bots = roster.bots;
       this.groups = roster.groups;
       this.rows = projectInbox(roster.bots, roster.groups, Date.now());

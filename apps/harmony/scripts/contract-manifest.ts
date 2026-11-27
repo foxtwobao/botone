@@ -140,12 +140,14 @@ export const groupView = groupSchema
   })
   .extend({ members: zod.array(groupMemberView) });
 
-/** spaces/list: the default Space's identity plus its inbox roster (bots + groups). */
+/** spaces/list: the default Space's identity plus its inbox roster (bots + groups), and the
+ *  Space list a switcher names (A1: id and name only, not the roster arrays each Space carries). */
 export const spacesListView = spacesListOutput.pick({ current: true }).extend({
   current: spacesListOutput.shape.current.pick({ id: true, name: true }).extend({
     bots: zod.array(botView),
     groups: zod.array(groupView),
   }),
+  spaces: zod.array(spacesListOutput.shape.spaces.element.pick({ id: true, name: true })),
 });
 
 /** bots/list and bots/listArchived: the same row shape, active and archived. */

@@ -4,14 +4,16 @@
 import { common, Want } from '@kit.AbilityKit';
 import { rpc, setUpdateHandler } from '../net/rpc';
 import { RpcError, errorText } from '../net/errors';
-import { decodeMe, decodeSpaceNavigation } from '../contract/decode';
+import { decodeMe, decodeSpaceNavigation, decodeSpaceSummaries } from '../contract/decode';
 import type { MeView } from '../contract/decode';
 import {
   currentSessionGeneration,
   loadSessionToken,
+  selectedSpaceId,
   setSelectedSpace,
   subscribeSession,
 } from '../net/session';
+import { loadSelectedSpace } from '../net/space-selection';
 import { currentApiBase, initServerStore } from '../net/server-store';
 import { flushPendingSignOut } from '../net/sign-out';
 import type { SignOutContext } from '../net/sign-out';
@@ -25,6 +27,7 @@ import { rosterStore } from '../stores/roster-store';
 import { archivedStore } from '../stores/archived-store';
 import { settingsStore } from '../stores/settings-store';
 import { incomingShare } from '../stores/incoming-share-store';
+import { spaceStore } from '../stores/space-store';
 
 @ObservedV2
 export class AppState {
@@ -67,6 +70,12 @@ export class AppState {
     settingsStore.start();
     try {
       await initServerStore(context);
+      // The Space this person last chose outlives the process; a stale one is healed by the
+      // first read's 401 recovery, and loadMe only falls back to the default when none is stored.
+      const storedSpace = await loadSelectedSpace();
+      if (storedSpace) {
+        setSelectedSpace(storedSpace);
+      }
       await appearance.init(context);
       await loadI18n(context);
       initReturningUser(context);
@@ -97,14 +106,15 @@ export class AppState {
 
   private sessionChanged(): void {
     // A session change crosses an auth boundary: forget every cached read and painted roster so
-    // the next session never shows the previous owner's data (mobile clearQueries).
+    // the next session never shows the previous owner's data (mobile clearQueries). The Space
+    // selection is part of that boundary — the next account must not inherit this one's Space.
     queryCache.clear();
+    // One reset path: the Space listener fires on the change below and clears the painted rows.
+    setSelectedSpace('');
     if (this.context !== null) {
       clearArtifactCache(this.context);
     }
-    rosterStore.reset();
-    archivedStore.reset();
-    settingsStore.reset();
+    spaceStore.reset();
     void loadSessionToken().then((token: string): void => {
       if (!token) {
         incomingShare.cancel();
@@ -123,7 +133,8 @@ export class AppState {
     });
   }
 
-  /** Reads the account and its default Space once; a late response from a changed session is dropped. */
+  /** Reads the account and the selected Space's navigation once; a late response from a changed
+   *  session is dropped, and a stored Space the server refuses falls back to the default. */
   async loadMe(): Promise<void> {
     if (this.meLoading) {
       return;
@@ -132,21 +143,39 @@ export class AppState {
     this.meError = '';
     const generation = currentSessionGeneration();
     try {
-      const me = decodeMe(await rpc('me', {}));
+      let meValue: Object;
+      try {
+        meValue = await rpc('me', {});
+      } catch (err) {
+        const error = err instanceof RpcError ? err as RpcError : null;
+        // A stored Space the server no longer grants 401s the first read. The recovery already
+        // cleared it and the session itself survived, so read again for the default Space.
+        if (error === null || error.status !== 401 || selectedSpaceId()
+          || !(await loadSessionToken())) {
+          throw err as Error;
+        }
+        meValue = await rpc('me', {});
+      }
+      const me = decodeMe(meValue);
       if (me === null) {
         throw new RpcError('Unexpected response from the server');
       }
       if (generation !== currentSessionGeneration()) {
         return;
       }
-      // Phase 1 is single-Space: every later read/write uses this spaceId (design Q5).
-      setSelectedSpace(me.spaceId);
-      const spaces = decodeSpaceNavigation(await rpc('spaces/list', {}));
+      // The stored choice wins; only with none does the server's default Space become it.
+      if (!selectedSpaceId()) {
+        setSelectedSpace(me.spaceId);
+      }
+      const spacesValue = await rpc('spaces/list', {});
       if (generation !== currentSessionGeneration()) {
         return;
       }
+      const navigation = decodeSpaceNavigation(spacesValue);
+      // The same answer fills the Space screens: its name and every Space the person can open.
+      spaceStore.updateFromNavigation(navigation, decodeSpaceSummaries(spacesValue));
       this.me = me;
-      this.spaceName = spaces !== null ? spaces.currentName : '';
+      this.spaceName = navigation !== null ? navigation.currentName : '';
       this.phase = 'me';
     } catch (err) {
       if (generation !== currentSessionGeneration()) {

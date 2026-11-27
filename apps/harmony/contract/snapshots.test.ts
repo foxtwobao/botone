@@ -83,6 +83,8 @@ describe("harmony layer-1 contract snapshots", () => {
     const spacesOutput = appContract.spaces.list["~orpc"].outputSchema!;
     expect(spacesListView.shape.current.shape.id).toBe(spacesOutput.shape.current.shape.id);
     expect(spacesListView.shape.current.shape.name).toBe(spacesOutput.shape.current.shape.name);
+    // A1: the switcher's summaries are the real SpaceSchema's own id/name fields.
+    expectFields(spacesListView.shape.spaces.element, spacesOutput.shape.spaces.element, "space");
     // The roster rows project the same Bot/Group schemas the list procedures declare.
     expectFields(botView, appContract.bots.list["~orpc"].outputSchema!.element, "bot");
     // M8: groupView carries a members field the settings picker reads; it is the narrowed member

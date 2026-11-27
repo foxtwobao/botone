@@ -39,6 +39,7 @@ import groupRulesTest from './GroupRules.test';
 import groupWriteTest from './GroupWrite.test';
 import modelConnectTest from './ModelConnect.test';
 import modelWriteTest from './ModelWrite.test';
+import spaceSelectionTest from './SpaceSelection.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -80,6 +81,8 @@ export default function testsuite() {
   groupWriteTest();
   // M9: the model connections store against the fixture server.
   modelWriteTest();
+  // M10 A1: the selected Space's persistence, isolation and stale-Space recovery.
+  spaceSelectionTest();
   // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();
   realThreadSmoke();

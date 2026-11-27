@@ -13,6 +13,7 @@ import { toUtterances } from './speech-text';
 export interface SpeechContext {
   apiBase: string;
   generation: number;
+  selectionGeneration: number;
   headers: Record<string, string>;
 }
 

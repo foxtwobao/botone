@@ -14,13 +14,9 @@ import {
 } from "./artifact-fixture.mjs";
 import * as auth from "./auth-fixture.mjs";
 import { bearer, json, rpcError } from "./fixture-http.mjs";
-import {
-  activeGroups,
-  handleGroupsControl,
-  handleGroupsRpc,
-  resetGroups,
-} from "./group-fixture.mjs";
+import { handleGroupsControl, handleGroupsRpc, resetGroups } from "./group-fixture.mjs";
 import { handleModelsControl, handleModelsRpc, resetModelsFixture } from "./model-fixture.mjs";
+import { handleSpaceRoute, resetSpaces } from "./space-fixture.mjs";
 import {
   handleVoiceControl,
   handleVoiceHttp,
@@ -114,23 +110,10 @@ function resetRoster() {
 }
 resetRoster();
 resetGroups(bots);
+resetSpaces(bots);
 
 const activeBots = () => bots.filter((b) => b.archivedAt === null);
 const archivedBots = () => bots.filter((b) => b.archivedAt !== null);
-
-function navigation() {
-  return {
-    current: {
-      id: SPACE,
-      name: "Ada’s Space",
-      bots: activeBots(),
-      groups: activeGroups(),
-      botSections: [],
-    },
-    spaces: [],
-    firstBotDue: false,
-  };
-}
 
 /** Push one signal frame to every open notifications/subscribe stream. */
 function sendSignal(type) {
@@ -602,11 +585,6 @@ function handleRpc(req, res, body) {
     if (space === "space-stale") return rpcError(res, 401, "UNAUTHORIZED", "Space inaccessible");
     return json(res, 200, { json: ME });
   }
-  if (path === "/rpc/spaces/list") {
-    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
-    if (space === "space-stale") return rpcError(res, 401, "UNAUTHORIZED", "Space inaccessible");
-    return json(res, 200, { json: navigation() });
-  }
   if (path === "/rpc/bots/list") {
     if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     return json(res, 200, { json: activeBots() });
@@ -716,7 +694,13 @@ createServer((req, res) => {
     if (clientBuild) clientBuilds.push(clientBuild);
     if (req.url.startsWith("/rpc/")) {
       seq += 1;
-      requests.push({ seq, path: req.url, body: loggedBody(req.url, body), t: Date.now() });
+      requests.push({
+        seq,
+        path: req.url,
+        body: loggedBody(req.url, body),
+        t: Date.now(),
+        space: req.headers["x-rakazo-space-id"] ?? "",
+      });
     }
     if (req.url === "/__state") {
       return json(res, 200, {
@@ -837,6 +821,7 @@ createServer((req, res) => {
       offline = false;
       resetRoster();
       resetGroups(bots);
+      resetSpaces(bots);
       THREAD_SCRIPTS.clear();
       threadRefusals = 0;
       threadStall = null;
@@ -871,6 +856,7 @@ createServer((req, res) => {
     if (handleVoiceHttp(req, res, body)) return;
     if (handleArtifactRoute(req, res, body)) return;
     if (handleVoiceRpc(req, res, body)) return;
+    if (handleSpaceRoute(req, res)) return;
     if (req.url === "/rpc/notifications/subscribe") return handleNotifications(req, res);
     if (req.url.startsWith("/rpc/aiConsent/")) return handleConsentRpc(req, res, body);
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);

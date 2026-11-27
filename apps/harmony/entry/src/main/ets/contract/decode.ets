@@ -25,6 +25,12 @@ export interface SpaceNavigationView {
   currentName: string;
 }
 
+/** One Space as a switcher names it (A1): identity only, none of the roster arrays. */
+export interface SpaceSummaryView {
+  id: string;
+  name: string;
+}
+
 /** A bot inbox row (M2): identity color, unread, preview, run status, pinned order, snooze. */
 export interface BotView {
   id: string;
@@ -240,6 +246,34 @@ export function decodeSpaceNavigation(json: Object | null): SpaceNavigationView 
   }
   const result: SpaceNavigationView = { currentId: id, currentName: name };
   return result;
+}
+
+/** spaces/list's Space list, row by row: a missing or non-array field fails whole; a row without
+ *  a non-empty id or a name is dropped, like the roster rows. */
+export function decodeSpaceSummaries(json: Object | null): SpaceSummaryView[] | null {
+  const record = asRecord(json);
+  if (record === null) {
+    return null;
+  }
+  const rows = record['spaces'];
+  if (!Array.isArray(rows)) {
+    return null;
+  }
+  const spaces: SpaceSummaryView[] = [];
+  for (const item of rows as Object[]) {
+    const row = asRecord(item);
+    if (row === null) {
+      continue;
+    }
+    const id = readString(row, 'id');
+    const name = readString(row, 'name');
+    if (id === null || !id || name === null) {
+      continue;
+    }
+    const summary: SpaceSummaryView = { id: id, name: name };
+    spaces.push(summary);
+  }
+  return spaces;
 }
 
 /** snoozedUntil is nullable-optional: absent or null means not snoozed; a non-string is a failure. */

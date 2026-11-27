@@ -117,8 +117,25 @@
       },
       "required": ["id", "name", "bots", "groups"],
       "type": "object"
+    },
+    "spaces": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"],
+        "type": "object"
+      },
+      "type": "array"
     }
   },
-  "required": ["current"],
+  "required": ["current", "spaces"],
   "type": "object"
 }
