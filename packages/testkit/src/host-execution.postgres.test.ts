@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { runJobKey } from "@rakazo/adapter-kit";
 import type { createApp } from "@rakazo/api/app";
-import type { HostFrame, HostStart } from "@rakazo/contracts";
+import type { HostFrame, HostStart, RunActivityRow, ThreadSnapshot } from "@rakazo/contracts";
 import { computerUsingRuns } from "@rakazo/core";
-import { createThreadMessageInTransaction, runAsSystem, runAsTenant } from "@rakazo/db";
+import { createPool, createThreadMessageInTransaction, runAsSystem, runAsTenant } from "@rakazo/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { discardBotIntroFromCreate } from "./discard-bot-intro.js";
 import { asSystem } from "./system-db.js";
@@ -119,7 +119,10 @@ integration("desktop-originated runs through the authenticated API", () => {
     const input = request();
     const grant = await start(input);
     expect(await start(input)).toMatchObject(grant);
-    expect((await db.run.findUniqueOrThrow({ where: { id: grant.runId } })).status).toBe("running");
+    expect(await db.run.findUniqueOrThrow({ where: { id: grant.runId } })).toMatchObject({
+      status: "running",
+      trigger: "user",
+    });
     expect(
       await db.message.count({
         where: { threadId: grant.threadId, clientNonce: input.clientNonce },
@@ -149,6 +152,74 @@ integration("desktop-originated runs through the authenticated API", () => {
         where: { runId: grant.runId, type: "thread.message.created" },
       });
       expect(event.payload).toMatchObject({ role: "user", seq: grant.seq });
+    } finally {
+      await sync(grant, [{ sequence: 1, event: { type: "cancelled" } }]);
+    }
+  });
+
+  it("loads chat history after a desktop run fails", async () => {
+    const input = request();
+    const grant = await start(input);
+    await sync(grant, [{ sequence: 1, event: { type: "failed", code: "fixture-failure" } }]);
+
+    const snapshot = await rpc<ThreadSnapshot>("threads/get", { botId });
+    expect(snapshot.messages).toContainEqual(
+      expect.objectContaining({ seq: grant.seq, role: "user", runId: grant.runId }),
+    );
+    expect(snapshot.run).toMatchObject({ id: grant.runId, status: "failed", trigger: "user" });
+  });
+
+  it("backfills only legacy host runs and keeps their computer scope", async () => {
+    const sql = readFileSync(
+      new URL(
+        "../../db/prisma/migrations/20270101000500_host_run_origin/migration.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const pool = createPool(process.env.DATABASE_MIGRATION_URL!);
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        CREATE TEMP TABLE runs (id TEXT PRIMARY KEY, trigger TEXT NOT NULL);
+        CREATE TEMP TABLE host_executions ("runId" TEXT PRIMARY KEY, "targetComputerId" TEXT);
+        INSERT INTO runs VALUES ('guest', 'host'), ('routine', 'routine'), ('workspace', 'host');
+        INSERT INTO host_executions VALUES ('guest', 'fixture-computer'), ('workspace', NULL);
+      `);
+      await client.query(sql);
+      const { rows } = await client.query("SELECT * FROM pg_temp.runs ORDER BY id");
+      expect(rows).toEqual([
+        { id: "guest", trigger: "user", runsInLocalWorkspace: false },
+        { id: "routine", trigger: "routine", runsInLocalWorkspace: false },
+        { id: "workspace", trigger: "user", runsInLocalWorkspace: true },
+      ]);
+    } finally {
+      client.release();
+      await pool.end();
+    }
+  });
+
+  it("does not reserve a shared server computer for another member's local workspace", async () => {
+    const grant = await start();
+    try {
+      await runAsTenant({ ...actor, userId: "another-fixture-user" }, async () => {
+        expect(await app.prisma.run.count({ where: { id: grant.runId } })).toBe(1);
+        expect(
+          await app.prisma.run.count({ where: { id: grant.runId, ...computerUsingRuns() } }),
+        ).toBe(0);
+      });
+    } finally {
+      await sync(grant, [{ sequence: 1, event: { type: "cancelled" } }]);
+    }
+  });
+
+  it("lists a desktop run as user-initiated activity", async () => {
+    const grant = await start();
+    try {
+      const activity = await rpc<{ runs: RunActivityRow[] }>("runs/list", { filter: "active" });
+      expect(activity.runs).toContainEqual(
+        expect.objectContaining({ runId: grant.runId, trigger: "user" }),
+      );
     } finally {
       await sync(grant, [{ sequence: 1, event: { type: "cancelled" } }]);
     }
