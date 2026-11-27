@@ -1,0 +1,13 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "models": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": ["models"],
+  "type": "object"
+}

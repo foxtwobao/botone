@@ -435,13 +435,27 @@ export function decodeAuthCapabilities(json: Object | null): AuthCapabilitiesVie
   return result;
 }
 
-/** One models/list entry (M4 read-only display): the four whitelisted fields. providerName is
- * optional (older servers and ordinary chat connections omit it); a non-string is a failure. */
+/** An optional boolean flag: absent or null reads false; a value of another type fails the row. */
+function readOptionalFlag(record: Record<string, Object>, key: string): boolean | undefined {
+  const value = record[key];
+  if (value === undefined || value === null) {
+    return false;
+  }
+  return typeof value === 'boolean' ? value as boolean : undefined;
+}
+
+/** One models/list entry (M4 display, M9 connection forms): the consumed fields. providerName
+ * is optional (older servers and ordinary chat connections omit it); a non-string is a failure.
+ * recommended marks the provider's preselected model; auth is api-key | oauth | both, absent
+ * reading as an API key; placeholder marks a catalog stand-in, not a real model. */
 export interface ModelCatalogEntryView {
   provider: string;
   id: string;
   label: string;
   providerName: string | null;
+  recommended: boolean;
+  auth: string | null;
+  placeholder: boolean;
 }
 
 export function decodeModelCatalogEntry(json: Object | null): ModelCatalogEntryView | null {
@@ -458,11 +472,21 @@ export function decodeModelCatalogEntry(json: Object | null): ModelCatalogEntryV
   const providerName: string | null | undefined = rawName === undefined || rawName === null
     ? null
     : typeof rawName === 'string' ? rawName as string : undefined;
-  if (provider === null || !provider || id === null || !id || label === null || providerName === undefined) {
+  // recommended/placeholder are optional flags: absent reads false, another type fails the row.
+  const recommended = readOptionalFlag(record, 'recommended');
+  const placeholder = readOptionalFlag(record, 'placeholder');
+  // auth is optional: absent reads null, which the connect screens treat as an API key.
+  const rawAuth = record['auth'];
+  const auth: string | null | undefined = rawAuth === undefined || rawAuth === null
+    ? null
+    : typeof rawAuth === 'string' ? rawAuth as string : undefined;
+  if (provider === null || !provider || id === null || !id || label === null || providerName === undefined
+    || recommended === undefined || placeholder === undefined || auth === undefined) {
     return null;
   }
   const result: ModelCatalogEntryView = {
     provider: provider, id: id, label: label, providerName: providerName,
+    recommended: recommended, auth: auth, placeholder: placeholder,
   };
   return result;
 }

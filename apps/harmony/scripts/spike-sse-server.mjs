@@ -20,6 +20,7 @@ import {
   handleGroupsRpc,
   resetGroups,
 } from "./group-fixture.mjs";
+import { handleModelsControl, handleModelsRpc, resetModelsFixture } from "./model-fixture.mjs";
 import {
   handleVoiceControl,
   handleVoiceHttp,
@@ -46,31 +47,8 @@ const ME = {
   defaultModel: "fake-model",
 };
 
-// The model catalog; /__models moves the default off it to prove the generic fallback.
-let MODELS = [
-  {
-    provider: "fake-provider",
-    id: "fake-model",
-    label: "Fake Fast Model",
-    providerName: "Fake Maker",
-    billing: "credits",
-  },
-  { provider: "fake-provider", id: "fake-slow", label: "Fake Slow Model", billing: "credits" },
-];
-function resetModels() {
-  MODELS = [
-    {
-      provider: "fake-provider",
-      id: "fake-model",
-      label: "Fake Fast Model",
-      providerName: "Fake Maker",
-      billing: "credits",
-    },
-    { provider: "fake-provider", id: "fake-slow", label: "Fake Slow Model", billing: "credits" },
-  ];
-  ME.defaultProvider = "fake-provider";
-  ME.defaultModel = "fake-model";
-}
+// The model catalog and its control routes live in model-fixture.mjs; the account answer here is
+// the one its connect updates (me.needsModel/defaultProvider/defaultModel).
 
 // ---- M2 roster state: a mutable fake roster whose /rpc reads are all logged ----
 const SPACE = "space-fake";
@@ -629,10 +607,6 @@ function handleRpc(req, res, body) {
     if (space === "space-stale") return rpcError(res, 401, "UNAUTHORIZED", "Space inaccessible");
     return json(res, 200, { json: navigation() });
   }
-  if (path === "/rpc/models/list") {
-    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
-    return json(res, 200, { json: MODELS });
-  }
   if (path === "/rpc/bots/list") {
     if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     return json(res, 200, { json: activeBots() });
@@ -773,15 +747,6 @@ createServer((req, res) => {
       }
       return json(res, 200, { ok: true });
     }
-    if (req.url === "/__models") {
-      // Move the account default / catalog so the settings model row can be driven to either
-      // branch: {defaultProvider?, defaultModel?, catalog?: [...]}.
-      const input = body ? JSON.parse(body) : {};
-      if ("defaultProvider" in input) ME.defaultProvider = input.defaultProvider;
-      if ("defaultModel" in input) ME.defaultModel = input.defaultModel;
-      if (Array.isArray(input.catalog)) MODELS = input.catalog;
-      return json(res, 200, { ok: true });
-    }
     if (req.url === "/__offline") {
       const input = body ? JSON.parse(body) : {};
       offline = input.on === true;
@@ -875,7 +840,7 @@ createServer((req, res) => {
       THREAD_SCRIPTS.clear();
       threadRefusals = 0;
       threadStall = null;
-      resetModels();
+      resetModelsFixture(ME);
       resetArtifacts();
       resetConsent();
       resetVoice();
@@ -900,6 +865,7 @@ createServer((req, res) => {
       consentScriptIndex = 0;
       return json(res, 200, { ok: true, count: consentScript.length });
     }
+    if (handleModelsControl(req, res, body, ME)) return;
     if (handleVoiceControl(req, res, body)) return;
     if (handleGroupsControl(req, res, body)) return;
     if (handleVoiceHttp(req, res, body)) return;
@@ -910,6 +876,7 @@ createServer((req, res) => {
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);
     if (req.url.startsWith("/rpc/threads/")) return handleThreadRpc(req, res, body);
     if (handleGroupsRpc(req, res, body, sendSignal)) return;
+    if (handleModelsRpc(req, res, body, ME)) return;
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);
     if (req.url.startsWith("/api/auth/")) return auth.handleAuth(req, res, body);
     if (req.url.startsWith("/sse")) {

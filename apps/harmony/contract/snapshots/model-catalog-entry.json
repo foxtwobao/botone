@@ -1,17 +1,27 @@
 {
   "additionalProperties": false,
   "properties": {
+    "auth": {
+      "enum": ["api-key", "oauth", "both"],
+      "type": "string"
+    },
     "id": {
       "type": "string"
     },
     "label": {
       "type": "string"
     },
+    "placeholder": {
+      "type": "boolean"
+    },
     "provider": {
       "type": "string"
     },
     "providerName": {
       "type": "string"
+    },
+    "recommended": {
+      "type": "boolean"
     }
   },
   "required": ["provider", "id", "label"],

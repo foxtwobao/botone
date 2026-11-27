@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "apiKey": {
+      "type": "string"
+    },
+    "apiProtocol": {
+      "enum": ["chat-completions", "responses", "anthropic-messages"],
+      "type": "string"
+    },
+    "baseUrl": {
+      "type": "string"
+    },
+    "credentialId": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "enabledModelIds": {
+      "items": {
+        "maxLength": 512,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 500,
+      "type": "array"
+    },
+    "label": {
+      "type": "string"
+    },
+    "makeDefault": {
+      "type": "boolean"
+    },
+    "modelId": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "scope": {
+      "enum": ["account", "space"],
+      "type": "string"
+    },
+    "thinkingLevel": {
+      "anyOf": [
+        {
+          "enum": ["off", "minimal", "low", "medium", "high", "xhigh", "max"],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": ["provider"],
+  "type": "object"
+}

@@ -37,6 +37,8 @@ import voiceSettingsTest from './VoiceSettings.test';
 import signInViewTest from './SignInView.test';
 import groupRulesTest from './GroupRules.test';
 import groupWriteTest from './GroupWrite.test';
+import modelConnectTest from './ModelConnect.test';
+import modelWriteTest from './ModelWrite.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -57,6 +59,8 @@ export default function testsuite() {
   hotLocaleTest();
   // M8: the group rules' contract-generated default name and the member decode (pure).
   groupRulesTest();
+  // M9: the model connection ports' fixture replay (pure).
+  modelConnectTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();
@@ -74,6 +78,8 @@ export default function testsuite() {
   rosterRealtimeTest();
   // M8: the group create/update writes against the fixture server.
   groupWriteTest();
+  // M9: the model connections store against the fixture server.
+  modelWriteTest();
   // Opt-in real-backend smokes; skip loudly without -s realBase.
   realBackendSmoke();
   realThreadSmoke();

@@ -394,6 +394,31 @@ export struct ThreadPage {
     this.store.sendDraft(text, this.attachments, this.replyTarget?.id ?? '', imagesAsFiles);
   }
 
+  /** No model is configured yet: retrying the send cannot help; connecting one can (mobile's
+   *  failed-send bubble offers Add model in that case). */
+  private modelRequired(): boolean {
+    return app.me !== null && app.me.needsModel;
+  }
+
+  private sendFailureLabel(): string {
+    if (this.store.imageConfirmation) {
+      return t('Send as file');
+    }
+    return this.modelRequired() ? t('Add model') : t('Retry');
+  }
+
+  private sendFailureTap(): void {
+    if (this.store.imageConfirmation) {
+      this.sendDraft(true);
+      return;
+    }
+    if (this.modelRequired()) {
+      this.stack.pushPathByName('models', null);
+      return;
+    }
+    this.sendDraft(false);
+  }
+
   /** The composer's send button: one builder, because the dictation bar row carries it too. */
   @Builder
   sendButton() {
@@ -652,11 +677,11 @@ export struct ThreadPage {
       if (this.store.send.error) {
         Row({ space: 8 }) {
           ErrorText({ message: this.store.send.error }).layoutWeight(1)
-          Button(this.store.imageConfirmation ? t('Send as file') : t('Retry'))
+          Button(this.sendFailureLabel())
             .fontSize(typeScale.secondary.fontSize)
             .backgroundColor(appearance.tokens().card)
             .fontColor(appearance.tokens().foreground)
-            .onClick((): void => { this.sendDraft(this.store.imageConfirmation); })
+            .onClick((): void => { this.sendFailureTap(); })
         }
         .width('100%')
         .padding({ left: 16, right: 16, top: 4 })

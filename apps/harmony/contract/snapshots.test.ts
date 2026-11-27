@@ -26,6 +26,11 @@ import {
   messageBlockKindsView,
   meView,
   modelCatalogEntryView,
+  modelConnectInputView,
+  modelConnectOutputView,
+  modelCredentialsView,
+  modelCredentialView,
+  modelProbeInputView,
   modelsListView,
   notificationsSubscribeView,
   runView,
@@ -191,6 +196,28 @@ describe("harmony layer-1 contract snapshots", () => {
     const modelsSource = appContract.models.list["~orpc"].outputSchema!.element;
     expectFields(modelCatalogEntryView, modelsSource, "models.list");
     expect(modelsListView.element).toBe(modelCatalogEntryView);
+    // M9: a saved connection projects the real models/credentials element, and the connect
+    // output reuses the same view.
+    const credentialsSource = appContract.models.credentials["~orpc"].outputSchema!.element;
+    expectFields(modelCredentialView, credentialsSource, "models.credentials");
+    expect(modelCredentialsView.element).toBe(modelCredentialView);
+    expect(modelConnectOutputView).toBe(modelCredentialView);
+    // The connect input is an intersection: every picked field is the left member's own schema.
+    const connectSource = appContract.models.connect["~orpc"].inputSchema!;
+    const connectLeft = connectSource as unknown as {
+      def?: { left?: z.ZodObject };
+      _def?: { left?: z.ZodObject };
+    };
+    const connectInput = connectLeft.def?.left ?? connectLeft._def?.left;
+    if (!connectInput) throw new Error("models.connect input is not an intersection");
+    expectFields(modelConnectInputView, connectInput, "models.connect");
+    // The probe input drops the transformed headers record; its other fields stay the real ones.
+    const probeSource = appContract.models.probeOpenAiCompatible["~orpc"].inputSchema!;
+    for (const [key, field] of Object.entries(modelProbeInputView.shape)) {
+      expect(field, `models.probe.${key}`).toBe(
+        (probeSource.shape as Record<string, unknown>)[key],
+      );
+    }
   });
 
   for (const [name, schema] of Object.entries(snapshotViews)) {

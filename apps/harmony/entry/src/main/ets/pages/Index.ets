@@ -15,6 +15,8 @@ import { ThreadPage } from '../features/chat/ThreadPage';
 import type { ThreadRoute } from '../features/chat/thread-route';
 import { NewGroupPage } from '../features/groups/NewGroupPage';
 import { GroupSettingsPage } from '../features/groups/GroupSettingsPage';
+import { ModelsPage } from '../features/models/ModelsPage';
+import { ModelConnectionPage } from '../features/models/ModelConnectionPage';
 import { ShareTargetSheet } from '../features/chat/share-target-sheet';
 import { incomingShare } from '../stores/incoming-share-store';
 
@@ -41,6 +43,10 @@ struct Index {
       SettingsPage({ stack: this.stack })
     } else if (name === 'voice') {
       VoicePage({ stack: this.stack })
+    } else if (name === 'models') {
+      ModelsPage({ stack: this.stack })
+    } else if (name === 'modelConnection') {
+      ModelConnectionPage({ stack: this.stack })
     } else if (name === 'newGroup') {
       NewGroupPage({ stack: this.stack })
     } else if (name === 'groupSettings') {
