@@ -18,6 +18,7 @@ import type { SignOutContext } from '../net/sign-out';
 import { clearArtifactCache } from '../net/artifact-cache';
 import { cleanAttachmentDirectory, draftDirectory } from '../thread/attachment-files';
 import { loadI18n } from '../i18n/i18n';
+import { initReturningUser, rememberSignedIn } from '../features/signin/returning-user';
 import { appearance } from '../uikit/theme';
 import { queryCache } from '../query/query-cache';
 import { rosterStore } from '../stores/roster-store';
@@ -68,6 +69,7 @@ export class AppState {
       await initServerStore(context);
       await appearance.init(context);
       await loadI18n(context);
+      initReturningUser(context);
     } catch (err) {
       this.phase = 'signIn';
       return;
@@ -78,6 +80,8 @@ export class AppState {
     const signOutContext: SignOutContext = { apiBase: currentApiBase(), activeToken: token };
     void flushPendingSignOut(signOutContext, true);
     if (token) {
+      // A session on disk marks the person as returning, like any save does below.
+      void rememberSignedIn();
       await this.loadMe();
     } else {
       this.phase = 'signIn';
@@ -108,9 +112,13 @@ export class AppState {
         this.spaceName = '';
         this.meError = '';
         this.phase = 'signIn';
-      } else if (this.phase === 'signIn') {
-        // A sign-in or a rolled-back switch restored the session: the inbox owns the screen.
-        void this.loadMe();
+      } else {
+        // Marked on every save, like mobile's saveSessionToken: the next launch opens sign-in.
+        void rememberSignedIn();
+        if (this.phase === 'signIn') {
+          // A sign-in or a rolled-back switch restored the session: the inbox owns the screen.
+          void this.loadMe();
+        }
       }
     });
   }

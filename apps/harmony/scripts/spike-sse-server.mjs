@@ -12,6 +12,7 @@ import {
   refuseImages,
   resetArtifacts,
 } from "./artifact-fixture.mjs";
+import * as auth from "./auth-fixture.mjs";
 import { bearer, json, rpcError } from "./fixture-http.mjs";
 import {
   handleVoiceControl,
@@ -27,7 +28,6 @@ const port = Number(process.argv[2] ?? 8787);
 const splitFrame = Buffer.from('data: {"json":{"type":"split","seq":2,"text":"鸿蒙"}}\n\n');
 const cut = splitFrame.indexOf("鸿") + 1;
 
-const signOuts = [];
 // Every x-rakazo-client-build header the client sends, so tests can pin the build handshake.
 const clientBuilds = [];
 const ME = {
@@ -701,58 +701,6 @@ function handleRpc(req, res, body) {
   return rpcError(res, 404, "NOT_FOUND", "Not found");
 }
 
-function handleAuth(req, res, body) {
-  const input = body ? JSON.parse(body) : {};
-  const path = req.url;
-  if (path === "/api/auth/capabilities" && req.method === "GET") {
-    return json(res, 200, {
-      passwordAuth: true,
-      passwordReset: true,
-      resetUrl: "https://example.com/reset",
-      emailCode: true,
-      sso: null,
-    });
-  }
-  if (req.method !== "POST") return json(res, 405, {});
-  if (path === "/api/auth/sign-in/email") {
-    if (input.password === "good") {
-      // Header wins over the body token; both are present to pin the extraction order.
-      return json(res, 200, { token: "body-token" }, { "set-auth-token": "fake-token" });
-    }
-    if (input.password === "cookie") {
-      return json(
-        res,
-        200,
-        {},
-        { "set-cookie": "better-auth.session_token=cookie-token; Path=/; HttpOnly" },
-      );
-    }
-    if (input.password === "body") return json(res, 200, { token: "body-token" });
-    return json(res, 401, {
-      code: "INVALID_LOGIN_CREDENTIALS",
-      message: "Invalid email or password",
-    });
-  }
-  if (path === "/api/auth/sign-up/email") {
-    if (String(input.email).startsWith("verify")) return json(res, 200, { token: null });
-    return json(res, 200, {}, { "set-auth-token": "fake-token" });
-  }
-  if (path === "/api/auth/email-otp/send-verification-otp") return json(res, 200, {});
-  if (path === "/api/auth/sign-in/email-otp") {
-    if (input.otp === "123456") return json(res, 200, {}, { "set-auth-token": "fake-token" });
-    return json(res, 400, { code: "INVALID_OTP", message: "Invalid code" });
-  }
-  if (path === "/api/auth/sign-out") {
-    const token = bearer(req);
-    signOuts.push(token);
-    console.log(`sign-out token=${token}`);
-    if (token === "retry-token") return json(res, 500, {});
-    if (token === "gone-token") return json(res, 401, {});
-    return json(res, 200, {});
-  }
-  return json(res, 404, {});
-}
-
 function handleSse(req, res) {
   if (req.headers.accept !== "text/event-stream") {
     res.writeHead(400).end();
@@ -830,7 +778,13 @@ createServer((req, res) => {
       requests.push({ seq, path: req.url, body: loggedBody(req.url, body), t: Date.now() });
     }
     if (req.url === "/__state") {
-      return json(res, 200, { signOuts, clientBuilds, streams: notificationClients.size });
+      return json(res, 200, {
+        signOuts: auth.signOuts,
+        clientBuilds,
+        streams: notificationClients.size,
+        ssoStarts: auth.ssoStarts,
+        resetEmails: auth.resetEmails,
+      });
     }
     if (req.url === "/__requests") {
       return json(res, 200, { requests, seq });
@@ -945,7 +899,6 @@ createServer((req, res) => {
       return json(res, 200, { ok: true });
     }
     if (req.url === "/__reset") {
-      signOuts.length = 0;
       clientBuilds.length = 0;
       requests.length = 0;
       seq = 0;
@@ -958,6 +911,7 @@ createServer((req, res) => {
       resetArtifacts();
       resetConsent();
       resetVoice();
+      auth.resetAuth();
       consentScript = [];
       consentScriptIndex = 0;
       return json(res, 200, {});
@@ -987,7 +941,7 @@ createServer((req, res) => {
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);
     if (req.url.startsWith("/rpc/threads/")) return handleThreadRpc(req, res, body);
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);
-    if (req.url.startsWith("/api/auth/")) return handleAuth(req, res, body);
+    if (req.url.startsWith("/api/auth/")) return auth.handleAuth(req, res, body);
     if (req.url.startsWith("/sse")) {
       if (req.method !== "POST") {
         res.writeHead(405).end();

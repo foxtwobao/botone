@@ -8,6 +8,7 @@ import { InboxPage } from '../features/inbox/InboxPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { ArchivedPage } from '../features/archived/ArchivedPage';
 import { ServerPage } from '../features/server/ServerPage';
+import { SsoPage } from '../features/signin/SsoPage';
 import { VoicePage } from '../features/settings/VoicePage';
 import { VoicePlayerBar } from '../features/chat/voice-player-bar';
 import { ThreadPage } from '../features/chat/ThreadPage';
@@ -29,6 +30,9 @@ struct Index {
   destinations(name: string, route: ThreadRoute) {
     if (name === 'server') {
       ServerPage({ stack: this.stack })
+    } else if (name === 'sso') {
+      // The in-app incognito auth session; its route param carries the proxy URL.
+      SsoPage({ stack: this.stack })
     } else if (name === 'archived') {
       ArchivedPage({ stack: this.stack })
     } else if (name === 'settings') {

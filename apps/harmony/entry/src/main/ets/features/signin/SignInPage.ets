@@ -1,20 +1,46 @@
-// Sign-in (design §7.2 M1), capabilities-driven like apps/mobile/app/sign-in.tsx: password
-// and email-OTP when the server offers them, sign-up with a name, OTP auto-registration, and
-// forgot-password through the server's resetUrl in the system browser. SSO/passkey are Phase 2.
+// Sign-in aligned with apps/mobile/app/sign-in.tsx (PR1 of the port plan): one capabilities-
+// driven state machine (features/signin/sign-in-view.ets) — provider chooser with email
+// choice, email form with typo suggestions, emailed-code step, in-app forgot-password via
+// request-password-reset — plus provider sign-in through the in-app incognito web session
+// (net/sso.ets). Passkey entries are an input held false for PR2.
 import { appearance } from '../../uikit/theme';
 import { typeScale } from '../../uikit/tokens.generated';
 import { ActionButton, ErrorText, Field } from '../../uikit/controls';
 import { t } from '../../i18n/i18n';
-import { SSO_ONLY_SERVER } from '../../i18n/harmony-strings';
 import { app } from '../../app/app-state';
 import type { AppState } from '../../app/app-state';
-import { authCapabilities, sendSignInCode, signIn, signInWithCode, signUp } from '../../net/auth';
+import {
+  authCapabilities,
+  requestPasswordReset,
+  sendSignInCode,
+  signIn,
+  signInWithCode,
+  signUp,
+} from '../../net/auth';
+import { continueWithSso } from '../../net/sso';
 import { credentialIssue, errorText, RpcError } from '../../net/errors';
 import { currentApiBase } from '../../net/server-store';
+import { currentSessionGeneration } from '../../net/session';
 import { displaySavedServer } from '../../net/endpoint';
-import type { AuthCapabilitiesView } from '../../contract/decode';
+import { openAuthSession, ssoStackOf } from './sso-session';
+import { suggestEmailCorrection } from './email-typo';
+import {
+  CODE_LENGTH,
+  defaultName,
+  emailSuggestion,
+  headline,
+  primaryLabel,
+  sendStillCurrent,
+  signInView,
+  switchLabels,
+} from './sign-in-view';
+import type { SignInMode, SignInViewInput, SignInView } from './sign-in-view';
+import { ProviderButton, ProviderTextLink, providerLabel } from './ProviderButtons';
+import { hasSignedInBefore } from './returning-user';
+import type { AuthCapabilitiesView, SignInProviderView } from '../../contract/decode';
 
-const CODE_LENGTH = 6;
+/** Password fields cap at the server's limit (packages/core password-policy: 128). */
+const MAX_PASSWORD_LENGTH = 128;
 
 @ComponentV2
 export struct SignInPage {
@@ -22,91 +48,193 @@ export struct SignInPage {
   @Local appRef: AppState = app;
   @Local capabilities: AuthCapabilitiesView | null = null;
   @Local capsLoading: boolean = true;
-  @Local capsError: string = '';
-  /** in | up */
-  @Local mode: string = 'in';
-  @Local email: string = '';
-  @Local password: string = '';
+  @Local capsError: boolean = false;
+  @Local capsAttempt: number = 0;
+  /** in | up | forgot; a returning user lands on sign-in, a first visit on sign-up. */
+  @Local mode: string = 'up';
   @Local name: string = '';
+  @Local email: string = '';
+  @Local emailBlurred: boolean = false;
+  @Local warnedEmail: string = '';
+  @Local password: string = '';
   @Local code: string = '';
-  @Local usingCode: boolean = false;
   @Local codeSent: boolean = false;
-  @Local verificationSent: boolean = false;
+  @Local resetSent: boolean = false;
+  @Local emailStep: boolean = false;
+  /** PR2 turns passkeys on; every entry stays hidden while this is false. */
+  @Local passkeys: boolean = false;
   @Local pending: boolean = false;
   @Local error: string = '';
+  private capsGeneration: number = 0;
+
+  @Computed
+  get view(): SignInView {
+    const input: SignInViewInput = {
+      capabilities: this.capabilities,
+      mode: this.mode as SignInMode,
+      emailStep: this.emailStep,
+      password: this.password,
+      codeSent: this.codeSent,
+      resetSent: this.resetSent,
+      passkeys: this.passkeys,
+    };
+    return signInView(input);
+  }
 
   aboutToAppear(): void {
+    void hasSignedInBefore().then((returning: boolean): void => {
+      // A closed registration starts on sign-in too, whichever answer lands first.
+      const closed = this.capabilities !== null && !this.capabilities.registrationOpen;
+      this.mode = returning || closed ? 'in' : 'up';
+    });
     void this.loadCapabilities();
   }
 
-  // Returning from ServerPage after a committed switch: re-read the new server's capabilities.
+  // Returning from ServerPage after a committed switch: drop every step the old server owns.
   @Monitor('appRef.serverBase')
   onServerChanged(): void {
+    this.emailStep = false;
     this.codeSent = false;
-    this.usingCode = false;
+    this.code = '';
+    this.password = '';
+    this.resetSent = false;
     this.error = '';
     void this.loadCapabilities();
   }
 
+  @Monitor('capsAttempt')
+  onCapsRetry(): void {
+    void this.loadCapabilities();
+  }
+
   private async loadCapabilities(): Promise<void> {
+    const generation = ++this.capsGeneration;
     this.capsLoading = true;
-    this.capsError = '';
+    this.capsError = false;
+    // A code belongs to the server that sent it.
+    this.codeSent = false;
+    this.code = '';
     try {
       const capabilities = await authCapabilities();
+      if (generation !== this.capsGeneration) {
+        return;
+      }
       this.capabilities = capabilities;
-      // A server without password auth signs in by code only.
-      this.usingCode = !capabilities.passwordAuth && capabilities.emailCode;
+      // A closed registration starts everyone on sign-in (web's Navigate to /sign-in).
+      if (!capabilities.registrationOpen && this.mode === 'up') {
+        this.mode = 'in';
+      }
     } catch (err) {
-      this.capsError = err instanceof Error ? (err as Error).message : t('Could not load sign-in options');
+      if (generation !== this.capsGeneration) {
+        return;
+      }
+      this.capsError = true;
     } finally {
-      this.capsLoading = false;
+      if (generation === this.capsGeneration) {
+        this.capsLoading = false;
+      }
     }
   }
 
-  private defaultName(email: string): string {
-    return this.name.trim() || email.split('@')[0] || 'User';
+  private suggestion(): string | null {
+    return emailSuggestion(this.mode as SignInMode, suggestEmailCorrection(this.email));
   }
 
-  private async submit(): Promise<void> {
+  private async submit(enteredCode: string = ''): Promise<void> {
     const capabilities = this.capabilities;
+    const view = this.view;
     if (this.pending || capabilities === null) {
       return;
     }
     const email = this.email.trim();
-    const needsPassword = !this.usingCode && capabilities.passwordAuth;
-    const issue = credentialIssue(email, needsPassword ? this.password : null);
+    const issue = credentialIssue(email, view.usingCode || this.mode === 'forgot' ? null : this.password);
     if (issue !== null) {
       this.error = issue === 'email' ? t('Enter a valid email') : t('Enter a password');
       return;
     }
+    // One warning per address: the first submit shows the suggestion, the next one goes through.
+    const suggestion = this.suggestion();
+    if (suggestion !== null && this.warnedEmail !== this.email) {
+      this.warnedEmail = this.email;
+      this.emailBlurred = true;
+      return;
+    }
     // An unfinished code would spend one of the code's three attempts.
-    if (this.usingCode && this.codeSent && this.code.trim().length !== CODE_LENGTH) {
+    const typedCode = enteredCode !== '' ? enteredCode : this.code;
+    if (view.codeStep && typedCode.length !== CODE_LENGTH) {
+      return;
+    }
+    // The server this submit started on owns every answer: a switch while it is away (even
+    // switched back to the same address) leaves its result behind (checked before each write).
+    const apiBase = currentApiBase();
+    const generation = currentSessionGeneration();
+    const stillCurrent = (): boolean =>
+      sendStillCurrent(apiBase, generation, currentApiBase(), currentSessionGeneration());
+    this.pending = true;
+    this.error = '';
+    try {
+      if (this.mode === 'forgot') {
+        const resetUrl = capabilities.resetUrl;
+        if (!capabilities.passwordReset || resetUrl === null) {
+          throw new Error(t('Password recovery is not configured for this server'));
+        }
+        await requestPasswordReset(email, resetUrl);
+        if (!stillCurrent()) {
+          return;
+        }
+        this.resetSent = true;
+      } else if (view.usingCode && !this.codeSent) {
+        await sendSignInCode(email);
+        if (!stillCurrent()) {
+          return;
+        }
+        this.code = '';
+        this.codeSent = true;
+      } else if (view.usingCode) {
+        try {
+          // The name is only used when this creates the account.
+          await signInWithCode(email, typedCode, this.mode === 'up' ? defaultName(this.name, email) : null);
+        } catch (err) {
+          // A wrong code never keeps its input (web parity).
+          if (stillCurrent()) {
+            this.code = '';
+          }
+          throw err as Error;
+        }
+      } else if (this.mode === 'up') {
+        const result = await signUp(email, this.password, defaultName(this.name, email));
+        if (result.verificationRequired) {
+          if (!stillCurrent()) {
+            return;
+          }
+          this.resetSent = true;
+        }
+      } else {
+        await signIn(email, this.password);
+      }
+    } catch (err) {
+      if (!stillCurrent()) {
+        return;
+      }
+      const rpcError = err instanceof RpcError ? err as RpcError : null;
+      this.error = rpcError !== null ? errorText(rpcError)
+        : err instanceof Error ? (err as Error).message : t('Could not continue');
+    } finally {
+      this.pending = false;
+    }
+  }
+
+  /** Provider sign-in: pending guards a second tap, the session listener owns the screen on
+   *  success, errors carry the auth copy. */
+  private async startProvider(provider: SignInProviderView): Promise<void> {
+    if (this.pending) {
       return;
     }
     this.pending = true;
     this.error = '';
     try {
-      if (this.usingCode) {
-        if (!this.codeSent) {
-          await sendSignInCode(email);
-          this.codeSent = true;
-          this.code = '';
-        } else {
-          // The name is only used when this creates the account.
-          await signInWithCode(email, this.code.trim(), this.mode === 'up' ? this.defaultName(email) : null);
-          await app.loadMe();
-        }
-      } else if (this.mode === 'up') {
-        const result = await signUp(email, this.password, this.defaultName(email));
-        if (result.verificationRequired) {
-          this.verificationSent = true;
-        } else {
-          await app.loadMe();
-        }
-      } else {
-        await signIn(email, this.password);
-        await app.loadMe();
-      }
+      await continueWithSso(provider.id, (url: string, stateCookie: string): Promise<string | null> =>
+        openAuthSession(ssoStackOf(this.stack), url, stateCookie));
     } catch (err) {
       const rpcError = err instanceof RpcError ? err as RpcError : null;
       this.error = rpcError !== null ? errorText(rpcError)
@@ -116,18 +244,9 @@ export struct SignInPage {
     }
   }
 
-  private primaryLabel(): string {
-    if (this.usingCode) {
-      return t('Continue');
-    }
-    return this.mode === 'up' ? t('Sign up') : t('Sign in');
-  }
-
-  private primaryDisabled(): boolean {
-    if (this.usingCode && this.codeSent) {
-      return this.code.trim().length !== CODE_LENGTH;
-    }
-    return false;
+  private applyMode(mode: SignInMode): void {
+    this.mode = mode;
+    this.error = '';
   }
 
   @Builder
@@ -149,14 +268,70 @@ export struct SignInPage {
     .width('100%')
   }
 
+  @Builder
+  providerButtons() {
+    ForEach(this.view.primary, (provider: SignInProviderView): void => {
+      ProviderButton({
+        label: providerLabel(provider.name),
+        mark: provider.mark,
+        outlined: provider.variant === 'outline',
+        disabled: this.pending,
+        onTap: (): void => {
+          void this.startProvider(provider);
+        },
+      })
+    }, (provider: SignInProviderView): string => provider.id)
+    if (this.view.emailChoice) {
+      ProviderButton({
+        label: t('Continue with email'),
+        mark: null,
+        stroked: true,
+        outlined: true,
+        disabled: this.pending,
+        onTap: (): void => {
+          this.error = '';
+          this.emailStep = true;
+        },
+      })
+    }
+    ForEach(this.view.secondary, (provider: SignInProviderView): void => {
+      ProviderTextLink({
+        label: providerLabel(provider.name),
+        disabled: this.pending,
+        onTap: (): void => {
+          void this.startProvider(provider);
+        },
+      })
+    }, (provider: SignInProviderView): string => provider.id)
+  }
+
   build() {
     Scroll() {
       Column({ space: 20 }) {
-        Text(this.mode === 'up' ? t('Create your account') : t('Welcome back'))
+        if (this.view.presented && this.emailStep) {
+          // Back to the chooser; the email keeps its value.
+          Text(t('Back'))
+            .fontSize(typeScale.secondary.fontSize)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(appearance.tokens().mutedForeground)
+            .alignSelf(ItemAlign.Start)
+            .padding({ top: 8, bottom: 8, right: 16 })
+            .onClick((): void => {
+              this.error = '';
+              this.emailStep = false;
+            })
+        }
+        Text(headline(this.mode as SignInMode, this.view))
           .fontSize(typeScale.title.fontSize)
           .fontWeight(FontWeight.Bold)
           .fontColor(appearance.tokens().foreground)
           .alignSelf(ItemAlign.Start)
+        if (this.view.chooserHeadline) {
+          Text(t('Persistent AI teammates that do real work'))
+            .fontSize(typeScale.secondary.fontSize)
+            .fontColor(appearance.tokens().mutedForeground)
+            .alignSelf(ItemAlign.Start)
+        }
         this.serverRow()
 
         if (this.capsLoading) {
@@ -170,157 +345,169 @@ export struct SignInPage {
           .justifyContent(FlexAlign.Center)
           .padding(30)
         } else if (this.capsError) {
-          ErrorText({ message: this.capsError })
+          ErrorText({ message: t('Could not load sign-in options') })
           ActionButton({
             label: t('Retry'),
             kind: 'secondary',
             onTap: (): void => {
-              void this.loadCapabilities();
+              this.capsAttempt += 1;
             },
           })
-        } else if (this.capabilities !== null) {
-          if (this.verificationSent) {
-            Text(t('Check your email'))
-              .fontSize(typeScale.body.fontSize)
-              .fontColor(appearance.tokens().foreground)
-            ActionButton({
-              label: t('Back to sign in'),
-              kind: 'secondary',
-              onTap: (): void => {
-                this.verificationSent = false;
-                this.mode = 'in';
-              },
-            })
-          } else if (!this.capabilities.passwordAuth && !this.capabilities.emailCode) {
-            // SSO-only server: Phase 1 has no provider sign-in; say so instead of a dead form.
-            ErrorText({ message: SSO_ONLY_SERVER })
-          } else {
-            if (this.capabilities.passwordAuth) {
-              Row({ space: 8 }) {
-                Button(t('Sign in'))
-                  .fontSize(typeScale.secondary.fontSize)
-                  .height(36)
-                  .layoutWeight(1)
-                  .backgroundColor(this.mode === 'in' ? appearance.tokens().primary : appearance.tokens().muted)
-                  .fontColor(this.mode === 'in' ? appearance.tokens().primaryForeground : appearance.tokens().foreground)
-                  .enabled(!this.pending)
-                  .onClick((): void => {
-                    this.mode = 'in';
-                    this.error = '';
-                  })
-                Button(t('Sign up'))
-                  .fontSize(typeScale.secondary.fontSize)
-                  .height(36)
-                  .layoutWeight(1)
-                  .backgroundColor(this.mode === 'up' ? appearance.tokens().primary : appearance.tokens().muted)
-                  .fontColor(this.mode === 'up' ? appearance.tokens().primaryForeground : appearance.tokens().foreground)
-                  .enabled(!this.pending)
-                  .onClick((): void => {
-                    this.mode = 'up';
-                    this.error = '';
-                  })
+        } else if (this.view.resetConfirmation) {
+          Text(t('Check your email'))
+            .fontSize(typeScale.secondary.fontSize)
+            .fontColor(appearance.tokens().mutedForeground)
+            .alignSelf(ItemAlign.Start)
+          ActionButton({
+            label: t('Back to sign in'),
+            kind: 'secondary',
+            onTap: (): void => {
+              this.applyMode('in');
+              this.resetSent = false;
+              this.codeSent = false;
+            },
+          })
+        } else if (this.view.codeField) {
+          Field({
+            label: t('Code'),
+            placeholder: t('Code'),
+            value: this.code,
+            numeric: true,
+            maxLength: CODE_LENGTH,
+            disabled: this.pending,
+            onChange: (value: string): void => {
+              const digits = value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+              this.code = digits;
+              // A complete code signs in at once.
+              if (digits.length === CODE_LENGTH) {
+                void this.submit(digits);
               }
-              .width('100%')
-            }
-
+            },
+            onSubmit: (): void => {
+              void this.submit();
+            },
+          })
+          ErrorText({ message: this.error })
+          ActionButton({
+            label: this.pending ? t('Working…') : t('Continue'),
+            busy: this.pending,
+            disabled: this.code.length < CODE_LENGTH,
+            onTap: (): void => {
+              void this.submit();
+            },
+          })
+          ActionButton({
+            label: t('Back'),
+            kind: 'secondary',
+            disabled: this.pending,
+            onTap: (): void => {
+              // Back keeps the email; only the code step closes.
+              this.codeSent = false;
+              this.code = '';
+              this.error = '';
+            },
+          })
+        } else if (this.view.chooserCard) {
+          this.providerButtons()
+          ErrorText({ message: this.error })
+        } else if (this.view.emailForm) {
+          if (this.view.nameField) {
             Field({
-              label: t('Email'),
-              placeholder: t('Email'),
-              value: this.email,
-              email: true,
-              disabled: this.pending || (this.usingCode && this.codeSent),
+              label: t('Name'),
+              placeholder: t('Name'),
+              value: this.name,
+              disabled: this.pending,
               onChange: (value: string): void => {
-                this.email = value;
+                this.name = value;
               },
             })
-
-            if (this.usingCode && this.codeSent) {
-              Text(t('Check your email'))
-                .fontSize(typeScale.secondary.fontSize)
-                .fontColor(appearance.tokens().mutedForeground)
-                .alignSelf(ItemAlign.Start)
-              Field({
-                label: t('Code'),
-                placeholder: t('Code'),
-                value: this.code,
-                disabled: this.pending,
-                onChange: (value: string): void => {
-                  this.code = value;
-                },
+          }
+          Field({
+            label: t('Email'),
+            placeholder: t('Email'),
+            value: this.email,
+            email: true,
+            disabled: this.pending,
+            onChange: (value: string): void => {
+              this.email = value;
+              this.emailBlurred = false;
+            },
+            onSubmit: (): void => {
+              void this.submit();
+            },
+            lostFocus: (): void => {
+              this.emailBlurred = true;
+            },
+          })
+          if (this.view.suggestionRow && this.emailBlurred && this.suggestion() !== null) {
+            Text(t('Did you mean {email}?', this.suggestionValues()))
+              .fontSize(typeScale.secondary.fontSize)
+              .fontColor(appearance.tokens().warning)
+              .width('100%')
+              .onClick((): void => {
+                this.email = this.suggestion() ?? '';
+                this.emailBlurred = false;
               })
-            } else if (!this.usingCode && this.capabilities.passwordAuth) {
-              Field({
-                label: t('Password'),
-                placeholder: t('Password'),
-                value: this.password,
-                secure: true,
-                disabled: this.pending,
-                onChange: (value: string): void => {
-                  this.password = value;
-                },
-              })
-            }
-
-            if (this.mode === 'up' && (!this.usingCode || this.codeSent)) {
-              Field({
-                label: t('Name'),
-                placeholder: t('Name'),
-                value: this.name,
-                disabled: this.pending,
-                onChange: (value: string): void => {
-                  this.name = value;
-                },
-              })
-            }
-
-            ErrorText({ message: this.error })
-
-            ActionButton({
-              label: this.primaryLabel(),
-              busy: this.pending,
-              disabled: this.primaryDisabled(),
-              onTap: (): void => {
+          }
+          if (this.view.passwordField) {
+            Field({
+              label: t('Password'),
+              placeholder: t('Password'),
+              value: this.password,
+              secure: true,
+              maxLength: MAX_PASSWORD_LENGTH,
+              disabled: this.pending,
+              onChange: (value: string): void => {
+                this.password = value;
+              },
+              onSubmit: (): void => {
                 void this.submit();
               },
             })
-
-            if (this.capabilities.emailCode && !this.usingCode) {
-              ActionButton({
-                label: t('Continue with email'),
-                kind: 'secondary',
-                disabled: this.pending,
-                onTap: (): void => {
-                  this.usingCode = true;
-                  this.codeSent = false;
-                  this.error = '';
-                },
+          }
+          ErrorText({ message: this.error })
+          ActionButton({
+            label: primaryLabel(this.view, this.mode as SignInMode, this.pending),
+            busy: this.pending,
+            onTap: (): void => {
+              void this.submit();
+            },
+          })
+          if (this.view.forgotRow) {
+            Text(t('Forgot password?'))
+              .fontSize(typeScale.secondary.fontSize)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(appearance.tokens().foreground)
+              .alignSelf(ItemAlign.Center)
+              .padding(8)
+              .onClick((): void => {
+                this.applyMode('forgot');
               })
-            }
-            if (this.usingCode && this.codeSent) {
-              ActionButton({
-                label: t('Back'),
-                kind: 'secondary',
-                disabled: this.pending,
-                onTap: (): void => {
-                  this.codeSent = false;
-                  this.code = '';
-                  this.error = '';
-                },
-              })
-            }
-            if (this.mode === 'in' && !this.usingCode && this.capabilities.passwordAuth
-              && this.capabilities.passwordReset && this.capabilities.resetUrl !== null) {
-              Text(t('Forgot password?'))
+          }
+          if (this.view.switchRow) {
+            Row({ space: 5 }) {
+              Text(switchLabels(this.mode as SignInMode).question)
                 .fontSize(typeScale.secondary.fontSize)
-                .fontColor(appearance.tokens().link)
+                .fontColor(appearance.tokens().mutedForeground)
+              Text(switchLabels(this.mode as SignInMode).action)
+                .fontSize(typeScale.secondary.fontSize)
+                .fontWeight(FontWeight.Medium)
+                .fontColor(appearance.tokens().foreground)
                 .onClick((): void => {
-                  const resetUrl = this.capabilities?.resetUrl;
-                  if (resetUrl) {
-                    void app.openExternal(resetUrl);
+                  if (this.mode === 'forgot') {
+                    this.applyMode('in');
+                    return;
                   }
+                  this.applyMode(this.mode === 'in' ? 'up' : 'in');
                 })
             }
+            .justifyContent(FlexAlign.Center)
+            .width('100%')
           }
+        } else if (this.view.providerOnly) {
+          // SSO-only server: buttons alone, no form, no hint copy.
+          this.providerButtons()
+          ErrorText({ message: this.error })
         }
       }
       .width('100%')
@@ -331,4 +518,9 @@ export struct SignInPage {
     .backgroundColor(appearance.tokens().background)
     .scrollBar(BarState.Off)
   }
-}
+
+  private suggestionValues(): Record<string, string> {
+    const values: Record<string, string> = {};
+    values['email'] = this.suggestion() ?? '';
+    return values;
+  }}

@@ -34,6 +34,7 @@ import voiceClipTest from './VoiceClip.test';
 import deviceSpeechTest from './DeviceSpeech.test';
 import clipPlayerTest from './ClipPlayer.test';
 import voiceSettingsTest from './VoiceSettings.test';
+import signInViewTest from './SignInView.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -45,6 +46,7 @@ export default function testsuite() {
   decodeTest();
   modelDisplayTest();
   inboxProjectionTest();
+  signInViewTest();
   threadReducerTest();
   threadRenderTest();
   markdownFixtureTest();

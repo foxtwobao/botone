@@ -77,6 +77,65 @@ export default function decodeTest() {
       expect(caps!.providers[0].name).assertEqual('Org SSO');
     });
 
+    it('provider_presentation_decodes_optional_and_rejects_broken', 0, () => {
+      // A full presentation: variant and mark with brand-colored and inherited paths.
+      const full = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"variant":"outline","mark":{"viewBox":"0 0 24 24","paths":['
+        + '{"d":"M1 1L3 3","fill":"#3EC5A8"},{"d":"M4 4L6 6"}]}}}]}'));
+      expect(full !== null).assertTrue();
+      expect(full!.providers[0].variant).assertEqual('outline');
+      expect(full!.providers[0].mark!.viewBox).assertEqual('0 0 24 24');
+      expect(full!.providers[0].mark!.paths.length).assertEqual(2);
+      expect(full!.providers[0].mark!.paths[0].fill).assertEqual('#3EC5A8');
+      // An absent fill is legal (the wire schema makes it optional): the row inherits the
+      // button's text color, so the view carries null.
+      expect(full!.providers[0].mark!.paths[1].fill).assertNull();
+      // Absent presentation (older servers): no variant, no mark, still decodes.
+      const bare = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1"}]}'));
+      expect(bare !== null).assertTrue();
+      expect(bare!.providers[0].variant).assertNull();
+      expect(bare!.providers[0].mark).assertNull();
+      // A broken mark (paths missing, or a path without d) fails its own provider row only;
+      // the rest of the capabilities still decode.
+      const broken = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"mark":{"viewBox":"0 0 24 24"}}},{"id":"p2","name":"P2"}]}'));
+      expect(broken !== null).assertTrue();
+      expect(broken!.providers.length).assertEqual(1);
+      expect(broken!.providers[0].id).assertEqual('p2');
+      const noD = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"mark":{"viewBox":"0 0 24 24","paths":[{"fill":"#000000"}]}}},'
+        + '{"id":"p2","name":"P2"}]}'));
+      expect(noD !== null).assertTrue();
+      expect(noD!.providers.length).assertEqual(1);
+      expect(noD!.providers[0].id).assertEqual('p2');
+      // A fill value present but not #rrggbb is invalid: the row drops, the decode survives.
+      const badFill = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[{"id":"p1","name":"P1",'
+        + '"presentation":{"mark":{"viewBox":"0 0 24 24","paths":[{"d":"M1 1L3 3",'
+        + '"fill":"brand-red"}]}}},{"id":"p2","name":"P2"}]}'));
+      expect(badFill !== null).assertTrue();
+      expect(badFill!.providers.length).assertEqual(1);
+      expect(badFill!.providers[0].id).assertEqual('p2');
+    });
+
+    it('capabilities_registration_open_defaults_and_closes', 0, () => {
+      // Older servers omit the field: registration reads as open.
+      const absent = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[]}'));
+      expect(absent !== null).assertTrue();
+      expect(absent!.registrationOpen).assertTrue();
+      // An explicit false closes registration for this request.
+      const closed = decodeAuthCapabilities(JSON.parse('{"passwordAuth":true,"passwordReset":true,'
+        + '"resetUrl":null,"emailCode":false,"sso":null,"providers":[],'
+        + '"registrationOpen":false}'));
+      expect(closed !== null).assertTrue();
+      expect(closed!.registrationOpen).assertFalse();
+    });
+
     it('capabilities_legacy_shape_defaults_password', 0, () => {
       const caps = decodeAuthCapabilities(JSON.parse('{"passwordReset":false,"resetUrl":null}'));
       expect(caps !== null).assertTrue();
