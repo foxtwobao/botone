@@ -15,6 +15,12 @@ import {
 import * as auth from "./auth-fixture.mjs";
 import { bearer, json, rpcError } from "./fixture-http.mjs";
 import {
+  activeGroups,
+  handleGroupsControl,
+  handleGroupsRpc,
+  resetGroups,
+} from "./group-fixture.mjs";
+import {
   handleVoiceControl,
   handleVoiceHttp,
   handleVoiceRpc,
@@ -93,25 +99,8 @@ function makeBot(id, name, over = {}) {
     ...over,
   };
 }
-function makeGroup(id, name, over = {}) {
-  return {
-    id,
-    spaceId: SPACE,
-    name,
-    pinned: false,
-    sectionId: null,
-    members: [],
-    preview: "",
-    unread: false,
-    snoozedUntil: null,
-    updatedAt: "2026-11-21T10:00:00.000Z",
-    archivedAt: null,
-    ...over,
-  };
-}
 
 let bots = [];
-let groups = [];
 // Offline: read RPCs drop the connection, so the banner and memory fallback can be exercised.
 let offline = false;
 const OFFLINE_READS = new Set([
@@ -144,21 +133,12 @@ function resetRoster() {
     }),
     makeBot("bot-3", "Gamma", { color: "#6A6BF5", archivedAt: "2026-11-20T09:00:00.000Z" }),
   ];
-  groups = [
-    makeGroup("group-1", "Team", {
-      unread: true,
-      preview: "Group chat",
-      updatedAt: "2026-11-21T11:30:00.000Z",
-    }),
-    makeGroup("group-2", "Old Team", { archivedAt: "2026-11-19T09:00:00.000Z" }),
-  ];
 }
 resetRoster();
+resetGroups(bots);
 
 const activeBots = () => bots.filter((b) => b.archivedAt === null);
 const archivedBots = () => bots.filter((b) => b.archivedAt !== null);
-const activeGroups = () => groups.filter((g) => g.archivedAt === null);
-const archivedGroups = () => groups.filter((g) => g.archivedAt !== null);
 
 function navigation() {
   return {
@@ -661,25 +641,12 @@ function handleRpc(req, res, body) {
     if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     return json(res, 200, { json: archivedBots() });
   }
-  if (path === "/rpc/groups/listArchived") {
-    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
-    return json(res, 200, { json: archivedGroups() });
-  }
   if (path === "/rpc/bots/archive" || path === "/rpc/bots/restore") {
     if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
     const input = JSON.parse(body || "{}").json ?? {};
     const bot = bots.find((b) => b.id === input.botId);
     if (!bot) return rpcError(res, 404, "NOT_FOUND", "Bot not found");
     bot.archivedAt = path.endsWith("/archive") ? new Date().toISOString() : null;
-    sendSignal("roster");
-    return json(res, 200, { json: { ok: true } });
-  }
-  if (path === "/rpc/groups/archive" || path === "/rpc/groups/restore") {
-    if (token !== "fake-token") return rpcError(res, 401, "UNAUTHORIZED", "Session expired");
-    const input = JSON.parse(body || "{}").json ?? {};
-    const group = groups.find((g) => g.id === input.groupId);
-    if (!group) return rpcError(res, 404, "NOT_FOUND", "Group not found");
-    group.archivedAt = path.endsWith("/archive") ? new Date().toISOString() : null;
     sendSignal("roster");
     return json(res, 200, { json: { ok: true } });
   }
@@ -904,6 +871,7 @@ createServer((req, res) => {
       seq = 0;
       offline = false;
       resetRoster();
+      resetGroups(bots);
       THREAD_SCRIPTS.clear();
       threadRefusals = 0;
       threadStall = null;
@@ -933,6 +901,7 @@ createServer((req, res) => {
       return json(res, 200, { ok: true, count: consentScript.length });
     }
     if (handleVoiceControl(req, res, body)) return;
+    if (handleGroupsControl(req, res, body)) return;
     if (handleVoiceHttp(req, res, body)) return;
     if (handleArtifactRoute(req, res, body)) return;
     if (handleVoiceRpc(req, res, body)) return;
@@ -940,6 +909,7 @@ createServer((req, res) => {
     if (req.url.startsWith("/rpc/aiConsent/")) return handleConsentRpc(req, res, body);
     if (req.url === "/rpc/threads/subscribe") return handleThreadSubscribe(req, res, body);
     if (req.url.startsWith("/rpc/threads/")) return handleThreadRpc(req, res, body);
+    if (handleGroupsRpc(req, res, body, sendSignal)) return;
     if (req.url.startsWith("/rpc/")) return handleRpc(req, res, body);
     if (req.url.startsWith("/api/auth/")) return auth.handleAuth(req, res, body);
     if (req.url.startsWith("/sse")) {

@@ -40,7 +40,15 @@ export interface BotView {
   autoSpeak: boolean;
 }
 
-/** A group inbox row (M2): no identity color (bots carry the only color). */
+/** One group member (M8 settings): the identity the picker shows, no avatar set or run status. */
+export interface GroupMemberView {
+  botId: string;
+  name: string;
+  color: string;
+}
+
+/** A group inbox row (M2): no identity color (bots carry the only color). members is the
+ *  settings surface's read (decode-groups); the inbox row carries none. */
 export interface GroupView {
   id: string;
   name: string;
@@ -49,6 +57,7 @@ export interface GroupView {
   preview: string;
   updatedAt: string;
   snoozedUntil: string | null;
+  members: GroupMemberView[];
 }
 
 /** The default Space's roster: its bots and groups, each decoded row by row. */
@@ -297,13 +306,13 @@ export function decodeGroup(json: Object | null): GroupView | null {
   }
   const result: GroupView = {
     id: id, name: name, pinned: pinned, unread: unread, preview: preview,
-    updatedAt: updatedAt, snoozedUntil: snoozedUntil,
+    updatedAt: updatedAt, snoozedUntil: snoozedUntil, members: [],
   };
   return result;
 }
 
 /** A list of rows: a non-array fails; a row that cannot decode is dropped, not fatal (per-entry). */
-function decodeRows<T>(json: Object | null, decode: (item: Object | null) => T | null): T[] | null {
+export function decodeRows<T>(json: Object | null, decode: (item: Object | null) => T | null): T[] | null {
   if (json === null || json === undefined || !Array.isArray(json)) {
     return null;
   }
@@ -325,8 +334,11 @@ export function decodeGroupList(json: Object | null): GroupView[] | null {
   return decodeRows(json, decodeGroup);
 }
 
-/** spaces/list roster: current.bots + current.groups. Identity stays with decodeSpaceNavigation. */
-export function decodeRoster(json: Object | null): RosterView | null {
+/** spaces/list roster: current.bots + current.groups. Identity stays with decodeSpaceNavigation.
+ *  The group rows decode with the caller's reader: the inbox's, or the settings one that also
+ *  reads each group's members. */
+export function decodeRoster(json: Object | null,
+  decodeGroups: (value: Object | null) => GroupView[] | null = decodeGroupList): RosterView | null {
   const record = asRecord(json);
   if (record === null) {
     return null;
@@ -336,7 +348,7 @@ export function decodeRoster(json: Object | null): RosterView | null {
     return null;
   }
   const bots = decodeBotList(current['bots']);
-  const groups = decodeGroupList(current['groups']);
+  const groups = decodeGroups(current['groups']);
   if (bots === null || groups === null) {
     return null;
   }

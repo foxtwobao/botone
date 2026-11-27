@@ -150,6 +150,17 @@ export struct InboxPage {
   }
 
   @Builder
+  newGroupMenu() {
+    Menu() {
+      MenuItem({ content: t('New group chat') })
+        .contentFontColor(appearance.tokens().foreground)
+        .onClick((): void => {
+          this.stack.pushPathByName('newGroup', null);
+        })
+    }
+  }
+
+  @Builder
   offlineBanner() {
     Row({ space: 8 }) {
       Text(t('Could not reach the server'))
@@ -176,6 +187,12 @@ export struct InboxPage {
           .fontWeight(FontWeight.Bold)
           .fontColor(appearance.tokens().foreground)
         Blank()
+        Text('+')
+          .fontSize(24)
+          .fontColor(appearance.tokens().foreground)
+          .padding({ left: 8, right: 8 })
+          .accessibilityText(t('New group chat'))
+          .bindMenu(this.newGroupMenu)
         Text(t('Archived'))
           .fontSize(typeScale.secondary.fontSize)
           .fontColor(appearance.tokens().link)

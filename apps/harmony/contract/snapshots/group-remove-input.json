@@ -1,0 +1,11 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": ["groupId"],
+  "type": "object"
+}

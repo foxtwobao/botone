@@ -13,6 +13,8 @@ import { VoicePage } from '../features/settings/VoicePage';
 import { VoicePlayerBar } from '../features/chat/voice-player-bar';
 import { ThreadPage } from '../features/chat/ThreadPage';
 import type { ThreadRoute } from '../features/chat/thread-route';
+import { NewGroupPage } from '../features/groups/NewGroupPage';
+import { GroupSettingsPage } from '../features/groups/GroupSettingsPage';
 import { ShareTargetSheet } from '../features/chat/share-target-sheet';
 import { incomingShare } from '../stores/incoming-share-store';
 
@@ -39,6 +41,10 @@ struct Index {
       SettingsPage({ stack: this.stack })
     } else if (name === 'voice') {
       VoicePage({ stack: this.stack })
+    } else if (name === 'newGroup') {
+      NewGroupPage({ stack: this.stack })
+    } else if (name === 'groupSettings') {
+      GroupSettingsPage({ stack: this.stack, groupId: route.groupId })
     } else if (name === 'chat') {
       ThreadPage({
         stack: this.stack,

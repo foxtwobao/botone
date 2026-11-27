@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "botIds": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 2,
+      "type": "array"
+    },
+    "expectedBotIds": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "type": "array"
+    },
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "type": "string"
+    },
+    "pinned": {
+      "type": "boolean"
+    },
+    "sectionId": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": ["groupId"],
+  "type": "object"
+}

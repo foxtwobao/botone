@@ -107,16 +107,27 @@ export const botView = botSchema.pick({
   autoSpeak: true,
 });
 
-/** A group row: no identity color (bots carry the only color), unread, preview, pinned, snooze. */
-export const groupView = groupSchema.pick({
-  id: true,
+/** A group member (M8): the identity the settings picker shows; avatar set and status are not
+ *  read on this client yet, so they stay out of the view. */
+export const groupMemberView = GroupMemberSchema.pick({
+  botId: true,
   name: true,
-  pinned: true,
-  unread: true,
-  preview: true,
-  updatedAt: true,
-  snoozedUntil: true,
+  color: true,
 });
+
+/** A group row: no identity color (bots carry the only color), unread, preview, pinned, snooze,
+ *  and the members the group settings screen edits (identity only, projected above). */
+export const groupView = groupSchema
+  .pick({
+    id: true,
+    name: true,
+    pinned: true,
+    unread: true,
+    preview: true,
+    updatedAt: true,
+    snoozedUntil: true,
+  })
+  .extend({ members: zod.array(groupMemberView) });
 
 /** spaces/list: the default Space's identity plus its inbox roster (bots + groups). */
 export const spacesListView = spacesListOutput.pick({ current: true }).extend({
@@ -141,6 +152,19 @@ export const groupArchiveInputView = procedureInput(appContract.groups.archive);
 export const groupArchiveOutputView = procedureOutput(appContract.groups.archive);
 export const groupRestoreInputView = procedureInput(appContract.groups.restore);
 export const groupRestoreOutputView = procedureOutput(appContract.groups.restore);
+
+// M8: the group creation and membership writes the group screens send. Both are plain objects
+// (the botIds refinement is nested), so the input views ARE the procedures' own schemas.
+export const groupCreateInputView = procedureInput(appContract.groups.create);
+export const groupCreateOutputView = procedureOutput(appContract.groups.create).pick({
+  id: true,
+  name: true,
+  members: true,
+});
+export const groupUpdateInputView = procedureInput(appContract.groups.update);
+export const groupUpdateOutputView = groupCreateOutputView;
+export const groupRemoveInputView = procedureInput(appContract.groups.remove);
+export const groupRemoveOutputView = procedureOutput(appContract.groups.remove);
 
 /** notifications/subscribe: the signal type enum the roster stream dispatches on (alert ignored). */
 export const notificationsSubscribeView = eventYields<z.ZodObject<{ type: z.ZodEnum }>>(
@@ -511,6 +535,13 @@ export const snapshotViews: Record<string, z.ZodType> = {
   "group-archive-output": groupArchiveOutputView,
   "group-restore-input": groupRestoreInputView,
   "group-restore-output": groupRestoreOutputView,
+  "group-member": groupMemberView,
+  "group-create-input": groupCreateInputView,
+  "group-create-output": groupCreateOutputView,
+  "group-update-input": groupUpdateInputView,
+  "group-update-output": groupUpdateOutputView,
+  "group-remove-input": groupRemoveInputView,
+  "group-remove-output": groupRemoveOutputView,
   "notifications-subscribe": notificationsSubscribeView,
   "space-change-kind": spaceChangeKindView,
   "auth-capabilities": capabilitiesView,

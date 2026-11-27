@@ -5,7 +5,9 @@
 import { rpc } from '../net/rpc';
 import type { RpcContext } from '../net/rpc';
 import { RpcError, errorText, isServerUnreachable } from '../net/errors';
-import { decodeOk, decodeRoster } from '../contract/decode';
+import { decodeOk } from '../contract/decode';
+import type { BotView, GroupView } from '../contract/decode';
+import { decodeRosterWithMembers } from '../contract/decode-groups';
 import { queryCache } from '../query/query-cache';
 import { SaveController } from '../query/save-controller';
 import type { SaveSend } from '../query/save-controller';
@@ -20,6 +22,9 @@ const EMPTY_INPUT: Record<string, Object> = {};
 @ObservedV2
 export class RosterStore {
   @Trace rows: InboxRow[] = [];
+  /** The active bots and groups as last read: the group screens pick members from these. */
+  @Trace bots: BotView[] = [];
+  @Trace groups: GroupView[] = [];
   @Trace loading: boolean = false;
   @Trace error: string = '';
   /** The last read could not reach the server; the painted rows are the memory fallback. */
@@ -96,6 +101,8 @@ export class RosterStore {
   reset(): void {
     this.requestId += 1;
     this.rows = [];
+    this.bots = [];
+    this.groups = [];
     this.error = '';
     this.offline = false;
     this.loaded = false;
@@ -115,8 +122,10 @@ export class RosterStore {
     // Paint what we last saw before the network answers.
     const cached = queryCache.peek('spaces/list', EMPTY_INPUT);
     if (cached !== null) {
-      const roster = decodeRoster(cached);
+      const roster = decodeRosterWithMembers(cached);
       if (roster !== null) {
+        this.bots = roster.bots;
+        this.groups = roster.groups;
         this.rows = projectInbox(roster.bots, roster.groups, Date.now());
       }
     }
@@ -126,10 +135,12 @@ export class RosterStore {
       if (requestId !== this.requestId || value === null) {
         return;
       }
-      const roster = decodeRoster(value);
+      const roster = decodeRosterWithMembers(value);
       if (roster === null) {
         throw new RpcError('Unexpected response from the server');
       }
+      this.bots = roster.bots;
+      this.groups = roster.groups;
       this.rows = projectInbox(roster.bots, roster.groups, Date.now());
       this.offline = false;
       this.loaded = true;

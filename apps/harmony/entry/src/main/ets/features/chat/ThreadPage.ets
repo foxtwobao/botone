@@ -515,13 +515,28 @@ export struct ThreadPage {
           .onClick((): void => {
             this.stack.pop();
           })
-        Text(this.title)
-          .fontSize(typeScale.title.fontSize)
-          .fontWeight(FontWeight.Bold)
-          .fontColor(appearance.tokens().foreground)
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .layoutWeight(1)
+        Row({ space: 4 }) {
+          Text(this.title)
+            .fontSize(typeScale.title.fontSize)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(appearance.tokens().foreground)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .layoutWeight(1)
+          if (this.groupId) {
+            Text('›')
+              .fontSize(typeScale.title.fontSize)
+              .fontColor(appearance.tokens().mutedForeground)
+          }
+        }
+        .layoutWeight(1)
+        .accessibilityText(this.groupId ? `${this.title}, ${t('Group settings')}` : this.title)
+        .onClick((): void => {
+          if (this.groupId) {
+            const route: ThreadRoute = { botId: '', groupId: this.groupId, title: this.title };
+            this.stack.pushPathByName('groupSettings', route);
+          }
+        })
         if (this.store.working()) {
           Text(t('Stop'))
             .fontSize(typeScale.secondary.fontSize)
