@@ -92,8 +92,10 @@ function credentialText(field: 'email' | 'password'): string {
   return field === 'email' ? t('Enter a valid email') : t('Enter a password');
 }
 
-/** Copy for a failed auth response body ({ code, message }), ported from authErrorText. */
-export function authErrorText(body: Record<string, Object> | null, fallback: string): string {
+/** Copy for a failed auth response body ({ code, message }), ported from authErrorText.
+ *  lastResort replaces the plain "Could not continue" for a caller whose flow names its own. */
+export function authErrorText(body: Record<string, Object> | null, fallback: string,
+  lastResort: string = fallback): string {
   const record: Record<string, Object> = body ?? {};
   const code = typeof record['code'] === 'string' ? record['code'] as string : '';
   const message = typeof record['message'] === 'string' ? (record['message'] as string).trim() : '';
@@ -145,19 +147,24 @@ export function authErrorText(body: Record<string, Object> | null, fallback: str
     }
     return fallback;
   }
+  // A code with no human message that is not one of the known ones above (mobile parity):
+  // the id alone is implementation detail, so the flow's fallback shows instead of raw code.
+  if (code && !message) {
+    return fallback;
+  }
   return message && !isTechnicalMessage(message) ? message : fallback;
 }
 
 /** Status copy is a fallback: keep human server messages and known auth codes. */
 export function authResponseErrorText(status: number, body: Record<string, Object> | null,
-  invalidJson: boolean): string {
+  invalidJson: boolean, lastResort: string = t('Could not continue')): string {
   const fallback = status === 429
     ? t('Too many attempts. Try again in a few minutes.')
     : isUnreachableStatus(status)
       ? t('Could not reach the server')
       : status >= 500 || invalidJson
         ? t('The server had a problem. Try again in a moment.')
-        : t('Could not continue');
-  const text = authErrorText(body, fallback).trim();
+        : lastResort;
+  const text = authErrorText(body, fallback, lastResort).trim();
   return text || fallback;
 }

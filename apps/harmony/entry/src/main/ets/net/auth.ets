@@ -25,11 +25,17 @@ interface AuthResponse {
   invalidJson: boolean;
 }
 
-async function postAuth(path: string, input: Record<string, Object>, apiBase: string): Promise<AuthResponse> {
+/** One better-auth POST, with the server's custom headers, app origin and locale; SSO adds
+ *  its own headers on top (x-skip-oauth-proxy). Exported: net/sso.ets starts its flow here. */
+export async function postAuth(path: string, input: Record<string, Object>, apiBase: string,
+  extraHeaders: Record<string, string> = {}): Promise<AuthResponse> {
   const headers: Record<string, string> = {};
   const custom = serverHeaders(apiBase);
   for (const key of Object.keys(custom)) {
     headers[key] = custom[key];
+  }
+  for (const key of Object.keys(extraHeaders)) {
+    headers[key] = extraHeaders[key];
   }
   headers['content-type'] = 'application/json';
   headers['origin'] = 'rakazo://';
@@ -84,26 +90,15 @@ export interface AuthenticateResult {
   verificationRequired: boolean;
 }
 
-async function authenticate(path: string, input: Record<string, Object>,
-  missingSession: string): Promise<AuthenticateResult> {
-  const apiBase = currentApiBase();
-  const generation = currentSessionGeneration();
+/**
+ * Saves a token a sign-in (password, code or SSO) just issued, guarded by the server address
+ * and session generation captured when the flow started: a switch or a new session while the
+ * flow was away means the token is not saved here — it is recorded for revocation instead.
+ * Throws with user copy when the session could not be kept or saved.
+ */
+export async function saveIssuedSession(token: string, apiBase: string, generation: number): Promise<void> {
   // A switch replaces the stored headers; the cleanup below may still need this server's.
   const headers = serverHeaders(apiBase);
-  const auth = await postAuth(path, input, apiBase);
-  const ok = auth.response.status >= 200 && auth.response.status < 300;
-  if (!ok || auth.invalidJson) {
-    throw new Error(authResponseErrorText(auth.response.status, auth.body, auth.invalidJson));
-  }
-  const token = tokenFromAuthResponse(auth.response.headers, auth.body);
-  // sign-up with a null token means the server must verify the email first.
-  if (path === 'sign-up/email' && auth.body !== null && auth.body['token'] === null) {
-    const verification: AuthenticateResult = { verificationRequired: true };
-    return verification;
-  }
-  if (!token) {
-    throw new Error(missingSession);
-  }
   const current = (): boolean =>
     apiBase === currentApiBase() && generation === currentSessionGeneration();
   let saved = false;
@@ -129,6 +124,27 @@ async function authenticate(path: string, input: Record<string, Object>,
     void deliverSignOutRecord(revocation, persisted);
     throw new Error(t('Could not continue'));
   }
+}
+
+async function authenticate(path: string, input: Record<string, Object>,
+  missingSession: string): Promise<AuthenticateResult> {
+  const apiBase = currentApiBase();
+  const generation = currentSessionGeneration();
+  const auth = await postAuth(path, input, apiBase);
+  const ok = auth.response.status >= 200 && auth.response.status < 300;
+  if (!ok || auth.invalidJson) {
+    throw new Error(authResponseErrorText(auth.response.status, auth.body, auth.invalidJson));
+  }
+  const token = tokenFromAuthResponse(auth.response.headers, auth.body);
+  // sign-up with a null token means the server must verify the email first.
+  if (path === 'sign-up/email' && auth.body !== null && auth.body['token'] === null) {
+    const verification: AuthenticateResult = { verificationRequired: true };
+    return verification;
+  }
+  if (!token) {
+    throw new Error(missingSession);
+  }
+  await saveIssuedSession(token, apiBase, generation);
   const result: AuthenticateResult = { verificationRequired: false };
   return result;
 }
@@ -191,6 +207,44 @@ export async function authCapabilities(): Promise<AuthCapabilitiesView> {
     throw new Error(t('Could not load sign-in options'));
   }
   return capabilities;
+}
+
+/** Asks the server to email a reset link, delivered to the server's own reset page. */
+export async function requestPasswordReset(email: string, redirectTo: string): Promise<void> {
+  const input: Record<string, Object> = {};
+  input['email'] = email;
+  input['redirectTo'] = redirectTo;
+  const auth = await postAuth('request-password-reset', input, currentApiBase());
+  const ok = auth.response.status >= 200 && auth.response.status < 300;
+  if (!ok) {
+    throw new Error(authResponseErrorText(auth.response.status, auth.body, auth.invalidJson,
+      t('Could not send reset email')));
+  }
+}
+
+/** Who a bearer token belongs to: better-auth's get-session, read the way mobile does before
+ *  an SSO token is kept. Returns the user id, '' when the answer is not a session. */
+export async function sessionUser(apiBase: string, token: string): Promise<string> {
+  const headers: Record<string, string> = {};
+  headers['origin'] = 'rakazo://';
+  headers['authorization'] = `Bearer ${token}`;
+  let response: HttpResponseView;
+  try {
+    response = await getJson(`${apiBase}/api/auth/get-session`, headers, RPC_TIMEOUT_MS, MAX_AUTH_RESPONSE_BYTES);
+  } catch (err) {
+    return '';
+  }
+  const ok = response.status >= 200 && response.status < 300;
+  const body = parseJsonObject(response.body);
+  if (!ok || body === null) {
+    return '';
+  }
+  const user = body['user'];
+  if (user === null || user === undefined || typeof user !== 'object') {
+    return '';
+  }
+  const id = (user as Record<string, Object>)['id'];
+  return typeof id === 'string' ? id as string : '';
 }
 
 /**
