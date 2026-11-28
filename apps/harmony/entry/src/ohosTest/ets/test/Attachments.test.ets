@@ -12,6 +12,7 @@ import { RequestCancellation } from '../../../main/ets/net/request-cancellation'
 import { rpc } from '../../../main/ets/net/rpc';
 import { initServerStore, switchServer } from '../../../main/ets/net/server-store';
 import { clearSessionToken, saveSessionToken, setSelectedSpace } from '../../../main/ets/net/session';
+import { outbox } from '../../../main/ets/outbox/outbox';
 import { ThreadStore } from '../../../main/ets/stores/thread-store';
 import {
   ATTACHMENT_IMAGE_MAX_EDGE, ATTACHMENT_IMAGE_QUALITY, ATTACHMENT_MAX_BYTES, ATTACHMENT_MAX_COUNT,
@@ -243,9 +244,11 @@ export default function attachmentsTest() {
       app.detach();
       await initServerStore(context());
       await switchServer(BASE, {});
+      outbox.init(context());
     });
     beforeEach(async () => {
       await fixture('__reset', '{}');
+      outbox.clearAll();
       await saveSessionToken('fake-token');
       setSelectedSpace('space-fake');
       setConsentPrompt(async (): Promise<boolean> => true);
@@ -264,17 +267,26 @@ export default function attachmentsTest() {
       writeSample(second.path, 'two');
       const store = new ThreadStore();
       store.open('bot-1', '', 'user-fake');
+      let nonce = '';
       try {
         await eventually((): boolean => store.snapshot !== null);
         const parent = store.snapshot!.messages[0];
         await fixture('__artifactControl', '{"failName":"second.txt"}');
         store.sendDraft('', [first, second], parent.id, '');
         await eventually((): boolean => !store.send.pending);
-        expect(store.send.error.length > 0).assertTrue();
+        // B3: the send is parked on disk and the bubble owns the error text. The first file's
+        // upload survived in the record; the second's waits to be replayed under its own nonce.
+        expect(store.outboxRevision).assertEqual(1);
+        expect(store.send.error).assertEqual('');
+        const parked = outbox.entriesFor('bot-1', '', '');
+        expect(parked.length).assertEqual(1);
+        nonce = parked[0].record.nonce;
+        expect(parked[0].record.state).assertEqual('queued');
+        expect(parked[0].record.artifactIds[0] !== '').assertTrue();
+        expect(parked[0].record.artifactIds[1]).assertEqual('');
         await fixture('__artifactControl', '{}');
-        store.sendDraft('', [first, second], parent.id, '');
-        await eventually((): boolean => !store.send.pending);
-        expect(store.sentRevision).assertEqual(1);
+        await outbox.retry(nonce);
+        await eventually((): boolean => outbox.entriesFor('bot-1', '', '').length === 0);
         const snap = decodeThreadSnapshot(await rpc('threads/get', recordOf('{"botId":"bot-1"}')));
         const echo = snap!.messages[snap!.messages.length - 1];
         expect(echo.replyToMessageId).assertEqual(parent.id);
@@ -296,8 +308,13 @@ export default function attachmentsTest() {
         expect(carried!['contentBytes']).assertEqual(3);
       } finally {
         store.close();
+        // The park rewrote the drafts' paths into the outbox folder: delete what they point at
+        // now, and drop the parked record so the next run starts clean.
         removeTemporaryFile(first.path);
         removeTemporaryFile(second.path);
+        if (nonce !== '') {
+          outbox.discard(nonce);
+        }
       }
     });
 

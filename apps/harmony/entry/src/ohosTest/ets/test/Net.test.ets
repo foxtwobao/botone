@@ -28,7 +28,7 @@ import { currentApiBase, initServerStore, switchServer } from '../../../main/ets
 import { sendStillCurrent } from '../../../main/ets/features/signin/sign-in-view';
 import { serverHeaders } from '../../../main/ets/net/server-headers';
 import { probeApiBase } from '../../../main/ets/net/endpoint';
-import { getJson, parseJsonObject } from '../../../main/ets/net/http';
+import { bodyBytes, getJson, parseJsonObject } from '../../../main/ets/net/http';
 import { AppState } from '../../../main/ets/app/app-state';
 
 const BASE = 'http://10.0.2.2:8787';
@@ -219,6 +219,13 @@ export default function netTest() {
     it('rpc_non_json_success_is_refused', 0, async () => {
       const error = await rpcErrorOf('notjson');
       expect(error.status).assertEqual(200);
+    });
+
+    it('bodyBytes_counts_an_empty_body_as_zero', 0, () => {
+      // TextEncoder.encodeInto answers undefined for an empty string: an empty body is 0 bytes,
+      // never a crash (an empty 404 fallthrough body reached it once).
+      expect(bodyBytes('')).assertEqual(0);
+      expect(bodyBytes('abc')).assertEqual(3);
     });
 
     it('probe_health_branches', 0, async () => {

@@ -16,6 +16,12 @@ import * as auth from "./auth-fixture.mjs";
 import { bearer, json, rpcError } from "./fixture-http.mjs";
 import { handleGroupsControl, handleGroupsRpc, resetGroups } from "./group-fixture.mjs";
 import { handleModelsControl, handleModelsRpc, resetModelsFixture } from "./model-fixture.mjs";
+import {
+  handleOutboxControl,
+  resetOutbox,
+  takeDropSendResponse,
+  takeSendFailureSpec,
+} from "./outbox-fixture.mjs";
 import { handleSpaceRoute, resetSpaces } from "./space-fixture.mjs";
 import {
   handleVoiceControl,
@@ -180,7 +186,7 @@ function scriptThread(threadId, botId) {
     }),
     threadEvent(threadId, 6, "run.completed", { runId: `${threadId}-r1` }),
   ];
-  const state = { threadId, botId, events, sends: 0 };
+  const state = { threadId, botId, events, sends: 0, receiptsByNonce: new Map() };
   THREAD_SCRIPTS.set(threadId, state);
   return state;
 }
@@ -215,7 +221,7 @@ function seedThread(threadId, botId, count, tail = []) {
       payload: spec.payload ?? {},
     }),
   );
-  const state = { threadId, botId, events, sends: 0, history };
+  const state = { threadId, botId, events, sends: 0, history, receiptsByNonce: new Map() };
   THREAD_SCRIPTS.set(threadId, state);
   return state;
 }
@@ -449,6 +455,25 @@ function handleThreadRpc(req, res, body) {
   }
   if (path === "/rpc/threads/send") {
     if (refuseImages(res, input)) return;
+    // B3 failure script: one answered send as a 429/403/500/etc. before the real one.
+    const sendFailure = takeSendFailureSpec();
+    if (sendFailure) {
+      return rpcError(
+        res,
+        sendFailure.status,
+        sendFailure.code ?? "FAILED",
+        sendFailure.message ?? "Send failed",
+      );
+    }
+    // The real server deduplicates sends by clientNonce; a replayed send that already committed
+    // returns the same receipt and appends nothing (the outbox's replay safety).
+    const receipt =
+      typeof input.clientNonce === "string"
+        ? state.receiptsByNonce.get(input.clientNonce)
+        : undefined;
+    if (receipt) {
+      return json(res, 200, { json: receipt });
+    }
     const payload = attachmentSendPayload(input, durableMessages(state));
     if (!payload) return rpcError(res, 400, "BAD_REQUEST", "Attachment unavailable");
     state.sends += 1;
@@ -500,7 +525,23 @@ function handleThreadRpc(req, res, body) {
         payload: { trigger: waiting ? "resume" : "user", userId: ME.userId },
       }),
     );
-    return json(res, 200, { json: { taskId: runId, runId, seq: messageSeq } });
+    const answer = { taskId: runId, runId, seq: messageSeq };
+    if (typeof input.clientNonce === "string") {
+      state.receiptsByNonce.set(input.clientNonce, answer);
+    }
+    // B3: a server that committed the send but whose response never arrives — headers go out
+    // and the body is cut mid-transfer, so the client sees a transport error for a durable
+    // send (destroying the bare connection would let the kit silently retry a request it sent
+    // on a reused pool connection, and the loss would never surface). The replay must dedupe
+    // (receiptsByNonce).
+    if (takeDropSendResponse()) {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.write('{"json":{"task');
+      const timer = setTimeout(() => res.destroy(), 40);
+      timer.unref();
+      return;
+    }
+    return json(res, 200, { json: answer });
   }
   if (path === "/rpc/threads/answer") {
     const seq = nextEventSeq(state);
@@ -827,6 +868,7 @@ createServer((req, res) => {
       threadStall = null;
       resetModelsFixture(ME);
       resetArtifacts();
+      resetOutbox();
       resetConsent();
       resetVoice();
       auth.resetAuth();
@@ -851,6 +893,7 @@ createServer((req, res) => {
       return json(res, 200, { ok: true, count: consentScript.length });
     }
     if (handleModelsControl(req, res, body, ME)) return;
+    if (handleOutboxControl(req, res, body)) return;
     if (handleVoiceControl(req, res, body)) return;
     if (handleGroupsControl(req, res, body)) return;
     if (handleVoiceHttp(req, res, body)) return;

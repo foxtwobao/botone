@@ -43,6 +43,7 @@ import spaceSelectionTest from './SpaceSelection.test';
 import spaceSwitchTest from './SpaceSwitch.test';
 import messageQuoteTest from './MessageQuote.test';
 import cameraCaptureTest from './CameraCapture.test';
+import outboxTest from './Outbox.test';
 
 export default function testsuite() {
   // Pure-logic fixture replays: no network, no device state.
@@ -69,6 +70,8 @@ export default function testsuite() {
   messageQuoteTest();
   // B2: the camera capture's contract over a scripted picker (pure).
   cameraCaptureTest();
+  // B3: the disk outbox against the fixture server — parking, replay, classification, sessions.
+  outboxTest();
   // Device storage and transport: need the fixture server (scripts/spike-sse-server.mjs,
   // ports 8787 and 8788) reachable at 10.0.2.2.
   assetSmoke();

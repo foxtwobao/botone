@@ -28,6 +28,8 @@ import { archivedStore } from '../stores/archived-store';
 import { settingsStore } from '../stores/settings-store';
 import { incomingShare } from '../stores/incoming-share-store';
 import { spaceStore } from '../stores/space-store';
+import { outbox } from '../outbox/outbox';
+import { sweepOutbox } from '../outbox/outbox-disk';
 
 @ObservedV2
 export class AppState {
@@ -43,9 +45,15 @@ export class AppState {
   private context: common.UIAbilityContext | null = null;
   private unwatchSession: (() => void) | null = null;
 
-  /** Called after a committed server switch; screens watching serverBase re-read. */
+  /** Called after a committed server switch; screens watching serverBase re-read. The commit is
+   *  the point past the old session's clear, so the unsent messages clear here too (B3): a
+   *  failed switch rolls back above and never reaches this. */
   noteServerChanged(): void {
+    const switched = this.serverBase !== currentApiBase();
     this.serverBase = currentApiBase();
+    if (switched) {
+      outbox.clearAll();
+    }
   }
 
   /** Stops the global session listener so instrumented tests own the session without the app reacting. */
@@ -58,6 +66,8 @@ export class AppState {
     this.context = context;
     clearArtifactCache(context);
     cleanAttachmentDirectory(draftDirectory(context));
+    outbox.init(context);
+    sweepOutbox(context);
     appearance.update(context.config.colorMode);
     setUpdateHandler((): void => {
       this.updateRequired = true;
@@ -177,6 +187,8 @@ export class AppState {
       this.me = me;
       this.spaceName = navigation !== null ? navigation.currentName : '';
       this.phase = 'me';
+      // The account is known: mount this account's unsent messages from the disk queue (B3).
+      void outbox.restore(currentApiBase(), me.userId);
     } catch (err) {
       if (generation !== currentSessionGeneration()) {
         return;

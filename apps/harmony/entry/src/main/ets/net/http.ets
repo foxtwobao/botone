@@ -28,7 +28,8 @@ function responseHeaders(raw: Object): Record<string, string> {
 }
 
 export function bodyBytes(body: string): number {
-  return new util.TextEncoder().encodeInto(body).byteLength;
+  // encodeInto answers undefined for an empty string; an empty body is just 0 bytes.
+  return body.length === 0 ? 0 : new util.TextEncoder().encodeInto(body)!.byteLength;
 }
 
 /**

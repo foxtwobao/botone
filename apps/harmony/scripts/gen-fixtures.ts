@@ -30,6 +30,7 @@ import { vi } from "vitest";
 import { generateAttachmentsFixture } from "./gen-attachments-fixtures.ts";
 import { generateMarkdownFixture } from "./gen-markdown-fixtures.ts";
 import { generateModelsFixture } from "./gen-models-fixtures.ts";
+import { generateOutboxFixture } from "./gen-outbox-fixtures.ts";
 import { generateQuoteFixture } from "./gen-quote-fixtures.ts";
 import { generateThreadFixture } from "./gen-thread-fixtures.ts";
 import { readCatalog as readPoCatalog } from "./po.ts";
@@ -909,4 +910,5 @@ export const fixtureGenerators: Record<string, () => unknown | Promise<unknown>>
   group: generateGroupFixture,
   models: generateModelsFixture,
   quote: generateQuoteFixture,
+  outbox: generateOutboxFixture,
 };

@@ -1,0 +1,168 @@
+{
+  "constants": {
+    "maxEntries": 20,
+    "maxBytes": 52428800
+  },
+  "classify": [
+    {
+      "name": "transport-lost",
+      "status": 0,
+      "transport": true,
+      "timedOut": false,
+      "message": "",
+      "expected": "queued"
+    },
+    {
+      "name": "timeout",
+      "status": 0,
+      "transport": false,
+      "timedOut": true,
+      "message": "",
+      "expected": "queued"
+    },
+    {
+      "name": "gateway-502",
+      "status": 502,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "queued"
+    },
+    {
+      "name": "gateway-503",
+      "status": 503,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "queued"
+    },
+    {
+      "name": "gateway-504",
+      "status": 504,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "queued"
+    },
+    {
+      "name": "rate-limited-429",
+      "status": 429,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "queued"
+    },
+    {
+      "name": "unauthorized-401",
+      "status": 401,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "refused"
+    },
+    {
+      "name": "forbidden-403",
+      "status": 403,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "refused"
+    },
+    {
+      "name": "bad-request-400",
+      "status": 400,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "refused"
+    },
+    {
+      "name": "timeout-status-408",
+      "status": 408,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "conflict-409",
+      "status": 409,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "conflict-409-image",
+      "status": 409,
+      "transport": false,
+      "timedOut": false,
+      "message": "This model cannot read images.",
+      "expected": "failed"
+    },
+    {
+      "name": "teaching-425",
+      "status": 425,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "update-426",
+      "status": 426,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "server-fault-500",
+      "status": 500,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "server-fault-501",
+      "status": 501,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "no-response",
+      "status": 0,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "cause-status-500",
+      "status": 500,
+      "transport": false,
+      "timedOut": false,
+      "message": "",
+      "expected": "failed"
+    },
+    {
+      "name": "model-required-400",
+      "status": 400,
+      "transport": false,
+      "timedOut": false,
+      "message": "Connect a model to start a run.",
+      "expected": "failed"
+    },
+    {
+      "name": "model-required-403",
+      "status": 403,
+      "transport": false,
+      "timedOut": false,
+      "message": "Connect a model to start a run.",
+      "expected": "failed"
+    }
+  ]
+}
