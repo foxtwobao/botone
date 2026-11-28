@@ -19,6 +19,7 @@ import { displaySavedServer } from '../../net/endpoint';
 import { settingsStore } from '../../stores/settings-store';
 import { spaceStore } from '../../stores/space-store';
 import { defaultModelEntry } from '../../stores/model-display';
+import { outbox } from '../../outbox/outbox';
 
 /** Each shipped language named in itself (core APP_LOCALE_LABELS) — product data, not copy.
  * Built by key assignment: ArkTS rejects Record literals with entries (M1 constraint). */
@@ -75,6 +76,37 @@ export struct SettingsPage {
   }
 
   private async doSignOut(): Promise<void> {
+    if (this.signingOut) {
+      return;
+    }
+    if (outbox.hasUnsent()) {
+      // Unsent messages die with the session; the one destructive surprise gets one confirm (B3).
+      this.getUIContext().showAlertDialog({
+        title: t('Unsent messages'),
+        message: t('Signing out deletes unsent messages.'),
+        autoCancel: true,
+        alignment: DialogAlignment.Center,
+        buttons: [
+          {
+            value: t('Cancel'),
+            fontColor: appearance.tokens().mutedForeground,
+            action: (): void => {},
+          },
+          {
+            value: t('Sign out anyway'),
+            fontColor: appearance.tokens().destructive,
+            action: (): void => {
+              void this.signOutNow();
+            },
+          },
+        ],
+      });
+      return;
+    }
+    await this.signOutNow();
+  }
+
+  private async signOutNow(): Promise<void> {
     if (this.signingOut) {
       return;
     }

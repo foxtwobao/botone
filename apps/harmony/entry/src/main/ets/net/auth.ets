@@ -16,6 +16,7 @@ import {
 import { savePendingSignOut, deliverSignOutRecord } from './sign-out';
 import type { PendingSignOut } from './sign-out';
 import { clearSelectedSpace } from './space-selection';
+import { outbox } from '../outbox/outbox';
 import { decodeAuthCapabilities } from '../contract/decode';
 import type { AuthCapabilitiesView } from '../contract/decode';
 import { currentLocale, t } from '../i18n/i18n';
@@ -110,6 +111,11 @@ export async function saveIssuedSession(token: string, apiBase: string, generati
       saved = currentSessionGeneration() === generation + 1 && apiBase === currentApiBase();
     } catch (err) {
       throw new Error(t('Could not save your sign-in on this device. Try again.'));
+    }
+    if (saved) {
+      // A fresh session starts with an empty outbox: the previous session's unsent messages
+      // never belong to the account that just signed in (B3, silent like the switch below).
+      outbox.clearAll();
     }
   }
   if (!saved) {
@@ -289,6 +295,9 @@ export async function signOut(): Promise<void> {
   if (!(await clearSessionToken())) {
     throw new Error(t('Could not clear the local session'));
   }
+  // The user confirmed the delete in the settings prompt (B3); a rejected session keeps the
+  // records on disk for the same account's next restore.
+  outbox.clearAll();
   // The Space belonged to the session that just ended; a later sign-in starts from the default.
   void clearSelectedSpace();
   if (record !== null) {

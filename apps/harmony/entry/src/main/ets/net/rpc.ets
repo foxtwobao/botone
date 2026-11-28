@@ -93,12 +93,26 @@ export async function captureContext(spaceId: string | null = null): Promise<Rpc
   return context;
 }
 
+/** The outbox's one listener: an answered request proves the server reachable (B3). The flag
+ *  only gates decisions; nothing auto-sends from here. */
+let reachableListener: ((reachable: boolean) => void) | null = null;
+
+export function subscribeReachable(listener: (reachable: boolean) => void): () => void {
+  reachableListener = listener;
+  return (): void => {
+    if (reachableListener === listener) {
+      reachableListener = null;
+    }
+  };
+}
+
 /** Every answered request is a connectivity window for a revocation still pending. */
 function noteReachable(reachable: boolean, context: RpcContext): void {
   if (context.generation !== currentSessionGeneration() || context.apiBase !== currentApiBase()) {
     return;
   }
   if (reachable) {
+    reachableListener?.(true);
     void loadSessionToken().then((token: string): void => {
       const signOutContext: SignOutContext = { apiBase: context.apiBase, activeToken: token };
       void flushPendingSignOut(signOutContext);

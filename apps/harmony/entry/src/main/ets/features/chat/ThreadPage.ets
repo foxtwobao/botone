@@ -18,8 +18,10 @@ import { cameraCaptureAvailable, capturePhoto } from '../../thread/camera-captur
 import { THREAD_MESSAGE_TEXT_MAX_LENGTH } from '../../thread/thread-send';
 import { ComposerAttachments, ComposerReplyPreview } from './composer-attachments';
 import { app } from '../../app/app-state';
-import { ThreadStore, daySeparatorLabel } from '../../stores/thread-store';
-import type { ThreadRow } from '../../stores/thread-store';
+import { ThreadStore, daySeparatorLabel, ThreadRow } from '../../stores/thread-store';
+import { outbox } from '../../outbox/outbox';
+import type { Outbox } from '../../outbox/outbox';
+import { FailedSendBubble } from './failed-send-bubble';
 import { RosterHolder } from '../../realtime/roster-holder';
 import { MessageBubble } from './MessageBubble';
 import { installConsentDialog } from './consent-dialog';
@@ -49,6 +51,8 @@ export struct ThreadPage {
   @Param route: ThreadRoute | null = null;
   @Local store: ThreadStore = new ThreadStore();
   @Local source: ListSource<ThreadRow> = new ListSource<ThreadRow>([]);
+  /** The chat's unsent messages (B3); its revision drives the row source reload. */
+  @Local outboxQueue: Outbox = outbox;
   @Local draft: string = '';
   @Local attachments: DraftAttachment[] = [];
   @Local attachmentNotice: string = '';
@@ -95,6 +99,21 @@ export struct ThreadPage {
     this.scroller.scrollEdge(Edge.Bottom);
   }
 
+  /** A send failed but was parked on disk: the composer releases its draft, the bubble replaces
+   *  it (the M3 refill row goes — the bubble is the retry surface now). */
+  @Monitor('store.outboxRevision')
+  onParked(): void {
+    this.clearDraft();
+    this.atBottom = true;
+    this.scroller.scrollEdge(Edge.Bottom);
+  }
+
+  /** The outbox's entries changed (park, retry outcome, delete): re-join the row source. */
+  @Monitor('outboxQueue.revision')
+  onOutboxChanged(): void {
+    this.reloadSource();
+  }
+
   @Computed
   get canSend(): boolean {
     return !this.picking && !this.store.send.pending && (!!this.draft.trim() || this.attachments.length > 0);
@@ -119,7 +138,7 @@ export struct ThreadPage {
     this.offSpace = subscribeSpaceSelection((): void => this.sessionChanged());
     this.offConsent = installConsentDialog();
     this.offChanges = this.store.subscribeChanges((): void => {
-      this.source.reload(this.store.rows);
+      this.reloadSource();
       if (this.atBottom) {
         this.scroller.scrollEdge(Edge.Bottom);
       }
@@ -130,7 +149,7 @@ export struct ThreadPage {
     });
     this.store.open(this.botId, this.groupId, app.me?.userId ?? '');
     this.store.setVisible(true);
-    this.source.reload(this.store.rows);
+    this.reloadSource();
     this.holder.start();
     const share = this.route?.share;
     if (share !== undefined) {
@@ -163,7 +182,11 @@ export struct ThreadPage {
 
   private clearDraft(): void {
     for (const item of this.attachments) {
-      removeTemporaryFile(item.path);
+      // A parked send's files belong to the outbox record now (the composer gave them up); only
+      // drafts still living in the cache are temporary.
+      if (!this.outboxQueue.owns(item.path)) {
+        removeTemporaryFile(item.path);
+      }
     }
     this.attachments = [];
     this.draft = '';
@@ -171,6 +194,24 @@ export struct ThreadPage {
     this.replyQuote = '';
     this.attachmentNotice = '';
     this.sendAfterDictation = false;
+  }
+
+  /** The transcript rows plus this chat's unsent bubbles at the end (B3: the failed rows join
+   *  here, never in projectRows — that stays the pure function the fixtures pin). */
+  private reloadSource(): void {
+    const rows: ThreadRow[] = [];
+    for (const row of this.store.rows) {
+      rows.push(row);
+    }
+    for (const entry of this.outboxQueue.entriesFor(this.botId, this.groupId,
+      this.store.activeNonce())) {
+      const row = new ThreadRow();
+      row.type = 'failed';
+      row.entry = entry;
+      row.key = `failed:${entry.record.nonce}:${entry.record.state}:${entry.record.imageConfirmation ? 'img' : ''}:${entry.busy ? 'busy' : ''}`;
+      rows.push(row);
+    }
+    this.source.reload(rows);
   }
 
   /** The words the microphone heard land in the draft by the composer's own merge rule. */
@@ -533,6 +574,23 @@ export struct ThreadPage {
       // The label resolves here (build-time t()), never baked into the row: a hot locale switch
       // re-renders separators in the new language.
       this.daySeparator(daySeparatorLabel(row.dayAt, Date.now()))
+    } else if (row.type === 'failed' && row.entry !== null) {
+      FailedSendBubble({
+        entry: row.entry,
+        needsModel: this.modelRequired(),
+        onRetry: (): void => {
+          void this.outboxQueue.retry(row.entry!.record.nonce);
+        },
+        onSendAsFile: (): void => {
+          void this.outboxQueue.sendAsFile(row.entry!.record.nonce);
+        },
+        onDelete: (): void => {
+          this.outboxQueue.discard(row.entry!.record.nonce);
+        },
+        onAddModel: (): void => {
+          this.stack.pushPathByName('models', null);
+        },
+      })
     } else {
       MessageBubble({
         message: row.message,
@@ -700,7 +758,7 @@ export struct ThreadPage {
         .scrollBar(BarState.Off)
         .edgeEffect(EdgeEffect.Spring)
         .onScrollIndex((start: number, end: number): void => {
-          this.atBottom = end >= this.store.rows.length - 2;
+          this.atBottom = end >= this.source.totalCount() - 2;
         })
         .onReachStart((): void => {
           void this.store.loadOlder();

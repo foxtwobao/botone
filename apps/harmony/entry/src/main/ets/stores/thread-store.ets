@@ -8,6 +8,7 @@ import { RpcError, errorText, isServerUnreachable } from '../net/errors';
 import { AiConsentBlocked } from '../net/consent';
 import { RequestCancellation, RequestCancelled } from '../net/request-cancellation';
 import { currentScope } from '../query/query-cache';
+import { currentApiBase } from '../net/server-store';
 import { asRecord } from '../contract/decode';
 import { readDraftBase64 } from '../thread/attachment-files';
 import type { DraftAttachment } from '../thread/attachment-files';
@@ -25,13 +26,20 @@ import { isDeliveryMessage } from '../thread/block-view';
 import { historyGapAtEnd } from '../thread/thread-window';
 import { t } from '../i18n/i18n';
 import { formatThreadSeparator } from '../i18n/dates';
+import { outbox } from '../outbox/outbox';
+import type { OutboxEntry } from '../outbox/outbox';
+import { OutboxRecord } from '../outbox/outbox-record';
 
-/** A transcript row: a day separator or a message (delivery messages never become rows). */
+/** A transcript row: a day separator, a message, or an unsent-message bubble from the outbox
+ *  (delivery messages never become rows). The failed row joins the source in the screen, never
+ *  projectRows — that stays the pure function the fixtures pin. */
 export class ThreadRow {
   type: string = 'message';
   /** The separator's first message timestamp; the label renders from it at build time. */
   dayAt: string = '';
   message: LiveMessage | null = null;
+  /** The outbox entry a failed row renders. */
+  entry: OutboxEntry | null = null;
   /** The row's render key: content changes force a LazyForEach re-render (the M2 lesson). */
   key: string = '';
 }
@@ -133,12 +141,17 @@ export class ThreadStore {
   @Trace uploading: number = 0;
   @Trace imageConfirmation: boolean = false;
   @Trace sentRevision: number = 0;
+  /** Bumped when a send was parked in the outbox on failure: the composer releases the draft
+   *  and the "Not sent" bubble replaces it (the M3 refill row goes). */
+  @Trace outboxRevision: number = 0;
   readonly send: SaveController;
   private upload: RequestCancellation | null = null;
   private attemptKey: string = '';
   private nonce: string = '';
   private uploaded: string[] = [];
   private imagesAsFiles: boolean = false;
+  /** The nonce whose failure was parked on disk; the error row stays silent for it. */
+  private parkedNonce: string = '';
   readonly answer: SaveController;
   readonly stop: SaveController;
   private stream: ThreadStream | null = null;
@@ -162,6 +175,14 @@ export class ThreadStore {
       onFailed: (error: RpcError): void => {
         if (error instanceof RequestCancelled || (error instanceof AiConsentBlocked && error.refusedByUser)) {
           this.send.reset();
+        }
+        if (this.parkedNonce !== '') {
+          // The outbox owns the message now: the bubble replaces the error row, and the attempt
+          // identity (attemptKey, nonce, uploads) survives for the replay. The controller's own
+          // display state still resets, like any failure.
+          this.resetAttempt(true);
+          this.outboxRevision += 1;
+          return;
         }
         this.imageConfirmation = error.status === 409 && error.reason === 'model_image_input_unsupported';
       },
@@ -205,10 +226,12 @@ export class ThreadStore {
     if (!this.started || this.send.pending || (!text.trim() && !attachments.length)) {
       return;
     }
-    // A retry of the same draft reuses both its upload ids and the final message nonce.
+    // A retry of the same draft reuses both its upload ids and the final message nonce — but a
+    // parked attempt owns the nonce on disk, so a retry after a parked failure must NOT mint a
+    // new one: the parked record's replay depends on it (and on the finished uploads).
     const key = JSON.stringify([currentScope(), text.trim(), attachments.map((item: DraftAttachment) => item.path),
       replyToMessageId, replyQuote]);
-    if (key !== this.attemptKey) {
+    if (key !== this.attemptKey && this.parkedNonce === '') {
       this.resetAttempt();
       this.attemptKey = key;
       this.nonce = newClientNonce();
@@ -227,13 +250,43 @@ export class ThreadStore {
     this.upload?.cancel();
   }
 
-  resetAttempt(): void {
-    this.attemptKey = '';
-    this.nonce = '';
-    this.uploaded = [];
+  /** `keepAttempt` keeps the attempt identity (nonce, uploads, attempt key): a parked send's
+   *  retry replays under the same nonce, and only a settle or a cancel may drop it. */
+  resetAttempt(keepAttempt: boolean = false): void {
+    if (!keepAttempt) {
+      this.attemptKey = '';
+      this.nonce = '';
+      this.uploaded = [];
+    }
     this.imagesAsFiles = false;
     this.imageConfirmation = false;
+    this.parkedNonce = '';
     this.send.reset();
+  }
+
+  /** The nonce the in-flight send owns (its record hides from the bubbles until it settles). */
+  activeNonce(): string {
+    return this.send.pending ? this.nonce : '';
+  }
+
+  private buildOutboxRecord(nonce: string, spaceId: string, text: string,
+    replyToMessageId: string, replyQuote: string, attachments: DraftAttachment[]): OutboxRecord {
+    const record = new OutboxRecord();
+    record.nonce = nonce;
+    record.apiBase = currentApiBase();
+    record.userId = this.userId;
+    record.spaceId = spaceId;
+    record.botId = this.botId;
+    record.groupId = this.groupId;
+    record.text = text;
+    record.replyToMessageId = replyToMessageId;
+    record.replyQuote = replyQuote;
+    record.imageHandling = this.imagesAsFiles ? 'file' : 'confirm';
+    for (let index = 0; index < attachments.length; index += 1) {
+      // A retry of the same draft carries the uploads it already finished.
+      record.artifactIds.push(this.uploaded.length > index ? this.uploaded[index] : '');
+    }
+    return record;
   }
 
   private async deliver(input: Record<string, Object>, sendRpc: SaveSend): Promise<void> {
@@ -245,42 +298,92 @@ export class ThreadStore {
     const ids = this.uploaded;
     const cancellation = new RequestCancellation();
     this.upload = cancellation;
+    // A retry of a parked failure replays through the outbox: its drafts live under the
+    // outbox folder now (the composer's paths are gone), and the replay reuses the parked
+    // record's nonce and finished uploads. The SaveController's own callbacks finish the
+    // bookkeeping: success resolves here, so onSaved fires; a failure throws into onFailed,
+    // whose parked branch has nothing new to record.
+    if (this.parkedNonce === nonce) {
+      await outbox.retry(nonce);
+      if (outbox.find(nonce) === null) {
+        return;
+      }
+      const stuck = outbox.find(nonce)!;
+      throw new RpcError(stuck.error || t('Failed to send message'));
+    }
+    // B3: the message parks on disk before the first upload, its drafts moved into the outbox
+    // folder — cacheDir is swept at launch, so only this copy survives a crash mid-send.
+    const record = this.buildOutboxRecord(nonce, selectedSpaceId(), input['text'] as string,
+      input['replyToMessageId'] as string, input['replyQuote'] as string, attachments);
+    const originalPaths: string[] = [];
+    for (const attachment of attachments) {
+      originalPaths.push(attachment.path);
+    }
+    let parked = false;
     try {
-      for (let index = ids.length; index < attachments.length; index += 1) {
-        this.uploading = index + 1;
-        const attachment = attachments[index];
-        const body = sendTarget(botId, groupId);
-        body['name'] = attachment.name;
-        body['mimeType'] = attachment.mimeType;
-        body['clientNonce'] = `${nonce}:${index}`;
-        body['contentBase64'] = await readDraftBase64(attachment, cancellation);
-        const result = asRecord(await sendRpc('artifacts/create', body, 60_000, cancellation));
-        const id = result?.['id'];
-        if (typeof id !== 'string' || !id) {
-          throw new RpcError('Unexpected response from the server');
+      parked = outbox.park(record, attachments);
+    } catch (err) {
+      // Over the outbox's budget: nothing moved (the cap is checked first), the send fails with
+      // that copy and the composer keeps the draft, like any M6 failure.
+      throw err instanceof RpcError ? err as RpcError : new RpcError(String(err));
+    }
+    try {
+      try {
+        for (let index = ids.length; index < attachments.length; index += 1) {
+          this.uploading = index + 1;
+          const attachment = attachments[index];
+          const body = sendTarget(botId, groupId);
+          body['name'] = attachment.name;
+          body['mimeType'] = attachment.mimeType;
+          body['clientNonce'] = `${nonce}:${index}`;
+          body['contentBase64'] = await readDraftBase64(attachment, cancellation);
+          const result = asRecord(await sendRpc('artifacts/create', body, 60_000, cancellation));
+          const id = result?.['id'];
+          if (typeof id !== 'string' || !id) {
+            throw new RpcError('Unexpected response from the server');
+          }
+          ids.push(id as string);
+          if (parked) {
+            record.artifactIds[index] = id as string;
+            outbox.progress(record);
+          }
         }
-        ids.push(id as string);
+        cancellation.check();
+      } finally {
+        this.upload = null;
+        this.uploading = 0;
       }
-      cancellation.check();
-    } finally {
-      this.upload = null;
-      this.uploading = 0;
-    }
-    if (!this.started || this.nonce !== nonce || currentScope() !== scope) {
-      throw new RequestCancelled();
-    }
-    const body = threadSendBody(botId, groupId, input['text'] as string, ids,
-      input['replyToMessageId'] as string, nonce, this.imagesAsFiles, input['replyQuote'] as string);
-    const output = decodeSendOutput(await sendRpc('threads/send', body));
-    if (output === null) {
-      throw new RpcError('Unexpected response from the server');
-    }
-    if (!groupId && this.stream !== null && this.nonce === nonce && currentScope() === scope) {
-      const next = applyThreadSendReceipt(this.stream.current(), sendReceipt(botId, output),
-        this.stream.terminalRunIds, new Date().toISOString());
-      if (next !== this.stream.current()) {
-        this.stream.commit(next);
+      if (!this.started || this.nonce !== nonce || currentScope() !== scope) {
+        throw new RequestCancelled();
       }
+      const body = threadSendBody(botId, groupId, input['text'] as string, ids,
+        input['replyToMessageId'] as string, nonce, this.imagesAsFiles, input['replyQuote'] as string);
+      const output = decodeSendOutput(await sendRpc('threads/send', body));
+      if (output === null) {
+        throw new RpcError('Unexpected response from the server');
+      }
+      if (parked) {
+        outbox.sent(nonce);
+      }
+      if (!groupId && this.stream !== null && this.nonce === nonce && currentScope() === scope) {
+        const next = applyThreadSendReceipt(this.stream.current(), sendReceipt(botId, output),
+          this.stream.terminalRunIds, new Date().toISOString());
+        if (next !== this.stream.current()) {
+          this.stream.commit(next);
+        }
+      }
+    } catch (err) {
+      if (parked) {
+        if (err instanceof RequestCancelled) {
+          // A cancelled attempt goes back to the composer whole, like M6 left it.
+          outbox.unpark(record, attachments, originalPaths);
+        } else {
+          const error = err instanceof RpcError ? err as RpcError : new RpcError(String(err));
+          this.parkedNonce = nonce;
+          outbox.failed(record, error);
+        }
+      }
+      throw err instanceof Error ? err as Error : new RpcError(String(err));
     }
   }
 
@@ -326,7 +429,8 @@ export class ThreadStore {
     return '';
   }
 
-  /** Open a chat: fresh state, the stream loads the snapshot and subscribes. */
+  /** Open a chat: fresh state, the stream loads the snapshot and subscribes. The outbox mounts
+   *  this chat's unsent bubbles, and offline-queued ones retry once while the server answers. */
   open(botId: string, groupId: string, userId: string): void {
     this.close();
     this.botId = botId;
@@ -336,6 +440,7 @@ export class ThreadStore {
     this.error = '';
     this.offline = false;
     this.loading = true;
+    outbox.replayQueued(botId, groupId);
     const input: Record<string, Object> = {};
     if (groupId) {
       input['groupId'] = groupId;
