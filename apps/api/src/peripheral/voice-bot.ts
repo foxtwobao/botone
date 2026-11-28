@@ -70,15 +70,30 @@ const disabledBuiltinTools = DisabledBuiltinToolsSchema.parse([
 export async function existingVoiceBot(prisma: PrismaClient, actor: Actor) {
   const bot = await prisma.bot.findUnique({
     where: { spaceId_spawnKey: { spaceId: actor.spaceId, spawnKey: SPAWN_KEY } },
-    select: { id: true, archivedAt: true },
+    select: { id: true, archivedAt: true, modelProvider: true, modelId: true },
   });
   return bot && !bot.archivedAt ? bot : null;
 }
 
-export async function ensureVoiceBot(prisma: PrismaClient, actor: Actor) {
+export async function ensureVoiceBot(
+  prisma: PrismaClient,
+  actor: Actor,
+  initialModel?: { modelProvider: string; modelId: string },
+) {
   await ensurePodToolApprovals(prisma, actor);
   const existing = await existingVoiceBot(prisma, actor);
-  if (existing) return existing.id;
+  if (existing) {
+    if (!existing.modelId && initialModel) {
+      await prisma.bot.update({
+        where: { id: existing.id },
+        data: {
+          modelProvider: initialModel.modelProvider,
+          modelId: initialModel.modelId,
+        },
+      });
+    }
+    return existing.id;
+  }
 
   const bot = await createRepos(prisma).createBot(actor, {
     name: "波波",
@@ -87,6 +102,9 @@ export async function ensureVoiceBot(prisma: PrismaClient, actor: Actor) {
     spawnKey: SPAWN_KEY,
     notifyOnFinish: false,
     fleetManagement: true,
+    ...(initialModel
+      ? { modelProvider: initialModel.modelProvider, modelId: initialModel.modelId }
+      : {}),
     thinkingLevel: "off",
     disabledBuiltinTools,
   });
