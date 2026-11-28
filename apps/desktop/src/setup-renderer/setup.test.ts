@@ -407,7 +407,7 @@ describe("setup", () => {
 
   it("shows saved headers and saves them with the existing server", async () => {
     const headers = { "CF-Access-Client-Id": "id.access", "CF-Access-Client-Secret": "secret" };
-    const ui = await boot({ mode: "existing", serverUrl: "https://one.example", headers });
+    const ui = await boot({ mode: "existing", serverUrl: CLOUD_URL, headers });
     expect(element<HTMLDetailsElement>("server-headers-section").open).toBe(true);
     expect(element<HTMLTextAreaElement>("server-headers").value).toBe(
       "CF-Access-Client-Id: id.access\nCF-Access-Client-Secret: secret",
@@ -416,7 +416,7 @@ describe("setup", () => {
     submitForm();
     await flush();
 
-    expect(ui.saves).toEqual([{ mode: "existing", serverUrl: "https://one.example", headers }]);
+    expect(ui.saves).toEqual([{ mode: "existing", serverUrl: CLOUD_URL, headers }]);
   });
 
   it("refuses a header line without a name before saving", async () => {

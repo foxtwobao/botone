@@ -24,7 +24,9 @@ await build({
 await build({
   entryPoints: ["src/main/launch.ts"],
   outfile: "dist/launch.js",
+  bundle: true,
   platform: "node",
   format: "esm",
   target: "node24",
+  external: ["./main.js", "electron"],
 });

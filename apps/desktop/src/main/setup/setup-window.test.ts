@@ -1,5 +1,8 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { deferred } from "@rakazo/core/test-async";
-import { BrowserWindow } from "electron";
+import { app, BrowserWindow } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { desktop } from "../desktop-state.js";
 import type { IpcCaller } from "../ipc/ipc.js";
@@ -12,7 +15,7 @@ vi.mock("electron", () => ({
     handle: (channel: string, listener: Listener) => mocks.invoke.set(channel, listener),
     on: vi.fn(),
   },
-  app: { quit: vi.fn(), isPackaged: true },
+  app: { getAppPath: vi.fn(), quit: vi.fn(), isPackaged: true },
   BrowserWindow: vi.fn(),
   screen: { getPrimaryDisplay: () => ({ workAreaSize: { width: 1200, height: 800 } }) },
   shell: { openExternal: vi.fn() },
@@ -73,6 +76,21 @@ afterEach(() => {
   desktop.setupError = null;
   desktop.mainWindow = null;
   desktop.currentTargetUrl = null;
+});
+
+it("offers the packaged default in setup after a launch failure", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "setup-default-"));
+  const previousStack = desktop.localStack;
+  try {
+    writeFileSync(path.join(dir, "package.json"), JSON.stringify({ defaultServerUrl: SERVER }));
+    vi.mocked(app.getAppPath).mockReturnValue(dir);
+    desktop.localStack = { ...previousStack, webUrl: () => "http://localhost:45173" };
+    const state = mocks.invoke.get("desktop.setup.state")?.(page.event);
+    expect(state).toMatchObject({ cloudUrl: SERVER });
+  } finally {
+    desktop.localStack = previousStack;
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 it("checks the selected stack before saving a local connection", async () => {

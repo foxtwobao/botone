@@ -531,7 +531,10 @@
       defaultLocalUrl = state.defaultLocalUrl;
       cloudUrl = state.cloudUrl;
       if (state.saved !== null) {
-        const savedCloud = state.saved.mode === "existing" && state.saved.serverUrl === cloudUrl;
+        const savedCloud =
+          state.saved.mode === "existing" &&
+          state.saved.serverUrl === cloudUrl &&
+          !state.saved.headers;
         const mode = savedCloud ? "cloud" : state.saved.mode;
         const modeInput = document.querySelector(`input[name="mode"][value="${mode}"]`);
         if (modeInput !== null) modeInput.checked = true;

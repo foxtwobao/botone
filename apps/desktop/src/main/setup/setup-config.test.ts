@@ -242,6 +242,20 @@ describe("startup target", () => {
         url: "https://app.example.com",
         source: "default",
       });
+      write({ defaultServerUrl: "https://app.example.com/", startAtDefaultServer: true });
+      const releaseTarget = {
+        kind: "app",
+        url: "https://app.example.com",
+        source: "fixed",
+      };
+      expect(resolvePackagedStartupTarget(dir, {})).toEqual(releaseTarget);
+      expect(resolvePackagedStartupTarget(dir, { saved })).toEqual(releaseTarget);
+      expect(
+        resolvePackagedStartupTarget(dir, {
+          saved,
+          envUrl: "http://127.0.0.1:4321",
+        }),
+      ).toMatchObject({ source: "env" });
       write({ defaultServerUrl: "" });
       expect(resolvePackagedStartupTarget(dir, {})).toEqual({ kind: "setup" });
     } finally {

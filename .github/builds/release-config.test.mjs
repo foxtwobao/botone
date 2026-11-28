@@ -76,6 +76,7 @@ test("desktop release signing cannot silently degrade or inherit upstream update
     assert.equal(config.publish, null);
     assert.equal(config.appId, "work.example.desktop");
     assert.equal(config.extraMetadata.defaultServerUrl, "https://app.example.com");
+    assert.equal(config.extraMetadata.startAtDefaultServer, true);
     assert.equal(config.productName, "BotONE");
     assert.equal(
       config.mac.extraResources.some((item) => item.to === "server-bundle.json"),

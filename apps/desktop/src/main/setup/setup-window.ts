@@ -10,7 +10,12 @@ import { dockerDownloadUrl, isDesktopSetupLink } from "../this-computer/docker-c
 import type { createAppOpener } from "../windows/app-opener.js";
 import { developmentIcon, markOnce } from "../windows/app-window.js";
 import { setupWindowOptions } from "../windows/window-options.js";
-import { managedLocalOpenUrl, parseSetupInput, RAKAZO_CLOUD_URL } from "./setup-config.js";
+import {
+  managedLocalOpenUrl,
+  parseSetupInput,
+  RAKAZO_CLOUD_URL,
+  resolvePackagedStartupTarget,
+} from "./setup-config.js";
 import { writeSetup } from "./setup-store.js";
 
 let setupSaveInProgress = false;
@@ -143,12 +148,15 @@ export function registerSetupIpc({
     dir: desktopDirection(),
     messages: desktopMessages(),
   }));
-  handleIpc("desktop.setup.state", () => ({
-    defaultLocalUrl: desktop.localStack.webUrl(),
-    cloudUrl: RAKAZO_CLOUD_URL,
-    saved: desktop.currentSetup,
-    error: desktop.setupError ?? undefined,
-  }));
+  handleIpc("desktop.setup.state", () => {
+    const packaged = resolvePackagedStartupTarget(app.getAppPath(), {});
+    return {
+      defaultLocalUrl: desktop.localStack.webUrl(),
+      cloudUrl: packaged.kind === "app" ? packaged.url : RAKAZO_CLOUD_URL,
+      saved: desktop.currentSetup,
+      error: desktop.setupError ?? undefined,
+    };
+  });
 
   handleIpc("desktop.setup.test", async (_event, url, headers) => {
     if (typeof url !== "string") return { ok: false, error: t("Enter a server address.") };

@@ -5,12 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import type { HostScreen } from "@rakazo/adapters/host-screen";
 import { startUserDeviceClient } from "@rakazo/adapters/user-device-client";
-import type {
-  DesktopLocalStackState,
-  DesktopReachability,
-  DesktopSetup,
-  RakazoDesktopDevice,
-} from "@rakazo/contracts";
+import type { DesktopLocalStackState, DesktopSetup, RakazoDesktopDevice } from "@rakazo/contracts";
 import { bestEffort } from "@rakazo/logging";
 import type { Session } from "electron";
 import {
@@ -40,7 +35,6 @@ import { installServerHeaders } from "./setup/server-request-headers.js";
 import {
   DEFAULT_LOCAL_WEB_URL,
   desktopStackImageTag,
-  isRakazoHealth,
   managedLocalOpenUrl,
   maySendDesktopStackToken,
   normalizeServerUrl,
@@ -61,6 +55,7 @@ import {
   registerSetupIpc,
   showSetupWindow,
 } from "./setup/setup-window.js";
+import { createFixedServerStartup, probeServer } from "./setup/startup-connection.js";
 import { createBadgeHandler } from "./system/badge.js";
 import { createClipboardHandler } from "./system/clipboard.js";
 import {
@@ -154,6 +149,14 @@ let monitoringSession: Session | undefined;
 let monitoringTargetUrl: string | undefined;
 let stopMonitoringSession: (() => void) | undefined;
 const appOpener = createAppOpener(openAppOnce);
+let fixedServerUrl: string | null = null;
+const fixedStartup = createFixedServerStartup(async (url) => {
+  desktop.setupError = null;
+  const reachability = await probeServer(url, undefined, desktop.currentSetup?.headers);
+  if (!reachability.ok) return reachability.error ?? t("Could not reach that address.");
+  await openInitialServer(url);
+  return desktop.setupError;
+});
 const reportsErrors = desktopReportsErrors(app.isPackaged);
 const updaterEnvironment = {
   // A `--dir` build has no update feed to read.
@@ -204,59 +207,6 @@ const installApplicationMenu = applicationMenuInstaller({
   revokeLocalComputerAccess,
   updaterEnvironment,
 });
-async function probeServer(
-  rawUrl: string,
-  signal?: AbortSignal,
-  headers: Record<string, string> = {},
-): Promise<DesktopReachability> {
-  const url = normalizeServerUrl(rawUrl);
-  if (url === null) return { ok: false, error: t("Enter a valid http:// or https:// address.") };
-  const timeout = AbortSignal.timeout(PROBE_TIMEOUT_MS);
-
-  try {
-    const response = await net.fetch(`${url}/rpc/health`, {
-      method: "POST",
-      headers: { ...headers, "content-type": "application/json" },
-      body: JSON.stringify({ json: {} }),
-      cache: "no-store",
-      credentials: "omit",
-      redirect: "manual",
-      signal: signal ? AbortSignal.any([timeout, signal]) : timeout,
-    });
-    if (response.status >= 300 && response.status < 400) {
-      return {
-        ok: false,
-        status: response.status,
-        url,
-        error: t("That address redirects elsewhere. Enter the final Rakazo server address."),
-      };
-    }
-    if (!response.ok) {
-      return {
-        ok: false,
-        status: response.status,
-        url,
-        error: t("The server answered with HTTP {status}.", { status: response.status }),
-      };
-    }
-    const health = await readProbeJson(response);
-    if (!isRakazoHealth(health)) {
-      return {
-        ok: false,
-        status: response.status,
-        url,
-        error: t("That address did not respond like a Rakazo server."),
-      };
-    }
-    return {
-      ok: true,
-      status: response.status,
-      url,
-    };
-  } catch (error) {
-    return { ok: false, url, error: probeFailureMessage(error) };
-  }
-}
 /**
  * Asked once, and only of someone running This computer on Docker while Docker answers: a
  * declined offer is remembered; an accepted one moves the data when the stack next starts.
@@ -443,12 +393,13 @@ async function openAppOnce(targetUrl: string, switching: boolean) {
     }
     // Closing the window while it loads is the user leaving, not a failure to explain.
     if (closed) return false;
-    // Show the setup window BEFORE destroying the failed one: on Windows/Linux,
-    // destroying the last window fires "window-all-closed" -> app.quit() before
-    // showSetupWindow() runs, so the app silently exits instead of showing this error.
-    showSetupWindow(
-      t("Could not open that server. {detail}", { detail: openFailureDetail(error) }),
-    );
+    // General-purpose builds need a setup window before Windows/Linux loses its last window.
+    // A fixed-server launch keeps the app alive while its retry dialog is pending.
+    const message = t("Could not open that server. {detail}", {
+      detail: openFailureDetail(error),
+    });
+    if (fixedStartup.busy() && !switching) desktop.setupError = message;
+    else showSetupWindow(message);
     if (win !== null && !win.isDestroyed()) win.destroy();
     return false;
   }
@@ -543,7 +494,16 @@ async function recoverFromCrashedSave(
   showSetupWindow(message);
   return message;
 }
+async function openInitialServer(url: string) {
+  if (!(await appOpener.open(url))) return;
+  commitPendingAppSwitch();
+  destroySetupWindow();
+}
 function reopenAppWindow() {
+  if (fixedServerUrl !== null && (desktop.currentTargetUrl ?? fixedServerUrl) === fixedServerUrl) {
+    void fixedStartup.open(fixedServerUrl).then(() => deepLinks?.applyPending());
+    return;
+  }
   if (desktop.currentTargetUrl === null) {
     showSetupWindow(desktop.setupError);
     return;
@@ -561,7 +521,7 @@ const hasSingleInstanceLock = app.requestSingleInstanceLock();
 const deepLinks = hasSingleInstanceLock
   ? registerDeepLinkHandlers(app, {
       initialArgv: process.argv,
-      isOpening: () => appOpener.busy() || isSetupSaveInProgress(),
+      isOpening: () => fixedStartup.busy() || appOpener.busy() || isSetupSaveInProgress(),
       reopen: reopenAppWindow,
     })
   : undefined;
@@ -690,6 +650,20 @@ app.whenReady().then(async () => {
       }),
   });
   desktop.currentSetup = await readSetup(userDataDir);
+  const target = resolvePackagedStartupTarget(app.getAppPath(), {
+    envUrl: process.env.RAKAZO_WEB_URL,
+    saved: desktop.currentSetup,
+    forceSetup: process.env.RAKAZO_FORCE_SETUP === "1",
+  });
+  if (target.kind === "app" && target.source === "fixed") {
+    fixedServerUrl = target.url;
+    if (
+      desktop.currentSetup?.mode !== "existing" ||
+      desktop.currentSetup.serverUrl !== target.url
+    ) {
+      desktop.currentSetup = null;
+    }
+  }
   const userStackDir = stackDir(userDataDir);
   const resourceDir = stackResourceDir({
     packaged: app.isPackaged,
@@ -802,11 +776,6 @@ app.whenReady().then(async () => {
     useStack,
   );
   if (desktop.currentSetup?.mode === "new") await settleLocalStack();
-  const target = resolvePackagedStartupTarget(app.getAppPath(), {
-    envUrl: process.env.RAKAZO_WEB_URL,
-    saved: desktop.currentSetup,
-    forceSetup: process.env.RAKAZO_FORCE_SETUP === "1",
-  });
   if (process.env.RAKAZO_PERFORMANCE_CLEAR_CACHE === "1") {
     const cacheSessions = new Set<Session>([session.defaultSession]);
     if (target.kind === "app") cacheSessions.add((await resolveSessionForTarget(target.url)).value);
@@ -921,17 +890,13 @@ app.whenReady().then(async () => {
     onAppReady: () => deepLinks?.applyPending(),
   });
 
-  const openInitialServer = async (url: string) => {
-    if (!(await appOpener.open(url))) return;
-    commitPendingAppSwitch();
-    destroySetupWindow();
-  };
-
   // Register before startup awaits so macOS dock clicks during probe/open are handled.
   deepLinks?.registerActivate();
 
   if (target.kind === "setup") {
     showSetupWindow();
+  } else if (target.source === "fixed") {
+    await fixedStartup.open(target.url);
   } else if (target.source === "saved" && desktop.currentSetup?.mode === "new") {
     const managedUrl = managedLocalOpenUrl(target.url, desktop.localStack.webUrl());
     const managedStackReady =
@@ -966,7 +931,7 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", () => {
   // A hidden session probe (defaultSessionHasOriginData) can be the only window
   // during startup; its teardown must not quit the app.
-  if (desktop.liveProbeWindows > 0) return;
+  if (desktop.liveProbeWindows > 0 || fixedStartup.busy()) return;
   if (process.platform !== "darwin") app.quit();
 });
 app.on("quit", (_event, exitCode) => {

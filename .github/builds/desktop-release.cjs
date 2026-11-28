@@ -11,6 +11,7 @@ module.exports = {
     name: "botone",
     productName: "BotONE",
     defaultServerUrl: releaseServer(process.env.EXPO_PUBLIC_API_URL),
+    startAtDefaultServer: true,
   },
   // Independent downloads must never inherit the upstream automatic update channel.
   publish: null,

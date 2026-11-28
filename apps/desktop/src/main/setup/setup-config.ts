@@ -1,10 +1,9 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import type { DesktopSetup, DesktopStackProbeResponse } from "@rakazo/contracts";
 import { parseServerHeaders } from "@rakazo/contracts";
 import { isLoopbackHost, isPrivateNetworkHost } from "@rakazo/contracts/network-host";
 import { t } from "../i18n.js";
+import { readPackagedServer } from "./packaged-server.js";
 
 /** Managed desktop origin; development keeps its usual web/API ports. */
 export const DEFAULT_LOCAL_WEB_URL = "http://127.0.0.1:45173";
@@ -15,7 +14,7 @@ export const PROBE_RESPONSE_LIMIT_BYTES = 64 * 1024;
 export const SETUP_FILE_NAME = "setup.json";
 
 export type StartupTarget =
-  | { kind: "app"; url: string; source: "env" | "saved" | "default" | "cloud" }
+  | { kind: "app"; url: string; source: "env" | "saved" | "default" | "cloud" | "fixed" }
   | { kind: "setup" };
 
 const SCHEME = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
@@ -130,30 +129,41 @@ export function serializeSetup(setup: DesktopSetup): string {
  */
 export function resolvePackagedStartupTarget(
   appPath: string,
-  input: Omit<Parameters<typeof resolveStartupTarget>[0], "defaultUrl">,
+  input: Omit<Parameters<typeof resolveStartupTarget>[0], "defaultUrl" | "startAtDefaultServer">,
 ): StartupTarget {
-  const { defaultServerUrl } = JSON.parse(
-    readFileSync(path.join(appPath, "package.json"), "utf8"),
-  ) as { defaultServerUrl?: unknown };
-  return resolveStartupTarget({ ...input, defaultUrl: defaultServerUrl });
+  const { defaultServerUrl, startAtDefaultServer } = readPackagedServer(appPath);
+  return resolveStartupTarget({
+    ...input,
+    defaultUrl: defaultServerUrl,
+    startAtDefaultServer,
+  });
 }
 
 /**
  * Decides between the setup window and the app window. A first launch opens the packaged
- * default server, or Rakazo Cloud when none is configured. An explicit
- * `RAKAZO_WEB_URL` still wins over saved configuration so test and performance
- * harnesses can point the shell anywhere without touching a user's real setup.
+ * default server, or Rakazo Cloud when none is configured. Releases can use
+ * the packaged origin on every launch. Test and performance harnesses can
+ * still point the shell elsewhere with `RAKAZO_WEB_URL`.
  */
 export function resolveStartupTarget(input: {
   envUrl?: string;
   saved?: DesktopSetup | null;
   defaultUrl?: unknown;
+  startAtDefaultServer?: boolean;
   forceSetup?: boolean;
 }): StartupTarget {
   if (input.forceSetup === true) return { kind: "setup" };
 
   const envUrl = input.envUrl?.trim();
   if (envUrl !== undefined && envUrl !== "") return { kind: "app", url: envUrl, source: "env" };
+
+  if (input.startAtDefaultServer === true) {
+    const url = typeof input.defaultUrl === "string" ? normalizeServerUrl(input.defaultUrl) : null;
+    if (url === null || !url.startsWith("https://")) {
+      throw new Error("The desktop release requires a packaged HTTPS server.");
+    }
+    return { kind: "app", url, source: "fixed" };
+  }
 
   if (input.saved != null) {
     const saved = parseSetupInput(input.saved);
