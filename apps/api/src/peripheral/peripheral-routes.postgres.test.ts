@@ -204,9 +204,15 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
           readers.map(async (reader) => new TextDecoder().decode((await reader.read()).value)),
         ),
       ]);
-      expect(bot).toMatchObject({ name: "波波", thinkingLevel: "off", fleetManagement: true });
+      expect(bot).toMatchObject({
+        name: "波波",
+        modelProvider: OPENAI_COMPATIBLE_PROVIDER_ID,
+        modelId,
+        thinkingLevel: "off",
+        fleetManagement: true,
+      });
       expect(runs).toHaveLength(1);
-      expect(runs[0]).toMatchObject({ modelPinned: true, modelId, thinkingLevel: "off" });
+      expect(runs[0]).toMatchObject({ modelPinned: false });
       expect(messages).toHaveLength(1);
       expect(messages[0]?.clientNonce).toBe("pod:turn-1");
       for (const frame of metadata) {
@@ -261,7 +267,7 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
     }
   });
 
-  it("uses the voice model sent by the device even when the voice bot has a saved override", async () => {
+  it("respects the voice bot's saved model and backfills when unset", async () => {
     const bot = await runAsTenant(actor, async () => {
       const botId = await ensureVoiceBot(db.prisma, actor);
       return db.prisma.bot.update({
@@ -269,24 +275,44 @@ describe.skipIf(!databaseUrl)("peripheral chat", () => {
         data: { modelId: mainModelId, modelProvider: OPENAI_COMPATIBLE_PROVIDER_ID },
       });
     });
-    const response = await chat("voice-model-updated", bridgeSecret, subject, nextModelId);
+    const response = await chat("voice-model-saved", bridgeSecret, subject, nextModelId);
     expect(response.status).toBe(200);
     const reader = response.body!.getReader();
     try {
       const meta = await nextEvent(reader, "session_meta");
       await runAsTenant(actor, async () => {
-        const run = await db.prisma.run.findUniqueOrThrow({ where: { id: meta.runId } });
-        expect(run).toMatchObject({ modelId: nextModelId, thinkingLevel: "off" });
-        await db.prisma.run.update({ where: { id: run.id }, data: { status: "completed" } });
+        const currentBot = await db.prisma.bot.findUniqueOrThrow({ where: { id: bot.id } });
+        expect(currentBot).toMatchObject({
+          modelProvider: OPENAI_COMPATIBLE_PROVIDER_ID,
+          modelId: mainModelId,
+        });
+        await db.prisma.run.update({ where: { id: meta.runId }, data: { status: "completed" } });
       });
     } finally {
       await reader.cancel();
-      await runAsTenant(actor, () =>
-        db.prisma.bot.update({
-          where: { id: bot.id },
-          data: { modelId: null, modelProvider: null },
-        }),
-      );
+    }
+
+    await runAsTenant(actor, () =>
+      db.prisma.bot.update({
+        where: { id: bot.id },
+        data: { modelId: null, modelProvider: null },
+      }),
+    );
+    const backfill = await chat("voice-model-backfill", bridgeSecret, subject, nextModelId);
+    expect(backfill.status).toBe(200);
+    const backfillReader = backfill.body!.getReader();
+    try {
+      const meta = await nextEvent(backfillReader, "session_meta");
+      await runAsTenant(actor, async () => {
+        const currentBot = await db.prisma.bot.findUniqueOrThrow({ where: { id: bot.id } });
+        expect(currentBot).toMatchObject({
+          modelProvider: OPENAI_COMPATIBLE_PROVIDER_ID,
+          modelId: nextModelId,
+        });
+        await db.prisma.run.update({ where: { id: meta.runId }, data: { status: "completed" } });
+      });
+    } finally {
+      await backfillReader.cancel();
     }
   });
 

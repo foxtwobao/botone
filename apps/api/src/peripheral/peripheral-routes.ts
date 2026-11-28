@@ -363,17 +363,19 @@ export function mountPeripheralRoutes(
       peripheralModel(deps, actor, accountId, apiKey, connection.model.baseUrl, modelId);
 
     const nonce = peripheralNonce(key, turnId, callId);
+    const botSavedModelId = current?.kind === "bot" ? (current.bot.modelId ?? undefined) : undefined;
     const model =
       current?.kind === "group"
         ? null
-        : await personalModel(
-            chatModel ?? (current?.kind === "bot" ? (current.bot.modelId ?? undefined) : undefined),
-          );
+        : await personalModel(botSavedModelId ?? chatModel);
+    if (!targetBotId && !targetGroupId && existing && !existing.modelId && model) {
+      await ensureVoiceBot(deps.prisma, actor, model);
+    }
     const target =
       current ??
       (model &&
         (await resolveThreadTarget(deps.prisma, actor, {
-          botId: await ensureVoiceBot(deps.prisma, actor),
+          botId: await ensureVoiceBot(deps.prisma, actor, model),
         })));
     if (!target) return c.json({ error: "model_connection_required" }, 403);
 
@@ -381,7 +383,7 @@ export function mountPeripheralRoutes(
     if (target.kind === "bot") {
       if (
         !model ||
-        (!chatModel && target.bot.modelProvider && target.bot.modelProvider !== model.modelProvider)
+        (target.bot.modelProvider && target.bot.modelProvider !== model.modelProvider)
       )
         return c.json({ error: "model_connection_required" }, 403);
       await assertTeachingSendAllowed(deps.prisma, actor.spaceId, target.botId);
@@ -389,7 +391,6 @@ export function mountPeripheralRoutes(
       receipt = await sendThreadMessage(deps, actor, target, {
         text,
         clientNonce: nonce,
-        modelPin: { ...model, thinkingLevel: chatModel ? "off" : target.bot.thinkingLevel },
       });
     } else {
       const targets = sendTargetBotIds(target, { text });
@@ -399,23 +400,17 @@ export function mountPeripheralRoutes(
         select: { id: true, modelId: true, modelProvider: true, thinkingLevel: true },
       });
       const models = new Map<string, Awaited<ReturnType<typeof personalModel>>>();
-      const pins = new Map<
-        string,
-        NonNullable<Parameters<typeof sendThreadMessage>[3]["modelPin"]>
-      >();
       for (const bot of bots) {
         const choice = bot.modelId ?? "";
         if (!models.has(choice)) models.set(choice, await personalModel(bot.modelId ?? undefined));
         const selected = models.get(choice);
         if (!selected || (bot.modelProvider && bot.modelProvider !== selected.modelProvider))
           return c.json({ error: "model_connection_required" }, 403);
-        pins.set(bot.id, { ...selected, thinkingLevel: bot.thinkingLevel });
       }
       receipt = await sendThreadMessage(deps, actor, target, {
         text,
         clientNonce: nonce,
-        mentions: [...pins.keys()],
-        modelPins: pins,
+        mentions: bots.map((bot) => bot.id),
       });
     }
 
