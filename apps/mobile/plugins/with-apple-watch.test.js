@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -68,9 +68,6 @@ it("embeds one watch app with the correct sources, icon, and companion identity"
       4,
     );
 
-    const watchSigning = config.expo.extra.eas.build.experimental.ios.appExtensions.find(
-      ({ targetName }) => targetName === "RakazoWatch",
-    );
     const settings = Object.values(regenerated.pbxXCBuildConfigurationSection()).filter(
       (entry) => entry.buildSettings?.PRODUCT_NAME?.replaceAll('"', "") === "RakazoWatch",
     );
@@ -80,7 +77,7 @@ it("embeds one watch app with the correct sources, icon, and companion identity"
         config.expo.ios.bundleIdentifier,
       );
       expect(buildSettings.PRODUCT_BUNDLE_IDENTIFIER.replaceAll('"', "")).toBe(
-        watchSigning.bundleIdentifier,
+        `${config.expo.ios.bundleIdentifier}.watchkitapp`,
       );
     }
 
@@ -134,16 +131,12 @@ it("embeds the complications in the watch app with their sources and shared App 
     expect(
       regenerated.hash.project.objects.PBXSourcesBuildPhase[complicationSources.value].files,
     ).toHaveLength(2);
-    const watchSigning = config.expo.extra.eas.build.experimental.ios.appExtensions.find(
-      ({ targetName }) => targetName === "RakazoWatch",
-    );
-    const complicationSigning = config.expo.extra.eas.build.experimental.ios.appExtensions.find(
-      ({ targetName }) => targetName === "RakazoWatchComplications",
-    );
-    for (const signing of [watchSigning, complicationSigning]) {
-      expect(signing.entitlements["com.apple.security.application-groups"]).toEqual([
-        `group.${config.expo.ios.bundleIdentifier}`,
-      ]);
+    for (const targetName of ["RakazoWatch", "RakazoWatchComplications"]) {
+      const entitlements = readFileSync(
+        join(directory, targetName, `${targetName}.entitlements`),
+        "utf8",
+      );
+      expect(entitlements).toContain(`<string>group.${config.expo.ios.bundleIdentifier}</string>`);
     }
     const complicationSettings = Object.values(regenerated.pbxXCBuildConfigurationSection()).filter(
       (entry) =>
@@ -152,7 +145,7 @@ it("embeds the complications in the watch app with their sources and shared App 
     expect(complicationSettings).toHaveLength(2);
     for (const { buildSettings } of complicationSettings) {
       expect(buildSettings.PRODUCT_BUNDLE_IDENTIFIER.replaceAll('"', "")).toBe(
-        complicationSigning.bundleIdentifier,
+        `${config.expo.ios.bundleIdentifier}.watchkitapp.complications`,
       );
     }
   } finally {
